@@ -3,16 +3,9 @@ Soraya-Agent — Stufe 0/1
 - Content-Agent: schreibt Social-Media-Posts fuer die Soraya-App.
 - Recherche (Apify): liest eine Webseite aus und schreibt Posts daraus.
 Speicherung in der Railway-eigenen PostgreSQL-Datenbank.
-
-Endpoints:
-  GET  /                 -> kurzer Status
-  GET  /health           -> Health-Check (fuer Railway)
-  POST /content          -> neue Posts generieren (und speichern)
-  POST /content-von-url  -> Webseite auslesen (Apify) und Posts daraus schreiben
-  GET  /content          -> alle bisher generierten Posts ansehen
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
@@ -58,27 +51,34 @@ def health():
 
 @app.post("/content")
 def content_erstellen(anfrage: ContentAnfrage):
-    posts = erstelle_posts(thema=anfrage.thema, anzahl=anfrage.anzahl)
-    gespeichert = speichere_posts(posts)
-    return {"erstellt": len(gespeichert), "posts": gespeichert}
+    try:
+        posts = erstelle_posts(thema=anfrage.thema, anzahl=anfrage.anzahl)
+        gespeichert = speichere_posts(posts)
+        return {"erstellt": len(gespeichert), "posts": gespeichert}
+    except Exception as e:
+        # Echten Grund im Klartext zurueckgeben (statt anonymem 500)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/content-von-url")
 def content_von_url(anfrage: UrlAnfrage):
-    # 1) Webseite ueber Apify auslesen
-    text = hole_webseiten_text(anfrage.url)
-    # 2) Claude schreibt Posts auf Basis des Inhalts
-    posts = erstelle_posts(anzahl=anfrage.anzahl, kontext=text)
-    # 3) speichern
-    gespeichert = speichere_posts(posts)
-    return {
-        "quelle": anfrage.url,
-        "gelesen_zeichen": len(text),
-        "erstellt": len(gespeichert),
-        "posts": gespeichert,
-    }
+    try:
+        text = hole_webseiten_text(anfrage.url)
+        posts = erstelle_posts(anzahl=anfrage.anzahl, kontext=text)
+        gespeichert = speichere_posts(posts)
+        return {
+            "quelle": anfrage.url,
+            "gelesen_zeichen": len(text),
+            "erstellt": len(gespeichert),
+            "posts": gespeichert,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/content")
 def content_ansehen(limit: int = 50):
-    return {"posts": lade_posts(limit=limit)}
+    try:
+        return {"posts": lade_posts(limit=limit)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
