@@ -41,6 +41,15 @@ ohne Markdown, ohne ```-Zeichen. Format:
 """
 
 
+def _text_aus_antwort(data: dict) -> str:
+    """Holt robust den Text aus der Claude-Antwort (egal wie die Bloecke heissen)."""
+    teile = []
+    for block in data.get("content", []):
+        if isinstance(block, dict) and "text" in block:
+            teile.append(block["text"])
+    return "".join(teile).strip()
+
+
 def erstelle_posts(
     thema: str | None = None,
     anzahl: int = 3,
@@ -91,26 +100,31 @@ def erstelle_posts(
         timeout=90,
     )
 
-    # Klartext-Fehler statt anonymem 500:
     if antwort.status_code >= 400:
         raise RuntimeError(
             f"Claude-API Fehler {antwort.status_code}: {antwort.text}"
         )
 
-    inhalt = antwort.json()["content"][0]["text"]
+    data = antwort.json()
+    inhalt = _text_aus_antwort(data)
 
-    inhalt = inhalt.strip()
+    if not inhalt:
+        raise RuntimeError(
+            "Claude hat keinen Text geliefert. Rohantwort: " + str(data)[:500]
+        )
+
+    # Sicherheitsnetz: falls doch ```json ... ``` drumherum kommt, entfernen.
     if inhalt.startswith("```"):
         inhalt = inhalt.strip("`")
         if inhalt.lstrip().lower().startswith("json"):
             inhalt = inhalt.lstrip()[4:]
+        inhalt = inhalt.strip()
 
     try:
         daten = json.loads(inhalt)
     except json.JSONDecodeError:
         raise RuntimeError(
-            "Claude hat kein sauberes JSON geliefert. Antwort war: "
-            + inhalt[:500]
+            "Claude hat kein sauberes JSON geliefert. Antwort war: " + inhalt[:500]
         )
 
     return daten.get("posts", [])
