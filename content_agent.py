@@ -83,7 +83,6 @@ def erstelle_posts(
         json={
             "model": ANTHROPIC_MODEL,
             "max_tokens": 1500,
-            "temperature": 0.8,
             "system": SYSTEM_PROMPT,
             "messages": [
                 {"role": "user", "content": user_prompt},
