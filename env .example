@@ -1,0 +1,5 @@
+# Diese Werte in Railway unter "Variables" eintragen:
+ANTHROPIC_API_KEY=dein_claude_api_key
+ANTHROPIC_MODEL=claude-sonnet-5
+# DATABASE_URL wird von Railway automatisch gesetzt (Postgres-Datenbank) —
+# nicht selbst eintippen.
