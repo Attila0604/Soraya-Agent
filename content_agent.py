@@ -1,6 +1,6 @@
 """
 Content-Agent
-Ruft ein Sprachmodell (ueber OpenRouter) auf und laesst fertige
+Spricht DIREKT mit Claude (Anthropic API) und laesst fertige
 Social-Media-Posts fuer die Soraya-App schreiben.
 
 Rueckgabe: eine Liste von Posts, jeder mit:
@@ -13,11 +13,11 @@ import os
 import json
 import requests
 
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-# Guenstiges, gutes Modell als Standard. Kannst du in Railway ueberschreiben.
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-3.5-sonnet")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+# Gutes, elegantes Modell als Standard. Kannst du in Railway ueberschreiben.
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 
 # So "denkt" der Agent. Hier steckt die Marken-Stimme von Soraya drin.
 SYSTEM_PROMPT = """Du bist der Social-Media-Texter der App "Soraya Luxury Astrology Guide".
@@ -49,9 +49,9 @@ ohne Markdown, ohne ```-Zeichen. Format:
 
 
 def erstelle_posts(thema: str | None = None, anzahl: int = 3) -> list[dict]:
-    if not OPENROUTER_API_KEY:
+    if not ANTHROPIC_API_KEY:
         raise RuntimeError(
-            "OPENROUTER_API_KEY fehlt. Bitte in Railway unter Variables setzen."
+            "ANTHROPIC_API_KEY fehlt. Bitte in Railway unter Variables setzen."
         )
 
     thema_text = (
@@ -68,23 +68,25 @@ def erstelle_posts(thema: str | None = None, anzahl: int = 3) -> list[dict]:
     )
 
     antwort = requests.post(
-        OPENROUTER_URL,
+        ANTHROPIC_URL,
         headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json",
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
         },
         json={
-            "model": OPENROUTER_MODEL,
+            "model": ANTHROPIC_MODEL,
+            "max_tokens": 1500,
+            "temperature": 0.8,
+            "system": SYSTEM_PROMPT,
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
             ],
-            "temperature": 0.8,
         },
         timeout=90,
     )
     antwort.raise_for_status()
-    inhalt = antwort.json()["choices"][0]["message"]["content"]
+    inhalt = antwort.json()["content"][0]["text"]
 
     # Sicherheitsnetz: falls doch ```json ... ``` drumherum kommt, entfernen.
     inhalt = inhalt.strip()
