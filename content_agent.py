@@ -2,11 +2,6 @@
 Content-Agent
 Spricht DIREKT mit Claude (Anthropic API) und laesst fertige
 Social-Media-Posts fuer die Soraya-App schreiben.
-
-Rueckgabe: eine Liste von Posts, jeder mit:
-  platform  -> "instagram" | "facebook" | "linkedin"
-  text      -> der fertige Post-Text
-  hashtags  -> Liste passender Hashtags
 """
 
 import os
@@ -14,12 +9,10 @@ import json
 import requests
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-# Gutes, elegantes Modell als Standard. Kannst du in Railway ueberschreiben.
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 
-# So "denkt" der Agent. Hier steckt die Marken-Stimme von Soraya drin.
 SYSTEM_PROMPT = """Du bist der Social-Media-Texter der App "Soraya Luxury Astrology Guide".
 
 Ueber Soraya:
@@ -98,15 +91,27 @@ def erstelle_posts(
         },
         timeout=90,
     )
-    antwort.raise_for_status()
+
+    # Klartext-Fehler statt anonymem 500:
+    if antwort.status_code >= 400:
+        raise RuntimeError(
+            f"Claude-API Fehler {antwort.status_code}: {antwort.text}"
+        )
+
     inhalt = antwort.json()["content"][0]["text"]
 
-    # Sicherheitsnetz: falls doch ```json ... ``` drumherum kommt, entfernen.
     inhalt = inhalt.strip()
     if inhalt.startswith("```"):
         inhalt = inhalt.strip("`")
         if inhalt.lstrip().lower().startswith("json"):
             inhalt = inhalt.lstrip()[4:]
 
-    daten = json.loads(inhalt)
+    try:
+        daten = json.loads(inhalt)
+    except json.JSONDecodeError:
+        raise RuntimeError(
+            "Claude hat kein sauberes JSON geliefert. Antwort war: "
+            + inhalt[:500]
+        )
+
     return daten.get("posts", [])
