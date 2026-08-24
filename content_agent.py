@@ -48,7 +48,11 @@ ohne Markdown, ohne ```-Zeichen. Format:
 """
 
 
-def erstelle_posts(thema: str | None = None, anzahl: int = 3) -> list[dict]:
+def erstelle_posts(
+    thema: str | None = None,
+    anzahl: int = 3,
+    kontext: str | None = None,
+) -> list[dict]:
     if not ANTHROPIC_API_KEY:
         raise RuntimeError(
             "ANTHROPIC_API_KEY fehlt. Bitte in Railway unter Variables setzen."
@@ -60,11 +64,20 @@ def erstelle_posts(thema: str | None = None, anzahl: int = 3) -> list[dict]:
         else "Waehle selbst ein passendes, ansprechendes Astro-/Horoskop-Thema."
     )
 
+    kontext_text = ""
+    if kontext:
+        kontext_text = (
+            "\n\nNutze folgenden Inhalt als Grundlage/Inspiration fuer die Posts "
+            "(fasse zusammen, uebernimm Ideen, aber schreibe eigenstaendig):\n"
+            f"---\n{kontext}\n---"
+        )
+
     user_prompt = (
         f"Schreibe {anzahl} Social-Media-Posts fuer Soraya. {thema_text} "
         f"Verteile sie sinnvoll auf die Plattformen instagram, facebook und linkedin "
         f"(LinkedIn etwas sachlicher, Instagram/Facebook emotionaler). "
         f"Jeder Post mit 3 bis 6 passenden Hashtags."
+        f"{kontext_text}"
     )
 
     antwort = requests.post(
