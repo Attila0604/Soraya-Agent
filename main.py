@@ -1,13 +1,15 @@
 """
-Soraya-Agent — Stufe 0
-Der Content-Agent: schreibt fertige Social-Media-Posts fuer die Soraya-App.
+Soraya-Agent — Stufe 0/1
+- Content-Agent: schreibt Social-Media-Posts fuer die Soraya-App.
+- Recherche (Apify): liest eine Webseite aus und schreibt Posts daraus.
 Speicherung in der Railway-eigenen PostgreSQL-Datenbank.
 
 Endpoints:
-  GET  /            -> kurzer Status
-  GET  /health      -> Health-Check (fuer Railway)
-  POST /content     -> neue Posts generieren lassen (und speichern)
-  GET  /content     -> alle bisher generierten Posts ansehen
+  GET  /                 -> kurzer Status
+  GET  /health           -> Health-Check (fuer Railway)
+  POST /content          -> neue Posts generieren (und speichern)
+  POST /content-von-url  -> Webseite auslesen (Apify) und Posts daraus schreiben
+  GET  /content          -> alle bisher generierten Posts ansehen
 """
 
 from fastapi import FastAPI
@@ -15,26 +17,27 @@ from pydantic import BaseModel
 from typing import Optional
 
 from content_agent import erstelle_posts
+from apify import hole_webseiten_text
 from db import init_db, speichere_posts, lade_posts
 
-app = FastAPI(title="Soraya-Agent", version="0.1")
+app = FastAPI(title="Soraya-Agent", version="0.2")
 
 
 class ContentAnfrage(BaseModel):
-    # Optional: ein Thema vorgeben. Wenn leer, waehlt die KI selbst ein
-    # passendes Astro-/Horoskop-Thema fuer Soraya.
     thema: Optional[str] = None
-    # Wie viele Posts sollen erstellt werden (Standard 3).
+    anzahl: int = 3
+
+
+class UrlAnfrage(BaseModel):
+    url: str
     anzahl: int = 3
 
 
 @app.on_event("startup")
 def beim_start():
-    # Tabelle anlegen, falls noch nicht vorhanden.
     try:
         init_db()
     except Exception as e:
-        # App startet trotzdem; Fehler wird beim ersten Aufruf sichtbar.
         print(f"[Start] Datenbank noch nicht bereit: {e}")
 
 
@@ -42,9 +45,9 @@ def beim_start():
 def start():
     return {
         "app": "Soraya-Agent",
-        "stufe": 0,
-        "agent": "Content-Agent",
-        "info": "POST /content um Posts zu erstellen, GET /content um sie anzusehen.",
+        "stufe": "0/1",
+        "agenten": ["Content-Agent", "Recherche (Apify)"],
+        "info": "POST /content oder POST /content-von-url ; GET /content zum Ansehen.",
     }
 
 
@@ -58,6 +61,22 @@ def content_erstellen(anfrage: ContentAnfrage):
     posts = erstelle_posts(thema=anfrage.thema, anzahl=anfrage.anzahl)
     gespeichert = speichere_posts(posts)
     return {"erstellt": len(gespeichert), "posts": gespeichert}
+
+
+@app.post("/content-von-url")
+def content_von_url(anfrage: UrlAnfrage):
+    # 1) Webseite ueber Apify auslesen
+    text = hole_webseiten_text(anfrage.url)
+    # 2) Claude schreibt Posts auf Basis des Inhalts
+    posts = erstelle_posts(anzahl=anfrage.anzahl, kontext=text)
+    # 3) speichern
+    gespeichert = speichere_posts(posts)
+    return {
+        "quelle": anfrage.url,
+        "gelesen_zeichen": len(text),
+        "erstellt": len(gespeichert),
+        "posts": gespeichert,
+    }
 
 
 @app.get("/content")
