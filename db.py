@@ -1,10 +1,10 @@
 """
 Datenbank-Anbindung an die PostgreSQL-Datenbank von Railway.
-Railway stellt die Verbindung ueber die Variable DATABASE_URL bereit
-(sobald du im Projekt eine PostgreSQL-Datenbank hinzufuegst).
+Railway stellt die Verbindung ueber die Variable DATABASE_URL bereit.
 """
 
 import os
+import json
 import psycopg
 from psycopg.rows import dict_row
 
@@ -21,7 +21,7 @@ def _verbindung():
 
 
 def init_db():
-    """Legt die Tabelle an, falls sie noch nicht existiert. Laeuft beim Start."""
+    """Legt die Tabellen an, falls sie noch nicht existieren."""
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
             """
@@ -31,6 +31,16 @@ def init_db():
                 text        text not null,
                 hashtags    text,
                 status      text not null default 'entwurf',
+                created_at  timestamptz not null default now()
+            );
+            """
+        )
+        cur.execute(
+            """
+            create table if not exists soraya_zielgruppen (
+                id          bigint generated always as identity primary key,
+                bereich     text not null,
+                profil      jsonb not null,
                 created_at  timestamptz not null default now()
             );
             """
@@ -62,6 +72,27 @@ def lade_posts(limit: int = 50) -> list[dict]:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
             "select * from soraya_posts order by created_at desc limit %s;",
+            (limit,),
+        )
+        return cur.fetchall()
+
+
+def speichere_zielgruppe(bereich: str, profil: dict) -> dict:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "insert into soraya_zielgruppen (bereich, profil) "
+            "values (%s, %s) returning *;",
+            (bereich, json.dumps(profil)),
+        )
+        zeile = cur.fetchone()
+        conn.commit()
+    return zeile
+
+
+def lade_zielgruppen(limit: int = 20) -> list[dict]:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select * from soraya_zielgruppen order by created_at desc limit %s;",
             (limit,),
         )
         return cur.fetchall()
