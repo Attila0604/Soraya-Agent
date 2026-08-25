@@ -43,6 +43,11 @@ class ZielgruppeAnfrage(BaseModel):
     land: str = "at"
     # Welche Quellen sollen laufen?
     quellen: list[str] = ["google"]
+    # Eigene Vorgaben — wenn gesetzt, ersetzen sie die vordefinierten
+    eigene_begriffe: list[str] = []
+    eigene_hashtags: list[str] = []
+    eigene_playstore: str = ""
+    eigene_frage: str = ""
 
 
 @app.on_event("startup")
@@ -106,8 +111,14 @@ def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
     """Recherchiert einen Bereich in mehreren Quellen und erstellt ein Kundenprofil."""
     try:
         titel = titel_fuer(anfrage.bereich)
-        begriffe = begriffe_fuer(anfrage.bereich)
-        hashtags = hashtags_fuer(anfrage.bereich)
+
+        # Eigene Eingaben haben Vorrang vor den vordefinierten Mustern
+        begriffe = [b.strip() for b in anfrage.eigene_begriffe if b.strip()] \
+            or begriffe_fuer(anfrage.bereich)
+        hashtags = [h.strip() for h in anfrage.eigene_hashtags if h.strip()] \
+            or hashtags_fuer(anfrage.bereich)
+        playstore_suche = anfrage.eigene_playstore.strip() \
+            or playstore_suche_fuer(anfrage.bereich)
 
         gewaehlt = anfrage.quellen or ["google"]
         teile, geklappt, fehlgeschlagen = [], [], {}
@@ -115,19 +126,23 @@ def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
         def hole(name, fn):
             if name not in gewaehlt:
                 return
+            print(f"[Recherche] Starte Quelle: {name}", flush=True)
             try:
                 text = fn()
                 if text and text.strip():
                     teile.append(f"\n\n===== QUELLE: {name.upper()} =====\n{text}")
                     geklappt.append(name)
+                    print(f"[Recherche] {name}: {len(text)} Zeichen erhalten", flush=True)
                 else:
                     fehlgeschlagen[name] = "keine Ergebnisse"
+                    print(f"[Recherche] {name}: KEINE ERGEBNISSE", flush=True)
             except Exception as e:
-                fehlgeschlagen[name] = str(e)[:200]
+                fehlgeschlagen[name] = str(e)[:300]
+                print(f"[Recherche] {name}: FEHLER -> {e}", flush=True)
 
         hole("google", lambda: quelle_google(begriffe, land=anfrage.land))
         hole("reddit", lambda: quelle_reddit(begriffe))
-        hole("playstore", lambda: quelle_playstore(playstore_suche_fuer(anfrage.bereich)))
+        hole("playstore", lambda: quelle_playstore(playstore_suche))
         hole("instagram", lambda: quelle_instagram(hashtags))
         hole("tiktok", lambda: quelle_tiktok(hashtags))
 
@@ -137,12 +152,16 @@ def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
                 "Keine Quelle hat Daten geliefert. Details: " + str(fehlgeschlagen)
             )
 
-        profil = analysiere_zielgruppe(titel, recherche)
+        profil = analysiere_zielgruppe(
+            titel, recherche, eigene_frage=anfrage.eigene_frage.strip()
+        )
         profil["_quellen"] = geklappt
+        profil["_gesucht"] = begriffe
         zeile = speichere_zielgruppe(titel, profil)
 
         return {
             "bereich": titel,
+            "gesucht": begriffe,
             "quellen_ok": geklappt,
             "quellen_fehler": fehlgeschlagen,
             "gefunden_zeichen": len(recherche),
@@ -249,6 +268,21 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   .q small{color:var(--mist-dim);font-size:11px}
   .note{font-size:12px;color:var(--mist-dim);margin:10px 0 0;line-height:1.5}
   .src{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist-dim);margin:0 0 12px}
+  textarea{width:100%;background:#0C1022;border:1px solid var(--line);color:#EFE7D2;border-radius:10px;
+           padding:12px 14px;font-size:14px;font-family:inherit;outline:none;resize:vertical;min-height:78px;
+           line-height:1.5}
+  textarea:focus{border-color:var(--gold)}
+  textarea::placeholder{color:#5f647c}
+  details{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+  summary{cursor:pointer;color:var(--gold);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+          list-style:none;outline:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"+ ";font-weight:600}
+  details[open] summary::before{content:"\2212 "}
+  .feld{margin-top:16px}
+  .feld .why{font-size:12px;color:var(--mist-dim);margin:4px 0 8px}
+  .answer{background:rgba(201,162,75,.07);border:1px solid var(--line);border-radius:10px;
+          padding:14px 16px;margin:14px 0 4px;color:#E4E6EF}
 </style>
 </head>
 <body>
@@ -331,6 +365,35 @@ DASHBOARD_HTML = """<!DOCTYPE html>
            sparsam, Instagram und TikTok deutlich aufwendiger &mdash; die also gezielt einsetzen.
            Mehr Quellen bedeuten auch mehr Wartezeit.</p>
       </div>
+
+      <details>
+        <summary>Selbst bestimmen, wonach gesucht wird</summary>
+
+        <div class="feld">
+          <label>Eigene Suchbegriffe</label>
+          <p class="why">Fuer Google und Reddit. Eine Suche pro Zeile. Schreib so, wie
+             deine Kunden wirklich suchen wuerden &mdash; also ganze Fragen, keine Schlagworte.</p>
+          <textarea id="eBegriffe" placeholder="warum zieht er sich zurueck sternzeichen&#10;horoskop stimmt nicht enttaeuscht&#10;astrologie trennung verarbeiten"></textarea>
+        </div>
+
+        <div class="feld">
+          <label>Eigene Hashtags</label>
+          <p class="why">Fuer Instagram und TikTok. Einer pro Zeile, ohne #.</p>
+          <textarea id="eHashtags" placeholder="synastrie&#10;zwillingsflamme&#10;astrologiedeutsch"></textarea>
+        </div>
+
+        <div class="feld">
+          <label>Eigene Play-Store-Suche</label>
+          <p class="why">Welche Apps sollen nach Bewertungen durchsucht werden?</p>
+          <input id="ePlaystore" placeholder="z. B. partnerhoroskop app">
+        </div>
+
+        <div class="feld">
+          <label>Deine Frage an die Analyse</label>
+          <p class="why">Was willst du aus den Daten konkret herausfinden?</p>
+          <textarea id="eFrage" placeholder="z. B. Wuerden diese Menschen fuer eine Astrologie-App Geld ausgeben und wofuer genau?"></textarea>
+        </div>
+      </details>
 
       <div style="margin-top:18px"><button id="btnWho" onclick="erforsche()">Bereich erforschen</button></div>
     </div>
@@ -429,6 +492,7 @@ function renderProfile(zeilen){
       <p class="plat">${esc(z.bereich)}</p>
       ${p._quellen&&p._quellen.length?`<p class="src">Quellen: ${p._quellen.map(esc).join(' &middot; ')}</p>`:''}
       <p class="lede">${esc(p.wer_sind_sie||'')}</p>
+      ${p.antwort_auf_frage?`<div class="answer">${esc(p.antwort_auf_frage)}</div>`:''}
       ${liste('Was sie beschaeftigt', p.beschaeftigt_sie)}
       ${liste('Was sie sich wuenschen', p.wuensche)}
       ${liste('Ihre Sprache', p.sprache)}
@@ -436,6 +500,7 @@ function renderProfile(zeilen){
       ${liste('Worauf achten', p.worauf_achten)}
       ${liste('Luecke am Markt', p.luecke_am_markt)}
       ${(p.unsicher&&p.unsicher.length)?`<h4>Unsicher</h4><p class="warn">${p.unsicher.map(esc).join(' &middot; ')}</p>`:''}
+      ${(p._gesucht&&p._gesucht.length)?`<h4>Gesucht wurde nach</h4><p class="warn">${p._gesucht.map(esc).join(' &middot; ')}</p>`:''}
       <div class="foot" style="margin-top:14px"><span class="stamp">${(z.created_at||'').slice(0,10)}</span></div>
     </div>`;
   }).join('');
@@ -461,10 +526,17 @@ async function erforsche(){
   const bereich = eigen || $('bereich').value;
   const quellen = [...document.querySelectorAll('#quellen input:checked')].map(c => c.value);
   if(!quellen.length){ melde('Bitte mindestens eine Quelle waehlen.'); return; }
+  const zeilen = (id) => $(id).value.split('\n').map(x=>x.trim()).filter(Boolean);
   busy(b, true, 'Recherchiere \\u2026 (kann einige Minuten dauern)'); melde('');
   try{
     const r = await fetch('/zielgruppe', {method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({bereich, land: $('land').value, quellen})});
+      body: JSON.stringify({
+        bereich, land: $('land').value, quellen,
+        eigene_begriffe: zeilen('eBegriffe'),
+        eigene_hashtags: zeilen('eHashtags'),
+        eigene_playstore: $('ePlaystore').value.trim(),
+        eigene_frage: $('eFrage').value.trim(),
+      })});
     if(!r.ok) throw new Error((await r.json()).detail || 'Fehler');
     const d = await r.json();
     await ladeProfile();
