@@ -13,8 +13,13 @@ from typing import Optional
 
 from content_agent import erstelle_posts
 from research_agent import analysiere_zielgruppe
-from apify import hole_webseiten_text, suche_im_netz
-from bereiche import BEREICHE, begriffe_fuer
+from apify import (
+    hole_webseiten_text, quelle_google, quelle_instagram,
+    quelle_tiktok, quelle_reddit, quelle_playstore,
+)
+from bereiche import (
+    BEREICHE, begriffe_fuer, hashtags_fuer, playstore_suche_fuer, titel_fuer,
+)
 from db import (
     init_db, speichere_posts, lade_posts,
     speichere_zielgruppe, lade_zielgruppen,
@@ -36,6 +41,8 @@ class UrlAnfrage(BaseModel):
 class ZielgruppeAnfrage(BaseModel):
     bereich: str
     land: str = "at"
+    # Welche Quellen sollen laufen?
+    quellen: list[str] = ["google"]
 
 
 @app.on_event("startup")
@@ -96,19 +103,48 @@ def content_ansehen(limit: int = 50):
 
 @app.post("/zielgruppe")
 def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
-    """Recherchiert einen Bereich im Netz und erstellt daraus ein Kundenprofil."""
+    """Recherchiert einen Bereich in mehreren Quellen und erstellt ein Kundenprofil."""
     try:
-        schluessel = anfrage.bereich.strip().lower()
-        titel = BEREICHE.get(schluessel, {}).get("titel", anfrage.bereich)
+        titel = titel_fuer(anfrage.bereich)
         begriffe = begriffe_fuer(anfrage.bereich)
+        hashtags = hashtags_fuer(anfrage.bereich)
 
-        recherche = suche_im_netz(begriffe, land=anfrage.land)
+        gewaehlt = anfrage.quellen or ["google"]
+        teile, geklappt, fehlgeschlagen = [], [], {}
+
+        def hole(name, fn):
+            if name not in gewaehlt:
+                return
+            try:
+                text = fn()
+                if text and text.strip():
+                    teile.append(f"\n\n===== QUELLE: {name.upper()} =====\n{text}")
+                    geklappt.append(name)
+                else:
+                    fehlgeschlagen[name] = "keine Ergebnisse"
+            except Exception as e:
+                fehlgeschlagen[name] = str(e)[:200]
+
+        hole("google", lambda: quelle_google(begriffe, land=anfrage.land))
+        hole("reddit", lambda: quelle_reddit(begriffe))
+        hole("playstore", lambda: quelle_playstore(playstore_suche_fuer(anfrage.bereich)))
+        hole("instagram", lambda: quelle_instagram(hashtags))
+        hole("tiktok", lambda: quelle_tiktok(hashtags))
+
+        recherche = "".join(teile)
+        if not recherche.strip():
+            raise RuntimeError(
+                "Keine Quelle hat Daten geliefert. Details: " + str(fehlgeschlagen)
+            )
+
         profil = analysiere_zielgruppe(titel, recherche)
-
+        profil["_quellen"] = geklappt
         zeile = speichere_zielgruppe(titel, profil)
+
         return {
             "bereich": titel,
-            "gesucht": begriffe,
+            "quellen_ok": geklappt,
+            "quellen_fehler": fehlgeschlagen,
             "gefunden_zeichen": len(recherche),
             "profil": profil,
             "id": zeile.get("id"),
@@ -204,6 +240,15 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   .warn{border-left:2px solid #7a6a3a;padding-left:12px;color:var(--mist-dim);font-size:14px}
   footer{text-align:center;color:var(--mist-dim);font-size:12px;margin-top:40px}
   .hide{display:none}
+  .quellen{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .q{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;
+     padding:8px 14px;cursor:pointer;font-size:13px;color:var(--mist-dim);transition:.2s;user-select:none}
+  .q:hover{border-color:var(--gold)}
+  .q input{width:auto;margin:0;accent-color:var(--gold)}
+  .q.on{background:rgba(201,162,75,.12);border-color:var(--gold);color:var(--champagne)}
+  .q small{color:var(--mist-dim);font-size:11px}
+  .note{font-size:12px;color:var(--mist-dim);margin:10px 0 0;line-height:1.5}
+  .src{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist-dim);margin:0 0 12px}
 </style>
 </head>
 <body>
@@ -272,7 +317,22 @@ DASHBOARD_HTML = """<!DOCTYPE html>
         <div class="grow"><label>Oder eigener Bereich</label>
           <input id="eigen" placeholder="z. B. Astrologie und Schwangerschaft"></div>
       </div>
-      <div style="margin-top:16px"><button id="btnWho" onclick="erforsche()">Bereich erforschen</button></div>
+
+      <div style="margin-top:18px">
+        <label>Quellen</label>
+        <div class="quellen" id="quellen">
+          <label class="q on"><input type="checkbox" value="google" checked> Google <small>guenstig</small></label>
+          <label class="q"><input type="checkbox" value="reddit"> Reddit <small>guenstig</small></label>
+          <label class="q"><input type="checkbox" value="playstore"> Play Store <small>mittel</small></label>
+          <label class="q"><input type="checkbox" value="instagram"> Instagram <small>teuer</small></label>
+          <label class="q"><input type="checkbox" value="tiktok"> TikTok <small>teuer</small></label>
+        </div>
+        <p class="note">Jede Quelle verbraucht Apify-Guthaben. Google und Reddit sind
+           sparsam, Instagram und TikTok deutlich aufwendiger &mdash; die also gezielt einsetzen.
+           Mehr Quellen bedeuten auch mehr Wartezeit.</p>
+      </div>
+
+      <div style="margin-top:18px"><button id="btnWho" onclick="erforsche()">Bereich erforschen</button></div>
     </div>
 
     <div class="bar">
@@ -367,12 +427,14 @@ function renderProfile(zeilen){
     const p = z.profil || {};
     return `<div class="card who">
       <p class="plat">${esc(z.bereich)}</p>
+      ${p._quellen&&p._quellen.length?`<p class="src">Quellen: ${p._quellen.map(esc).join(' &middot; ')}</p>`:''}
       <p class="lede">${esc(p.wer_sind_sie||'')}</p>
       ${liste('Was sie beschaeftigt', p.beschaeftigt_sie)}
       ${liste('Was sie sich wuenschen', p.wuensche)}
       ${liste('Ihre Sprache', p.sprache)}
       ${liste('Content-Ideen', p.content_ideen)}
       ${liste('Worauf achten', p.worauf_achten)}
+      ${liste('Luecke am Markt', p.luecke_am_markt)}
       ${(p.unsicher&&p.unsicher.length)?`<h4>Unsicher</h4><p class="warn">${p.unsicher.map(esc).join(' &middot; ')}</p>`:''}
       <div class="foot" style="margin-top:14px"><span class="stamp">${(z.created_at||'').slice(0,10)}</span></div>
     </div>`;
@@ -389,16 +451,27 @@ async function ladeProfile(){
   try{ const r = await fetch('/zielgruppen'); renderProfile((await r.json()).zielgruppen); }
   catch(e){ melde('Konnte Profile nicht laden.'); }
 }
+document.querySelectorAll('#quellen input').forEach(cb => {
+  cb.addEventListener('change', () => cb.closest('.q').classList.toggle('on', cb.checked));
+});
+
 async function erforsche(){
   const b = $('btnWho');
   const eigen = $('eigen').value.trim();
   const bereich = eigen || $('bereich').value;
-  busy(b, true, 'Recherchiere \\u2026 (dauert ~1 Min)'); melde('');
+  const quellen = [...document.querySelectorAll('#quellen input:checked')].map(c => c.value);
+  if(!quellen.length){ melde('Bitte mindestens eine Quelle waehlen.'); return; }
+  busy(b, true, 'Recherchiere \\u2026 (kann einige Minuten dauern)'); melde('');
   try{
     const r = await fetch('/zielgruppe', {method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({bereich, land: $('land').value})});
+      body: JSON.stringify({bereich, land: $('land').value, quellen})});
     if(!r.ok) throw new Error((await r.json()).detail || 'Fehler');
-    await ladeProfile(); melde('Fertig \\u2713');
+    const d = await r.json();
+    await ladeProfile();
+    let m = 'Fertig \\u2713  Quellen: ' + (d.quellen_ok||[]).join(', ');
+    const fehler = Object.keys(d.quellen_fehler||{});
+    if(fehler.length) m += '  \\u00b7  ohne Ergebnis: ' + fehler.join(', ');
+    melde(m);
   }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
 }
 
