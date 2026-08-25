@@ -17,7 +17,7 @@ ACTOR_GOOGLE = os.environ.get("APIFY_ACTOR_GOOGLE", "apify~google-search-scraper
 ACTOR_INSTAGRAM = os.environ.get("APIFY_ACTOR_INSTAGRAM", "apify~instagram-hashtag-scraper")
 ACTOR_TIKTOK = os.environ.get("APIFY_ACTOR_TIKTOK", "clockworks~tiktok-scraper")
 ACTOR_REDDIT = os.environ.get("APIFY_ACTOR_REDDIT", "trudax~reddit-scraper-lite")
-ACTOR_PLAYSTORE = os.environ.get("APIFY_ACTOR_PLAYSTORE", "epctex~google-play-scraper")
+ACTOR_PLAYSTORE = os.environ.get("APIFY_ACTOR_PLAYSTORE", "automation-lab~google-play-scraper")
 
 
 def _pruefe_token():
@@ -142,28 +142,48 @@ def quelle_reddit(begriffe: list[str], max_zeichen: int = 6000) -> str:
 
 # ---------------------------------------------------------------- Play Store
 
-def quelle_playstore(suche: str = "astrologie horoskop", max_zeichen: int = 6000) -> str:
-    """Bewertungen von Astrologie-Apps im Google Play Store."""
-    items = _lauf(ACTOR_PLAYSTORE, {
-        "search": [suche],
-        "maxItems": 30,
-        "includeReviews": True,
-        "maxReviews": 30,
+def quelle_playstore(suche: str = "astrologie horoskop", max_zeichen: int = 7000) -> str:
+    """Sucht Astrologie-Apps im Play Store und holt deren Bewertungen."""
+    # Schritt 1: Apps zum Suchbegriff finden
+    apps = _lauf(ACTOR_PLAYSTORE, {
+        "mode": "search",
+        "searchTerms": [suche],
+        "maxItems": 8,
+        "country": "de",
         "language": "de",
-        "country": "at",
+    }, timeout=240)
+
+    app_ids, namen = [], {}
+    for a in apps[:8]:
+        aid = a.get("appId") or a.get("packageName") or a.get("id")
+        if aid:
+            app_ids.append(aid)
+            namen[aid] = a.get("title") or a.get("name") or aid
+
+    if not app_ids:
+        raise RuntimeError(f"Keine Apps gefunden zu '{suche}'.")
+
+    # Schritt 2: Bewertungen zu diesen Apps holen
+    reviews = _lauf(ACTOR_PLAYSTORE, {
+        "mode": "reviews",
+        "appIds": app_ids[:5],
+        "maxReviews": 40,
+        "maxItems": 40,
+        "country": "de",
+        "language": "de",
+        "sort": "newest",
     }, timeout=300)
 
-    zeilen = []
-    for app in items[:10]:
-        name = app.get("title") or app.get("name") or ""
-        if name:
-            zeilen.append(f"\n[App] {name} (Bewertung: {app.get('score', '?')})")
-        for r in (app.get("reviews") or [])[:10]:
-            txt = (r.get("text") or "").replace("\n", " ").strip()
-            sterne = r.get("score", "?")
-            if txt:
-                zeilen.append(f"- ({sterne}\u2605) {txt[:260]}")
-        # Manche Actors liefern Bewertungen direkt als eigene Zeilen
-        if not name and app.get("text"):
-            zeilen.append(f"- ({app.get('score','?')}\u2605) {app['text'][:260]}")
+    zeilen = [f"[Gefundene Apps] {', '.join(namen.values())}"]
+    for r in reviews[:60]:
+        txt = (r.get("text") or r.get("content") or r.get("review") or "")
+        txt = txt.replace("\n", " ").strip()
+        sterne = r.get("score") or r.get("rating") or "?"
+        app = namen.get(r.get("appId", ""), r.get("appId", ""))
+        if txt:
+            zeilen.append(f"- [{app}] ({sterne}\u2605) {txt[:280]}")
+
+    if len(zeilen) <= 1:
+        raise RuntimeError("Apps gefunden, aber keine Bewertungstexte erhalten.")
+
     return "\n".join(zeilen).strip()[:max_zeichen]
