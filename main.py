@@ -13,12 +13,12 @@ from typing import Optional
 
 from content_agent import erstelle_posts
 from research_agent import analysiere_zielgruppe
-from apify import (
-    hole_webseiten_text, quelle_google, quelle_instagram,
-    quelle_tiktok, quelle_reddit, quelle_playstore,
-)
+from webseite import hole_webseiten_text
+from websuche import quelle_websuche
+from reddit import quelle_reddit
+from playstore import quelle_playstore, quelle_playstore_ids
 from bereiche import (
-    BEREICHE, begriffe_fuer, hashtags_fuer, playstore_suche_fuer, titel_fuer,
+    BEREICHE, begriffe_fuer, playstore_suche_fuer, titel_fuer,
 )
 from db import (
     init_db, speichere_posts, lade_posts,
@@ -45,8 +45,8 @@ class ZielgruppeAnfrage(BaseModel):
     quellen: list[str] = ["google"]
     # Eigene Vorgaben — wenn gesetzt, ersetzen sie die vordefinierten
     eigene_begriffe: list[str] = []
-    eigene_hashtags: list[str] = []
     eigene_playstore: str = ""
+    eigene_app_ids: list[str] = []
     eigene_frage: str = ""
 
 
@@ -115,10 +115,9 @@ def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
         # Eigene Eingaben haben Vorrang vor den vordefinierten Mustern
         begriffe = [b.strip() for b in anfrage.eigene_begriffe if b.strip()] \
             or begriffe_fuer(anfrage.bereich)
-        hashtags = [h.strip() for h in anfrage.eigene_hashtags if h.strip()] \
-            or hashtags_fuer(anfrage.bereich)
         playstore_suche = anfrage.eigene_playstore.strip() \
             or playstore_suche_fuer(anfrage.bereich)
+        app_ids = [a.strip() for a in anfrage.eigene_app_ids if a.strip()]
 
         gewaehlt = anfrage.quellen or ["google"]
         teile, geklappt, fehlgeschlagen = [], [], {}
@@ -140,11 +139,12 @@ def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
                 fehlgeschlagen[name] = str(e)[:300]
                 print(f"[Recherche] {name}: FEHLER -> {e}", flush=True)
 
-        hole("google", lambda: quelle_google(begriffe, land=anfrage.land))
+        hole("websuche", lambda: quelle_websuche(begriffe, land=anfrage.land))
         hole("reddit", lambda: quelle_reddit(begriffe))
-        hole("playstore", lambda: quelle_playstore(playstore_suche))
-        hole("instagram", lambda: quelle_instagram(hashtags))
-        hole("tiktok", lambda: quelle_tiktok(hashtags))
+        hole("playstore", lambda: (
+            quelle_playstore_ids(app_ids) if app_ids
+            else quelle_playstore(playstore_suche)
+        ))
 
         recherche = "".join(teile)
         if not recherche.strip():
@@ -294,8 +294,8 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   </header>
 
   <div class="tabs">
-    <button class="tab on" id="tabPosts" onclick="zeige('posts')">Posts</button>
-    <button class="tab" id="tabWho" onclick="zeige('who')">Zielgruppen</button>
+    <button type="button" class="tab on" id="tabPosts">Posts</button>
+    <button type="button" class="tab" id="tabWho">Zielgruppen</button>
   </div>
 
   <!-- ============ POSTS ============ -->
@@ -355,15 +355,13 @@ DASHBOARD_HTML = """<!DOCTYPE html>
       <div style="margin-top:18px">
         <label>Quellen</label>
         <div class="quellen" id="quellen">
-          <label class="q on"><input type="checkbox" value="google" checked> Google <small>guenstig</small></label>
-          <label class="q"><input type="checkbox" value="reddit"> Reddit <small>guenstig</small></label>
-          <label class="q"><input type="checkbox" value="playstore"> Play Store <small>mittel</small></label>
-          <label class="q"><input type="checkbox" value="instagram"> Instagram <small>teuer</small></label>
-          <label class="q"><input type="checkbox" value="tiktok"> TikTok <small>teuer</small></label>
+          <label class="q on"><input type="checkbox" value="websuche" checked> Websuche</label>
+          <label class="q on"><input type="checkbox" value="reddit" checked> Reddit <small>gratis</small></label>
+          <label class="q on"><input type="checkbox" value="playstore" checked> Play Store <small>gratis</small></label>
         </div>
-        <p class="note">Jede Quelle verbraucht Apify-Guthaben. Google und Reddit sind
-           sparsam, Instagram und TikTok deutlich aufwendiger &mdash; die also gezielt einsetzen.
-           Mehr Quellen bedeuten auch mehr Wartezeit.</p>
+        <p class="note">Reddit und Play Store sind komplett kostenlos. Die Websuche laeuft
+           ueber deinen Anthropic-Zugang und kostet ein paar Cent pro Recherche.
+           Mehr Quellen bedeuten mehr Wartezeit &mdash; rechne mit ein bis zwei Minuten.</p>
       </div>
 
       <details>
@@ -377,15 +375,17 @@ DASHBOARD_HTML = """<!DOCTYPE html>
         </div>
 
         <div class="feld">
-          <label>Eigene Hashtags</label>
-          <p class="why">Fuer Instagram und TikTok. Einer pro Zeile, ohne #.</p>
-          <textarea id="eHashtags" placeholder="synastrie&#10;zwillingsflamme&#10;astrologiedeutsch"></textarea>
+          <label>Eigene Play-Store-Suche</label>
+          <p class="why">Nach welchen Apps soll gesucht werden? Ihre Bewertungen werden ausgewertet.</p>
+          <input id="ePlaystore" placeholder="z. B. partnerhoroskop app">
         </div>
 
         <div class="feld">
-          <label>Eigene Play-Store-Suche</label>
-          <p class="why">Welche Apps sollen nach Bewertungen durchsucht werden?</p>
-          <input id="ePlaystore" placeholder="z. B. partnerhoroskop app">
+          <label>Oder bestimmte Apps direkt</label>
+          <p class="why">App-IDs deiner Konkurrenten, eine pro Zeile. Die ID steht in der
+             Play-Store-Adresse hinter <em>?id=</em> &mdash; damit triffst du genau die Apps,
+             die dich interessieren.</p>
+          <textarea id="eAppIds" placeholder="com.chaninicholas.chaniapp&#10;me.sanctuary.app"></textarea>
         </div>
 
         <div class="feld">
@@ -411,22 +411,26 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 
 <script>
 const $ = (id) => document.getElementById(id);
-const esc = (s) => (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-function melde(m){ $('status').textContent = m || ''; }
-function busy(btn, on, text){
-  btn.disabled = on;
-  if(on){ btn.dataset.label = btn.textContent; btn.innerHTML = '<span class="spin"></span>' + text; }
-  else if(btn.dataset.label){ btn.textContent = btn.dataset.label; }
-}
 
+/* Umschaltung zuerst und unabhaengig vom Rest verdrahten,
+   damit sie auch dann geht, wenn weiter unten etwas schiefgeht. */
 function zeige(was){
   const p = was === 'posts';
   $('viewPosts').classList.toggle('hide', !p);
   $('viewWho').classList.toggle('hide', p);
   $('tabPosts').classList.toggle('on', p);
   $('tabWho').classList.toggle('on', !p);
-  melde('');
-  if(!p) ladeProfile();
+  const st = $('status'); if(st) st.textContent = '';
+  if(!p && typeof ladeProfile === 'function'){ try{ ladeProfile(); }catch(e){} }
+}
+$('tabPosts').addEventListener('click', () => zeige('posts'));
+$('tabWho').addEventListener('click', () => zeige('who'));
+const esc = (s) => (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function melde(m){ $('status').textContent = m || ''; }
+function busy(btn, on, text){
+  btn.disabled = on;
+  if(on){ btn.dataset.label = btn.textContent; btn.innerHTML = '<span class="spin"></span>' + text; }
+  else if(btn.dataset.label){ btn.textContent = btn.dataset.label; }
 }
 
 /* ---------- Posts ---------- */
@@ -516,9 +520,11 @@ async function ladeProfile(){
   try{ const r = await fetch('/zielgruppen'); renderProfile((await r.json()).zielgruppen); }
   catch(e){ melde('Konnte Profile nicht laden.'); }
 }
-document.querySelectorAll('#quellen input').forEach(cb => {
-  cb.addEventListener('change', () => cb.closest('.q').classList.toggle('on', cb.checked));
-});
+try{
+  document.querySelectorAll('#quellen input').forEach(cb => {
+    cb.addEventListener('change', () => cb.closest('.q').classList.toggle('on', cb.checked));
+  });
+}catch(e){ console.error('Quellen-Chips', e); }
 
 async function erforsche(){
   const b = $('btnWho');
@@ -533,8 +539,8 @@ async function erforsche(){
       body: JSON.stringify({
         bereich, land: $('land').value, quellen,
         eigene_begriffe: zeilen('eBegriffe'),
-        eigene_hashtags: zeilen('eHashtags'),
         eigene_playstore: $('ePlaystore').value.trim(),
+        eigene_app_ids: zeilen('eAppIds'),
         eigene_frage: $('eFrage').value.trim(),
       })});
     if(!r.ok) throw new Error((await r.json()).detail || 'Fehler');
@@ -547,7 +553,8 @@ async function erforsche(){
   }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
 }
 
-ladePosts(); ladeBereiche();
+try{ ladePosts(); }catch(e){ console.error('ladePosts', e); }
+try{ ladeBereiche(); }catch(e){ console.error('ladeBereiche', e); }
 </script>
 </body>
 </html>"""
