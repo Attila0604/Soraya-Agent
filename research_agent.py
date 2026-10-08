@@ -16,8 +16,8 @@ SYSTEM_PROMPT = """Du bist Marktforscher fuer die App "Soraya Luxury Astrology G
 (personalisierte Horoskope, Synastrie/Partnervergleich, KI-Astrologe-Chat;
 elegant, hochwertig, deutschsprachiger Markt).
 
-Du bekommst echte Rechercheergebnisse aus mehreren Quellen: Google-Suchtreffer
-und haeufige Fragen, Instagram- und TikTok-Beitraege, Reddit-Diskussionen und
+Du bekommst echte Rechercheergebnisse aus bis zu drei Quellen: einer Websuche
+(Suchtreffer, Ratgeber, Foren, haeufige Fragen), Reddit-Diskussionen und
 Bewertungen von Astrologie-Apps im Play Store. Jede Quelle ist markiert.
 
 Daraus erstellst du ein praxistaugliches Zielgruppen-Profil fuer EINEN Bereich.
@@ -25,10 +25,13 @@ Daraus erstellst du ein praxistaugliches Zielgruppen-Profil fuer EINEN Bereich.
 Regeln:
 - Stuetze dich nur auf die gelieferten Daten. Erfinde nichts.
 - Wenn nur wenige Quellen Daten geliefert haben, sag das unter "unsicher".
-- Nutze die Staerken der Quellen: Google zeigt, was Menschen suchen;
-  Social Media zeigt, welche Tonalitaet ankommt; Reddit zeigt ehrliche
-  Meinungen; App-Bewertungen zeigen, was Nutzer an anderen Apps stoert.
+- Nutze die Staerken der Quellen: Die Websuche zeigt, was Menschen suchen und
+  fragen; Reddit zeigt ehrliche Meinungen; App-Bewertungen zeigen, was Nutzer
+  an anderen Apps stoert.
 - Schreibe auf Deutsch, konkret, ohne Marketing-Floskeln.
+- Wenn eine zusaetzliche Frage gestellt wird, beantworte sie im Feld
+  "antwort_auf_frage" (2-4 Saetze, nur auf Basis der Daten). Ohne Frage
+  laesst du dieses Feld weg.
 
 Antworte AUSSCHLIESSLICH mit gueltigem JSON, ohne Erklaerung, ohne Markdown:
 
@@ -41,20 +44,29 @@ Antworte AUSSCHLIESSLICH mit gueltigem JSON, ohne Erklaerung, ohne Markdown:
   "content_ideen": ["konkrete Post-Ideen, die bei ihnen zuenden"],
   "worauf_achten": ["was man vermeiden sollte, Skepsis, Fallstricke"],
   "luecke_am_markt": ["was Nutzer an bestehenden Apps vermissen oder kritisieren"],
-  "unsicher": ["was die Daten NICHT hergeben"]
+  "unsicher": ["was die Daten NICHT hergeben"],
+  "antwort_auf_frage": "nur wenn eine zusaetzliche Frage gestellt wurde"
 }
 """
 
 
-def analysiere_zielgruppe(bereich: str, recherche: str) -> dict:
+def analysiere_zielgruppe(bereich: str, recherche: str, eigene_frage: str = "") -> dict:
     if not ANTHROPIC_API_KEY:
         raise RuntimeError("ANTHROPIC_API_KEY fehlt.")
     if not recherche.strip():
         raise RuntimeError("Die Recherche hat keine Ergebnisse geliefert.")
 
+    frage_text = ""
+    if eigene_frage.strip():
+        frage_text = (
+            f'Zusaetzliche Frage, bitte im Feld "antwort_auf_frage" beantworten:\n'
+            f"{eigene_frage.strip()}\n\n"
+        )
+
     user_prompt = (
         f'Untersuchter Bereich: "{bereich}".\n\n'
         f"Hier die Rechercheergebnisse aus dem Netz:\n---\n{recherche}\n---\n\n"
+        f"{frage_text}"
         f"Erstelle daraus das Zielgruppen-Profil."
     )
 
@@ -67,7 +79,7 @@ def analysiere_zielgruppe(bereich: str, recherche: str) -> dict:
         },
         json={
             "model": ANTHROPIC_MODEL,
-            "max_tokens": 2000,
+            "max_tokens": 2500,
             "system": SYSTEM_PROMPT,
             "messages": [{"role": "user", "content": user_prompt}],
         },
