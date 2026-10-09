@@ -1,15 +1,20 @@
 """
 Soraya-Agent — Stufe 1
 - Content-Agent: schreibt Social-Media-Posts.
-- Recherche (Apify): liest Webseiten aus / durchsucht das Netz.
+- Recherche: Websuche (Claude), Reddit, Play Store, Webseiten auslesen.
 - Zielgruppen-Agent: erstellt Kundenprofile je Bereich.
 - Web-Oberflaeche ("Content Studio") unter "/".
+- Zugangsschutz: Browser-Anmeldung (Benutzer + Passwort aus Railway-Variablen).
 """
 
+import base64
+import binascii
+import os
+import secrets
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 
@@ -27,7 +32,51 @@ from db import (
     speichere_zielgruppe, lade_zielgruppen,
 )
 
-app = FastAPI(title="Soraya-Agent", version="0.4")
+app = FastAPI(title="Soraya-Agent", version="0.5")
+
+# Ohne Anmeldung erreichbar (Railway-Healthcheck).
+OFFENE_PFADE = {"/health"}
+
+
+def _anmeldung_ok(kopfzeile: str) -> bool:
+    """Prueft die Browser-Anmeldung (HTTP Basic) gegen die Railway-Variablen."""
+    if not kopfzeile.lower().startswith("basic "):
+        return False
+    try:
+        roh = base64.b64decode(kopfzeile[6:].strip(), validate=True).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError):
+        return False
+    benutzer, _, passwort = roh.partition(":")
+    soll_benutzer = os.environ.get("AGENT_BENUTZER", "soraya")
+    soll_passwort = os.environ.get("AGENT_PASSWORT", "")
+    # timing-sicherer Vergleich; beide Vergleiche laufen immer
+    benutzer_ok = secrets.compare_digest(benutzer.encode(), soll_benutzer.encode())
+    passwort_ok = secrets.compare_digest(passwort.encode(), soll_passwort.encode())
+    return benutzer_ok and passwort_ok
+
+
+@app.middleware("http")
+async def zugangsschutz(request: Request, call_next):
+    """Alles ausser OFFENE_PFADE verlangt eine Anmeldung (auch /docs)."""
+    if request.url.path in OFFENE_PFADE:
+        return await call_next(request)
+
+    # Ohne gesetztes Passwort bleibt der Agent gesperrt statt offen.
+    if not os.environ.get("AGENT_PASSWORT"):
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Zugangsschutz nicht eingerichtet: Bitte AGENT_PASSWORT "
+                               "in Railway unter Variables setzen."},
+        )
+
+    if not _anmeldung_ok(request.headers.get("authorization", "")):
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Anmeldung erforderlich."},
+            headers={"WWW-Authenticate": 'Basic realm="Soraya-Agent", charset="UTF-8"'},
+        )
+
+    return await call_next(request)
 
 
 class ContentAnfrage(BaseModel):
@@ -44,7 +93,7 @@ class ZielgruppeAnfrage(BaseModel):
     bereich: str
     land: str = "at"
     # Welche Quellen sollen laufen?
-    quellen: list[str] = ["google"]
+    quellen: list[str] = ["websuche"]
     # Eigene Vorgaben — wenn gesetzt, ersetzen sie die vordefinierten
     eigene_begriffe: list[str] = []
     eigene_playstore: str = ""
@@ -123,7 +172,7 @@ def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
             or playstore_suche_fuer(anfrage.bereich)
         app_ids = [a.strip() for a in anfrage.eigene_app_ids if a.strip()]
 
-        gewaehlt = anfrage.quellen or ["google"]
+        gewaehlt = anfrage.quellen or ["websuche"]
         teile, geklappt, fehlgeschlagen = [], [], {}
 
         def hole(name, fn):

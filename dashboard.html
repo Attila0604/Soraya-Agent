@@ -315,7 +315,7 @@ function renderProfile(zeilen){
       ${p._quellen&&p._quellen.length?`<p class="src">Quellen: ${p._quellen.map(esc).join(' &middot; ')}</p>`:''}
       <p class="lede">${esc(p.wer_sind_sie||'')}</p>
       ${p.antwort_auf_frage?`<div class="answer">${esc(p.antwort_auf_frage)}</div>`:''}
-      ${liste('Was sie beschäftigt', p.beschäftigt_sie)}
+      ${liste('Was sie beschäftigt', p.beschaeftigt_sie || p['beschäftigt_sie'])}
       ${liste('Was sie sich wünschen', p.wuensche)}
       ${liste('Ihre Sprache', p.sprache)}
       ${liste('Content-Ideen', p.content_ideen)}
