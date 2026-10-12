@@ -13,6 +13,22 @@ import requests
 from himmel import engine_url
 
 
+def link_basis() -> str:
+    """Wohin die Post- und Bio-Links zeigen (Landingpage). Railway-Variable LINK_BASIS, optional."""
+    basis = (os.environ.get("LINK_BASIS") or "https://www.sorayaluxuryastroguide.com/").strip()
+    return basis if basis.endswith("/") else basis + "/"
+
+
+BIO_LINKS = {"instagram": "bio-ig", "tiktok": "bio-tt", "facebook": "bio-fb"}
+
+
+def links() -> dict:
+    """Link pro Post: <basis>?q=p<id>. Bio-Links: einmal ins jeweilige Profil eintragen."""
+    basis = link_basis()
+    return {"basis": basis, "post_muster": basis + "?q=p{id}",
+            "bio": {plattform: basis + "?q=" + code for plattform, code in BIO_LINKS.items()}}
+
+
 def hole_statistik(tage: int = 30) -> dict:
     token = (os.environ.get("AGENT_STATS_TOKEN") or "").strip()
     if len(token) < 24:

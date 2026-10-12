@@ -39,7 +39,7 @@ from db import (
 import himmel
 import tagesplan
 from sprachen import SPRACHEN, NAMEN, norm
-from wirkung import hole_statistik
+from wirkung import hole_statistik, links as wirkung_links
 
 app = FastAPI(title="Soraya-Agent", version="0.6")
 
@@ -277,6 +277,12 @@ def tagesplan_zeitraum(von: date, bis: date):
         return {"laeufe": lade_tagesplaene_zeitraum(von, bis), "sprachen": tagesplan.sprachen()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/links")
+def links_ansehen():
+    """Post- und Bio-Links, mit denen gemessen wird, was welcher Post bringt."""
+    return wirkung_links()
 
 
 @app.get("/wirkung")
