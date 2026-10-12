@@ -1,9 +1,13 @@
 """
-Soraya-Agent — Stufe 1
-- Content-Agent: schreibt Social-Media-Posts.
+Soraya-Agent — Stufe 2
+- Tagesplan: jeden Morgen Posts, Reel-Skript und Story aus dem echten Himmel,
+  auf Deutsch, Englisch, Ungarisch und Italienisch.
+- Redaktionsplan: Posts planen, bearbeiten, freigeben, als gepostet markieren.
+- Content-Agent: schreibt Social-Media-Posts zu einem Thema oder aus einer Webseite.
 - Recherche: Websuche (Claude), Reddit, Play Store, Webseiten auslesen.
 - Zielgruppen-Agent: erstellt Kundenprofile je Bereich.
-- Web-Oberflaeche ("Content Studio") unter "/".
+- Wirkung: App-Zahlen (Summen pro Tag) aus der astro-engine.
+- Web-Oberflaeche ("Content Studio") unter "/", Post-Bilder entstehen dort im Browser.
 - Zugangsschutz: Browser-Anmeldung (Benutzer + Passwort aus Railway-Variablen).
 """
 
@@ -11,12 +15,13 @@ import base64
 import binascii
 import os
 import secrets
+from datetime import date
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
-from typing import Optional
 
 from content_agent import erstelle_posts
 from research_agent import analysiere_zielgruppe
@@ -28,11 +33,15 @@ from bereiche import (
     BEREICHE, begriffe_fuer, playstore_suche_fuer, titel_fuer,
 )
 from db import (
-    init_db, speichere_posts, lade_posts,
-    speichere_zielgruppe, lade_zielgruppen,
+    init_db, speichere_posts, lade_posts, aendere_post, loesche_post,
+    speichere_zielgruppe, lade_zielgruppen, lade_tagesplaene,
 )
+import himmel
+import tagesplan
+from sprachen import SPRACHEN, NAMEN, norm
+from wirkung import hole_statistik
 
-app = FastAPI(title="Soraya-Agent", version="0.5")
+app = FastAPI(title="Soraya-Agent", version="0.6")
 
 # Ohne Anmeldung erreichbar (Railway-Healthcheck).
 OFFENE_PFADE = {"/health"}
@@ -82,11 +91,28 @@ async def zugangsschutz(request: Request, call_next):
 class ContentAnfrage(BaseModel):
     thema: Optional[str] = None
     anzahl: int = 3
+    sprache: str = "de"
 
 
 class UrlAnfrage(BaseModel):
     url: str
     anzahl: int = 3
+    sprache: str = "de"
+
+
+class PostAenderung(BaseModel):
+    text: Optional[str] = None
+    hashtags: Optional[str] = None
+    titel: Optional[str] = None
+    untertitel: Optional[str] = None
+    status: Optional[str] = None
+    platform: Optional[str] = None
+    geplant_fuer: Optional[date] = None
+
+
+class TagesplanAnfrage(BaseModel):
+    sprachen: list[str] = []
+    neu: bool = False
 
 
 class ZielgruppeAnfrage(BaseModel):
@@ -107,6 +133,10 @@ def beim_start():
         init_db()
     except Exception as e:
         print(f"[Start] Datenbank noch nicht bereit: {e}")
+    if tagesplan.automatisch():
+        tagesplan.zeitplan_starten()
+        print(f"[Start] Tagesplan automatisch ab {tagesplan.startstunde()} Uhr: "
+              f"{', '.join(tagesplan.sprachen())}", flush=True)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -126,11 +156,16 @@ def bereiche():
     return {"bereiche": [{"schluessel": k, "titel": v["titel"]} for k, v in BEREICHE.items()]}
 
 
+@app.get("/sprachen")
+def sprachen_liste():
+    return {"sprachen": [{"code": s, "name": NAMEN[s]} for s in SPRACHEN]}
+
+
 @app.post("/content")
 def content_erstellen(anfrage: ContentAnfrage):
     try:
-        posts = erstelle_posts(thema=anfrage.thema, anzahl=anfrage.anzahl)
-        return {"erstellt": len(posts), "posts": speichere_posts(posts)}
+        posts = erstelle_posts(thema=anfrage.thema, anzahl=anfrage.anzahl, sprache=norm(anfrage.sprache))
+        return {"erstellt": len(posts), "posts": speichere_posts(posts, quelle="studio")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -139,8 +174,8 @@ def content_erstellen(anfrage: ContentAnfrage):
 def content_von_url(anfrage: UrlAnfrage):
     try:
         text = hole_webseiten_text(anfrage.url)
-        posts = erstelle_posts(anzahl=anfrage.anzahl, kontext=text)
-        gespeichert = speichere_posts(posts)
+        posts = erstelle_posts(anzahl=anfrage.anzahl, kontext=text, sprache=norm(anfrage.sprache))
+        gespeichert = speichere_posts(posts, quelle="url")
         return {
             "quelle": anfrage.url,
             "gelesen_zeichen": len(text),
@@ -152,11 +187,82 @@ def content_von_url(anfrage: UrlAnfrage):
 
 
 @app.get("/content")
-def content_ansehen(limit: int = 50):
+def content_ansehen(limit: int = 50, von: Optional[date] = None, bis: Optional[date] = None,
+                    sprache: Optional[str] = None, status: Optional[str] = None):
     try:
-        return {"posts": lade_posts(limit=limit)}
+        return {"posts": lade_posts(limit=limit, von=von, bis=bis,
+                                    sprache=norm(sprache) if sprache else None, status=status or None)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/content/{post_id}")
+def content_aendern(post_id: int, aenderung: PostAenderung):
+    try:
+        zeile = aendere_post(post_id, aenderung.model_dump(exclude_unset=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    if not zeile:
+        raise HTTPException(status_code=404, detail="Post nicht gefunden.")
+    return {"post": zeile}
+
+
+@app.delete("/content/{post_id}")
+def content_loeschen(post_id: int):
+    try:
+        if not loesche_post(post_id):
+            raise HTTPException(status_code=404, detail="Post nicht gefunden.")
+        return {"geloescht": post_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/himmel")
+def himmel_heute(sprache: str = "de"):
+    try:
+        return himmel.aufbereiten(himmel.hole_himmel(), himmel.heute(), norm(sprache))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/tagesplan")
+def tagesplan_ansehen(datum: Optional[date] = None):
+    tag = datum or himmel.heute()
+    try:
+        laeufe = lade_tagesplaene(tag)
+        posts = [p for p in lade_posts(limit=200, von=tag, bis=tag) if p.get("geplant_fuer") == tag]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "datum": tag,
+        "automatisch": tagesplan.automatisch(),
+        "ab_stunde": tagesplan.startstunde(),
+        "sprachen": tagesplan.sprachen(),
+        "laeufe": laeufe,
+        "posts": posts,
+    }
+
+
+@app.post("/tagesplan")
+def tagesplan_starten(anfrage: TagesplanAnfrage):
+    liste = [norm(s) for s in anfrage.sprachen if s.strip()] or tagesplan.sprachen()
+    liste = [s for s in SPRACHEN if s in liste]
+    tagesplan.erstelle_im_hintergrund(liste, erzwingen=anfrage.neu)
+    return {"gestartet": liste, "neu": anfrage.neu}
+
+
+@app.get("/wirkung")
+def wirkung(tage: int = 30):
+    try:
+        return {"eingerichtet": True, "statistik": hole_statistik(tage)}
+    except LookupError as e:
+        return {"eingerichtet": False, "hinweis": str(e)}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @app.post("/zielgruppe")

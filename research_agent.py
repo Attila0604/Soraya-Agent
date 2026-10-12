@@ -1,106 +1,70 @@
 """
 Recherche-Agent (Zielgruppen-Analyse)
-Nimmt gesammelte Web-Rechercheergebnisse und laesst Claude daraus ein
+Nimmt gesammelte Rechercheergebnisse und laesst Claude daraus ein
 verstaendliches Zielgruppen-Profil fuer Soraya machen.
 """
 
-import os
-import json
-import requests
+from claude import frage_json
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
-ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
-
-SYSTEM_PROMPT = """Du bist Marktforscher fuer die App "Soraya Luxury Astrology Guide"
+SYSTEM_PROMPT = """Du bist Marktforscher für die App "Soraya Luxury Astrology Guide"
 (personalisierte Horoskope, Synastrie/Partnervergleich, KI-Astrologe-Chat;
-elegant, hochwertig, deutschsprachiger Markt).
+elegant, hochwertig; auf Deutsch, Englisch, Ungarisch und Italienisch).
 
 Du bekommst echte Rechercheergebnisse aus bis zu drei Quellen: einer Websuche
-(Suchtreffer, Ratgeber, Foren, haeufige Fragen), Reddit-Diskussionen und
+(Suchtreffer, Ratgeber, Foren, häufige Fragen), Reddit-Diskussionen und
 Bewertungen von Astrologie-Apps im Play Store. Jede Quelle ist markiert.
 
-Daraus erstellst du ein praxistaugliches Zielgruppen-Profil fuer EINEN Bereich.
+Daraus erstellst du ein praxistaugliches Zielgruppen-Profil für EINEN Bereich.
 
 Regeln:
-- Stuetze dich nur auf die gelieferten Daten. Erfinde nichts.
+- Stütze dich nur auf die gelieferten Daten. Erfinde nichts.
 - Wenn nur wenige Quellen Daten geliefert haben, sag das unter "unsicher".
-- Nutze die Staerken der Quellen: Die Websuche zeigt, was Menschen suchen und
+- Nutze die Stärken der Quellen: Die Websuche zeigt, was Menschen suchen und
   fragen; Reddit zeigt ehrliche Meinungen; App-Bewertungen zeigen, was Nutzer
-  an anderen Apps stoert.
+  an anderen Apps stört.
 - Schreibe auf Deutsch, konkret, ohne Marketing-Floskeln.
-- Wenn eine zusaetzliche Frage gestellt wird, beantworte sie im Feld
-  "antwort_auf_frage" (2-4 Saetze, nur auf Basis der Daten). Ohne Frage
-  laesst du dieses Feld weg.
+- "antwort_auf_frage": Wenn eine zusätzliche Frage gestellt wird, beantworte
+  sie in 2-4 Sätzen nur auf Basis der Daten. Ohne Frage bleibt das Feld leer ("")."""
 
-Antworte AUSSCHLIESSLICH mit gueltigem JSON, ohne Erklaerung, ohne Markdown:
-
-{
-  "bereich": "Kurzname des untersuchten Bereichs",
-  "wer_sind_sie": "2-4 Saetze: wer diese Menschen sind, Lebenssituation, Motivation",
-  "beschaeftigt_sie": ["konkrete Fragen oder Sorgen, die sie umtreiben"],
-  "wuensche": ["was sie sich erhoffen"],
-  "sprache": ["Begriffe und Formulierungen, die sie selbst benutzen"],
-  "content_ideen": ["konkrete Post-Ideen, die bei ihnen zuenden"],
-  "worauf_achten": ["was man vermeiden sollte, Skepsis, Fallstricke"],
-  "luecke_am_markt": ["was Nutzer an bestehenden Apps vermissen oder kritisieren"],
-  "unsicher": ["was die Daten NICHT hergeben"],
-  "antwort_auf_frage": "nur wenn eine zusaetzliche Frage gestellt wurde"
+_LISTE = {"type": "array", "items": {"type": "string"}}
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "bereich": {"type": "string"},
+        "wer_sind_sie": {"type": "string"},
+        "beschaeftigt_sie": _LISTE,
+        "wuensche": _LISTE,
+        "sprache": _LISTE,
+        "content_ideen": _LISTE,
+        "worauf_achten": _LISTE,
+        "luecke_am_markt": _LISTE,
+        "unsicher": _LISTE,
+        "antwort_auf_frage": {"type": "string"},
+    },
+    "required": ["bereich", "wer_sind_sie", "beschaeftigt_sie", "wuensche", "sprache",
+                 "content_ideen", "worauf_achten", "luecke_am_markt", "unsicher",
+                 "antwort_auf_frage"],
+    "additionalProperties": False,
 }
-"""
 
 
 def analysiere_zielgruppe(bereich: str, recherche: str, eigene_frage: str = "") -> dict:
-    if not ANTHROPIC_API_KEY:
-        raise RuntimeError("ANTHROPIC_API_KEY fehlt.")
     if not recherche.strip():
         raise RuntimeError("Die Recherche hat keine Ergebnisse geliefert.")
 
     frage_text = ""
     if eigene_frage.strip():
         frage_text = (
-            f'Zusaetzliche Frage, bitte im Feld "antwort_auf_frage" beantworten:\n'
+            'Zusätzliche Frage, bitte im Feld "antwort_auf_frage" beantworten:\n'
             f"{eigene_frage.strip()}\n\n"
         )
-
-    user_prompt = (
+    frage = (
         f'Untersuchter Bereich: "{bereich}".\n\n'
         f"Hier die Rechercheergebnisse aus dem Netz:\n---\n{recherche}\n---\n\n"
         f"{frage_text}"
-        f"Erstelle daraus das Zielgruppen-Profil."
+        "Erstelle daraus das Zielgruppen-Profil."
     )
-
-    antwort = requests.post(
-        ANTHROPIC_URL,
-        headers={
-            "x-api-key": ANTHROPIC_API_KEY,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
-        json={
-            "model": ANTHROPIC_MODEL,
-            "max_tokens": 2500,
-            "system": SYSTEM_PROMPT,
-            "messages": [{"role": "user", "content": user_prompt}],
-        },
-        timeout=120,
-    )
-    if antwort.status_code >= 400:
-        raise RuntimeError(f"Claude-API Fehler {antwort.status_code}: {antwort.text[:300]}")
-
-    teile = []
-    for block in antwort.json().get("content", []):
-        if isinstance(block, dict) and "text" in block:
-            teile.append(block["text"])
-    inhalt = "".join(teile).strip()
-
-    if inhalt.startswith("```"):
-        inhalt = inhalt.strip("`")
-        if inhalt.lstrip().lower().startswith("json"):
-            inhalt = inhalt.lstrip()[4:]
-        inhalt = inhalt.strip()
-
-    try:
-        return json.loads(inhalt)
-    except json.JSONDecodeError:
-        raise RuntimeError("Claude lieferte kein sauberes JSON: " + inhalt[:400])
+    profil = frage_json(SYSTEM_PROMPT, frage, SCHEMA, effort="high")
+    if not profil.get("antwort_auf_frage"):
+        profil.pop("antwort_auf_frage", None)
+    return profil
