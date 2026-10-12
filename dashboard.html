@@ -6,27 +6,31 @@
 <title>Soraya · Content Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#0B0E1A;--panel:#12162A;--panel-2:#161B34;--gold:#C9A24B;
-        --champagne:#E7D3A1;--mist:#C3C7D6;--mist-dim:#8A8FA6;--line:rgba(201,162,75,.22)}
+        --champagne:#E7D3A1;--mist:#C3C7D6;--mist-dim:#8A8FA6;--line:rgba(201,162,75,.22);
+        --line-soft:rgba(195,199,214,.10);
+        /* Diagramm-Farben (geprueft gegen #12162A: Helligkeit, Farbsehen, Kontrast) */
+        --viz-gold:#AE8B3E;--viz-violet:#9085e9;--viz-grid:#262B45;--viz-axis:#3A4060;
+        --ok:#0ca30c;--warn:#fab219;--bad:#d03b3b}
   *{box-sizing:border-box}
   html,body{margin:0}
   body{background:radial-gradient(1100px 600px at 80% -10%,rgba(201,162,75,.10),transparent 60%),
        radial-gradient(900px 500px at -10% 10%,rgba(90,110,200,.12),transparent 55%),var(--ink);
        color:var(--mist);font-family:'Inter',system-ui,sans-serif;min-height:100vh;line-height:1.6;
        -webkit-font-smoothing:antialiased}
-  .wrap{max-width:820px;margin:0 auto;padding:52px 22px 80px}
-  header{text-align:center;margin-bottom:34px}
+  .wrap{max-width:900px;margin:0 auto;padding:44px 18px 80px}
+  header{text-align:center;margin-bottom:26px}
   .eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
   h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(36px,7vw,56px);
      line-height:1;color:#F4EEDD;margin:0}
   h1 .star{color:var(--gold);font-size:.6em;vertical-align:middle;margin:0 .28em}
   .sub{color:var(--mist-dim);margin-top:12px;font-size:15px}
-  .tabs{display:flex;gap:8px;justify-content:center;margin:26px 0 24px;flex-wrap:wrap}
-  .tab{font-family:inherit;font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+  .tabs{display:flex;gap:8px;justify-content:center;margin:22px 0 24px;flex-wrap:wrap}
+  .tab{font-family:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
        background:transparent;border:1px solid var(--line);color:var(--mist-dim);
-       padding:10px 18px;border-radius:999px;cursor:pointer;transition:.2s}
+       padding:9px 16px;border-radius:999px;cursor:pointer;transition:.2s;font-weight:500}
   .tab:hover{border-color:var(--gold);color:var(--champagne)}
   .tab.on{background:rgba(201,162,75,.12);border-color:var(--gold);color:var(--champagne)}
   .panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);
@@ -36,71 +40,158 @@
   .panel p.hint{margin:0 0 16px;font-size:13px;color:var(--mist-dim)}
   label{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
         color:var(--mist-dim);margin:0 0 7px}
-  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
   .row>.grow{flex:1;min-width:180px}
-  input,select{width:100%;background:#0C1022;border:1px solid var(--line);color:#EFE7D2;
-               border-radius:10px;padding:12px 14px;font-size:15px;font-family:inherit;outline:none}
-  input::placeholder{color:#5f647c}
-  input:focus,select:focus{border-color:var(--gold)}
+  input,select,textarea{width:100%;background:#0C1022;border:1px solid var(--line);color:#EFE7D2;
+               border-radius:10px;padding:11px 13px;font-size:15px;font-family:inherit;outline:none}
+  input::placeholder,textarea::placeholder{color:#5f647c}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+  textarea{resize:vertical;min-height:78px;line-height:1.5;font-size:14px}
   button{font-family:inherit;cursor:pointer;border-radius:10px;font-size:14px;border:1px solid var(--gold);
          background:linear-gradient(180deg,#D8B65E,#C9A24B);color:#1A140A;font-weight:600;
-         padding:12px 20px;transition:filter .2s}
+         padding:11px 18px;transition:filter .2s}
   button:hover{filter:brightness(1.07)}
   button:disabled{opacity:.55;cursor:default;filter:none}
   button.ghost{background:transparent;color:var(--gold);border-color:var(--line);font-weight:500}
   button.ghost:hover{border-color:var(--gold)}
-  .bar{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 14px}
+  button.klein{padding:7px 12px;font-size:13px}
+  button.gefahr{color:#e88a7a;border-color:rgba(208,59,59,.35)}
+  button:focus-visible,.tab:focus-visible,select:focus-visible{outline:2px solid var(--champagne);outline-offset:2px}
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 2px 14px;flex-wrap:wrap}
   .bar h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:26px;color:var(--champagne);margin:0}
   #status{min-height:20px;text-align:center;font-size:14px;color:var(--gold);margin:8px 0 4px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;
-        margin-bottom:14px;position:relative;overflow:hidden}
-  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
-                background:linear-gradient(var(--gold),transparent)}
-  .plat{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
-  .txt{color:#E4E6EF;white-space:pre-wrap;margin:0 0 12px}
-  .tags{color:var(--champagne);font-size:14px;margin:0 0 14px}
-  .foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .stamp{font-size:12px;color:var(--mist-dim)}
-  .empty{text-align:center;color:var(--mist-dim);padding:38px 10px;
-         font-family:'Cormorant Garamond',serif;font-size:22px}
+  .empty{text-align:center;color:var(--mist-dim);padding:30px 10px;
+         font-family:'Cormorant Garamond',serif;font-size:21px}
   .empty span{display:block;font-family:'Inter';font-size:13px;margin-top:8px}
   .spin{display:inline-block;width:15px;height:15px;border:2px solid var(--line);
         border-top-color:var(--gold);border-radius:50%;vertical-align:-2px;margin-right:8px}
   @media (prefers-reduced-motion:no-preference){.spin{animation:s .8s linear infinite}}
   @keyframes s{to{transform:rotate(360deg)}}
-  .who h4{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--champagne);
-          margin:18px 0 6px;font-weight:600}
+  footer{text-align:center;color:var(--mist-dim);font-size:12px;margin-top:40px}
+  .hide{display:none!important}
+  .note{font-size:12px;color:var(--mist-dim);margin:10px 0 0;line-height:1.5}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;
+        padding:6px 12px;font-size:13px;color:var(--mist);background:transparent;cursor:pointer;font-weight:500}
+  .chip.on{background:rgba(201,162,75,.12);border-color:var(--gold);color:var(--champagne)}
+
+  /* ---------- Post-Karte ---------- */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;
+        margin-bottom:12px;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
+                background:linear-gradient(var(--gold),transparent)}
+  .kopf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+  .tag{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
+       border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  .tag.leise{color:var(--mist-dim);border-color:var(--line-soft)}
+  .st{font-size:11px;font-weight:600;border-radius:999px;padding:3px 9px;margin-left:auto}
+  .st.entwurf{color:var(--mist-dim);background:rgba(195,199,214,.08)}
+  .st.freigegeben{color:#1A140A;background:var(--champagne)}
+  .st.gepostet{color:#0d2a0d;background:#7fd27f}
+  .titel{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:#F4EEDD;margin:0;line-height:1.2}
+  .untertitel{color:var(--mist-dim);font-size:13.5px;margin:2px 0 10px}
+  .txt{color:#E4E6EF;white-space:pre-wrap;margin:0 0 10px;font-size:14.5px}
+  .tags{color:var(--champagne);font-size:13.5px;margin:0 0 12px}
+  .skript{background:rgba(201,162,75,.06);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:14px}
+  .skript b{color:var(--champagne);font-weight:600}
+  .skript ol{margin:6px 0;padding-left:20px}
+  .aktionen{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .aktionen select,.aktionen input{width:auto;padding:6px 10px;font-size:13px;border-radius:8px}
+  .meta{font-size:12px;color:var(--mist-dim)}
+
+  /* ---------- Heute ---------- */
+  .himmel{display:flex;gap:18px;align-items:center}
+  .himmel canvas{flex:none;width:76px;height:76px}
+  .himmel .zeile{margin:2px 0;font-size:14px}
+  .himmel .gross{font-family:'Cormorant Garamond',serif;font-size:24px;color:#F4EEDD;font-weight:600}
+  .lauf{display:inline-flex;align-items:center;gap:6px;font-size:13px;border:1px solid var(--line-soft);
+        border-radius:999px;padding:5px 11px}
+  .lauf i{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--mist-dim)}
+  .lauf.fertig i{background:var(--ok)} .lauf.laeuft i{background:var(--warn)} .lauf.fehler i{background:var(--bad)}
+
+  /* ---------- Plan ---------- */
+  .woche{display:flex;align-items:center;gap:10px}
+  .woche strong{font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--champagne);font-weight:600;min-width:200px;text-align:center}
+  .tag-kopf{display:flex;justify-content:space-between;align-items:baseline;margin:18px 2px 8px;
+            border-bottom:1px solid var(--line-soft);padding-bottom:6px}
+  .tag-kopf h4{margin:0;font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--champagne);font-weight:600}
+  .tag-kopf.heute h4::after{content:"  · heute";color:var(--gold);font-family:Inter;font-size:12px;letter-spacing:.1em}
+  .zaehler{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--mist-dim)}
+  .zaehler b{color:#F4EEDD;font-size:15px}
+
+  /* ---------- Dialog / Bild ---------- */
+  dialog{background:var(--panel);color:var(--mist);border:1px solid var(--line);border-radius:16px;
+         padding:22px;width:min(560px,94vw);max-height:92vh;overflow:auto}
+  dialog::backdrop{background:rgba(5,6,14,.72)}
+  dialog h3{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--champagne);margin:0 0 14px;font-weight:600}
+  .bildvorschau{display:flex;justify-content:center;margin:12px 0}
+  .bildvorschau canvas{max-width:100%;max-height:60vh;border-radius:12px;border:1px solid var(--line)}
+  .feld{margin-top:12px}
+
+  /* ---------- Wirkung ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .kpi{background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:14px 16px}
+  .kpi .l{font-size:12.5px;color:var(--mist-dim)}
+  .kpi .v{font-size:30px;font-weight:600;color:#F4EEDD;line-height:1.2;margin-top:4px}
+  .kpi .d{font-size:12px;color:var(--mist-dim)}
+  .viz{position:relative}
+  .viz svg{display:block;width:100%;height:auto;overflow:visible}
+  .viz text{font-family:'Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+  .legende{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--mist);margin:0 0 10px}
+  .legende span{display:inline-flex;align-items:center;gap:6px}
+  .legende .sq{width:10px;height:10px;border-radius:2px;background:var(--viz-gold)}
+  .legende .dot{width:9px;height:9px;border-radius:50%;background:var(--viz-violet)}
+  .tip{position:absolute;pointer-events:none;background:#0A0D1C;border:1px solid var(--line);border-radius:8px;
+       padding:7px 10px;font-size:12.5px;color:var(--mist);white-space:nowrap;transform:translate(-50%,-110%);z-index:2}
+  .tip strong{display:block;color:#F4EEDD;font-size:15px}
+  .tip .key{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:6px}
+  .trichter .stufe{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:10px;align-items:center;margin:8px 0}
+  .trichter .name{font-size:13.5px;color:var(--mist)}
+  .trichter .spur{position:relative;height:22px}
+  .trichter .balken{position:absolute;left:0;top:3px;height:16px;border-radius:0 4px 4px 0;background:var(--viz-gold);min-width:2px}
+  .trichter .wert{position:absolute;top:0;font-size:13px;color:#F4EEDD;white-space:nowrap}
+  .trichter .wert small{color:var(--mist-dim);margin-left:6px}
+  table.tabelle{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+  table.tabelle th,table.tabelle td{padding:5px 6px;border-bottom:1px solid var(--line-soft);text-align:right;white-space:nowrap}
+  table.tabelle th:first-child,table.tabelle td:first-child{text-align:left}
+  table.tabelle th{color:var(--mist-dim);font-weight:500}
+  .tabwrap{overflow-x:auto}
+  details{margin-top:14px}
+  summary{cursor:pointer;color:var(--gold);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;list-style:none;outline:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"+ ";font-weight:600}
+  details[open] summary::before{content:"– "}
+  .tokenbox{font-family:ui-monospace,Menlo,monospace;font-size:13px;word-break:break-all;background:#0C1022;
+            border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0}
+  ol.schritte{padding-left:20px;margin:8px 0} ol.schritte li{margin:6px 0}
+
+  /* ---------- Zielgruppen (unveraendert) ---------- */
+  .who h4{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--champagne);margin:18px 0 6px;font-weight:600}
   .who h4:first-child{margin-top:0}
   .who ul{margin:0;padding-left:18px}
   .who li{margin:4px 0;color:#DDE0EC}
   .lede{color:#E4E6EF;font-size:16px;margin:0 0 4px}
   .warn{border-left:2px solid #7a6a3a;padding-left:12px;color:var(--mist-dim);font-size:14px}
-  footer{text-align:center;color:var(--mist-dim);font-size:12px;margin-top:40px}
-  .hide{display:none}
   .quellen{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .q{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;
-     padding:8px 14px;cursor:pointer;font-size:13px;color:var(--mist-dim);transition:.2s;user-select:none}
+     padding:8px 14px;cursor:pointer;font-size:13px;color:var(--mist-dim);transition:.2s;user-select:none;
+     letter-spacing:0;text-transform:none;margin:0}
   .q:hover{border-color:var(--gold)}
   .q input{width:auto;margin:0;accent-color:var(--gold)}
   .q.on{background:rgba(201,162,75,.12);border-color:var(--gold);color:var(--champagne)}
   .q small{color:var(--mist-dim);font-size:11px}
-  .note{font-size:12px;color:var(--mist-dim);margin:10px 0 0;line-height:1.5}
   .src{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist-dim);margin:0 0 12px}
-  textarea{width:100%;background:#0C1022;border:1px solid var(--line);color:#EFE7D2;border-radius:10px;
-           padding:12px 14px;font-size:14px;font-family:inherit;outline:none;resize:vertical;min-height:78px;
-           line-height:1.5}
-  textarea:focus{border-color:var(--gold)}
-  textarea::placeholder{color:#5f647c}
-  details{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
-  summary{cursor:pointer;color:var(--gold);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
-          list-style:none;outline:none}
-  summary::-webkit-details-marker{display:none}
-  summary::before{content:"+ ";font-weight:600}
-  details[open] summary::before{content:"2 "}
-  .feld{margin-top:16px}
   .feld .why{font-size:12px;color:var(--mist-dim);margin:4px 0 8px}
   .answer{background:rgba(201,162,75,.07);border:1px solid var(--line);border-radius:10px;
           padding:14px 16px;margin:14px 0 4px;color:#E4E6EF}
+  .plat{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .stamp{font-size:12px;color:var(--mist-dim)}
+  @media (max-width:560px){
+    .himmel{align-items:flex-start}
+    .woche strong{min-width:0;font-size:18px}
+    .trichter .stufe{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
@@ -108,65 +199,124 @@
   <header>
     <p class="eyebrow">Soraya Luxury Astrology</p>
     <h1>Content<span class="star">&#10022;</span>Studio</h1>
-    <p class="sub">Posts schreiben &mdash; und verstehen, für wen.</p>
+    <p class="sub">Jeden Tag Inhalte aus dem echten Himmel &mdash; in vier Sprachen.</p>
   </header>
 
-  <div class="tabs">
-    <button type="button" class="tab on" id="tabPosts">Posts</button>
-    <button type="button" class="tab" id="tabWho">Zielgruppen</button>
-  </div>
+  <nav class="tabs" aria-label="Bereiche">
+    <button type="button" class="tab on" data-tab="heute">Heute</button>
+    <button type="button" class="tab" data-tab="plan">Plan</button>
+    <button type="button" class="tab" data-tab="studio">Studio</button>
+    <button type="button" class="tab" data-tab="who">Zielgruppen</button>
+    <button type="button" class="tab" data-tab="wirkung">Wirkung</button>
+  </nav>
 
-  <!-- ============ POSTS ============ -->
-  <div id="viewPosts">
+  <!-- ============ HEUTE ============ -->
+  <section id="view-heute">
+    <div class="panel">
+      <div class="himmel">
+        <canvas id="mondKlein" width="152" height="152" aria-hidden="true"></canvas>
+        <div id="himmelText"><div class="gross">Der Himmel heute</div><div class="zeile meta">wird geladen …</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Tagesplan</h2>
+      <p class="hint" id="planInfo">Pro Sprache: ein Feed-Post, ein Reel mit Skript und eine Story.</p>
+      <div class="chips" id="laeufe"></div>
+      <div class="row" style="margin-top:14px">
+        <button id="btnPlanJetzt">Fehlende jetzt erstellen</button>
+        <button class="ghost" id="btnPlanNeu">Alle neu erstellen</button>
+      </div>
+      <p class="note">Jeder Lauf ist ein Claude-Aufruf pro Sprache. „Neu erstellen" ersetzt nur Entwürfe,
+        die du nicht bearbeitet hast.</p>
+    </div>
+
+    <div class="bar">
+      <h3>Posts von heute</h3>
+      <div class="chips" id="heuteSprachen" role="group" aria-label="Sprache"></div>
+    </div>
+    <div id="heuteListe"></div>
+  </section>
+
+  <!-- ============ PLAN ============ -->
+  <section id="view-plan" class="hide">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div class="woche">
+          <button class="ghost klein" id="wocheZurueck" aria-label="Vorherige Woche">&larr;</button>
+          <strong id="wocheLabel">Diese Woche</strong>
+          <button class="ghost klein" id="wocheVor" aria-label="Nächste Woche">&rarr;</button>
+        </div>
+        <div class="row">
+          <div><label for="planSprache">Sprache</label>
+            <select id="planSprache"><option value="">Alle</option></select></div>
+          <div><label for="planStatus">Status</label>
+            <select id="planStatus"><option value="">Alle</option><option value="entwurf">Entwurf</option>
+              <option value="freigegeben">Freigegeben</option><option value="gepostet">Gepostet</option></select></div>
+        </div>
+      </div>
+      <div class="zaehler" id="planZaehler" style="margin-top:14px"></div>
+    </div>
+    <div id="planListe"></div>
+  </section>
+
+  <!-- ============ STUDIO ============ -->
+  <section id="view-studio" class="hide">
     <div class="panel">
       <h2>Aus einem Thema</h2>
       <p class="hint">Gib ein Stichwort ein, der Rest passiert von selbst.</p>
       <div class="row">
-        <div class="grow"><label>Thema</label>
+        <div class="grow"><label for="thema">Thema</label>
           <input id="thema" placeholder="z. B. Vollmond in der Waage"></div>
-        <div><label>Anzahl</label>
+        <div><label for="sprache1">Sprache</label><select id="sprache1" class="sprachwahl"></select></div>
+        <div><label for="anzahl1">Anzahl</label>
           <select id="anzahl1"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
       </div>
-      <div style="margin-top:16px"><button id="btnThema" onclick="ausThema()">Posts erzeugen</button></div>
+      <div style="margin-top:16px"><button id="btnThema">Posts erzeugen</button></div>
     </div>
 
     <div class="panel">
       <h2>Aus einer Webseite</h2>
       <p class="hint">Eine Quelle einlesen &mdash; Soraya macht daraus eigene Posts.</p>
       <div class="row">
-        <div class="grow"><label>Webseite (URL)</label>
+        <div class="grow"><label for="url">Webseite (URL)</label>
           <input id="url" placeholder="https://..."></div>
-        <div><label>Anzahl</label>
+        <div><label for="sprache2">Sprache</label><select id="sprache2" class="sprachwahl"></select></div>
+        <div><label for="anzahl2">Anzahl</label>
           <select id="anzahl2"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
       </div>
-      <div style="margin-top:16px"><button id="btnUrl" onclick="ausUrl()">Aus Webseite erzeugen</button></div>
+      <div style="margin-top:16px"><button id="btnUrl">Aus Webseite erzeugen</button></div>
     </div>
 
     <div class="bar">
       <h3>Deine Posts</h3>
-      <button class="ghost" onclick="ladePosts()">Aktualisieren</button>
+      <button class="ghost" id="btnStudioLaden">Aktualisieren</button>
     </div>
-    <div id="liste"></div>
-  </div>
+    <div id="studioListe"></div>
+  </section>
 
   <!-- ============ ZIELGRUPPEN ============ -->
-  <div id="viewWho" class="hide">
+  <section id="view-who" class="hide">
     <div class="panel">
       <h2>Kunden verstehen</h2>
       <p class="hint">Wähle einen Bereich. Der Agent durchsucht das Netz und erstellt ein Profil:
          wer diese Menschen sind, was sie beschäftigt, welche Worte sie benutzen.</p>
       <div class="row">
-        <div class="grow"><label>Bereich</label>
+        <div class="grow"><label for="bereich">Bereich</label>
           <select id="bereich"></select></div>
-        <div><label>Land</label>
+        <div><label for="land">Land</label>
           <select id="land">
             <option value="at" selected>&Ouml;sterreich</option>
             <option value="de">Deutschland</option>
             <option value="ch">Schweiz</option>
+            <option value="hu">Ungarn</option>
+            <option value="it">Italien</option>
+            <option value="uk">Vereinigtes Königreich</option>
+            <option value="us">USA</option>
           </select></div>
       </div>
       <div class="row" style="margin-top:12px">
-        <div class="grow"><label>Oder eigener Bereich</label>
+        <div class="grow"><label for="eigen">Oder eigener Bereich</label>
           <input id="eigen" placeholder="z. B. Astrologie und Schwangerschaft"></div>
       </div>
 
@@ -177,130 +327,466 @@
           <label class="q on"><input type="checkbox" value="reddit" checked> Reddit <small>gratis</small></label>
           <label class="q on"><input type="checkbox" value="playstore" checked> Play Store <small>gratis</small></label>
         </div>
-        <p class="note">Reddit und Play Store sind komplett kostenlos. Die Websuche laeuft
-           über deinen Anthropic-Zugang und kostet ein paar Cent pro Recherche.
-           Mehr Quellen bedeuten mehr Wartezeit &mdash; rechne mit ein bis zwei Minuten.</p>
+        <p class="note">Reddit und Play Store sind kostenlos. Die Websuche läuft über deinen
+           Anthropic-Zugang und kostet ein paar Cent pro Recherche. Rechne mit ein bis zwei Minuten.</p>
       </div>
 
       <details>
         <summary>Selbst bestimmen, wonach gesucht wird</summary>
-
         <div class="feld">
-          <label>Eigene Suchbegriffe</label>
-          <p class="why">Fuer Google und Reddit. Eine Suche pro Zeile. Schreib so, wie
-             deine Kunden wirklich suchen würden &mdash; also ganze Fragen, keine Schlagworte.</p>
-          <textarea id="eBegriffe" placeholder="warum zieht er sich zurueck sternzeichen&#10;horoskop stimmt nicht enttaeuscht&#10;astrologie trennung verarbeiten"></textarea>
+          <label for="eBegriffe">Eigene Suchbegriffe</label>
+          <p class="why">Für Google und Reddit. Eine Suche pro Zeile, als ganze Fragen.</p>
+          <textarea id="eBegriffe" placeholder="warum zieht er sich zurueck sternzeichen&#10;horoskop stimmt nicht enttaeuscht"></textarea>
         </div>
-
         <div class="feld">
-          <label>Eigene Play-Store-Suche</label>
+          <label for="ePlaystore">Eigene Play-Store-Suche</label>
           <p class="why">Nach welchen Apps soll gesucht werden? Ihre Bewertungen werden ausgewertet.</p>
           <input id="ePlaystore" placeholder="z. B. partnerhoroskop app">
         </div>
-
         <div class="feld">
-          <label>Oder bestimmte Apps direkt</label>
-          <p class="why">App-IDs deiner Konkurrenten, eine pro Zeile. Die ID steht in der
-             Play-Store-Adresse hinter <em>?id=</em> &mdash; damit triffst du genau die Apps,
-             die dich interessieren.</p>
+          <label for="eAppIds">Oder bestimmte Apps direkt</label>
+          <p class="why">App-IDs, eine pro Zeile. Die ID steht in der Play-Store-Adresse hinter <em>?id=</em>.</p>
           <textarea id="eAppIds" placeholder="com.chaninicholas.chaniapp&#10;me.sanctuary.app"></textarea>
         </div>
-
         <div class="feld">
-          <label>Deine Frage an die Analyse</label>
+          <label for="eFrage">Deine Frage an die Analyse</label>
           <p class="why">Was willst du aus den Daten konkret herausfinden?</p>
-          <textarea id="eFrage" placeholder="z. B. Wuerden diese Menschen für eine Astrologie-App Geld ausgeben und wofür genau?"></textarea>
+          <textarea id="eFrage" placeholder="z. B. Würden diese Menschen für eine Astrologie-App Geld ausgeben?"></textarea>
         </div>
       </details>
 
-      <div style="margin-top:18px"><button id="btnWho" onclick="erforsche()">Bereich erforschen</button></div>
+      <div style="margin-top:18px"><button id="btnWho">Bereich erforschen</button></div>
     </div>
 
     <div class="bar">
       <h3>Deine Profile</h3>
-      <button class="ghost" onclick="ladeProfile()">Aktualisieren</button>
+      <button class="ghost" id="btnProfileLaden">Aktualisieren</button>
     </div>
     <div id="profile"></div>
-  </div>
+  </section>
 
-  <div id="status"></div>
+  <!-- ============ WIRKUNG ============ -->
+  <section id="view-wirkung" class="hide">
+    <div class="row" style="margin-bottom:16px">
+      <div><label for="wTage">Zeitraum</label>
+        <select id="wTage"><option value="7">Letzte 7 Tage</option><option value="30" selected>Letzte 30 Tage</option><option value="90">Letzte 90 Tage</option></select></div>
+      <div><label for="wKennzahl">Kennzahl im Verlauf</label>
+        <select id="wKennzahl"></select></div>
+    </div>
+    <div id="wirkungInhalt"><div class="empty">Wird geladen …</div></div>
+  </section>
+
+  <div id="status" role="status" aria-live="polite"></div>
   <footer>Soraya &#10022; Content Studio</footer>
 </div>
 
+<dialog id="dlg"></dialog>
+
 <script>
 const $ = (id) => document.getElementById(id);
-
-/* Umschaltung zuerst und unabhaengig vom Rest verdrahten,
-   damit sie auch dann geht, wenn weiter unten etwas schiefgeht. */
-function zeige(was){
-  const p = was === 'posts';
-  $('viewPosts').classList.toggle('hide', !p);
-  $('viewWho').classList.toggle('hide', p);
-  $('tabPosts').classList.toggle('on', p);
-  $('tabWho').classList.toggle('on', !p);
-  const st = $('status'); if(st) st.textContent = '';
-  if(!p && typeof ladeProfile === 'function'){ try{ ladeProfile(); }catch(e){} }
-}
-$('tabPosts').addEventListener('click', () => zeige('posts'));
-$('tabWho').addEventListener('click', () => zeige('who'));
-const esc = (s) => (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function melde(m){ $('status').textContent = m || ''; }
 function busy(btn, on, text){
   btn.disabled = on;
-  if(on){ btn.dataset.label = btn.textContent; btn.innerHTML = '<span class="spin"></span>' + text; }
+  if(on){ btn.dataset.label = btn.textContent; btn.innerHTML = '<span class="spin"></span>' + esc(text); }
   else if(btn.dataset.label){ btn.textContent = btn.dataset.label; }
 }
+async function api(pfad, opts = {}){
+  const r = await fetch(pfad, {...opts, headers: {'Content-Type': 'application/json', ...(opts.headers || {})}});
+  let d = null; try{ d = await r.json(); }catch(e){}
+  if(!r.ok) throw new Error((d && d.detail) || ('Fehler ' + r.status));
+  return d;
+}
 
-/* ---------- Posts ---------- */
-function renderPosts(posts){
-  const box = $('liste');
-  if(!posts || !posts.length){
-    box.innerHTML = '<div class="empty">Noch keine Posts.<span>Gib oben ein Thema ein und leg los.</span></div>';
-    return;
+const SPRACHEN = [['de','Deutsch'],['en','English'],['hu','Magyar'],['it','Italiano']];
+const LINK_IN_BIO = {de:'Link in Bio', en:'Link in bio', hu:'Link a bióban', it:'Link in bio'};
+const ART = {post:'Feed-Post', reel:'Reel', story:'Story'};
+const STATUS = {entwurf:'Entwurf', freigegeben:'Freigegeben', gepostet:'Gepostet'};
+const WOCHENTAGE = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const MONATE = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+/* ---------- Datum (lokal, ohne Zeitzonen-Fallen) ---------- */
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const ausIso = (s) => { const [y,m,t] = String(s).slice(0,10).split('-').map(Number); return new Date(y, m-1, t); };
+const plusTage = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const montagVon = (d) => plusTage(d, -((d.getDay() + 6) % 7));
+const kurz = (d) => `${d.getDate()}. ${MONATE[d.getMonth()]}`;
+
+/* ---------- Tabs ---------- */
+let aktiv = 'heute';
+const LADER = {};
+function zeige(tab){
+  aktiv = tab;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('section[id^="view-"]').forEach(s => s.classList.toggle('hide', s.id !== 'view-' + tab));
+  melde('');
+  if(LADER[tab]) LADER[tab]();
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => zeige(b.dataset.tab)));
+function neuLaden(){ if(LADER[aktiv]) LADER[aktiv](); }
+
+/* ---------- Post-Karte (in allen Ansichten gleich) ---------- */
+const POSTS = new Map();
+function karte(p, {datum = true} = {}){
+  POSTS.set(String(p.id), p);
+  const sk = p.skript;
+  const skript = sk && (sk.hook || (sk.szenen || []).length) ? `<div class="skript">
+      ${sk.hook ? `<div><b>Hook:</b> ${esc(sk.hook)}</div>` : ''}
+      ${(sk.szenen || []).length ? `<ol>${sk.szenen.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
+      ${sk.schluss ? `<div><b>Schluss:</b> ${esc(sk.schluss)}</div>` : ''}</div>` : '';
+  const st = p.status || 'entwurf';
+  return `<article class="card" data-id="${esc(p.id)}">
+    <div class="kopf">
+      <span class="tag">${esc(ART[p.art] || 'Post')}</span>
+      <span class="tag leise">${esc(p.platform)}</span>
+      <span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
+      ${p.quelle === 'himmel' ? '<span class="tag leise">Himmel</span>' : ''}
+      <span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span>
+    </div>
+    ${p.titel ? `<p class="titel">${esc(p.titel)}</p>` : ''}
+    ${p.untertitel ? `<p class="untertitel">${esc(p.untertitel)}</p>` : ''}
+    <p class="txt">${esc(p.text)}</p>
+    ${skript}
+    ${p.hashtags ? `<p class="tags">${esc(p.hashtags)}</p>` : ''}
+    <div class="aktionen">
+      <button class="ghost klein" data-aktion="kopieren">Text kopieren</button>
+      ${skript ? '<button class="ghost klein" data-aktion="skript">Skript kopieren</button>' : ''}
+      <button class="ghost klein" data-aktion="bild">Bild</button>
+      <button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button>
+      <select data-aktion="status" aria-label="Status">${Object.entries(STATUS).map(([k,v]) =>
+        `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
+      ${datum ? `<input type="date" data-aktion="datum" aria-label="Geplant für" value="${esc((p.geplant_fuer || '').slice(0,10))}">` : ''}
+      <button class="ghost klein gefahr" data-aktion="loeschen" aria-label="Löschen">Löschen</button>
+    </div>
+  </article>`;
+}
+function liste(box, posts, leer, opts){
+  box.innerHTML = posts.length ? posts.map(p => karte(p, opts)).join('')
+    : `<div class="empty">${leer}</div>`;
+}
+async function kopiere(btn, text){
+  try{ await navigator.clipboard.writeText(text); const a = btn.textContent; btn.textContent = 'Kopiert ✓';
+       setTimeout(() => btn.textContent = a, 1400); }
+  catch(e){ melde('Kopieren nicht möglich – bitte Text markieren.'); }
+}
+async function aendere(id, felder){
+  await api('/content/' + id, {method: 'PATCH', body: JSON.stringify(felder)});
+}
+document.addEventListener('click', async (ev) => {
+  const btn = ev.target.closest('button[data-aktion]');
+  if(!btn) return;
+  const id = btn.closest('[data-id]').dataset.id, p = POSTS.get(id);
+  if(!p) return;
+  const a = btn.dataset.aktion;
+  if(a === 'kopieren') return kopiere(btn, (p.text || '') + (p.hashtags ? '\n\n' + p.hashtags : ''));
+  if(a === 'skript'){ const s = p.skript || {};
+    return kopiere(btn, [s.hook, ...(s.szenen || []).map((x, i) => (i+1) + '. ' + x), s.schluss].filter(Boolean).join('\n')); }
+  if(a === 'bild') return bildDialog(p);
+  if(a === 'bearbeiten') return bearbeitenDialog(p);
+  if(a === 'loeschen'){
+    if(!confirm('Diesen Post wirklich löschen?')) return;
+    try{ await api('/content/' + id, {method: 'DELETE'}); neuLaden(); }catch(e){ melde('Fehler: ' + e.message); }
   }
-  box.innerHTML = posts.map(p => `<div class="card">
-      <p class="plat">${esc(p.platform)}</p>
-      <p class="txt">${esc(p.text)}</p>
-      <p class="tags">${esc(p.hashtags||'')}</p>
-      <div class="foot"><span class="stamp">${(p.created_at||'').slice(0,10)}</span>
-      <button class="ghost" onclick="kopiere(this)" data-t="${encodeURIComponent((p.text||'')+'\n\n'+(p.hashtags||''))}">Kopieren</button></div>
-    </div>`).join('');
-}
-function kopiere(btn){
-  navigator.clipboard.writeText(decodeURIComponent(btn.dataset.t)).then(()=>{
-    const a = btn.textContent; btn.textContent = 'Kopiert \u2713';
-    setTimeout(()=>btn.textContent = a, 1400);
-  });
-}
-async function ladePosts(){
-  try{ const r = await fetch('/content'); renderPosts((await r.json()).posts); }
-  catch(e){ melde('Konnte Posts nicht laden.'); }
-}
-async function ausThema(){
-  const b = $('btnThema'); busy(b, true, 'Die Sterne schreiben \u2026'); melde('');
+});
+document.addEventListener('change', async (ev) => {
+  const el = ev.target.closest('[data-aktion="status"],[data-aktion="datum"]');
+  if(!el) return;
+  const id = el.closest('[data-id]').dataset.id;
   try{
-    const r = await fetch('/content', {method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({thema: $('thema').value.trim() || null, anzahl: +$('anzahl1').value})});
-    if(!r.ok) throw new Error((await r.json()).detail || 'Fehler');
-    await ladePosts(); melde('Fertig \u2713');
-  }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
+    await aendere(id, el.dataset.aktion === 'status' ? {status: el.value} : {geplant_fuer: el.value || null});
+    melde('Gespeichert ✓'); neuLaden();
+  }catch(e){ melde('Fehler: ' + e.message); }
+});
+
+/* ---------- Bearbeiten ---------- */
+function bearbeitenDialog(p){
+  const d = $('dlg');
+  d.innerHTML = `<h3>Post bearbeiten</h3>
+    <div class="feld"><label for="eTitel">Bild-Überschrift</label><input id="eTitel" value="${esc(p.titel || '')}"></div>
+    <div class="feld"><label for="eUnter">Unterzeile</label><input id="eUnter" value="${esc(p.untertitel || '')}"></div>
+    <div class="feld"><label for="eText">Text</label><textarea id="eText" rows="8">${esc(p.text || '')}</textarea></div>
+    <div class="feld"><label for="eTags">Hashtags</label><input id="eTags" value="${esc(p.hashtags || '')}"></div>
+    <div class="row" style="margin-top:16px"><button id="eSpeichern">Speichern</button>
+      <button class="ghost" id="eAbbrechen">Abbrechen</button></div>`;
+  d.showModal();
+  $('eAbbrechen').onclick = () => d.close();
+  $('eSpeichern').onclick = async () => {
+    try{
+      await aendere(p.id, {titel: $('eTitel').value.trim(), untertitel: $('eUnter').value.trim(),
+                           text: $('eText').value, hashtags: $('eTags').value.trim()});
+      d.close(); melde('Gespeichert ✓'); neuLaden();
+    }catch(e){ melde('Fehler: ' + e.message); }
+  };
 }
-async function ausUrl(){
+
+/* ---------- Mond zeichnen (wie in der App: Licht rechts = zunehmend) ---------- */
+function zeichneMond(ctx, cx, cy, r, phaseIndex){
+  const grad = ctx.createRadialGradient(cx - r*.3, cy - r*.35, r*.1, cx, cy, r*1.05);
+  grad.addColorStop(0, '#fffbe8'); grad.addColorStop(.45, '#ffe9b0'); grad.addColorStop(1, '#c9a86a');
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+  const dunkel = ctx.createRadialGradient(cx - r*.2, cy - r*.3, r*.1, cx, cy, r);
+  dunkel.addColorStop(0, '#2a2044'); dunkel.addColorStop(1, '#120c22');
+  ctx.fillStyle = dunkel; ctx.fill();
+  ctx.lineWidth = Math.max(1, r/40); ctx.strokeStyle = 'rgba(201,168,106,.45)'; ctx.stroke();
+  if(phaseIndex === null || phaseIndex === undefined){ ctx.restore(); return; }
+  const e = ((phaseIndex * 45 + 22.5) % 360);
+  if(phaseIndex === 0){ ctx.restore(); return; }            // Neumond: nur die dunkle Scheibe
+  const rx = Math.abs(Math.cos(e * Math.PI / 180)) * r;
+  const zunehmend = e < 180, sichel = zunehmend ? e < 90 : e > 270;
+  ctx.beginPath();
+  if(phaseIndex === 4){ ctx.arc(cx, cy, r, 0, Math.PI*2); }
+  else if(zunehmend){
+    ctx.arc(cx, cy, r, -Math.PI/2, Math.PI/2, false);
+    if(sichel) ctx.ellipse(cx, cy, rx, r, 0, Math.PI/2, -Math.PI/2, true);
+    else ctx.ellipse(cx, cy, rx, r, 0, Math.PI/2, Math.PI*1.5, false);
+  } else {
+    ctx.arc(cx, cy, r, -Math.PI/2, Math.PI/2, true);
+    if(sichel) ctx.ellipse(cx, cy, rx, r, 0, Math.PI/2, Math.PI*1.5, false);
+    else ctx.ellipse(cx, cy, rx, r, 0, Math.PI/2, -Math.PI/2, true);
+  }
+  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  ctx.restore();
+}
+
+/* ---------- Post-Bild (Story 1080x1920, Feed 1080x1350) ---------- */
+let schriftenBereit = null;
+function schriften(){
+  if(!schriftenBereit){
+    schriftenBereit = Promise.all([
+      document.fonts.load('600 96px "Cormorant Garamond"'), document.fonts.load('600 46px "Cinzel"'),
+      document.fonts.load('400 40px "Inter"'), document.fonts.load('600 30px "Inter"'),
+    ]).catch(() => null);
+  }
+  return schriftenBereit;
+}
+function zufall(seed){ let s = (Number(seed) || 1) * 9301 + 49297; return () => ((s = (s * 9301 + 49297) % 233280) / 233280); }
+function umbrechen(ctx, text, breite){
+  const woerter = String(text || '').split(/\s+/).filter(Boolean), zeilen = [];
+  let z = '';
+  for(const w of woerter){
+    const t = z ? z + ' ' + w : w;
+    if(ctx.measureText(t).width > breite && z){ zeilen.push(z); z = w; } else z = t;
+  }
+  if(z) zeilen.push(z);
+  return zeilen;
+}
+function textBlock(ctx, text, {x, y, breite, groesse, schrift, farbe, zeilenhoehe = 1.12, maxZeilen = 4}){
+  let g = groesse, zeilen;
+  do{ ctx.font = `${schrift.replace('{g}', g)}`; zeilen = umbrechen(ctx, text, breite); g -= 4; }
+  while(zeilen.length > maxZeilen && g > 30);
+  g += 4;
+  ctx.fillStyle = farbe; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  zeilen.forEach((z, i) => ctx.fillText(z, x, y + i * g * zeilenhoehe));
+  return y + (zeilen.length - 1) * g * zeilenhoehe;
+}
+async function zeichneBild(canvas, p, format){
+  await schriften();
+  const W = 1080, H = format === 'story' ? 1920 : 1350, story = format === 'story';
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const bg = ctx.createRadialGradient(W/2, 0, 40, W/2, H*0.25, H);
+  bg.addColorStop(0, '#2a1650'); bg.addColorStop(.45, '#120a26'); bg.addColorStop(1, '#07040f');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  const rnd = zufall(p.id);
+  for(let i = 0; i < (story ? 190 : 140); i++){
+    const gold = rnd() < .12;
+    ctx.fillStyle = gold ? `rgba(233,207,156,${.5 + rnd()*.45})` : `rgba(188,178,214,${.2 + rnd()*.45})`;
+    ctx.beginPath(); ctx.arc(rnd()*W, rnd()*H, .6 + rnd()*(gold ? 2.4 : 1.6), 0, Math.PI*2); ctx.fill();
+  }
+  const meta = p.meta || {};
+  const mitMond = meta.phase_index !== undefined && meta.phase_index !== null;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#E6CF9C'; ctx.font = `600 ${story ? 60 : 50}px "Cinzel"`;
+  ctx.fillText('✵', W/2, story ? 210 : 140);
+  const eyebrow = mitMond ? [meta.datum_kurz, meta.mond_phase].filter(Boolean).join('  ·  ') : 'SORAYA';
+  ctx.font = `500 ${story ? 30 : 26}px "Inter"`; ctx.fillStyle = '#C9A86A';
+  if('letterSpacing' in ctx) ctx.letterSpacing = '4px';
+  ctx.fillText(eyebrow.toUpperCase(), W/2, story ? 285 : 200);
+  if('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  let y = story ? 470 : 330;
+  if(mitMond){
+    const r = story ? 150 : 105, cy = story ? 560 : 335;
+    zeichneMond(ctx, W/2, cy, r, meta.phase_index);
+    y = cy + r + (story ? 190 : 140);
+  }
+  y = textBlock(ctx, p.titel || p.text, {x: W/2, y, breite: W - 180, groesse: story ? 108 : 92,
+    schrift: '600 {g}px "Cormorant Garamond"', farbe: '#F6E3B4', maxZeilen: story ? 5 : 3});
+  if(p.untertitel){
+    textBlock(ctx, p.untertitel, {x: W/2, y: y + (story ? 100 : 80), breite: W - 220, groesse: story ? 42 : 36,
+      schrift: '400 {g}px "Inter"', farbe: '#C3B7DA', zeilenhoehe: 1.35, maxZeilen: 3});
+  }
+  const unten = story ? H - 300 : H - 175;
+  ctx.font = `600 ${story ? 50 : 42}px "Cinzel"`; ctx.fillStyle = '#E6CF9C';
+  if('letterSpacing' in ctx) ctx.letterSpacing = '14px';
+  ctx.fillText('SORAYA', W/2 + 7, unten);
+  ctx.font = `500 ${story ? 22 : 19}px "Inter"`; ctx.fillStyle = '#8f83ad';
+  if('letterSpacing' in ctx) ctx.letterSpacing = '8px';
+  ctx.fillText('LUXURY ASTRO GUIDE', W/2 + 4, unten + (story ? 50 : 42));
+  if('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  const cta = (LINK_IN_BIO[p.sprache] || 'Link in Bio') + '  ✦';
+  ctx.font = `600 ${story ? 32 : 28}px "Inter"`;
+  const bw = ctx.measureText(cta).width + 70, bh = story ? 74 : 64, by = unten + (story ? 100 : 78);
+  ctx.strokeStyle = 'rgba(230,207,156,.75)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(W/2 - bw/2, by, bw, bh, bh/2); ctx.stroke();
+  ctx.fillStyle = '#F3E7C9'; ctx.textBaseline = 'middle'; ctx.fillText(cta, W/2, by + bh/2 + 1);
+  ctx.textBaseline = 'alphabetic';
+}
+function bildDialog(p){
+  const d = $('dlg');
+  let format = p.art === 'post' ? 'feed' : 'story';
+  d.innerHTML = `<h3>Bild zum Post</h3>
+    <div class="chips" role="group" aria-label="Format">
+      <button class="chip" data-format="story">Story / Reel 1080×1920</button>
+      <button class="chip" data-format="feed">Feed 1080×1350</button></div>
+    <div class="bildvorschau"><canvas id="bild" aria-label="Vorschau des Post-Bildes"></canvas></div>
+    <div class="row"><button id="bLaden">Herunterladen</button>
+      <button class="ghost" id="bTeilen">Teilen …</button>
+      <button class="ghost" id="bZu">Schließen</button></div>
+    <p class="note">„Teilen" öffnet auf dem Handy direkt Instagram, TikTok &amp; Co.</p>`;
+  d.showModal();
+  const neu = async () => {
+    d.querySelectorAll('[data-format]').forEach(b => b.classList.toggle('on', b.dataset.format === format));
+    await zeichneBild($('bild'), p, format);
+  };
+  d.querySelectorAll('[data-format]').forEach(b => b.onclick = () => { format = b.dataset.format; neu(); });
+  const blob = () => new Promise(r => $('bild').toBlob(r, 'image/png'));
+  const name = () => `soraya-${(p.geplant_fuer || p.created_at || '').slice(0,10)}-${p.art || 'post'}-${p.sprache || 'de'}-${format}.png`;
+  $('bLaden').onclick = async () => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(await blob()); a.download = name(); a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+  $('bTeilen').onclick = async () => {
+    const datei = new File([await blob()], name(), {type: 'image/png'});
+    if(navigator.canShare && navigator.canShare({files: [datei]})){
+      try{ await navigator.share({files: [datei], text: (p.text || '') + (p.hashtags ? '\n\n' + p.hashtags : '')}); }catch(e){}
+    } else melde('Teilen geht auf diesem Gerät nicht – bitte „Herunterladen" nutzen.');
+  };
+  $('bZu').onclick = () => d.close();
+  neu();
+}
+
+/* ---------- HEUTE ---------- */
+let heuteSprache = 'de', heuteTimer = null;
+function sprachChips(box, aktuell, beiKlick, mitAlle = false){
+  const liste = (mitAlle ? [['', 'Alle']] : []).concat(SPRACHEN.map(([c]) => [c, c.toUpperCase()]));
+  box.innerHTML = liste.map(([c, n]) => `<button class="chip${c === aktuell ? ' on' : ''}" data-s="${c}" aria-pressed="${c === aktuell}">${n}</button>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => beiKlick(b.dataset.s));
+}
+async function ladeHimmel(){
+  try{
+    const h = await api('/himmel?sprache=de');
+    const ctx = $('mondKlein').getContext('2d'); ctx.clearRect(0, 0, 152, 152);
+    zeichneMond(ctx, 76, 76, 66, h.phase_index);
+    const ereignis = (n, e) => e ? `${n} ${e.datum_text} (${e.in_tagen <= 0 ? 'heute' : e.in_tagen === 1 ? 'morgen' : 'in ' + e.in_tagen + ' Tagen'})` : '';
+    const rueck = (h.ruecklaeufig || []).map(r => r.planet + (r.bis ? ' bis ' + r.bis : '')).join(', ');
+    $('himmelText').innerHTML = `<div class="gross">${esc(h.mond_phase)} · Mond in ${esc(h.mond_zeichen)}</div>
+      <div class="zeile">${esc(h.datum_text)} · ${esc(h.beleuchtung)} % beleuchtet · Sonne in ${esc(h.sonne_zeichen)}</div>
+      <div class="zeile meta">${esc([ereignis('Vollmond', h.vollmond), ereignis('Neumond', h.neumond)].filter(Boolean).join(' · '))}</div>
+      ${rueck ? `<div class="zeile meta">Rückläufig: ${esc(rueck)}</div>` : ''}`;
+  }catch(e){ $('himmelText').innerHTML = `<div class="gross">Der Himmel heute</div><div class="zeile meta">${esc(e.message)}</div>`; }
+}
+async function ladeHeute(){
+  clearTimeout(heuteTimer);
+  let d;
+  try{ d = await api('/tagesplan'); }catch(e){ melde('Fehler: ' + e.message); return; }
+  const stand = Object.fromEntries((d.laeufe || []).map(l => [l.sprache, l]));
+  $('planInfo').textContent = d.automatisch
+    ? `Automatisch jeden Morgen ab ${d.ab_stunde} Uhr (Wiener Zeit) für ${d.sprachen.map(s => s.toUpperCase()).join(', ')}. Pro Sprache: Feed-Post, Reel mit Skript, Story.`
+    : 'Automatik ist aus (TAGESPLAN_AUTO=0). Erstelle den Plan hier per Knopf.';
+  $('laeufe').innerHTML = d.sprachen.map(s => {
+    const l = stand[s], st = l ? l.status : 'fehlt';
+    const text = {fertig: 'fertig', laeuft: 'wird erstellt …', fehler: 'Fehler', fehlt: 'noch nicht erstellt'}[st] || st;
+    return `<span class="lauf ${st}" title="${esc(l && l.fehler || '')}"><i></i>${s.toUpperCase()} · ${text}</span>`;
+  }).join('');
+  const fehler = (d.laeufe || []).filter(l => l.status === 'fehler');
+  if(fehler.length) melde('Fehler: ' + fehler.map(l => l.sprache.toUpperCase() + ': ' + (l.fehler || '')).join(' · '));
+  sprachChips($('heuteSprachen'), heuteSprache, (s) => { heuteSprache = s; ladeHeute(); });
+  const posts = (d.posts || []).filter(p => p.sprache === heuteSprache)
+    .sort((a, b) => ['post','reel','story'].indexOf(a.art) - ['post','reel','story'].indexOf(b.art));
+  liste($('heuteListe'), posts, 'Für diese Sprache gibt es heute noch keine Posts.<span>Erstelle den Tagesplan oben.</span>', {datum: false});
+  if((d.laeufe || []).some(l => l.status === 'laeuft')) heuteTimer = setTimeout(ladeHeute, 4000);
+  else if(!fehler.length && $('status').textContent.startsWith('Tagesplan wird')) melde('Tagesplan fertig ✓');
+}
+async function starteTagesplan(neu){
+  if(neu && !confirm('Alle Sprachen neu erstellen? Unbearbeitete Entwürfe von heute werden ersetzt.')) return;
+  try{ await api('/tagesplan', {method: 'POST', body: JSON.stringify({neu})}); melde('Tagesplan wird erstellt …');
+       setTimeout(ladeHeute, 800); }
+  catch(e){ melde('Fehler: ' + e.message); }
+}
+$('btnPlanJetzt').onclick = () => starteTagesplan(false);
+$('btnPlanNeu').onclick = () => starteTagesplan(true);
+LADER.heute = () => { ladeHimmel(); ladeHeute(); };
+
+/* ---------- PLAN ---------- */
+let planMontag = montagVon(new Date());
+$('planSprache').innerHTML += SPRACHEN.map(([c, n]) => `<option value="${c}">${n}</option>`).join('');
+$('wocheZurueck').onclick = () => { planMontag = plusTage(planMontag, -7); ladePlan(); };
+$('wocheVor').onclick = () => { planMontag = plusTage(planMontag, 7); ladePlan(); };
+$('planSprache').onchange = () => ladePlan();
+$('planStatus').onchange = () => ladePlan();
+async function ladePlan(){
+  const bis = plusTage(planMontag, 6);
+  $('wocheLabel').textContent = `${kurz(planMontag)} – ${kurz(bis)}`;
+  const q = new URLSearchParams({von: iso(planMontag), bis: iso(bis), limit: 400});
+  if($('planSprache').value) q.set('sprache', $('planSprache').value);
+  if($('planStatus').value) q.set('status', $('planStatus').value);
+  let posts;
+  try{ posts = (await api('/content?' + q)).posts || []; }catch(e){ melde('Fehler: ' + e.message); return; }
+  const zaehl = (s) => posts.filter(p => p.geplant_fuer && p.status === s).length;
+  $('planZaehler').innerHTML = `<span><b>${posts.filter(p => p.geplant_fuer).length}</b> geplant</span>
+    <span><b>${zaehl('entwurf')}</b> Entwurf</span><span><b>${zaehl('freigegeben')}</b> freigegeben</span>
+    <span><b>${zaehl('gepostet')}</b> gepostet</span>`;
+  const heute = iso(new Date());
+  let html = '';
+  const ohne = posts.filter(p => !p.geplant_fuer);
+  if(ohne.length){
+    html += `<div class="tag-kopf"><h4>Noch ohne Datum</h4><span class="meta">${ohne.length} · Datum setzen zum Einplanen</span></div>`;
+    html += ohne.map(p => karte(p)).join('');
+  }
+  for(let i = 0; i < 7; i++){
+    const t = plusTage(planMontag, i), tIso = iso(t);
+    const tagPosts = posts.filter(p => (p.geplant_fuer || '').slice(0,10) === tIso);
+    html += `<div class="tag-kopf${tIso === heute ? ' heute' : ''}"><h4>${WOCHENTAGE[i]}, ${kurz(t)}</h4>
+      <span class="meta">${tagPosts.length ? tagPosts.length + ' Posts' : 'nichts geplant'}</span></div>`;
+    html += tagPosts.map(p => karte(p)).join('');
+  }
+  $('planListe').innerHTML = html;
+}
+LADER.plan = ladePlan;
+
+/* ---------- STUDIO ---------- */
+document.querySelectorAll('.sprachwahl').forEach(s => s.innerHTML = SPRACHEN.map(([c, n]) => `<option value="${c}">${n}</option>`).join(''));
+async function ladeStudio(){
+  try{
+    const posts = ((await api('/content?limit=80')).posts || []).filter(p => p.quelle !== 'himmel').slice(0, 40);
+    liste($('studioListe'), posts, 'Noch keine Posts.<span>Gib oben ein Thema ein und leg los.</span>');
+  }catch(e){ melde('Konnte Posts nicht laden.'); }
+}
+$('btnStudioLaden').onclick = ladeStudio;
+$('btnThema').onclick = async () => {
+  const b = $('btnThema'); busy(b, true, 'Die Sterne schreiben …'); melde('');
+  try{
+    await api('/content', {method: 'POST', body: JSON.stringify({thema: $('thema').value.trim() || null,
+      anzahl: +$('anzahl1').value, sprache: $('sprache1').value})});
+    await ladeStudio(); melde('Fertig ✓');
+  }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
+};
+$('btnUrl').onclick = async () => {
   const b = $('btnUrl'), url = $('url').value.trim();
   if(!url){ melde('Bitte eine Webseite eingeben.'); return; }
-  busy(b, true, 'Lese Seite \u2026'); melde('');
+  busy(b, true, 'Lese Seite …'); melde('');
   try{
-    const r = await fetch('/content-von-url', {method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({url, anzahl: +$('anzahl2').value})});
-    if(!r.ok) throw new Error((await r.json()).detail || 'Fehler');
-    await ladePosts(); melde('Fertig \u2713');
+    await api('/content-von-url', {method: 'POST', body: JSON.stringify({url, anzahl: +$('anzahl2').value, sprache: $('sprache2').value})});
+    await ladeStudio(); melde('Fertig ✓');
   }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
-}
+};
+LADER.studio = ladeStudio;
 
-/* ---------- Zielgruppen ---------- */
-function liste(titel, arr){
+/* ---------- ZIELGRUPPEN ---------- */
+function liPunkte(titel, arr){
   if(!arr || !arr.length) return '';
-  return `<h4>${titel}</h4><ul>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+  return `<h4>${titel}</h4><ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
 }
 function renderProfile(zeilen){
   const box = $('profile');
@@ -312,67 +798,207 @@ function renderProfile(zeilen){
     const p = z.profil || {};
     return `<div class="card who">
       <p class="plat">${esc(z.bereich)}</p>
-      ${p._quellen&&p._quellen.length?`<p class="src">Quellen: ${p._quellen.map(esc).join(' &middot; ')}</p>`:''}
-      <p class="lede">${esc(p.wer_sind_sie||'')}</p>
-      ${p.antwort_auf_frage?`<div class="answer">${esc(p.antwort_auf_frage)}</div>`:''}
-      ${liste('Was sie beschäftigt', p.beschaeftigt_sie || p['beschäftigt_sie'])}
-      ${liste('Was sie sich wünschen', p.wuensche)}
-      ${liste('Ihre Sprache', p.sprache)}
-      ${liste('Content-Ideen', p.content_ideen)}
-      ${liste('Worauf achten', p.worauf_achten)}
-      ${liste('Lücke am Markt', p.luecke_am_markt)}
-      ${(p.unsicher&&p.unsicher.length)?`<h4>Unsicher</h4><p class="warn">${p.unsicher.map(esc).join(' &middot; ')}</p>`:''}
-      ${(p._gesucht&&p._gesucht.length)?`<h4>Gesucht wurde nach</h4><p class="warn">${p._gesucht.map(esc).join(' &middot; ')}</p>`:''}
-      <div class="foot" style="margin-top:14px"><span class="stamp">${(z.created_at||'').slice(0,10)}</span></div>
+      ${p._quellen && p._quellen.length ? `<p class="src">Quellen: ${p._quellen.map(esc).join(' &middot; ')}</p>` : ''}
+      <p class="lede">${esc(p.wer_sind_sie || '')}</p>
+      ${p.antwort_auf_frage ? `<div class="answer">${esc(p.antwort_auf_frage)}</div>` : ''}
+      ${liPunkte('Was sie beschäftigt', p.beschaeftigt_sie || p['beschäftigt_sie'])}
+      ${liPunkte('Was sie sich wünschen', p.wuensche)}
+      ${liPunkte('Ihre Sprache', p.sprache)}
+      ${liPunkte('Content-Ideen', p.content_ideen)}
+      ${liPunkte('Worauf achten', p.worauf_achten)}
+      ${liPunkte('Lücke am Markt', p.luecke_am_markt)}
+      ${(p.unsicher && p.unsicher.length) ? `<h4>Unsicher</h4><p class="warn">${p.unsicher.map(esc).join(' &middot; ')}</p>` : ''}
+      ${(p._gesucht && p._gesucht.length) ? `<h4>Gesucht wurde nach</h4><p class="warn">${p._gesucht.map(esc).join(' &middot; ')}</p>` : ''}
+      <div class="foot" style="margin-top:14px"><span class="stamp">${esc((z.created_at || '').slice(0,10))}</span></div>
     </div>`;
   }).join('');
 }
 async function ladeBereiche(){
-  try{
-    const r = await fetch('/bereiche');
-    const d = await r.json();
-    $('bereich').innerHTML = d.bereiche.map(b=>`<option value="${b.schluessel}">${esc(b.titel)}</option>`).join('');
+  try{ const d = await api('/bereiche');
+    $('bereich').innerHTML = d.bereiche.map(b => `<option value="${esc(b.schluessel)}">${esc(b.titel)}</option>`).join('');
   }catch(e){}
 }
 async function ladeProfile(){
-  try{ const r = await fetch('/zielgruppen'); renderProfile((await r.json()).zielgruppen); }
-  catch(e){ melde('Konnte Profile nicht laden.'); }
+  try{ renderProfile((await api('/zielgruppen')).zielgruppen); }catch(e){ melde('Konnte Profile nicht laden.'); }
 }
-try{
-  document.querySelectorAll('#quellen input').forEach(cb => {
-    cb.addEventListener('change', () => cb.closest('.q').classList.toggle('on', cb.checked));
-  });
-}catch(e){ console.error('Quellen-Chips', e); }
-
-async function erforsche(){
+document.querySelectorAll('#quellen input').forEach(cb => cb.addEventListener('change', () => cb.closest('.q').classList.toggle('on', cb.checked)));
+$('btnProfileLaden').onclick = ladeProfile;
+$('btnWho').onclick = async () => {
   const b = $('btnWho');
-  const eigen = $('eigen').value.trim();
-  const bereich = eigen || $('bereich').value;
+  const bereich = $('eigen').value.trim() || $('bereich').value;
   const quellen = [...document.querySelectorAll('#quellen input:checked')].map(c => c.value);
   if(!quellen.length){ melde('Bitte mindestens eine Quelle wählen.'); return; }
-  const zeilen = (id) => $(id).value.split('\n').map(x=>x.trim()).filter(Boolean);
-  busy(b, true, 'Recherchiere \u2026 (kann einige Minuten dauern)'); melde('');
+  const zeilen = (id) => $(id).value.split('\n').map(x => x.trim()).filter(Boolean);
+  busy(b, true, 'Recherchiere … (kann einige Minuten dauern)'); melde('');
   try{
-    const r = await fetch('/zielgruppe', {method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        bereich, land: $('land').value, quellen,
-        eigene_begriffe: zeilen('eBegriffe'),
-        eigene_playstore: $('ePlaystore').value.trim(),
-        eigene_app_ids: zeilen('eAppIds'),
-        eigene_frage: $('eFrage').value.trim(),
-      })});
-    if(!r.ok) throw new Error((await r.json()).detail || 'Fehler');
-    const d = await r.json();
+    const d = await api('/zielgruppe', {method: 'POST', body: JSON.stringify({
+      bereich, land: $('land').value, quellen, eigene_begriffe: zeilen('eBegriffe'),
+      eigene_playstore: $('ePlaystore').value.trim(), eigene_app_ids: zeilen('eAppIds'), eigene_frage: $('eFrage').value.trim()})});
     await ladeProfile();
-    let m = 'Fertig \u2713  Quellen: ' + (d.quellen_ok||[]).join(', ');
-    const fehler = Object.keys(d.quellen_fehler||{});
-    if(fehler.length) m += '  \u00b7  ohne Ergebnis: ' + fehler.join(', ');
+    let m = 'Fertig ✓  Quellen: ' + (d.quellen_ok || []).join(', ');
+    const fehler = Object.keys(d.quellen_fehler || {});
+    if(fehler.length) m += '  ·  ohne Ergebnis: ' + fehler.join(', ');
     melde(m);
   }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
-}
+};
+LADER.who = () => { ladeBereiche(); ladeProfile(); };
 
-try{ ladePosts(); }catch(e){ console.error('ladePosts', e); }
-try{ ladeBereiche(); }catch(e){ console.error('ladeBereiche', e); }
+/* ---------- WIRKUNG ---------- */
+const KENNZAHLEN = [
+  ['schnellstart_geoeffnet', 'Schnellstart geöffnet'], ['schnellstart_berechnet', 'Schnellstart berechnet'],
+  ['registrieren_geklickt', 'Registrieren geklickt'], ['neue_konten', 'Neue Konten'], ['neue_profile', 'Profile angelegt'],
+  ['aktive_nutzer', 'Aktive Nutzer'], ['app_starts', 'App-Starts'], ['horoskope', 'Horoskope geladen'],
+  ['analysen', 'Analysen geladen'], ['partner_vergleiche', 'Partner-Vergleiche'], ['chat_nachrichten', 'Chat-Nachrichten'],
+  ['einladungen_geteilt', 'Einladungen geteilt'], ['einladung_geoeffnet', 'Einladung geöffnet'],
+  ['einladung_berechnet', 'Einladung berechnet'], ['fehler', 'Fehler in der App'],
+];
+$('wKennzahl').innerHTML = KENNZAHLEN.map(([k, n]) => `<option value="${k}"${k === 'aktive_nutzer' ? ' selected' : ''}>${n}</option>`).join('');
+let wirkungDaten = null, gepostetProTag = {};
+const zahl = (n) => new Intl.NumberFormat('de-AT').format(n || 0);
+const summe = (tage, k) => tage.reduce((s, t) => s + (t[k] || 0), 0);
+function tokenErzeugen(){
+  const b = new Uint8Array(24); crypto.getRandomValues(b);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function einrichtung(hinweis){
+  $('wirkungInhalt').innerHTML = `<div class="panel"><h2>Wirkung messen einrichten</h2>
+    <p class="hint">${esc(hinweis)}</p>
+    <ol class="schritte">
+      <li>Erzeuge hier einen geheimen Schlüssel und kopiere ihn:</li>
+    </ol>
+    <div class="tokenbox" id="tokenWert">–</div>
+    <div class="row"><button class="ghost klein" id="tokenNeu">Schlüssel erzeugen</button>
+      <button class="ghost klein" id="tokenKopie">Kopieren</button></div>
+    <ol class="schritte" start="2">
+      <li>Railway → Dienst <b>astro-engine</b> → Variables → neue Variable <b>AGENT_STATS_TOKEN</b> = dieser Schlüssel.</li>
+      <li>Railway → Dienst <b>Soraya-Agent</b> → Variables → dieselbe Variable <b>AGENT_STATS_TOKEN</b> mit demselben Schlüssel.</li>
+      <li>Optional bei astro-engine: <b>STATS_IGNORIEREN</b> = deine eigenen E-Mail-Adressen und das Demo-Konto, mit Komma getrennt. Die zählen dann nicht mit.</li>
+      <li>Bei beiden Diensten „Deploy" bestätigen, 2 Minuten warten, diese Seite neu laden.</li>
+    </ol>
+    <p class="note">Der Schlüssel entsteht nur hier in deinem Browser und wird nirgends gespeichert. Die Statistik enthält nur Summen pro Tag, keine Namen oder Geburtsdaten.</p></div>`;
+  $('tokenNeu').onclick = () => { $('tokenWert').textContent = tokenErzeugen(); };
+  $('tokenKopie').onclick = (e) => { const t = $('tokenWert').textContent; if(t.length > 20) kopiere(e.target, t); };
+}
+async function ladeWirkung(){
+  const tage = $('wTage').value;
+  const box = $('wirkungInhalt');
+  box.style.opacity = wirkungDaten ? .55 : 1;  // beim Nachladen den alten Stand halten
+  try{
+    const [w, gepostet] = await Promise.all([api('/wirkung?tage=' + tage), api('/content?status=gepostet&limit=500')]);
+    box.style.opacity = 1;
+    if(!w.eingerichtet){ wirkungDaten = null; return einrichtung(w.hinweis); }
+    wirkungDaten = w.statistik;
+    gepostetProTag = {};
+    (gepostet.posts || []).forEach(p => {
+      const t = (p.gepostet_am || p.geplant_fuer || '').slice(0, 10);
+      if(t) gepostetProTag[t] = (gepostetProTag[t] || 0) + 1;
+    });
+    zeigeWirkung();
+  }catch(e){ box.style.opacity = 1; box.innerHTML = `<div class="empty">Statistik nicht erreichbar.<span>${esc(e.message)}</span></div>`; }
+}
+function zeigeWirkung(){
+  const d = wirkungDaten, tage = d.tage || [];
+  const posts = Object.entries(gepostetProTag).filter(([t]) => t >= d.von && t <= d.bis).reduce((s, [, n]) => s + n, 0);
+  const kpi = (l, v, sub) => `<div class="kpi"><div class="l">${l}</div><div class="v">${zahl(v)}</div>${sub ? `<div class="d">${sub}</div>` : ''}</div>`;
+  const stufen = [['schnellstart_geoeffnet', 'Schnellstart geöffnet'], ['schnellstart_berechnet', 'Sternzeichen berechnet'],
+    ['registrieren_geklickt', 'Registrieren geklickt'], ['neue_konten', 'Neues Konto'], ['neue_profile', 'Profil angelegt']]
+    .map(([k, n]) => [n, summe(tage, k)]);
+  const maxStufe = Math.max(1, ...stufen.map(s => s[1]));
+  const sprachen = Object.entries(d.sprachen || {}).sort((a, b) => b[1] - a[1]);
+  const maxSprache = Math.max(1, ...sprachen.map(s => s[1]));
+  $('wirkungInhalt').innerHTML = `
+    <div class="kpis">
+      ${kpi('Schnellstarts berechnet', summe(tage, 'schnellstart_berechnet'))}
+      ${kpi('Neue Konten', summe(tage, 'neue_konten'), `gesamt ${zahl(d.gesamt && d.gesamt.konten)}`)}
+      ${kpi('Aktive Nutzer', d.aktive_nutzer_zeitraum, 'mindestens einmal geöffnet')}
+      ${kpi('Einladungen geöffnet', summe(tage, 'einladung_geoeffnet'), `Links gesamt ${zahl(d.gesamt && d.gesamt.einladungslinks)}`)}
+      ${kpi('Posts gepostet', posts, 'laut Redaktionsplan')}
+    </div>
+    <div class="panel"><h2>${esc(($('wKennzahl').selectedOptions[0] || {}).text || '')} pro Tag</h2>
+      <p class="hint">${esc(d.von)} bis ${esc(d.bis)}${d.ignoriert ? ` · ${d.ignoriert} eigene Konten ausgeblendet` : ''}</p>
+      <div class="legende"><span><i class="sq"></i>${esc(($('wKennzahl').selectedOptions[0] || {}).text || '')}</span>
+        <span><i class="dot"></i>Tag mit gepostetem Post</span></div>
+      <div class="viz" id="verlauf"></div>
+      <details><summary>Als Tabelle</summary><div class="tabwrap">${tabelle(tage)}</div></details>
+    </div>
+    <div class="panel trichter"><h2>Vom Schnellstart zum Profil</h2>
+      <p class="hint">Summen im Zeitraum. Prozent bezogen auf die erste Stufe.</p>
+      ${stufen.map(([n, v]) => `<div class="stufe"><span class="name">${n}</span><div class="spur">
+        <div class="balken" style="width:${(v / maxStufe * 82).toFixed(1)}%"></div>
+        <span class="wert" style="left:calc(${(v / maxStufe * 82).toFixed(1)}% + 8px)">${zahl(v)}<small>${stufen[0][1] ? Math.round(v / stufen[0][1] * 100) + ' %' : ''}</small></span>
+      </div></div>`).join('')}
+    </div>
+    <div class="panel trichter"><h2>Sprachen der aktiven Nutzer</h2>
+      <p class="hint">Welche App-Sprache die Nutzer im Zeitraum hatten.</p>
+      ${sprachen.length ? sprachen.map(([s, v]) => `<div class="stufe"><span class="name">${esc(s === 'unbekannt' ? 'unbekannt (alte Version)' : s.toUpperCase())}</span><div class="spur">
+        <div class="balken" style="width:${(v / maxSprache * 82).toFixed(1)}%"></div>
+        <span class="wert" style="left:calc(${(v / maxSprache * 82).toFixed(1)}% + 8px)">${zahl(v)}</span></div></div>`).join('')
+        : '<p class="meta">Noch keine Daten.</p>'}
+    </div>`;
+  zeichneVerlauf();
+}
+function tabelle(tage){
+  const kopf = KENNZAHLEN.map(([, n]) => `<th scope="col">${esc(n)}</th>`).join('');
+  return `<table class="tabelle"><thead><tr><th scope="col">Datum</th>${kopf}<th scope="col">Posts gepostet</th></tr></thead><tbody>
+    ${tage.slice().reverse().map(t => `<tr><td>${esc(t.datum)}</td>${KENNZAHLEN.map(([k]) => `<td>${zahl(t[k])}</td>`).join('')}
+      <td>${zahl(gepostetProTag[t.datum])}</td></tr>`).join('')}</tbody></table>`;
+}
+function zeichneVerlauf(){
+  const box = $('verlauf'); if(!box || !wirkungDaten) return;
+  const tage = wirkungDaten.tage || [], k = $('wKennzahl').value;
+  const W = Math.max(300, box.clientWidth), H = 220, L = 34, R = 8, T = 10, B = 44;
+  const pw = W - L - R, ph = H - T - B, band = pw / Math.max(1, tage.length);
+  const max = Math.max(...tage.map(t => t[k] || 0), 0);
+  const schritt = max <= 4 ? 1 : Math.ceil(max / 4);
+  const oben = Math.max(schritt, Math.ceil(max / schritt) * schritt);
+  const y = (v) => T + ph - (v / oben) * ph;
+  const bw = Math.min(24, Math.max(2, band - 2));
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Verlauf ${esc(k)}">`;
+  for(let v = 0; v <= oben; v += schritt){
+    s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'var(--viz-axis)' : 'var(--viz-grid)'}" stroke-width="1"/>`;
+    s += `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(v)}</text>`;
+  }
+  const jeder = Math.ceil(tage.length / Math.max(1, Math.floor(pw / 46)));
+  tage.forEach((t, i) => {
+    const cx = L + band * i + band / 2, v = t[k] || 0, top = y(v), h = T + ph - top;
+    if(v > 0){
+      const r = Math.min(4, h, bw / 2), x0 = cx - bw / 2, x1 = cx + bw / 2, base = T + ph;
+      s += `<path d="M${x0},${base} V${top + r} Q${x0},${top} ${x0 + r},${top} H${x1 - r} Q${x1},${top} ${x1},${top + r} V${base} Z" fill="var(--viz-gold)"/>`;
+    }
+    if(gepostetProTag[t.datum]){
+      s += `<circle cx="${cx}" cy="${T + ph + 10}" r="4.5" fill="var(--viz-violet)" stroke="#12162A" stroke-width="2"/>`;
+    }
+    if((tage.length - 1 - i) % jeder === 0){  // vom letzten Tag aus gleichmaessig beschriften
+      const [, m, dd] = t.datum.split('-');
+      s += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" fill="#8A8FA6">${+dd}.${+m}.</text>`;
+    }
+    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${ph + 18}" fill="transparent" tabindex="0" aria-label="${esc(t.datum)}: ${v}"/>`;
+  });
+  s += '</svg><div class="tip hide" id="tip"></div>';
+  box.innerHTML = s;
+  const tip = $('tip');
+  const zeigeTip = (el) => {
+    const t = tage[+el.dataset.i], v = t[k] || 0, n = gepostetProTag[t.datum] || 0;
+    tip.innerHTML = `<strong>${zahl(v)}</strong><span class="key" style="background:var(--viz-gold)"></span>${esc(($('wKennzahl').selectedOptions[0] || {}).text)}
+      <br>${esc(t.datum)}${n ? `<br><span class="key" style="background:var(--viz-violet)"></span>${n} Post${n > 1 ? 's' : ''} gepostet` : ''}`;
+    const x = +el.getAttribute('x') + band / 2;
+    tip.style.left = Math.min(Math.max(x, 70), W - 70) + 'px'; tip.style.top = Math.max(y(v), 40) + 'px';
+    tip.classList.remove('hide');
+    box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent'));
+    el.setAttribute('fill', 'rgba(231,211,161,.06)');
+  };
+  box.querySelectorAll('.hit').forEach(el => {
+    el.addEventListener('pointermove', () => zeigeTip(el));
+    el.addEventListener('focus', () => zeigeTip(el));
+  });
+  box.addEventListener('pointerleave', () => { tip.classList.add('hide'); box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); });
+}
+$('wTage').onchange = ladeWirkung;
+$('wKennzahl').onchange = () => wirkungDaten && zeigeWirkung();
+window.addEventListener('resize', () => { if(aktiv === 'wirkung') zeichneVerlauf(); });
+LADER.wirkung = ladeWirkung;
+
+zeige('heute');
 </script>
 </body>
 </html>

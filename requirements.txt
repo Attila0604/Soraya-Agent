@@ -5,3 +5,5 @@ pydantic
 psycopg[binary]
 google-play-scraper
 beautifulsoup4
+anthropic>=1.13,<2
+tzdata

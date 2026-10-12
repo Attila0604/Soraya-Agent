@@ -1,130 +1,82 @@
 """
 Content-Agent
-Spricht DIREKT mit Claude (Anthropic API) und laesst fertige
-Social-Media-Posts fuer die Soraya-App schreiben.
+Laesst Claude fertige Social-Media-Posts fuer die Soraya-App schreiben,
+in der gewuenschten Sprache (de, en, hu, it). Jeder Post bringt eine kurze
+Bild-Ueberschrift mit, damit das Dashboard daraus ein Post-Bild machen kann.
 """
 
-import os
-import json
-import requests
-
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
-
-ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+from claude import frage_json
+from sprachen import sprach_anweisung
 
 SYSTEM_PROMPT = """Du bist der Social-Media-Texter der App "Soraya Luxury Astrology Guide".
 
-Ueber Soraya:
-- Eine luxurioese Astrologie-App mit personalisierten Horoskopen, Synastrie
-  (Partner-Vergleich) und einem KI-Chat fuer individuelle Astro-Fragen.
-- Ton: elegant, warm, edel, ein bisschen mystisch — nie billig oder reisserisch.
-- Zielgruppe: Menschen, die sich fuer Astrologie, Selbstreflexion und
-  persoenliche Entwicklung interessieren.
+Über Soraya:
+- Eine luxuriöse Astrologie-App mit persönlichem Tageshoroskop aus dem eigenen
+  Geburtshoroskop, Synastrie (Partner-Vergleich in Prozent) und einem KI-Chat.
+- Ohne Konto zeigt sie in Sekunden Sonnen- und Mondzeichen und das Tageshoroskop.
+- Verfügbar auf Deutsch, Englisch, Ungarisch und Italienisch.
+- Ton: elegant, warm, edel, ein bisschen mystisch — nie billig oder reißerisch.
+- Zielgruppe: Menschen, die sich für Astrologie, Selbstreflexion und
+  persönliche Entwicklung interessieren.
 
 Deine Aufgabe: fertige, sofort postbare Social-Media-Posts schreiben.
-Jeder Post muss eigenstaendig funktionieren und Lust auf die App machen,
-ohne aufdringlich zu wirken.
+Jeder Post funktioniert eigenständig und macht Lust auf die App, ohne
+aufdringlich zu wirken. Keine Heilsversprechen, keine Angstmacherei.
 
-WICHTIG: Antworte AUSSCHLIESSLICH mit gueltigem JSON, ohne Erklaerung,
-ohne Markdown, ohne ```-Zeichen. Format:
+Zu jedem Post gehören:
+- "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
+- "untertitel": eine kurze Zeile unter der Überschrift, höchstens 12 Wörter.
+- "text": der Post-Text.
+- "hashtags": 3 bis 6 passende Hashtags in der Sprache des Posts, mit #."""
 
-{
-  "posts": [
-    {
-      "platform": "instagram",
-      "text": "Der fertige Post-Text ...",
-      "hashtags": ["#astrologie", "#horoskop"]
-    }
-  ]
+POST_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "platform": {"type": "string", "enum": ["instagram", "facebook", "linkedin", "tiktok"]},
+        "titel": {"type": "string"},
+        "untertitel": {"type": "string"},
+        "text": {"type": "string"},
+        "hashtags": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["platform", "titel", "untertitel", "text", "hashtags"],
+    "additionalProperties": False,
 }
-"""
 
-
-def _text_aus_antwort(data: dict) -> str:
-    """Holt robust den Text aus der Claude-Antwort (egal wie die Bloecke heissen)."""
-    teile = []
-    for block in data.get("content", []):
-        if isinstance(block, dict) and "text" in block:
-            teile.append(block["text"])
-    return "".join(teile).strip()
+SCHEMA = {
+    "type": "object",
+    "properties": {"posts": {"type": "array", "items": POST_SCHEMA}},
+    "required": ["posts"],
+    "additionalProperties": False,
+}
 
 
 def erstelle_posts(
     thema: str | None = None,
     anzahl: int = 3,
     kontext: str | None = None,
+    sprache: str = "de",
 ) -> list[dict]:
-    if not ANTHROPIC_API_KEY:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY fehlt. Bitte in Railway unter Variables setzen."
-        )
-
+    anzahl = max(1, min(int(anzahl), 6))
     thema_text = (
-        f'Das Thema fuer die Posts ist: "{thema}".'
+        f'Das Thema für die Posts ist: "{thema}".'
         if thema
-        else "Waehle selbst ein passendes, ansprechendes Astro-/Horoskop-Thema."
+        else "Wähle selbst ein passendes, ansprechendes Astro-/Horoskop-Thema."
     )
-
     kontext_text = ""
     if kontext:
         kontext_text = (
-            "\n\nNutze folgenden Inhalt als Grundlage/Inspiration fuer die Posts "
-            "(fasse zusammen, uebernimm Ideen, aber schreibe eigenstaendig):\n"
+            "\n\nNutze folgenden Inhalt als Grundlage/Inspiration für die Posts "
+            "(fasse zusammen, übernimm Ideen, aber schreibe eigenständig):\n"
             f"---\n{kontext}\n---"
         )
-
-    user_prompt = (
-        f"Schreibe {anzahl} Social-Media-Posts fuer Soraya. {thema_text} "
-        f"Verteile sie sinnvoll auf die Plattformen instagram, facebook und linkedin "
-        f"(LinkedIn etwas sachlicher, Instagram/Facebook emotionaler). "
-        f"Jeder Post mit 3 bis 6 passenden Hashtags."
-        f"{kontext_text}"
+    frage = (
+        f"Schreibe {anzahl} Social-Media-Posts für Soraya. {thema_text} "
+        "Verteile sie sinnvoll auf die Plattformen instagram, facebook und linkedin "
+        "(LinkedIn etwas sachlicher, Instagram/Facebook emotionaler)."
+        f"{kontext_text}\n\n{sprach_anweisung(sprache)}"
     )
-
-    antwort = requests.post(
-        ANTHROPIC_URL,
-        headers={
-            "x-api-key": ANTHROPIC_API_KEY,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
-        json={
-            "model": ANTHROPIC_MODEL,
-            "max_tokens": 1500,
-            "system": SYSTEM_PROMPT,
-            "messages": [
-                {"role": "user", "content": user_prompt},
-            ],
-        },
-        timeout=90,
-    )
-
-    if antwort.status_code >= 400:
-        raise RuntimeError(
-            f"Claude-API Fehler {antwort.status_code}: {antwort.text}"
-        )
-
-    data = antwort.json()
-    inhalt = _text_aus_antwort(data)
-
-    if not inhalt:
-        raise RuntimeError(
-            "Claude hat keinen Text geliefert. Rohantwort: " + str(data)[:500]
-        )
-
-    # Sicherheitsnetz: falls doch ```json ... ``` drumherum kommt, entfernen.
-    if inhalt.startswith("```"):
-        inhalt = inhalt.strip("`")
-        if inhalt.lstrip().lower().startswith("json"):
-            inhalt = inhalt.lstrip()[4:]
-        inhalt = inhalt.strip()
-
-    try:
-        daten = json.loads(inhalt)
-    except json.JSONDecodeError:
-        raise RuntimeError(
-            "Claude hat kein sauberes JSON geliefert. Antwort war: " + inhalt[:500]
-        )
-
-    return daten.get("posts", [])
+    daten = frage_json(SYSTEM_PROMPT, frage, SCHEMA, effort="medium")
+    posts = daten.get("posts", [])[:anzahl]
+    for p in posts:
+        p["sprache"] = sprache
+    return posts
