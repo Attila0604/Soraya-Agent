@@ -200,17 +200,21 @@ def lade_zielgruppen(limit: int = 20) -> list[dict]:
 # Tagesplan: pro Datum und Sprache genau ein Lauf (Sperre ueber die Datenbank,
 # damit auch bei Neustarts nichts doppelt erzeugt wird)
 # ---------------------------------------------------------------------------
-def beanspruche_tagesplan(datum: date, sprache: str, *, erzwingen: bool = False) -> bool:
-    """True, wenn dieser Aufruf den Tagesplan jetzt erstellen darf."""
-    bedingung = (
-        "soraya_tagesplaene.status <> 'laeuft' "
-        "or soraya_tagesplaene.aktualisiert < now() - interval '15 minutes'"
-        if erzwingen else
-        "(soraya_tagesplaene.status = 'fehler' and soraya_tagesplaene.versuche < 3 "
-        " and soraya_tagesplaene.aktualisiert < now() - interval '30 minutes') "
-        "or (soraya_tagesplaene.status = 'laeuft' "
-        " and soraya_tagesplaene.aktualisiert < now() - interval '15 minutes')"
-    )
+def beanspruche_tagesplan(datum: date, sprache: str, *, erzwingen: bool = False, manuell: bool = False) -> bool:
+    """True, wenn dieser Aufruf den Tagesplan jetzt erstellen darf.
+    erzwingen: alles ausser laufenden Laeufen neu; manuell (Knopf): Fehler sofort wiederholen;
+    sonst (Zeitplan): Fehler hoechstens 3x, mit 30 Minuten Abstand."""
+    haengt = ("(soraya_tagesplaene.status = 'laeuft' "
+              " and soraya_tagesplaene.aktualisiert < now() - interval '15 minutes')")
+    if erzwingen:
+        bedingung = "soraya_tagesplaene.status <> 'laeuft' or " + haengt
+    elif manuell:
+        bedingung = "soraya_tagesplaene.status = 'fehler' or " + haengt
+    else:
+        bedingung = (
+            "(soraya_tagesplaene.status = 'fehler' and soraya_tagesplaene.versuche < 3 "
+            " and soraya_tagesplaene.aktualisiert < now() - interval '30 minutes') or " + haengt
+        )
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
             "insert into soraya_tagesplaene (datum, sprache, status) values (%s, %s, 'laeuft') "

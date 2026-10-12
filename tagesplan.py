@@ -131,11 +131,11 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str]) -> list[dict]
     return posts
 
 
-def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False) -> dict:
+def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, manuell: bool = False) -> dict:
     """Erstellt den Tagesplan fuer eine Sprache (falls noch nicht vorhanden)."""
     sprache = norm(sprache)
     tag = tag or himmel.heute()
-    if not db.beanspruche_tagesplan(tag, sprache, erzwingen=erzwingen):
+    if not db.beanspruche_tagesplan(tag, sprache, erzwingen=erzwingen, manuell=manuell):
         return {"sprache": sprache, "status": "schon_da"}
     try:
         if erzwingen:
@@ -156,7 +156,7 @@ def erstelle_im_hintergrund(liste: list[str], *, erzwingen: bool = False) -> Non
     """Fuer den Knopf im Dashboard: laeuft weiter, waehrend die Seite den Stand abfragt."""
     def lauf():
         for s in liste:
-            erstelle(s, erzwingen=erzwingen)
+            erstelle(s, erzwingen=erzwingen, manuell=True)
     threading.Thread(target=lauf, name="tagesplan-knopf", daemon=True).start()
 
 

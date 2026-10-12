@@ -20,15 +20,20 @@
        radial-gradient(900px 500px at -10% 10%,rgba(90,110,200,.12),transparent 55%),var(--ink);
        color:var(--mist);font-family:'Inter',system-ui,sans-serif;min-height:100vh;line-height:1.6;
        -webkit-font-smoothing:antialiased}
-  .wrap{max-width:900px;margin:0 auto;padding:44px 18px 80px}
-  header{text-align:center;margin-bottom:26px}
-  .eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
-  h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(36px,7vw,56px);
-     line-height:1;color:#F4EEDD;margin:0}
-  h1 .star{color:var(--gold);font-size:.6em;vertical-align:middle;margin:0 .28em}
-  .sub{color:var(--mist-dim);margin-top:12px;font-size:15px}
-  .tabs{display:flex;gap:8px;justify-content:center;margin:22px 0 24px;flex-wrap:wrap}
-  .tab{font-family:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  .wrap{max-width:900px;margin:0 auto;padding:0 18px 80px}
+  /* schmale Kopfzeile: Marke links, Reiter rechts; bleibt beim Scrollen oben */
+  .kopfzeile{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:14px;
+             margin:0 -18px 22px;padding:12px 18px;background:rgba(11,14,26,.86);border-bottom:1px solid var(--line-soft);
+             -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .marke{display:flex;align-items:center;gap:10px;white-space:nowrap}
+  .marke .star{color:var(--gold);font-size:20px;line-height:1}
+  .marke h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:23px;line-height:1;color:#F4EEDD;margin:0}
+  .marke h1 small{display:block;font-family:'Inter',sans-serif;font-size:10px;font-weight:500;letter-spacing:.28em;
+                  text-transform:uppercase;color:var(--gold);margin-top:4px}
+  .tabs{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;min-width:0}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs.mehr{-webkit-mask-image:linear-gradient(90deg,#000 78%,transparent);mask-image:linear-gradient(90deg,#000 78%,transparent)}
+  .tab{flex:none;font-family:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
        background:transparent;border:1px solid var(--line);color:var(--mist-dim);
        padding:9px 16px;border-radius:999px;cursor:pointer;transition:.2s;font-weight:500}
   .tab:hover{border-color:var(--gold);color:var(--champagne)}
@@ -107,6 +112,15 @@
   .lauf{display:inline-flex;align-items:center;gap:6px;font-size:13px;border:1px solid var(--line-soft);
         border-radius:999px;padding:5px 11px}
   .lauf i{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--mist-dim)}
+  .fehlerbox{margin-top:12px;border:1px solid rgba(208,59,59,.4);background:rgba(208,59,59,.08);border-radius:10px;
+             padding:10px 14px;font-size:13.5px;color:#f0c4bc}
+  .fehlerbox b{color:#ffd9d2;font-weight:600}
+  .fehlerbox div+div{margin-top:4px}
+  .fortschritt{margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--mist)}
+  .fortschritt .spur{height:6px;border-radius:3px;background:var(--viz-grid);margin-top:8px;overflow:hidden;display:flex;gap:2px}
+  .fortschritt .spur i{display:block;height:100%}
+  .fortschritt .spur .g{background:#7fd27f} .fortschritt .spur .f{background:var(--champagne)}
+  .fortschritt b{color:#F4EEDD}
   .lauf.fertig i{background:var(--ok)} .lauf.laeuft i{background:var(--warn)} .lauf.fehler i{background:var(--bad)}
 
   /* ---------- Plan ---------- */
@@ -189,6 +203,8 @@
   .stamp{font-size:12px;color:var(--mist-dim)}
   @media (max-width:560px){
     .himmel{align-items:flex-start}
+    .kopfzeile{flex-direction:column;align-items:stretch;gap:10px;padding:10px 18px}
+    .tabs{justify-content:flex-start;margin:0 -18px;padding:0 18px}
     .woche strong{min-width:0;font-size:18px}
     .trichter .stufe{grid-template-columns:1fr}
   }
@@ -196,12 +212,9 @@
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <p class="eyebrow">Soraya Luxury Astrology</p>
-    <h1>Content<span class="star">&#10022;</span>Studio</h1>
-    <p class="sub">Jeden Tag Inhalte aus dem echten Himmel &mdash; in vier Sprachen.</p>
-  </header>
-
+  <header class="kopfzeile">
+    <div class="marke"><span class="star" aria-hidden="true">&#10022;</span>
+      <h1>Soraya<small>Content Studio</small></h1></div>
   <nav class="tabs" aria-label="Bereiche">
     <button type="button" class="tab on" data-tab="heute">Heute</button>
     <button type="button" class="tab" data-tab="plan">Plan</button>
@@ -209,6 +222,7 @@
     <button type="button" class="tab" data-tab="who">Zielgruppen</button>
     <button type="button" class="tab" data-tab="wirkung">Wirkung</button>
   </nav>
+  </header>
 
   <!-- ============ HEUTE ============ -->
   <section id="view-heute">
@@ -223,10 +237,12 @@
       <h2>Tagesplan</h2>
       <p class="hint" id="planInfo">Pro Sprache: ein Feed-Post, ein Reel mit Skript und eine Story.</p>
       <div class="chips" id="laeufe"></div>
+      <div class="fehlerbox hide" id="planFehler" role="alert"></div>
       <div class="row" style="margin-top:14px">
         <button id="btnPlanJetzt">Fehlende jetzt erstellen</button>
         <button class="ghost" id="btnPlanNeu">Alle neu erstellen</button>
       </div>
+      <div class="fortschritt hide" id="fortschritt"></div>
       <p class="note">Jeder Lauf ist ein Claude-Aufruf pro Sprache. „Neu erstellen" ersetzt nur Entwürfe,
         die du nicht bearbeitet hast.</p>
     </div>
@@ -402,6 +418,9 @@ const SPRACHEN = [['de','Deutsch'],['en','English'],['hu','Magyar'],['it','Itali
 const LINK_IN_BIO = {de:'Link in Bio', en:'Link in bio', hu:'Link a bióban', it:'Link in bio'};
 const ART = {post:'Feed-Post', reel:'Reel', story:'Story'};
 const STATUS = {entwurf:'Entwurf', freigegeben:'Freigegeben', gepostet:'Gepostet'};
+const REIHE_ART = ['post','reel','story'], REIHE_SPRACHE = ['de','en','hu','it'];
+const ordne = (a, b) => (REIHE_SPRACHE.indexOf(a.sprache) - REIHE_SPRACHE.indexOf(b.sprache))
+  || (REIHE_ART.indexOf(a.art) - REIHE_ART.indexOf(b.art)) || (a.id - b.id);
 const WOCHENTAGE = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
 const MONATE = ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 
@@ -411,18 +430,27 @@ const ausIso = (s) => { const [y,m,t] = String(s).slice(0,10).split('-').map(Num
 const plusTage = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 const montagVon = (d) => plusTage(d, -((d.getDay() + 6) % 7));
 const kurz = (d) => `${d.getDate()}. ${MONATE[d.getMonth()]}`;
+const kurzIso = (s) => kurz(ausIso(s));
 
 /* ---------- Tabs ---------- */
 let aktiv = 'heute';
 const LADER = {};
 function zeige(tab){
   aktiv = tab;
-  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('.tab').forEach(b => {
+    b.classList.toggle('on', b.dataset.tab === tab);
+    if(b.dataset.tab === tab && leiste.scrollWidth > leiste.clientWidth) b.scrollIntoView({block: 'nearest', inline: 'nearest'});
+  });
+  mehrReiter();
   document.querySelectorAll('section[id^="view-"]').forEach(s => s.classList.toggle('hide', s.id !== 'view-' + tab));
   melde('');
   if(LADER[tab]) LADER[tab]();
 }
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => zeige(b.dataset.tab)));
+// Reiter-Leiste am Handy: rechts ausblenden, solange noch Reiter versteckt sind
+const leiste = document.querySelector('.tabs');
+const mehrReiter = () => leiste.classList.toggle('mehr', leiste.scrollLeft + leiste.clientWidth < leiste.scrollWidth - 4);
+leiste.addEventListener('scroll', mehrReiter, {passive: true}); window.addEventListener('resize', mehrReiter);
 function neuLaden(){ if(LADER[aktiv]) LADER[aktiv](); }
 
 /* ---------- Post-Karte (in allen Ansichten gleich) ---------- */
@@ -456,7 +484,6 @@ function karte(p, {datum = true} = {}){
       <select data-aktion="status" aria-label="Status">${Object.entries(STATUS).map(([k,v]) =>
         `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
       ${datum ? `<input type="date" data-aktion="datum" aria-label="Geplant für" value="${esc((p.geplant_fuer || '').slice(0,10))}">` : ''}
-      <button class="ghost klein gefahr" data-aktion="loeschen" aria-label="Löschen">Löschen</button>
     </div>
   </article>`;
 }
@@ -483,10 +510,6 @@ document.addEventListener('click', async (ev) => {
     return kopiere(btn, [s.hook, ...(s.szenen || []).map((x, i) => (i+1) + '. ' + x), s.schluss].filter(Boolean).join('\n')); }
   if(a === 'bild') return bildDialog(p);
   if(a === 'bearbeiten') return bearbeitenDialog(p);
-  if(a === 'loeschen'){
-    if(!confirm('Diesen Post wirklich löschen?')) return;
-    try{ await api('/content/' + id, {method: 'DELETE'}); neuLaden(); }catch(e){ melde('Fehler: ' + e.message); }
-  }
 });
 document.addEventListener('change', async (ev) => {
   const el = ev.target.closest('[data-aktion="status"],[data-aktion="datum"]');
@@ -507,9 +530,15 @@ function bearbeitenDialog(p){
     <div class="feld"><label for="eText">Text</label><textarea id="eText" rows="8">${esc(p.text || '')}</textarea></div>
     <div class="feld"><label for="eTags">Hashtags</label><input id="eTags" value="${esc(p.hashtags || '')}"></div>
     <div class="row" style="margin-top:16px"><button id="eSpeichern">Speichern</button>
-      <button class="ghost" id="eAbbrechen">Abbrechen</button></div>`;
+      <button class="ghost" id="eAbbrechen">Abbrechen</button>
+      <button class="ghost gefahr" id="eLoeschen" style="margin-left:auto">Post löschen</button></div>`;
   d.showModal();
   $('eAbbrechen').onclick = () => d.close();
+  $('eLoeschen').onclick = async () => {
+    if(!confirm('Diesen Post wirklich löschen?')) return;
+    try{ await api('/content/' + p.id, {method: 'DELETE'}); d.close(); melde('Gelöscht'); neuLaden(); }
+    catch(e){ melde('Fehler: ' + e.message); }
+  };
   $('eSpeichern').onclick = async () => {
     try{
       await aendere(p.id, {titel: $('eTitel').value.trim(), untertitel: $('eUnter').value.trim(),
@@ -578,14 +607,26 @@ function umbrechen(ctx, text, breite){
   if(z) zeilen.push(z);
   return zeilen;
 }
-function textBlock(ctx, text, {x, y, breite, groesse, schrift, farbe, zeilenhoehe = 1.12, maxZeilen = 4}){
+/* Textblock vorab messen (Schrift wird kleiner, bis er in maxZeilen passt), dann zeichnen */
+function messeText(ctx, text, {breite, groesse, schrift, zeilenhoehe = 1.12, maxZeilen = 4, minGroesse = 30}){
   let g = groesse, zeilen;
-  do{ ctx.font = `${schrift.replace('{g}', g)}`; zeilen = umbrechen(ctx, text, breite); g -= 4; }
-  while(zeilen.length > maxZeilen && g > 30);
-  g += 4;
-  ctx.fillStyle = farbe; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  zeilen.forEach((z, i) => ctx.fillText(z, x, y + i * g * zeilenhoehe));
-  return y + (zeilen.length - 1) * g * zeilenhoehe;
+  while(true){
+    ctx.font = schrift.replace('{g}', g); zeilen = umbrechen(ctx, text, breite);
+    if(zeilen.length <= maxZeilen || g - 4 < minGroesse) break;
+    g -= 4;
+  }
+  if(zeilen.length > maxZeilen){                       // notfalls kuerzen statt ueberlaufen
+    zeilen = zeilen.slice(0, maxZeilen);
+    let z = zeilen[maxZeilen - 1];
+    while(z && ctx.measureText(z + ' …').width > breite) z = z.replace(/\s*\S+$/, '');
+    zeilen[maxZeilen - 1] = z + ' …';
+  }
+  return {zeilen, g, schrift, zeilenhoehe, hoehe: (zeilen.length - 1) * g * zeilenhoehe + g};
+}
+function zeichneText(ctx, b, x, oben, farbe){
+  ctx.font = b.schrift.replace('{g}', b.g); ctx.fillStyle = farbe;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  b.zeilen.forEach((z, i) => ctx.fillText(z, x, oben + b.g * .8 + i * b.g * b.zeilenhoehe));
 }
 async function zeichneBild(canvas, p, format){
   await schriften();
@@ -611,19 +652,35 @@ async function zeichneBild(canvas, p, format){
   if('letterSpacing' in ctx) ctx.letterSpacing = '4px';
   ctx.fillText(eyebrow.toUpperCase(), W/2, story ? 285 : 200);
   if('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-  let y = story ? 470 : 330;
-  if(mitMond){
-    const r = story ? 150 : 105, cy = story ? 560 : 335;
-    zeichneMond(ctx, W/2, cy, r, meta.phase_index, meta.beleuchtung);
-    y = cy + r + (story ? 190 : 140);
+
+  // Mitte: Mond, Ueberschrift, Unterzeile, bei Storys die Frage. Erst messen, dann senkrecht zentrieren.
+  const unten = story ? H - 300 : H - 175;              // Grundlinie "SORAYA"
+  const oben = story ? 350 : 245, platz = (unten - (story ? 150 : 110)) - oben;
+  const titel = messeText(ctx, p.titel || p.text, {breite: W - 180, groesse: story ? 108 : 92,
+    schrift: '600 {g}px "Cormorant Garamond"', maxZeilen: story ? 4 : 3, minGroesse: 56});
+  const unter = p.untertitel ? messeText(ctx, p.untertitel, {breite: W - 220, groesse: story ? 42 : 36,
+    schrift: '400 {g}px "Inter"', zeilenhoehe: 1.35, maxZeilen: 3, minGroesse: 28}) : null;
+  const frageText = p.art === 'story' && p.text && p.text !== p.titel ? p.text : '';
+  const pad = story ? 44 : 34;
+  const frage = frageText ? messeText(ctx, frageText, {breite: W - 220 - 2*pad, groesse: story ? 46 : 36,
+    schrift: '500 {g}px "Inter"', zeilenhoehe: 1.38, maxZeilen: story ? 6 : 4, minGroesse: 28}) : null;
+  const abstand = {mond: story ? 110 : 70, unter: story ? 36 : 26, frage: story ? 70 : 44};
+  const rest = titel.hoehe + (unter ? abstand.unter + unter.hoehe : 0) + (frage ? abstand.frage + frage.hoehe + 2*pad : 0);
+  let r = mitMond ? (story ? 150 : 105) : 0;
+  if(mitMond) r = Math.max(60, Math.min(r, (platz - rest - abstand.mond) / 2));
+  const gesamt = rest + (mitMond ? 2*r + abstand.mond : 0);
+  let y = oben + Math.max(0, (platz - gesamt) / 2);
+  if(mitMond){ zeichneMond(ctx, W/2, y + r, r, meta.phase_index, meta.beleuchtung); y += 2*r + abstand.mond; }
+  zeichneText(ctx, titel, W/2, y, '#F6E3B4'); y += titel.hoehe;
+  if(unter){ y += abstand.unter; zeichneText(ctx, unter, W/2, y, '#C3B7DA'); y += unter.hoehe; }
+  if(frage){
+    y += abstand.frage;
+    ctx.beginPath(); ctx.roundRect(110, y, W - 220, frage.hoehe + 2*pad, 28);
+    ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(230,207,156,.35)'; ctx.lineWidth = 2; ctx.stroke();
+    zeichneText(ctx, frage, W/2, y + pad, '#EFE8F8');
   }
-  y = textBlock(ctx, p.titel || p.text, {x: W/2, y, breite: W - 180, groesse: story ? 108 : 92,
-    schrift: '600 {g}px "Cormorant Garamond"', farbe: '#F6E3B4', maxZeilen: story ? 5 : 3});
-  if(p.untertitel){
-    textBlock(ctx, p.untertitel, {x: W/2, y: y + (story ? 100 : 80), breite: W - 220, groesse: story ? 42 : 36,
-      schrift: '400 {g}px "Inter"', farbe: '#C3B7DA', zeilenhoehe: 1.35, maxZeilen: 3});
-  }
-  const unten = story ? H - 300 : H - 175;
+
   ctx.font = `600 ${story ? 50 : 42}px "Cinzel"`; ctx.fillStyle = '#E6CF9C';
   if('letterSpacing' in ctx) ctx.letterSpacing = '14px';
   ctx.fillText('SORAYA', W/2 + 7, unten);
@@ -707,18 +764,32 @@ async function ladeHeute(){
     return `<span class="lauf ${st}" title="${esc(l && l.fehler || '')}"><i></i>${s.toUpperCase()} · ${text}</span>`;
   }).join('');
   const fehler = (d.laeufe || []).filter(l => l.status === 'fehler');
-  if(fehler.length) melde('Fehler: ' + fehler.map(l => l.sprache.toUpperCase() + ': ' + (l.fehler || '')).join(' · '));
+  // gleiche Meldungen zusammenfassen: "DE, EN: Schluessel ungueltig"
+  const gruppen = {};
+  fehler.forEach(l => (gruppen[l.fehler || 'Unbekannter Fehler'] ||= []).push(l.sprache.toUpperCase()));
+  $('planFehler').innerHTML = Object.entries(gruppen).map(([m, s]) => `<div><b>${esc(s.join(', '))}:</b> ${esc(m)}</div>`).join('');
+  $('planFehler').classList.toggle('hide', !fehler.length);
+  const laeuft = d.sprachen.some(s => stand[s] && stand[s].status === 'laeuft');
+  const offen = d.sprachen.filter(s => !stand[s] || stand[s].status !== 'fertig').length;
+  const jetzt = $('btnPlanJetzt');
+  jetzt.disabled = laeuft || !offen; $('btnPlanNeu').disabled = laeuft;
+  jetzt.innerHTML = laeuft ? '<span class="spin"></span>Wird erstellt …'
+    : !offen ? 'Alles erstellt ✓' : fehler.length ? 'Nochmal versuchen' : 'Fehlende jetzt erstellen';
+  const alle = d.posts || [], gepostet = alle.filter(p => p.status === 'gepostet').length,
+        frei = alle.filter(p => p.status === 'freigegeben').length;
+  $('fortschritt').classList.toggle('hide', !alle.length);
+  if(alle.length) $('fortschritt').innerHTML = `Heute: <b>${gepostet} von ${alle.length}</b> gepostet · ${frei} freigegeben
+    <div class="spur" aria-hidden="true"><i class="g" style="width:${gepostet / alle.length * 100}%"></i><i class="f" style="width:${frei / alle.length * 100}%"></i></div>`;
   sprachChips($('heuteSprachen'), heuteSprache, (s) => { heuteSprache = s; ladeHeute(); });
-  const posts = (d.posts || []).filter(p => p.sprache === heuteSprache)
-    .sort((a, b) => ['post','reel','story'].indexOf(a.art) - ['post','reel','story'].indexOf(b.art));
+  const posts = (d.posts || []).filter(p => p.sprache === heuteSprache).sort(ordne);
   liste($('heuteListe'), posts, 'Für diese Sprache gibt es heute noch keine Posts.<span>Erstelle den Tagesplan oben.</span>', {datum: false});
-  if((d.laeufe || []).some(l => l.status === 'laeuft')) heuteTimer = setTimeout(ladeHeute, 4000);
-  else if(!fehler.length && $('status').textContent.startsWith('Tagesplan wird')) melde('Tagesplan fertig ✓');
+  if(laeuft) heuteTimer = setTimeout(ladeHeute, 4000);
+  else if($('status').textContent.startsWith('Tagesplan wird')) melde(fehler.length ? '' : 'Tagesplan fertig ✓');
 }
 async function starteTagesplan(neu){
   if(neu && !confirm('Alle Sprachen neu erstellen? Unbearbeitete Entwürfe von heute werden ersetzt.')) return;
   try{ await api('/tagesplan', {method: 'POST', body: JSON.stringify({neu})}); melde('Tagesplan wird erstellt …');
-       setTimeout(ladeHeute, 800); }
+       $('btnPlanJetzt').disabled = $('btnPlanNeu').disabled = true; setTimeout(ladeHeute, 800); }
   catch(e){ melde('Fehler: ' + e.message); }
 }
 $('btnPlanJetzt').onclick = () => starteTagesplan(false);
@@ -753,7 +824,7 @@ async function ladePlan(){
   }
   for(let i = 0; i < 7; i++){
     const t = plusTage(planMontag, i), tIso = iso(t);
-    const tagPosts = posts.filter(p => (p.geplant_fuer || '').slice(0,10) === tIso);
+    const tagPosts = posts.filter(p => (p.geplant_fuer || '').slice(0,10) === tIso).sort(ordne);
     html += `<div class="tag-kopf${tIso === heute ? ' heute' : ''}"><h4>${WOCHENTAGE[i]}, ${kurz(t)}</h4>
       <span class="meta">${tagPosts.length ? tagPosts.length + ' Posts' : 'nichts geplant'}</span></div>`;
     html += tagPosts.map(p => karte(p)).join('');
@@ -922,7 +993,7 @@ function zeigeWirkung(){
       ${kpi('Posts gepostet', posts, 'laut Redaktionsplan')}
     </div>
     <div class="panel"><h2>${esc(($('wKennzahl').selectedOptions[0] || {}).text || '')} pro Tag</h2>
-      <p class="hint">${esc(d.von)} bis ${esc(d.bis)}${d.ignoriert ? ` · ${d.ignoriert} eigene Konten ausgeblendet` : ''}</p>
+      <p class="hint">${esc(kurzIso(d.von))} – ${esc(kurzIso(d.bis))}${d.ignoriert ? ` · ${d.ignoriert} eigene Konten ausgeblendet` : ''}</p>
       <div class="legende"><span><i class="sq"></i>${esc(($('wKennzahl').selectedOptions[0] || {}).text || '')}</span>
         <span><i class="dot"></i>Tag mit gepostetem Post</span></div>
       <div class="viz" id="verlauf"></div>
@@ -947,7 +1018,7 @@ function zeigeWirkung(){
 function tabelle(tage){
   const kopf = KENNZAHLEN.map(([, n]) => `<th scope="col">${esc(n)}</th>`).join('');
   return `<table class="tabelle"><thead><tr><th scope="col">Datum</th>${kopf}<th scope="col">Posts gepostet</th></tr></thead><tbody>
-    ${tage.slice().reverse().map(t => `<tr><td>${esc(t.datum)}</td>${KENNZAHLEN.map(([k]) => `<td>${zahl(t[k])}</td>`).join('')}
+    ${tage.slice().reverse().map(t => `<tr><td>${esc(kurzIso(t.datum))}</td>${KENNZAHLEN.map(([k]) => `<td>${zahl(t[k])}</td>`).join('')}
       <td>${zahl(gepostetProTag[t.datum])}</td></tr>`).join('')}</tbody></table>`;
 }
 function zeichneVerlauf(){
@@ -979,7 +1050,7 @@ function zeichneVerlauf(){
       const [, m, dd] = t.datum.split('-');
       s += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" fill="#8A8FA6">${+dd}.${+m}.</text>`;
     }
-    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${ph + 18}" fill="transparent" tabindex="0" aria-label="${esc(t.datum)}: ${v}"/>`;
+    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${ph + 18}" fill="transparent" tabindex="0" aria-label="${esc(kurzIso(t.datum))}: ${v}"/>`;
   });
   s += '</svg><div class="tip hide" id="tip"></div>';
   box.innerHTML = s;
@@ -987,7 +1058,7 @@ function zeichneVerlauf(){
   const zeigeTip = (el) => {
     const t = tage[+el.dataset.i], v = t[k] || 0, n = gepostetProTag[t.datum] || 0;
     tip.innerHTML = `<strong>${zahl(v)}</strong><span class="key" style="background:var(--viz-gold)"></span>${esc(($('wKennzahl').selectedOptions[0] || {}).text)}
-      <br>${esc(t.datum)}${n ? `<br><span class="key" style="background:var(--viz-violet)"></span>${n} Post${n > 1 ? 's' : ''} gepostet` : ''}`;
+      <br>${esc(kurzIso(t.datum))}${n ? `<br><span class="key" style="background:var(--viz-violet)"></span>${n} Post${n > 1 ? 's' : ''} gepostet` : ''}`;
     const x = +el.getAttribute('x') + band / 2;
     tip.style.left = Math.min(Math.max(x, 70), W - 70) + 'px'; tip.style.top = Math.max(y(v), 40) + 'px';
     tip.classList.remove('hide');
