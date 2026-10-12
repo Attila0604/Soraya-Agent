@@ -13,7 +13,7 @@ Railway-Variablen (alle optional):
 import os
 import threading
 import time
-from datetime import date
+from datetime import date, timedelta
 
 import db
 import himmel
@@ -111,7 +111,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str]) -> list[dict]
     """Ein Claude-Aufruf: die drei Eintraege des Tages in einer Sprache."""
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
     frage = (
-        "Himmelsdaten von heute (bereits in der Zielsprache benannt):\n"
+        "Himmelsdaten für den Tag des Posts (bereits in der Zielsprache benannt):\n"
         f"{himmel.als_text(info)}\n\n"
         "Überschriften der letzten Tage (nicht wiederholen):\n"
         + ("\n".join(f"- {t}" for t in bisherige) if bisherige else "- (noch keine)")
@@ -140,7 +140,7 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
     try:
         if erzwingen:
             db.loesche_tagesplan_entwuerfe(tag, sprache)
-        info = himmel.aufbereiten(himmel.hole_himmel(), tag, sprache)
+        info = himmel.aufbereiten(himmel.hole_himmel(tag), tag, sprache)
         posts = schreibe_posts(info, sprache, db.letzte_titel(sprache))
         gespeichert = db.speichere_posts(posts, quelle="himmel", geplant_fuer=tag, meta=himmel.bild_meta(info))
         db.tagesplan_fertig(tag, sprache, info)
@@ -158,6 +158,30 @@ def erstelle_im_hintergrund(liste: list[str], *, erzwingen: bool = False) -> Non
         for s in liste:
             erstelle(s, erzwingen=erzwingen, manuell=True)
     threading.Thread(target=lauf, name="tagesplan-knopf", daemon=True).start()
+
+
+_vorplanen_sperre = threading.Lock()
+
+
+def vorplanen(tage: int = 7, liste: list[str] | None = None) -> dict:
+    """Die naechsten Tage (ab morgen) im Hintergrund vorplanen, Tag fuer Tag, damit jeder Tag
+    die Ueberschriften der Vortage kennt. Schon erstellte Tage kosten nichts (werden uebersprungen)."""
+    tage = max(1, min(int(tage), 14))
+    liste = liste or sprachen()
+    erster = himmel.heute() + timedelta(days=1)
+    daten = [erster + timedelta(days=i) for i in range(tage)]
+    if not _vorplanen_sperre.acquire(blocking=False):
+        return {"gestartet": False, "grund": "Vorplanen läuft bereits."}
+
+    def lauf():
+        try:
+            for tag in daten:
+                for s in liste:
+                    erstelle(s, tag=tag, manuell=True)
+        finally:
+            _vorplanen_sperre.release()
+    threading.Thread(target=lauf, name="tagesplan-vorplanen", daemon=True).start()
+    return {"gestartet": True, "von": daten[0].isoformat(), "bis": daten[-1].isoformat(), "sprachen": liste}
 
 
 def pruefe_faellige(jetzt_stunde: int | None = None) -> list[dict]:

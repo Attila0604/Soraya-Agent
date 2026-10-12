@@ -120,8 +120,12 @@ def speichere_posts(posts: list[dict], *, quelle: str = "studio",
 
 
 def lade_posts(limit: int = 50, *, von: date | None = None, bis: date | None = None,
-               sprache: str | None = None, status: str | None = None) -> list[dict]:
+               sprache: str | None = None, status: str | None = None,
+               himmel: bool | None = None) -> list[dict]:
+    """himmel=False: nur eigene Posts (Studio/Webseite), neueste zuerst."""
     bedingungen, werte = [], []
+    if himmel is not None:
+        bedingungen.append("quelle = 'himmel'" if himmel else "quelle <> 'himmel'")
     if von and bis:
         # Posts im Zeitraum plus alle ohne Datum (die gehoeren noch eingeplant)
         bedingungen.append("(geplant_fuer between %s and %s or geplant_fuer is null)")
@@ -134,10 +138,11 @@ def lade_posts(limit: int = 50, *, von: date | None = None, bis: date | None = N
         werte.append(status)
     wo = ("where " + " and ".join(bedingungen)) if bedingungen else ""
     werte.append(max(1, min(int(limit), 500)))
+    reihenfolge = ("created_at desc, id desc" if himmel is False
+                   else "geplant_fuer desc nulls last, created_at desc")
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
-            f"select * from soraya_posts {wo} "
-            "order by geplant_fuer desc nulls last, created_at desc limit %s;",
+            f"select * from soraya_posts {wo} order by {reihenfolge} limit %s;",
             werte,
         )
         return cur.fetchall()
@@ -258,6 +263,16 @@ def lade_tagesplaene(datum: date) -> list[dict]:
         return cur.fetchall()
 
 
+def lade_tagesplaene_zeitraum(von: date, bis: date) -> list[dict]:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select datum, sprache, status, versuche, fehler, erstellt, aktualisiert "
+            "from soraya_tagesplaene where datum between %s and %s order by datum, sprache;",
+            (von, bis),
+        )
+        return cur.fetchall()
+
+
 def loesche_tagesplan_entwuerfe(datum: date, sprache: str) -> int:
     """Vor dem Neu-Erstellen: nur unbearbeitete Entwuerfe dieses Tages entfernen."""
     with _verbindung() as conn, conn.cursor() as cur:
@@ -277,7 +292,7 @@ def letzte_titel(sprache: str, tage: int = 7) -> list[str]:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
             "select titel from soraya_posts where quelle = 'himmel' and sprache = %s and titel is not null "
-            "and geplant_fuer >= current_date - %s order by geplant_fuer desc limit 30;",
+            "and geplant_fuer >= current_date - %s order by geplant_fuer desc limit 45;",
             (sprache, tage),
         )
         return [z["titel"] for z in cur.fetchall()]
