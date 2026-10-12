@@ -519,8 +519,8 @@ function bearbeitenDialog(p){
   };
 }
 
-/* ---------- Mond zeichnen (wie in der App: Licht rechts = zunehmend) ---------- */
-function zeichneMond(ctx, cx, cy, r, phaseIndex){
+/* ---------- Mond zeichnen (Licht rechts = zunehmend; Breite nach echter Beleuchtung in %) ---------- */
+function zeichneMond(ctx, cx, cy, r, phaseIndex, beleuchtung){
   const grad = ctx.createRadialGradient(cx - r*.3, cy - r*.35, r*.1, cx, cy, r*1.05);
   grad.addColorStop(0, '#fffbe8'); grad.addColorStop(.45, '#ffe9b0'); grad.addColorStop(1, '#c9a86a');
   ctx.save();
@@ -530,10 +530,17 @@ function zeichneMond(ctx, cx, cy, r, phaseIndex){
   ctx.fillStyle = dunkel; ctx.fill();
   ctx.lineWidth = Math.max(1, r/40); ctx.strokeStyle = 'rgba(201,168,106,.45)'; ctx.stroke();
   if(phaseIndex === null || phaseIndex === undefined){ ctx.restore(); return; }
-  const e = ((phaseIndex * 45 + 22.5) % 360);
   if(phaseIndex === 0){ ctx.restore(); return; }            // Neumond: nur die dunkle Scheibe
-  const rx = Math.abs(Math.cos(e * Math.PI / 180)) * r;
-  const zunehmend = e < 180, sichel = zunehmend ? e < 90 : e > 270;
+  const zunehmend = phaseIndex < 4;
+  let rx, sichel;
+  const b = Number(beleuchtung);
+  if(beleuchtung !== null && beleuchtung !== undefined && beleuchtung !== '' && isFinite(b)){
+    const k = Math.min(.97, Math.max(.03, b / 100));       // ganz schmale Sichel bleibt sichtbar
+    rx = Math.abs(1 - 2*k) * r; sichel = k < .5;
+  } else {                                                // aeltere Posts ohne Prozentwert
+    const e = ((phaseIndex * 45 + 22.5) % 360);
+    rx = Math.abs(Math.cos(e * Math.PI / 180)) * r; sichel = zunehmend ? e < 90 : e > 270;
+  }
   ctx.beginPath();
   if(phaseIndex === 4){ ctx.arc(cx, cy, r, 0, Math.PI*2); }
   else if(zunehmend){
@@ -607,7 +614,7 @@ async function zeichneBild(canvas, p, format){
   let y = story ? 470 : 330;
   if(mitMond){
     const r = story ? 150 : 105, cy = story ? 560 : 335;
-    zeichneMond(ctx, W/2, cy, r, meta.phase_index);
+    zeichneMond(ctx, W/2, cy, r, meta.phase_index, meta.beleuchtung);
     y = cy + r + (story ? 190 : 140);
   }
   y = textBlock(ctx, p.titel || p.text, {x: W/2, y, breite: W - 180, groesse: story ? 108 : 92,
@@ -677,7 +684,7 @@ async function ladeHimmel(){
   try{
     const h = await api('/himmel?sprache=de');
     const ctx = $('mondKlein').getContext('2d'); ctx.clearRect(0, 0, 152, 152);
-    zeichneMond(ctx, 76, 76, 66, h.phase_index);
+    zeichneMond(ctx, 76, 76, 66, h.phase_index, h.beleuchtung);
     const ereignis = (n, e) => e ? `${n} ${e.datum_text} (${e.in_tagen <= 0 ? 'heute' : e.in_tagen === 1 ? 'morgen' : 'in ' + e.in_tagen + ' Tagen'})` : '';
     const rueck = (h.ruecklaeufig || []).map(r => r.planet + (r.bis ? ' bis ' + r.bis : '')).join(', ');
     $('himmelText').innerHTML = `<div class="gross">${esc(h.mond_phase)} · Mond in ${esc(h.mond_zeichen)}</div>
