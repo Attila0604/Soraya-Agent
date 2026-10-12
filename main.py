@@ -34,7 +34,7 @@ from bereiche import (
 )
 from db import (
     init_db, speichere_posts, lade_posts, aendere_post, loesche_post,
-    speichere_zielgruppe, lade_zielgruppen, lade_tagesplaene,
+    speichere_zielgruppe, lade_zielgruppen, lade_tagesplaene, lade_tagesplaene_zeitraum,
 )
 import himmel
 import tagesplan
@@ -115,6 +115,11 @@ class TagesplanAnfrage(BaseModel):
     neu: bool = False
 
 
+class VorplanAnfrage(BaseModel):
+    tage: int = 7
+    sprachen: list[str] = []
+
+
 class ZielgruppeAnfrage(BaseModel):
     bereich: str
     land: str = "at"
@@ -188,9 +193,10 @@ def content_von_url(anfrage: UrlAnfrage):
 
 @app.get("/content")
 def content_ansehen(limit: int = 50, von: Optional[date] = None, bis: Optional[date] = None,
-                    sprache: Optional[str] = None, status: Optional[str] = None):
+                    sprache: Optional[str] = None, status: Optional[str] = None,
+                    himmel: Optional[bool] = None):
     try:
-        return {"posts": lade_posts(limit=limit, von=von, bis=bis,
+        return {"posts": lade_posts(limit=limit, von=von, bis=bis, himmel=himmel,
                                     sprache=norm(sprache) if sprache else None, status=status or None)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -253,6 +259,24 @@ def tagesplan_starten(anfrage: TagesplanAnfrage):
     liste = [s for s in SPRACHEN if s in liste]
     tagesplan.erstelle_im_hintergrund(liste, erzwingen=anfrage.neu)
     return {"gestartet": liste, "neu": anfrage.neu}
+
+
+@app.post("/tagesplan/vorplanen")
+def tagesplan_vorplanen(anfrage: VorplanAnfrage):
+    """Ab morgen die naechsten Tage vorplanen (Hintergrund). Fertige Tage werden uebersprungen."""
+    liste = [norm(s) for s in anfrage.sprachen if s.strip()] or tagesplan.sprachen()
+    return tagesplan.vorplanen(anfrage.tage, [s for s in SPRACHEN if s in liste])
+
+
+@app.get("/tagesplan/zeitraum")
+def tagesplan_zeitraum(von: date, bis: date):
+    """Stand der Tagesplaene je Tag und Sprache (fuer die Wochenansicht)."""
+    if (bis - von).days > 62:
+        raise HTTPException(status_code=400, detail="Zeitraum höchstens 2 Monate.")
+    try:
+        return {"laeufe": lade_tagesplaene_zeitraum(von, bis), "sprachen": tagesplan.sprachen()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/wirkung")

@@ -26,9 +26,11 @@ def stunde_jetzt() -> int:
     return datetime.now(WIEN).hour
 
 
-def hole_himmel() -> dict:
+def hole_himmel(tag: date | None = None) -> dict:
+    """Himmelsdaten von heute oder (zum Vorplanen) von einem bestimmten Tag."""
+    params = {"datum": tag.isoformat()} if tag and tag != heute() else None
     try:
-        antwort = requests.get(engine_url() + "/sky", timeout=30)
+        antwort = requests.get(engine_url() + "/sky", params=params, timeout=30)
         antwort.raise_for_status()
         daten = antwort.json()
     except Exception as e:

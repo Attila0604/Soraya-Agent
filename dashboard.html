@@ -131,6 +131,26 @@
   .tag-kopf h4{margin:0;font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--champagne);font-weight:600}
   .tag-kopf.heute h4::after{content:"  · heute";color:var(--gold);font-family:Inter;font-size:12px;letter-spacing:.1em}
   .zaehler{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--mist-dim)}
+  .plan-knoepfe{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .vorplan{font-size:13px;color:var(--mist);margin-top:10px}
+  /* kompakte Zeile pro Post, Klick klappt die volle Karte auf */
+  details.pz{border:1px solid var(--line-soft);border-radius:12px;background:var(--panel);margin-bottom:8px}
+  details.pz[open]{border-color:var(--line)}
+  details.pz>summary{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;list-style:none;
+                     text-transform:none;letter-spacing:0;font-size:14px;color:var(--mist)}
+  #planListe details.pz>summary::before{content:"›";color:var(--gold);font-weight:600;transition:transform .15s;display:inline-block;width:10px}
+  #planListe details.pz[open]>summary::before{content:"›";transform:rotate(90deg)}
+  details.pz>summary .pt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                         font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#F4EEDD}
+  details.pz>summary .st{margin-left:0;flex:none}
+  details.pz>summary .tag{flex:none}
+  details.pz .card{border:0;border-radius:0 0 12px 12px;margin:0;border-top:1px solid var(--line-soft)}
+  details.pz .card::before{display:none}
+  .tagstand{display:inline-flex;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--mist-dim)}
+  .tagstand span{display:inline-flex;align-items:center;gap:4px}
+  .tagstand i{width:7px;height:7px;border-radius:50%;background:var(--mist-dim);display:inline-block}
+  .tagstand .fertig i{background:var(--ok)} .tagstand .laeuft i{background:var(--warn)} .tagstand .fehler i{background:var(--bad)}
+  details.ideen{margin-top:26px} details.ideen>summary{font-size:13px}
   .zaehler b{color:#F4EEDD;font-size:15px}
 
   /* ---------- Dialog / Bild ---------- */
@@ -206,6 +226,7 @@
     .kopfzeile{flex-direction:column;align-items:stretch;gap:10px;padding:10px 18px}
     .tabs{justify-content:flex-start;margin:0 -18px;padding:0 18px}
     .woche strong{min-width:0;font-size:18px}
+    details.pz>summary .tag.leise{display:none}
     .trichter .stufe{grid-template-columns:1fr}
   }
 </style>
@@ -272,6 +293,11 @@
         </div>
       </div>
       <div class="zaehler" id="planZaehler" style="margin-top:14px"></div>
+      <div class="plan-knoepfe">
+        <button class="klein" id="btnVorplanen">Nächste 7 Tage vorplanen</button>
+        <button class="ghost klein" id="btnAufklappen">Alle aufklappen</button>
+      </div>
+      <div class="vorplan hide" id="vorplanStand" role="status"></div>
     </div>
     <div id="planListe"></div>
   </section>
@@ -803,41 +829,103 @@ $('wocheZurueck').onclick = () => { planMontag = plusTage(planMontag, -7); ladeP
 $('wocheVor').onclick = () => { planMontag = plusTage(planMontag, 7); ladePlan(); };
 $('planSprache').onchange = () => ladePlan();
 $('planStatus').onchange = () => ladePlan();
+const OFFEN = new Set();                       // aufgeklappte Posts bleiben nach dem Neuladen offen
+let planAlleOffen = false, planTimer = null, vorplanBis = null;
+function zeile(p){
+  const st = p.status || 'entwurf';
+  return `<details class="pz" data-pz="${esc(p.id)}"${OFFEN.has(String(p.id)) || planAlleOffen ? ' open' : ''}>
+    <summary><span class="tag">${esc(ART[p.art] || 'Post')}</span><span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
+      <span class="pt">${esc(p.titel || (p.text || '').slice(0, 60))}</span><span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span></summary>
+    ${karte(p)}</details>`;
+}
+document.addEventListener('toggle', (ev) => {
+  const d = ev.target; if(!d.matches || !d.matches('details.pz')) return;
+  d.open ? OFFEN.add(d.dataset.pz) : OFFEN.delete(d.dataset.pz);
+}, true);
+function tagStand(laeufe, sprachen, tIso){
+  const l = laeufe.filter(x => String(x.datum).slice(0, 10) === tIso);
+  if(!l.length) return '';
+  const st = Object.fromEntries(l.map(x => [x.sprache, x.status]));
+  return `<span class="tagstand" aria-label="Tagesplan">${sprachen.map(s => `<span class="${esc(st[s] || '')}" title="${esc(st[s] || 'noch nicht erstellt')}"><i></i>${s.toUpperCase()}</span>`).join('')}</span>`;
+}
 async function ladePlan(){
+  clearTimeout(planTimer);
   const bis = plusTage(planMontag, 6);
   $('wocheLabel').textContent = `${kurz(planMontag)} – ${kurz(bis)}`;
   const q = new URLSearchParams({von: iso(planMontag), bis: iso(bis), limit: 400});
   if($('planSprache').value) q.set('sprache', $('planSprache').value);
   if($('planStatus').value) q.set('status', $('planStatus').value);
-  let posts;
-  try{ posts = (await api('/content?' + q)).posts || []; }catch(e){ melde('Fehler: ' + e.message); return; }
+  let posts, stand = {laeufe: [], sprachen: []};
+  try{
+    [posts, stand] = await Promise.all([
+      api('/content?' + q).then(d => d.posts || []),
+      api(`/tagesplan/zeitraum?von=${iso(planMontag)}&bis=${iso(bis)}`).catch(() => stand)]);
+  }catch(e){ melde('Fehler: ' + e.message); return; }
   const zaehl = (s) => posts.filter(p => p.geplant_fuer && p.status === s).length;
   $('planZaehler').innerHTML = `<span><b>${posts.filter(p => p.geplant_fuer).length}</b> geplant</span>
     <span><b>${zaehl('entwurf')}</b> Entwurf</span><span><b>${zaehl('freigegeben')}</b> freigegeben</span>
     <span><b>${zaehl('gepostet')}</b> gepostet</span>`;
   const heute = iso(new Date());
   let html = '';
-  const ohne = posts.filter(p => !p.geplant_fuer);
-  if(ohne.length){
-    html += `<div class="tag-kopf"><h4>Noch ohne Datum</h4><span class="meta">${ohne.length} · Datum setzen zum Einplanen</span></div>`;
-    html += ohne.map(p => karte(p)).join('');
-  }
   for(let i = 0; i < 7; i++){
     const t = plusTage(planMontag, i), tIso = iso(t);
     const tagPosts = posts.filter(p => (p.geplant_fuer || '').slice(0,10) === tIso).sort(ordne);
     html += `<div class="tag-kopf${tIso === heute ? ' heute' : ''}"><h4>${WOCHENTAGE[i]}, ${kurz(t)}</h4>
-      <span class="meta">${tagPosts.length ? tagPosts.length + ' Posts' : 'nichts geplant'}</span></div>`;
-    html += tagPosts.map(p => karte(p)).join('');
+      <span class="meta">${tagStand(stand.laeufe || [], stand.sprachen || [], tIso)} ${tagPosts.length ? tagPosts.length + ' Posts' : 'nichts geplant'}</span></div>`;
+    html += tagPosts.map(zeile).join('');
+  }
+  const ohne = posts.filter(p => !p.geplant_fuer);
+  if(ohne.length){
+    html += `<details class="ideen"><summary>Ideen ohne Datum (${ohne.length}) · Datum setzen zum Einplanen</summary>
+      <div style="margin-top:10px">${ohne.map(zeile).join('')}</div></details>`;
   }
   $('planListe').innerHTML = html;
+  zeigeVorplanStand();
 }
+async function zeigeVorplanStand(){
+  if(!vorplanBis) return;
+  const morgen = iso(plusTage(new Date(), 1));
+  let d; try{ d = await api(`/tagesplan/zeitraum?von=${morgen}&bis=${vorplanBis.bis}`); }catch(e){ return; }
+  const l = (d.laeufe || []).filter(x => vorplanBis.sprachen.includes(x.sprache));
+  const ziel = vorplanBis.tage * vorplanBis.sprachen.length;
+  const fertig = l.filter(x => x.status === 'fertig').length, fehler = l.filter(x => x.status === 'fehler').length;
+  const laeuft = fertig + fehler < ziel && (Date.now() - vorplanBis.start < 20 * 60 * 1000);
+  $('vorplanStand').classList.remove('hide');
+  $('vorplanStand').innerHTML = laeuft
+    ? `<span class="spin"></span>Vorplanen: ${fertig} von ${ziel} fertig${fehler ? ` · ${fehler} Fehler` : ''} …`
+    : `Vorplanen abgeschlossen: ${fertig} von ${ziel} fertig${fehler ? ` · ${fehler} mit Fehler (nochmal starten wiederholt sie)` : ' ✓'}`;
+  $('btnVorplanen').disabled = laeuft;
+  if(laeuft && aktiv === 'plan') planTimer = setTimeout(ladePlan, 5000);
+  if(!laeuft) vorplanBis = null;
+}
+$('btnVorplanen').onclick = async () => {
+  const sprachen = (await api('/tagesplan').catch(() => ({sprachen: ['de']}))).sprachen || ['de'];
+  const n = 7 * sprachen.length;
+  if(!confirm(`Die nächsten 7 Tage ab morgen für ${sprachen.map(s => s.toUpperCase()).join(', ')} vorplanen?\n\n`
+    + `Das sind bis zu ${n} Claude-Aufrufe (je ca. 5–10 Cent). Schon erstellte Tage werden übersprungen und kosten nichts.`)) return;
+  try{
+    const r = await api('/tagesplan/vorplanen', {method: 'POST', body: JSON.stringify({tage: 7})});
+    if(!r.gestartet){ melde(r.grund || 'Vorplanen läuft bereits.'); }
+    vorplanBis = {bis: r.bis || iso(plusTage(new Date(), 7)), tage: 7, sprachen: r.sprachen || sprachen, start: Date.now()};
+    $('btnVorplanen').disabled = true; melde('');
+    $('vorplanStand').classList.remove('hide');
+    $('vorplanStand').innerHTML = '<span class="spin"></span>Vorplanen gestartet …';
+    setTimeout(ladePlan, 1500);
+  }catch(e){ melde('Fehler: ' + e.message); }
+};
+$('btnAufklappen').onclick = () => {
+  planAlleOffen = !planAlleOffen;
+  if(!planAlleOffen) OFFEN.clear();
+  $('btnAufklappen').textContent = planAlleOffen ? 'Alle zuklappen' : 'Alle aufklappen';
+  document.querySelectorAll('#planListe details.pz').forEach(d => d.open = planAlleOffen);
+};
 LADER.plan = ladePlan;
 
 /* ---------- STUDIO ---------- */
 document.querySelectorAll('.sprachwahl').forEach(s => s.innerHTML = SPRACHEN.map(([c, n]) => `<option value="${c}">${n}</option>`).join(''));
 async function ladeStudio(){
   try{
-    const posts = ((await api('/content?limit=80')).posts || []).filter(p => p.quelle !== 'himmel').slice(0, 40);
+    const posts = (await api('/content?himmel=false&limit=40')).posts || [];
     liste($('studioListe'), posts, 'Noch keine Posts.<span>Gib oben ein Thema ein und leg los.</span>');
   }catch(e){ melde('Konnte Posts nicht laden.'); }
 }
