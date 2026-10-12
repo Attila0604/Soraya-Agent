@@ -103,6 +103,14 @@
   .aktionen{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .aktionen select,.aktionen input{width:auto;padding:6px 10px;font-size:13px;border-radius:8px}
   .meta{font-size:12px;color:var(--mist-dim)}
+  .wirk{font-size:13px;color:var(--champagne);margin:0 0 12px;display:flex;flex-wrap:wrap;gap:4px 12px}
+  .wirk:empty{display:none}
+  .wirk b{color:#F4EEDD;font-weight:600}
+  .wirk .leise{color:var(--mist-dim)}
+  .linkzeile{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+  .linkzeile code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#0C1022;border:1px solid var(--line);
+                  border-radius:8px;padding:6px 10px;color:#EFE7D2;word-break:break-all}
+  .linkzeile .name{min-width:90px;font-size:13px;color:var(--mist)}
 
   /* ---------- Heute ---------- */
   .himmel{display:flex;gap:18px;align-items:center}
@@ -502,8 +510,10 @@ function karte(p, {datum = true} = {}){
     <p class="txt">${esc(p.text)}</p>
     ${skript}
     ${p.hashtags ? `<p class="tags">${esc(p.hashtags)}</p>` : ''}
+    <p class="wirk" data-wirk="p${esc(p.id)}">${wirkText('p' + p.id)}</p>
     <div class="aktionen">
       <button class="ghost klein" data-aktion="kopieren">Text kopieren</button>
+      <button class="ghost klein" data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
       ${skript ? '<button class="ghost klein" data-aktion="skript">Skript kopieren</button>' : ''}
       <button class="ghost klein" data-aktion="bild">Bild</button>
       <button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button>
@@ -522,6 +532,30 @@ async function kopiere(btn, text){
        setTimeout(() => btn.textContent = a, 1400); }
   catch(e){ melde('Kopieren nicht möglich – bitte Text markieren.'); }
 }
+/* ---------- Wirkung pro Post (Links mit Kennung, Zahlen aus der App) ---------- */
+let LINKS = {basis: 'https://www.sorayaluxuryastroguide.com/', bio: {}}, QUELLEN = {}, quellenStand = 0;
+api('/links').then(l => { LINKS = l; }).catch(() => {});
+const postLink = (id) => `${LINKS.basis}?q=p${id}`;
+const mehrzahl = (n, eins, viele) => `${zahl(n)} ${n === 1 ? eins : viele}`;
+function wirkText(code){
+  const q = QUELLEN[code]; if(!q) return '';
+  const s = q.schritte || {}, teile = [];
+  if(s.besuch) teile.push(`<span><b>${mehrzahl(s.besuch, 'Besuch', 'Besuche')}</b></span>`);
+  if(s.store_klick) teile.push(`<span>${zahl(s.store_klick)} × Play Store</span>`);
+  if(s.schnellstart) teile.push(`<span>${mehrzahl(s.schnellstart, 'Schnellstart', 'Schnellstarts')}</span>`);
+  if(s.register_click) teile.push(`<span>${zahl(s.register_click)} × Registrieren</span>`);
+  if(q.konten) teile.push(`<span><b>${mehrzahl(q.konten, 'neues Konto', 'neue Konten')}</b></span>`);
+  return teile.length ? `<span class="leise">Über den Post-Link:</span>${teile.join('')}` : '';
+}
+async function ladeQuellen(){
+  if(Date.now() - quellenStand < 5 * 60 * 1000) return;
+  quellenStand = Date.now();
+  try{
+    const w = await api('/wirkung?tage=90');
+    if(w.eingerichtet){ QUELLEN = (w.statistik && w.statistik.quellen) || {}; }
+  }catch(e){}
+  document.querySelectorAll('.wirk[data-wirk]').forEach(el => { el.innerHTML = wirkText(el.dataset.wirk); });
+}
 async function aendere(id, felder){
   await api('/content/' + id, {method: 'PATCH', body: JSON.stringify(felder)});
 }
@@ -534,6 +568,7 @@ document.addEventListener('click', async (ev) => {
   if(a === 'kopieren') return kopiere(btn, (p.text || '') + (p.hashtags ? '\n\n' + p.hashtags : ''));
   if(a === 'skript'){ const s = p.skript || {};
     return kopiere(btn, [s.hook, ...(s.szenen || []).map((x, i) => (i+1) + '. ' + x), s.schluss].filter(Boolean).join('\n')); }
+  if(a === 'link') return kopiere(btn, postLink(p.id));
   if(a === 'bild') return bildDialog(p);
   if(a === 'bearbeiten') return bearbeitenDialog(p);
 });
@@ -820,7 +855,7 @@ async function starteTagesplan(neu){
 }
 $('btnPlanJetzt').onclick = () => starteTagesplan(false);
 $('btnPlanNeu').onclick = () => starteTagesplan(true);
-LADER.heute = () => { ladeHimmel(); ladeHeute(); };
+LADER.heute = () => { ladeHimmel(); ladeHeute(); ladeQuellen(); };
 
 /* ---------- PLAN ---------- */
 let planMontag = montagVon(new Date());
@@ -919,7 +954,7 @@ $('btnAufklappen').onclick = () => {
   $('btnAufklappen').textContent = planAlleOffen ? 'Alle zuklappen' : 'Alle aufklappen';
   document.querySelectorAll('#planListe details.pz').forEach(d => d.open = planAlleOffen);
 };
-LADER.plan = ladePlan;
+LADER.plan = () => { ladePlan(); ladeQuellen(); };
 
 /* ---------- STUDIO ---------- */
 document.querySelectorAll('.sprachwahl').forEach(s => s.innerHTML = SPRACHEN.map(([c, n]) => `<option value="${c}">${n}</option>`).join(''));
@@ -947,7 +982,7 @@ $('btnUrl').onclick = async () => {
     await ladeStudio(); melde('Fertig ✓');
   }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
 };
-LADER.studio = ladeStudio;
+LADER.studio = () => { ladeStudio(); ladeQuellen(); };
 
 /* ---------- ZIELGRUPPEN ---------- */
 function liPunkte(titel, arr){
@@ -1017,9 +1052,10 @@ const KENNZAHLEN = [
   ['analysen', 'Analysen geladen'], ['partner_vergleiche', 'Partner-Vergleiche'], ['chat_nachrichten', 'Chat-Nachrichten'],
   ['einladungen_geteilt', 'Einladungen geteilt'], ['einladung_geoeffnet', 'Einladung geöffnet'],
   ['einladung_berechnet', 'Einladung berechnet'], ['fehler', 'Fehler in der App'],
+  ['link_besuche', 'Besuche über deine Links'],
 ];
 $('wKennzahl').innerHTML = KENNZAHLEN.map(([k, n]) => `<option value="${k}"${k === 'aktive_nutzer' ? ' selected' : ''}>${n}</option>`).join('');
-let wirkungDaten = null, gepostetProTag = {};
+let wirkungDaten = null, gepostetProTag = {}, postsNachId = {};
 const zahl = (n) => new Intl.NumberFormat('de-AT').format(n || 0);
 const summe = (tage, k) => tage.reduce((s, t) => s + (t[k] || 0), 0);
 function tokenErzeugen(){
@@ -1041,7 +1077,8 @@ function einrichtung(hinweis){
       <li>Optional bei astro-engine: <b>STATS_IGNORIEREN</b> = deine eigenen E-Mail-Adressen und das Demo-Konto, mit Komma getrennt. Die zählen dann nicht mit.</li>
       <li>Bei beiden Diensten „Deploy" bestätigen, 2 Minuten warten, diese Seite neu laden.</li>
     </ol>
-    <p class="note">Der Schlüssel entsteht nur hier in deinem Browser und wird nirgends gespeichert. Die Statistik enthält nur Summen pro Tag, keine Namen oder Geburtsdaten.</p></div>`;
+    <p class="note">Der Schlüssel entsteht nur hier in deinem Browser und wird nirgends gespeichert. Die Statistik enthält nur Summen pro Tag, keine Namen oder Geburtsdaten.</p></div>
+    ${linksPanel()}`;
   $('tokenNeu').onclick = () => { $('tokenWert').textContent = tokenErzeugen(); };
   $('tokenKopie').onclick = (e) => { const t = $('tokenWert').textContent; if(t.length > 20) kopiere(e.target, t); };
 }
@@ -1050,12 +1087,19 @@ async function ladeWirkung(){
   const box = $('wirkungInhalt');
   box.style.opacity = wirkungDaten ? .55 : 1;  // beim Nachladen den alten Stand halten
   try{
-    const [w, gepostet] = await Promise.all([api('/wirkung?tage=' + tage), api('/content?status=gepostet&limit=500')]);
+    const [w, alle] = await Promise.all([api('/wirkung?tage=' + tage), api('/content?limit=500')]);
     box.style.opacity = 1;
     if(!w.eingerichtet){ wirkungDaten = null; return einrichtung(w.hinweis); }
     wirkungDaten = w.statistik;
-    gepostetProTag = {};
-    (gepostet.posts || []).forEach(p => {
+    QUELLEN = wirkungDaten.quellen || {}; quellenStand = Date.now();
+    // Besuche ueber alle Links pro Tag als eigene Kennzahl im Verlauf
+    (wirkungDaten.tage || []).forEach(t => {
+      t.link_besuche = Object.values(QUELLEN).reduce((n, q) => n + ((q.tage || {})[t.datum] || 0), 0);
+    });
+    gepostetProTag = {}; postsNachId = {};
+    (alle.posts || []).forEach(p => {
+      postsNachId[p.id] = p;
+      if(p.status !== 'gepostet') return;
       const t = (p.gepostet_am || p.geplant_fuer || '').slice(0, 10);
       if(t) gepostetProTag[t] = (gepostetProTag[t] || 0) + 1;
     });
@@ -1094,6 +1138,8 @@ function zeigeWirkung(){
         <span class="wert" style="left:calc(${(v / maxStufe * 82).toFixed(1)}% + 8px)">${zahl(v)}<small>${stufen[0][1] ? Math.round(v / stufen[0][1] * 100) + ' %' : ''}</small></span>
       </div></div>`).join('')}
     </div>
+    ${herkunftPanel()}
+    ${linksPanel()}
     <div class="panel trichter"><h2>Sprachen der aktiven Nutzer</h2>
       <p class="hint">Welche App-Sprache die Nutzer im Zeitraum hatten.</p>
       ${sprachen.length ? sprachen.map(([s, v]) => `<div class="stufe"><span class="name">${esc(s === 'unbekannt' ? 'unbekannt (alte Version)' : s.toUpperCase())}</span><div class="spur">
@@ -1103,6 +1149,34 @@ function zeigeWirkung(){
     </div>`;
   zeichneVerlauf();
 }
+const BIO_NAMEN = {'bio-ig': 'Bio-Link Instagram', 'bio-tt': 'Bio-Link TikTok', 'bio-fb': 'Bio-Link Facebook'};
+function quellenName(code){
+  if(BIO_NAMEN[code]) return `<b>${BIO_NAMEN[code]}</b>`;
+  const m = /^p(\d+)$/.exec(code), p = m && postsNachId[m[1]];
+  if(p) return `<b>${esc(p.titel || (p.text || '').slice(0, 50))}</b><br><span class="meta">${esc(ART[p.art] || 'Post')} · ${esc((p.sprache || 'de').toUpperCase())}${p.geplant_fuer ? ' · ' + esc(kurzIso(p.geplant_fuer)) : ''}</span>`;
+  return m ? `<b>Post ${esc(m[1])}</b> <span class="meta">(gelöscht)</span>` : `<b>${esc(code)}</b>`;
+}
+function herkunftPanel(){
+  const zeilen = Object.entries(QUELLEN).map(([code, q]) => ({code, s: q.schritte || {}, konten: q.konten || 0}))
+    .sort((a, b) => (b.konten - a.konten) || ((b.s.besuch || 0) - (a.s.besuch || 0))).slice(0, 25);
+  const inhalt = zeilen.length ? `<div class="tabwrap"><table class="tabelle herkunft"><thead><tr><th scope="col">Herkunft</th>
+      <th scope="col">Besuche</th><th scope="col">Play Store</th><th scope="col">Schnellstart</th><th scope="col">Registrieren</th><th scope="col">Neue Konten</th></tr></thead><tbody>
+      ${zeilen.map(z => `<tr><td style="white-space:normal">${quellenName(z.code)}</td><td>${zahl(z.s.besuch)}</td><td>${zahl(z.s.store_klick)}</td>
+        <td>${zahl(z.s.schnellstart)}</td><td>${zahl(z.s.register_click)}</td><td><b>${zahl(z.konten)}</b></td></tr>`).join('')}</tbody></table></div>`
+    : `<p class="meta">Noch keine Besuche über deine Links. Trag die Bio-Links unten in deine Profile ein und nutze bei Storys und Facebook-Posts „Link kopieren“ auf der Post-Karte.</p>`;
+  return `<div class="panel"><h2>Welche Posts wirken</h2>
+    <p class="hint">Besuche und Konten über deine Links im Zeitraum. Neue Konten zählen, wenn sich jemand innerhalb von 7 Tagen nach dem Klick registriert.</p>${inhalt}</div>`;
+}
+function linksPanel(){
+  const bio = LINKS.bio || {}, namen = {instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook'};
+  return `<div class="panel"><h2>Deine Links</h2>
+    <p class="hint">Trag jeden Bio-Link einmal in das passende Profil ein. Für einzelne Posts (Story-Link-Sticker, Facebook) nimm „Link kopieren“ auf der Post-Karte – dann siehst du genau, was dieser Post bringt.</p>
+    ${Object.entries(bio).map(([k, url]) => `<div class="linkzeile"><span class="name">${namen[k] || esc(k)}</span><code>${esc(url)}</code>
+      <button class="ghost klein" data-kopiere="${esc(url)}">Kopieren</button></div>`).join('')}</div>`;
+}
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-kopiere]'); if(b) kopiere(b, b.dataset.kopiere);
+});
 function tabelle(tage){
   const kopf = KENNZAHLEN.map(([, n]) => `<th scope="col">${esc(n)}</th>`).join('');
   return `<table class="tabelle"><thead><tr><th scope="col">Datum</th>${kopf}<th scope="col">Posts gepostet</th></tr></thead><tbody>
