@@ -270,6 +270,7 @@
 
     <div class="panel">
       <h2>Tagesplan</h2>
+      <label class="imtp" id="autoSchalter"><input type="checkbox" id="planAuto"> Jeden Morgen automatisch erstellen</label>
       <p class="hint" id="planInfo">Pro Sprache: ein Feed-Post, ein Reel mit Skript und eine Story.</p>
       <div class="chips" id="laeufe"></div>
       <div class="fehlerbox hide" id="planFehler" role="alert"></div>
@@ -863,14 +864,26 @@ async function ladeHimmel(){
       ${rueck ? `<div class="zeile meta">Rückläufig: ${esc(rueck)}</div>` : ''}`;
   }catch(e){ $('himmelText').innerHTML = `<div class="gross">Der Himmel heute</div><div class="zeile meta">${esc(e.message)}</div>`; }
 }
+$('planAuto').onchange = async () => {
+  const an = $('planAuto').checked;
+  if(an && !confirm('Tagesplan ab jetzt jeden Morgen automatisch erstellen?')){ $('planAuto').checked = false; return; }
+  $('planAuto').disabled = true;
+  try{ await api('/tagesplan/automatik', {method: 'PUT', body: JSON.stringify({an})});
+       melde(an ? 'Automatik ist an ✓' : 'Automatik ist aus – es wird nichts mehr von selbst erstellt.'); }
+  catch(e){ melde('Fehler: ' + e.message); }
+  ladeHeute();
+};
 async function ladeHeute(){
   clearTimeout(heuteTimer);
   let d;
   try{ d = await api('/tagesplan'); }catch(e){ melde('Fehler: ' + e.message); return; }
   const stand = Object.fromEntries((d.laeufe || []).map(l => [l.sprache, l]));
+  $('planAuto').checked = !!d.automatisch; $('planAuto').disabled = !!d.automatik_gesperrt;
+  $('autoSchalter').classList.toggle('on', !!d.automatisch);
   $('planInfo').textContent = d.automatisch
-    ? `Automatisch jeden Morgen ab ${d.ab_stunde} Uhr (Wiener Zeit) für ${d.sprachen.map(s => s.toUpperCase()).join(', ')}. Pro Sprache: Feed-Post, Reel mit Skript, Story.`
-    : 'Automatik ist aus (TAGESPLAN_AUTO=0). Erstelle den Plan hier per Knopf.';
+    ? `An: jeden Morgen ab ${d.ab_stunde} Uhr (Wiener Zeit) für ${d.sprachen.map(s => s.toUpperCase()).join(', ')}. Pro Sprache: Feed-Post, Reel mit Skript, Story.`
+    : d.automatik_gesperrt ? 'Automatik ist in Railway gesperrt (TAGESPLAN_AUTO=0). Erstelle den Plan hier per Knopf.'
+    : 'Automatik ist aus: Es wird nichts von selbst erstellt. Per Knopf geht es trotzdem.';
   $('laeufe').innerHTML = d.sprachen.map(s => {
     const l = stand[s], st = l ? l.status : 'fehlt';
     const text = {fertig: 'fertig', laeuft: 'wird erstellt …', fehler: 'Fehler', fehlt: 'noch nicht erstellt'}[st] || st;

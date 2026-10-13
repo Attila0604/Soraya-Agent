@@ -65,6 +65,16 @@ def init_db():
             );
             """
         )
+        # Schalter aus dem Dashboard (z. B. Tagesplan-Automatik), seit Version 0.10
+        cur.execute(
+            """
+            create table if not exists soraya_einstellungen (
+                schluessel    text primary key,
+                wert          jsonb not null,
+                aktualisiert  timestamptz not null default now()
+            );
+            """
+        )
         # Zielgruppe im Tagesplan verwenden, Land der Recherche (seit Version 0.9)
         cur.execute("alter table soraya_zielgruppen add column if not exists im_tagesplan boolean not null default false;")
         cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
@@ -202,6 +212,23 @@ def lade_zielgruppen(limit: int = 20) -> list[dict]:
             (limit,),
         )
         return cur.fetchall()
+
+
+def lade_einstellung(schluessel: str, standard=None):
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("select wert from soraya_einstellungen where schluessel = %s;", (schluessel,))
+        zeile = cur.fetchone()
+    return zeile["wert"] if zeile else standard
+
+
+def setze_einstellung(schluessel: str, wert) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "insert into soraya_einstellungen (schluessel, wert) values (%s, %s) "
+            "on conflict (schluessel) do update set wert = excluded.wert, aktualisiert = now();",
+            (schluessel, Jsonb(wert)),
+        )
+        conn.commit()
 
 
 def setze_zielgruppe_im_tagesplan(zielgruppe_id: int, an: bool) -> dict | None:

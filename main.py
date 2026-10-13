@@ -138,10 +138,13 @@ def beim_start():
         init_db()
     except Exception as e:
         print(f"[Start] Datenbank noch nicht bereit: {e}")
-    if tagesplan.automatisch():
-        tagesplan.zeitplan_starten()
-        print(f"[Start] Tagesplan automatisch ab {tagesplan.startstunde()} Uhr: "
-              f"{', '.join(tagesplan.sprachen())}", flush=True)
+    if tagesplan.gesperrt():
+        print("[Start] Tagesplan-Automatik gesperrt (TAGESPLAN_AUTO=0)", flush=True)
+        return
+    # Der Zeitplan fragt bei jedem Durchlauf den Schalter im Dashboard ab
+    tagesplan.zeitplan_starten()
+    print(f"[Start] Tagesplan-Automatik ist {'AN' if tagesplan.automatisch() else 'AUS'} "
+          f"(ab {tagesplan.startstunde()} Uhr: {', '.join(tagesplan.sprachen())})", flush=True)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -246,11 +249,27 @@ def tagesplan_ansehen(datum: Optional[date] = None):
     return {
         "datum": tag,
         "automatisch": tagesplan.automatisch(),
+        "automatik_gesperrt": tagesplan.gesperrt(),
         "ab_stunde": tagesplan.startstunde(),
         "sprachen": tagesplan.sprachen(),
         "laeufe": laeufe,
         "posts": posts,
     }
+
+
+class AutomatikAnfrage(BaseModel):
+    an: bool
+
+
+@app.put("/tagesplan/automatik")
+def tagesplan_automatik(anfrage: AutomatikAnfrage):
+    if tagesplan.gesperrt():
+        raise HTTPException(status_code=409, detail="In Railway ist TAGESPLAN_AUTO=0 gesetzt. "
+                                                    "Entferne die Variable, dann wirkt der Schalter.")
+    try:
+        return {"automatisch": tagesplan.automatik_setzen(anfrage.an)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/tagesplan")
