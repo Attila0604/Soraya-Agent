@@ -34,7 +34,7 @@ from bereiche import (
 )
 from db import (
     init_db, speichere_posts, lade_posts, aendere_post, loesche_post,
-    speichere_zielgruppe, lade_zielgruppen, lade_tagesplaene, lade_tagesplaene_zeitraum,
+    speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
 )
 import himmel
 import tagesplan
@@ -346,7 +346,7 @@ def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
         )
         profil["_quellen"] = geklappt
         profil["_gesucht"] = begriffe
-        zeile = speichere_zielgruppe(titel, profil)
+        zeile = speichere_zielgruppe(titel, profil, land=anfrage.land)
 
         return {
             "bereich": titel,
@@ -364,6 +364,23 @@ def zielgruppe_erforschen(anfrage: ZielgruppeAnfrage):
 @app.get("/zielgruppen")
 def zielgruppen_ansehen(limit: int = 20):
     try:
-        return {"zielgruppen": lade_zielgruppen(limit=limit)}
+        zeilen = lade_zielgruppen(limit=limit)
+        # welches Profil der Tagesplan je Sprache gerade nutzt (auch ohne Markierung)
+        return {"zielgruppen": zeilen, "im_tagesplan": tagesplan.zielgruppen_je_sprache()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class ZielgruppeAenderung(BaseModel):
+    im_tagesplan: bool
+
+
+@app.patch("/zielgruppen/{zielgruppe_id}")
+def zielgruppe_aendern(zielgruppe_id: int, aenderung: ZielgruppeAenderung):
+    try:
+        zeile = setze_zielgruppe_im_tagesplan(zielgruppe_id, aenderung.im_tagesplan)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    if not zeile:
+        raise HTTPException(status_code=404, detail="Profil nicht gefunden.")
+    return {"zielgruppe": zeile}

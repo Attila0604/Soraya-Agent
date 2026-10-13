@@ -65,6 +65,9 @@ def init_db():
             );
             """
         )
+        # Zielgruppe im Tagesplan verwenden, Land der Recherche (seit Version 0.9)
+        cur.execute("alter table soraya_zielgruppen add column if not exists im_tagesplan boolean not null default false;")
+        cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
         cur.execute(
             """
             create table if not exists soraya_tagesplaene (
@@ -180,12 +183,12 @@ def loesche_post(post_id: int) -> bool:
     return geloescht
 
 
-def speichere_zielgruppe(bereich: str, profil: dict) -> dict:
+def speichere_zielgruppe(bereich: str, profil: dict, land: str | None = None) -> dict:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
-            "insert into soraya_zielgruppen (bereich, profil) "
-            "values (%s, %s) returning *;",
-            (bereich, json.dumps(profil)),
+            "insert into soraya_zielgruppen (bereich, profil, land) "
+            "values (%s, %s, %s) returning *;",
+            (bereich, json.dumps(profil), land),
         )
         zeile = cur.fetchone()
         conn.commit()
@@ -195,10 +198,21 @@ def speichere_zielgruppe(bereich: str, profil: dict) -> dict:
 def lade_zielgruppen(limit: int = 20) -> list[dict]:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
-            "select * from soraya_zielgruppen order by created_at desc limit %s;",
+            "select * from soraya_zielgruppen order by created_at desc, id desc limit %s;",
             (limit,),
         )
         return cur.fetchall()
+
+
+def setze_zielgruppe_im_tagesplan(zielgruppe_id: int, an: bool) -> dict | None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "update soraya_zielgruppen set im_tagesplan = %s where id = %s returning *;",
+            (bool(an), zielgruppe_id),
+        )
+        zeile = cur.fetchone()
+        conn.commit()
+    return zeile
 
 
 # ---------------------------------------------------------------------------

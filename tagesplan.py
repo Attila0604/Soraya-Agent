@@ -37,6 +37,10 @@ Regeln:
 - Soraya nur dezent erwähnen; am Ende von Reel und Feed-Post ein kurzer Hinweis wie
   „Dein persönliches Horoskop: {link_in_bio}" (in der Sprache des Posts).
 - Wiederhole keine Überschriften der letzten Tage (Liste unten).
+- Kommt ein Zielgruppen-Profil mit: Greife auf, was diese Menschen beschäftigt und
+  wie sie sprechen, damit sie sich angesprochen fühlen. Sinngemäß in der Sprache des
+  Posts, nicht wörtlich zitieren, nichts über sie dazuerfinden. Der Himmel bleibt der
+  Anlass des Tages, die Zielgruppe bestimmt den Blickwinkel.
 
 Liefere genau drei Einträge, in dieser Reihenfolge:
 1. art "post", platform "instagram": Feed-Post (Bild + Text, 60-150 Wörter).
@@ -107,13 +111,61 @@ def startstunde() -> int:
         return 6
 
 
-def schreibe_posts(info: dict, sprache: str, bisherige: list[str]) -> list[dict]:
+# Recherche-Land -> Sprache der Posts (welches Profil passt zu welcher Sprache)
+LAND_SPRACHE = {"at": "de", "de": "de", "ch": "de", "hu": "hu", "it": "it", "uk": "en", "us": "en"}
+
+
+def zielgruppen_je_sprache(zeilen: list[dict] | None = None) -> dict:
+    """Welches Profil der Tagesplan je Sprache nutzt: markierte Profile (passendes Land
+    zuerst, sonst das neueste markierte); ist keines markiert, das neueste Profil.
+    Antwort: {sprache: {"id", "bereich", "automatisch"}} -- leer, wenn es keine Profile gibt."""
+    if zeilen is None:
+        zeilen = db.lade_zielgruppen(limit=50)
+    markiert = [z for z in zeilen if z.get("im_tagesplan")]
+    kandidaten = markiert or zeilen[:1]
+    auswahl = {}
+    for s in SPRACHEN:
+        passend = [z for z in kandidaten if LAND_SPRACHE.get(z.get("land") or "") == s]
+        z = (passend or kandidaten or [None])[0]
+        if z:
+            auswahl[s] = {"id": z["id"], "bereich": z["bereich"], "automatisch": not markiert}
+    return auswahl
+
+
+def _punkte(werte, n: int) -> str:
+    if isinstance(werte, str):
+        werte = [werte]
+    werte = [str(w).strip() for w in (werte or []) if str(w).strip()][:n]
+    return "; ".join(w[:160] for w in werte)
+
+
+def zielgruppen_text(zeile: dict | None) -> str:
+    """Kurzfassung eines Profils fuer den Prompt (nur das, was beim Schreiben hilft)."""
+    if not zeile:
+        return ""
+    p = zeile.get("profil") or {}
+    teile = [
+        ("Wer sie sind", (p.get("wer_sind_sie") or "").strip()[:400]),
+        ("Was sie beschäftigt", _punkte(p.get("beschaeftigt_sie") or p.get("beschäftigt_sie"), 4)),
+        ("Ihre Worte", _punkte(p.get("sprache"), 6)),
+        ("Was sie sich wünschen", _punkte(p.get("wuensche"), 3)),
+        ("Worauf achten", _punkte(p.get("worauf_achten"), 3)),
+    ]
+    zeilen = [f"- {k}: {v}" for k, v in teile if v]
+    if not zeilen:
+        return ""
+    return f"Zielgruppe (Recherche „{zeile.get('bereich')}“):\n" + "\n".join(zeilen)
+
+
+def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None = None) -> list[dict]:
     """Ein Claude-Aufruf: die drei Eintraege des Tages in einer Sprache."""
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
+    profil = zielgruppen_text(zielgruppe)
     frage = (
         "Himmelsdaten für den Tag des Posts (bereits in der Zielsprache benannt):\n"
         f"{himmel.als_text(info)}\n\n"
-        "Überschriften der letzten Tage (nicht wiederholen):\n"
+        + (f"{profil}\n\n" if profil else "")
+        + "Überschriften der letzten Tage (nicht wiederholen):\n"
         + ("\n".join(f"- {t}" for t in bisherige) if bisherige else "- (noch keine)")
         + f"\n\n{sprach_anweisung(sprache)}"
     )
@@ -131,6 +183,17 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str]) -> list[dict]
     return posts
 
 
+def _zielgruppe_fuer(sprache: str) -> dict | None:
+    """Das Profil fuer diese Sprache; ein Datenbankfehler hier soll den Tagesplan nicht stoppen."""
+    try:
+        zeilen = db.lade_zielgruppen(limit=50)
+        wahl = zielgruppen_je_sprache(zeilen).get(sprache)
+        return next((z for z in zeilen if wahl and z["id"] == wahl["id"]), None)
+    except Exception as e:
+        print(f"[Tagesplan] Zielgruppe nicht geladen: {e}", flush=True)
+        return None
+
+
 def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, manuell: bool = False) -> dict:
     """Erstellt den Tagesplan fuer eine Sprache (falls noch nicht vorhanden)."""
     sprache = norm(sprache)
@@ -141,8 +204,12 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
         if erzwingen:
             db.loesche_tagesplan_entwuerfe(tag, sprache)
         info = himmel.aufbereiten(himmel.hole_himmel(tag), tag, sprache)
-        posts = schreibe_posts(info, sprache, db.letzte_titel(sprache))
-        gespeichert = db.speichere_posts(posts, quelle="himmel", geplant_fuer=tag, meta=himmel.bild_meta(info))
+        zielgruppe = _zielgruppe_fuer(sprache)
+        posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe)
+        meta = himmel.bild_meta(info)
+        if zielgruppe:
+            meta["zielgruppe"] = zielgruppe["bereich"]
+        gespeichert = db.speichere_posts(posts, quelle="himmel", geplant_fuer=tag, meta=meta)
         db.tagesplan_fertig(tag, sprache, info)
         print(f"[Tagesplan] {tag} {sprache}: {len(gespeichert)} Posts", flush=True)
         return {"sprache": sprache, "status": "fertig", "posts": len(gespeichert)}

@@ -229,6 +229,12 @@
   .plat{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
   .foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .stamp{font-size:12px;color:var(--mist-dim)}
+  .imtp{display:flex;align-items:center;gap:8px;margin:0;cursor:pointer;font-size:13px;color:var(--mist-dim);
+        letter-spacing:0;text-transform:none}
+  .imtp input{width:auto;margin:0;accent-color:var(--gold)}
+  .imtp.on{color:var(--champagne)}
+  .tpinfo{font-size:13px;color:var(--mist-dim);margin:0 0 12px}
+  .tpinfo b{color:var(--champagne);font-weight:600}
   @media (max-width:560px){
     .himmel{align-items:flex-start}
     .kopfzeile{flex-direction:column;align-items:stretch;gap:10px;padding:10px 18px}
@@ -412,6 +418,7 @@
       <h3>Deine Profile</h3>
       <button class="ghost" id="btnProfileLaden">Aktualisieren</button>
     </div>
+    <p class="tpinfo" id="tpInfo" hidden></p>
     <div id="profile"></div>
   </section>
 
@@ -503,6 +510,7 @@ function karte(p, {datum = true} = {}){
       <span class="tag leise">${esc(p.platform)}</span>
       <span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
       ${p.quelle === 'himmel' ? '<span class="tag leise">Himmel</span>' : ''}
+      ${p.meta && p.meta.zielgruppe ? `<span class="tag leise" title="Zielgruppe, für die geschrieben wurde">Für: ${esc(p.meta.zielgruppe)}</span>` : ''}
       <span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span>
     </div>
     ${p.titel ? `<p class="titel">${esc(p.titel)}</p>` : ''}
@@ -657,6 +665,51 @@ function schriften(){
   }
   return schriftenBereit;
 }
+/* ---------- Soraya-Zeichen "Portal" (wie das App-Logo, Raster 512, Zeichen 91..421 x 112..424) ---------- */
+const PORTAL_BOGEN = "M160,392 V236 A96,96 0 0 1 352,236 V392";
+function portalStern(ctx, cx, cy, h, farbe){
+  const w = h * .2, b = h * .74;
+  ctx.fillStyle = farbe;
+  ctx.fill(new Path2D(`M${cx},${cy-h} L${cx+w},${cy-w} L${cx+b},${cy} L${cx+w},${cy+w} L${cx},${cy+h} L${cx-w},${cy+w} L${cx-b},${cy} L${cx-w},${cy-w} Z`));
+}
+function zeichnePortal(ctx, cx, oben, hoehe){
+  const s = hoehe / 312;
+  ctx.save();
+  ctx.translate(cx - 256 * s, oben - 112 * s);
+  ctx.scale(s, s);
+  const gold = ctx.createLinearGradient(91, 112, 421, 424);
+  gold.addColorStop(0, '#fff5d1'); gold.addColorStop(.42, '#ebcb86'); gold.addColorStop(1, '#a47b35');
+  const innen = ctx.createLinearGradient(0, 140, 0, 392);
+  innen.addColorStop(0, '#2b1756'); innen.addColorStop(1, '#120a28');
+  const flaeche = new Path2D(PORTAL_BOGEN + " Z");
+  ctx.fillStyle = innen; ctx.fill(flaeche);
+  ctx.save(); ctx.clip(flaeche);                                   // Art-deco-Strahlen
+  ctx.strokeStyle = 'rgba(235,203,134,.24)'; ctx.lineWidth = 1.6;
+  for(let a = 18; a <= 162; a += 12){
+    const r = a * Math.PI / 180;
+    ctx.beginPath(); ctx.moveTo(256, 392); ctx.lineTo(256 + 180 * Math.cos(r), 392 - 180 * Math.sin(r)); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = gold;
+  ctx.globalAlpha = .7; ctx.lineWidth = 3; ctx.stroke(new Path2D("M181,392 V238 A75,75 0 0 1 331,238 V392")); ctx.globalAlpha = 1;
+  ctx.lineWidth = 11; ctx.stroke(new Path2D(PORTAL_BOGEN));
+  ctx.fillStyle = gold; ctx.fill(new Path2D("M256,126 L266,140 L256,154 L246,140 Z"));   // Schlussstein
+  const schein = ctx.createRadialGradient(256, 232, 0, 256, 232, 70);
+  schein.addColorStop(0, 'rgba(255,233,176,.5)'); schein.addColorStop(1, 'rgba(255,233,176,0)');
+  ctx.fillStyle = schein; ctx.beginPath(); ctx.arc(256, 232, 70, 0, Math.PI * 2); ctx.fill();
+  ctx.save();                                                      // Mondsichel: Kreis minus versetzter Kreis
+  ctx.beginPath(); ctx.arc(256, 232, 44, 0, Math.PI * 2); ctx.clip();
+  const sichel = new Path2D(); sichel.arc(256, 232, 44, 0, Math.PI * 2); sichel.moveTo(316, 218); sichel.arc(276, 218, 40, 0, Math.PI * 2);
+  ctx.fillStyle = gold; ctx.fill(sichel, 'evenodd');
+  ctx.restore();
+  portalStern(ctx, 256, 322, 40, gold);
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(120, 392); ctx.lineTo(392, 392); ctx.stroke();
+  ctx.globalAlpha = .75; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(150, 412); ctx.lineTo(362, 412); ctx.stroke(); ctx.globalAlpha = 1;
+  [[122, 170, 12], [392, 146, 15], [410, 252, 9], [104, 300, 7]].forEach(([x, y, h]) => portalStern(ctx, x, y, h, '#fff5d1'));
+  ctx.restore();
+}
+
 function zufall(seed){ let s = (Number(seed) || 1) * 9301 + 49297; return () => ((s = (s * 9301 + 49297) % 233280) / 233280); }
 function umbrechen(ctx, text, breite){
   const woerter = String(text || '').split(/\s+/).filter(Boolean), zeilen = [];
@@ -706,8 +759,7 @@ async function zeichneBild(canvas, p, format){
   const meta = p.meta || {};
   const mitMond = meta.phase_index !== undefined && meta.phase_index !== null;
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#E6CF9C'; ctx.font = `600 ${story ? 60 : 50}px "Cinzel"`;
-  ctx.fillText('✵', W/2, story ? 210 : 140);
+  zeichnePortal(ctx, W/2, story ? 118 : 62, story ? 124 : 100);     // Soraya-Zeichen statt "✵"
   const eyebrow = mitMond ? [meta.datum_kurz, meta.mond_phase].filter(Boolean).join('  ·  ') : 'SORAYA';
   ctx.font = `500 ${story ? 30 : 26}px "Inter"`; ctx.fillStyle = '#C9A86A';
   if('letterSpacing' in ctx) ctx.letterSpacing = '4px';
@@ -989,16 +1041,27 @@ function liPunkte(titel, arr){
   if(!arr || !arr.length) return '';
   return `<h4>${titel}</h4><ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
 }
-function renderProfile(zeilen){
+const LAENDER = {at:'Österreich', de:'Deutschland', ch:'Schweiz', hu:'Ungarn', it:'Italien', uk:'Vereinigtes Königreich', us:'USA'};
+function tagesplanInfo(wahl){
+  const info = $('tpInfo'), sprachen = Object.keys(wahl || {});
+  if(!sprachen.length){ info.hidden = true; return; }
+  const auto = sprachen.some(s => wahl[s].automatisch);
+  info.hidden = false;
+  info.innerHTML = 'Der Tagesplan schreibt für: ' + sprachen.map(s => `${s.toUpperCase()} <b>${esc(wahl[s].bereich)}</b>`).join(' &middot; ')
+    + (auto ? '<br>Kein Profil markiert, deshalb nimmt er automatisch das neueste. Mit „Im Tagesplan verwenden“ legst du es selbst fest.' : '');
+}
+function renderProfile(zeilen, wahl){
   const box = $('profile');
+  tagesplanInfo(wahl);
   if(!zeilen || !zeilen.length){
     box.innerHTML = '<div class="empty">Noch keine Profile.<span>Wähle oben einen Bereich und erforsche ihn.</span></div>';
     return;
   }
   box.innerHTML = zeilen.map(z => {
     const p = z.profil || {};
-    return `<div class="card who">
-      <p class="plat">${esc(z.bereich)}</p>
+    const fuer = Object.keys(wahl || {}).filter(s => wahl[s].id === z.id).map(s => s.toUpperCase());
+    return `<div class="card who" data-zg="${esc(z.id)}">
+      <p class="plat">${esc(z.bereich)}${z.land ? ` &middot; ${esc(LAENDER[z.land] || z.land)}` : ''}</p>
       ${p._quellen && p._quellen.length ? `<p class="src">Quellen: ${p._quellen.map(esc).join(' &middot; ')}</p>` : ''}
       <p class="lede">${esc(p.wer_sind_sie || '')}</p>
       ${p.antwort_auf_frage ? `<div class="answer">${esc(p.antwort_auf_frage)}</div>` : ''}
@@ -1010,17 +1073,29 @@ function renderProfile(zeilen){
       ${liPunkte('Lücke am Markt', p.luecke_am_markt)}
       ${(p.unsicher && p.unsicher.length) ? `<h4>Unsicher</h4><p class="warn">${p.unsicher.map(esc).join(' &middot; ')}</p>` : ''}
       ${(p._gesucht && p._gesucht.length) ? `<h4>Gesucht wurde nach</h4><p class="warn">${p._gesucht.map(esc).join(' &middot; ')}</p>` : ''}
-      <div class="foot" style="margin-top:14px"><span class="stamp">${esc((z.created_at || '').slice(0,10))}</span></div>
+      <div class="foot" style="margin-top:14px">
+        <label class="imtp${z.im_tagesplan ? ' on' : ''}"><input type="checkbox" data-imtp="${esc(z.id)}"${z.im_tagesplan ? ' checked' : ''}>
+          Im Tagesplan verwenden${fuer.length ? ` <span class="tag leise">${fuer.join(' · ')}</span>` : ''}</label>
+        <span class="stamp">${esc((z.created_at || '').slice(0,10))}</span></div>
     </div>`;
   }).join('');
 }
+$('profile').addEventListener('change', async (ev) => {
+  const cb = ev.target; if(!cb.matches('input[data-imtp]')) return;
+  cb.disabled = true;
+  try{
+    await api('/zielgruppen/' + cb.dataset.imtp, {method: 'PATCH', body: JSON.stringify({im_tagesplan: cb.checked})});
+    await ladeProfile();
+    melde(cb.checked ? 'Ab dem nächsten Tagesplan schreibt Soraya für diese Zielgruppe ✓' : 'Profil nicht mehr im Tagesplan.');
+  }catch(e){ cb.checked = !cb.checked; cb.disabled = false; melde('Fehler: ' + e.message); }
+});
 async function ladeBereiche(){
   try{ const d = await api('/bereiche');
     $('bereich').innerHTML = d.bereiche.map(b => `<option value="${esc(b.schluessel)}">${esc(b.titel)}</option>`).join('');
   }catch(e){}
 }
 async function ladeProfile(){
-  try{ renderProfile((await api('/zielgruppen')).zielgruppen); }catch(e){ melde('Konnte Profile nicht laden.'); }
+  try{ const d = await api('/zielgruppen'); renderProfile(d.zielgruppen, d.im_tagesplan); }catch(e){ melde('Konnte Profile nicht laden.'); }
 }
 document.querySelectorAll('#quellen input').forEach(cb => cb.addEventListener('change', () => cb.closest('.q').classList.toggle('on', cb.checked)));
 $('btnProfileLaden').onclick = ladeProfile;
