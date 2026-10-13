@@ -4,8 +4,10 @@ Jeden Morgen erstellt der Agent aus den echten Himmelsdaten (Mondphase,
 Mondzeichen, Neu-/Vollmond, rueckläufige Planeten) die Posts des Tages,
 pro Sprache: 1 Feed-Post, 1 Reel mit Skript, 1 Story.
 
+Ob er jeden Morgen automatisch laeuft, schaltest du im Dashboard (Standard: aus).
+
 Railway-Variablen (alle optional):
-  TAGESPLAN_AUTO      "1" (Standard) = jeden Morgen automatisch, "0" = nur per Knopf
+  TAGESPLAN_AUTO      "0" = Automatik ganz gesperrt (auch der Schalter wirkt dann nicht)
   TAGESPLAN_SPRACHEN  Standard "de,en,hu,it"
   TAGESPLAN_STUNDE    ab dieser Stunde (Wiener Zeit) wird erstellt, Standard 6
 """
@@ -100,8 +102,25 @@ def sprachen() -> list[str]:
     return [s for s in SPRACHEN if s in gewaehlt] or ["de"]
 
 
+def gesperrt() -> bool:
+    """TAGESPLAN_AUTO=0 in Railway sperrt die Automatik unabhaengig vom Schalter."""
+    return (os.environ.get("TAGESPLAN_AUTO") or "").strip() == "0"
+
+
 def automatisch() -> bool:
-    return (os.environ.get("TAGESPLAN_AUTO") or "1").strip() != "0"
+    """Schalter im Dashboard (Standard: aus). Bei einem Datenbankfehler lieber nichts erstellen."""
+    if gesperrt():
+        return False
+    try:
+        return bool(db.lade_einstellung("tagesplan_auto", False))
+    except Exception as e:
+        print(f"[Tagesplan] Schalter nicht lesbar, Automatik bleibt aus: {e}", flush=True)
+        return False
+
+
+def automatik_setzen(an: bool) -> bool:
+    db.setze_einstellung("tagesplan_auto", bool(an))
+    return automatisch()
 
 
 def startstunde() -> int:
