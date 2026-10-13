@@ -15,12 +15,12 @@ import base64
 import binascii
 import os
 import secrets
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
 from content_agent import erstelle_posts
@@ -34,18 +34,22 @@ from bereiche import (
 )
 from db import (
     init_db, speichere_posts, lade_posts, aendere_post, loesche_post,
-    lade_post, speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
+    lade_post, lade_veroeffentlichungen, speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
 )
 import himmel
+import meta
 import paket
+import posten
 import tagesplan
 from sprachen import SPRACHEN, NAMEN, norm
 from wirkung import hole_statistik, links as wirkung_links
 
 app = FastAPI(title="Soraya-Agent", version="0.6")
 
-# Ohne Anmeldung erreichbar (Railway-Healthcheck).
+# Ohne Anmeldung erreichbar (Railway-Healthcheck) -- und die signierten Medien,
+# die Instagram beim Posten selbst abholt (ohne gueltige Signatur: 404).
 OFFENE_PFADE = {"/health"}
+OFFENE_PRAEFIXE = ("/oeffentlich/medien/",)
 
 
 def _anmeldung_ok(kopfzeile: str) -> bool:
@@ -68,7 +72,7 @@ def _anmeldung_ok(kopfzeile: str) -> bool:
 @app.middleware("http")
 async def zugangsschutz(request: Request, call_next):
     """Alles ausser OFFENE_PFADE verlangt eine Anmeldung (auch /docs)."""
-    if request.url.path in OFFENE_PFADE:
+    if request.url.path in OFFENE_PFADE or request.url.path.startswith(OFFENE_PRAEFIXE):
         return await call_next(request)
 
     # Ohne gesetztes Passwort bleibt der Agent gesperrt statt offen.
@@ -139,6 +143,8 @@ def beim_start():
         init_db()
     except Exception as e:
         print(f"[Start] Datenbank noch nicht bereit: {e}")
+    posten.zeitplan_starten()
+    print(f"[Start] Automatisch posten ist {'AN' if posten.einstellungen()['an'] else 'AUS'}", flush=True)
     if tagesplan.gesperrt():
         print("[Start] Tagesplan-Automatik gesperrt (TAGESPLAN_AUTO=0)", flush=True)
         return
@@ -320,6 +326,97 @@ def wochenpaket_datei(job_id: str):
     if not datei:
         raise HTTPException(status_code=404, detail="Paket ist nicht (mehr) da.")
     return FileResponse(datei[0], media_type="application/zip", filename=datei[1])
+
+
+# ---------------------------------------------------------------- Automatisch posten
+@app.get("/posten")
+def posten_ansehen():
+    try:
+        jetzt = datetime.now(himmel.WIEN)
+        termine = lade_veroeffentlichungen(jetzt - timedelta(days=2), jetzt + timedelta(days=2))
+        return {"einstellungen": posten.einstellungen(), "verbindungen": meta.verbindungen(),
+                "termine": termine, "tagesplan_auto": tagesplan.automatisch(),
+                "tagesplan_sprachen": tagesplan.sprachen(), "jetzt": jetzt}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class PostenEinstellungen(BaseModel):
+    an: Optional[bool] = None
+    sprache: Optional[str] = None
+    modus: Optional[str] = None
+    zeiten: Optional[dict] = None
+    plattformen: Optional[dict] = None
+
+
+@app.put("/posten/einstellungen")
+def posten_einstellen(neu: PostenEinstellungen):
+    try:
+        return {"einstellungen": posten.speichere_einstellungen(neu.model_dump(exclude_none=True))}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Uhrzeit bitte als HH:MM, z. B. 09:00.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class JetztPosten(BaseModel):
+    post_id: int
+    plattform: str
+
+
+@app.post("/posten/jetzt")
+def posten_jetzt(anfrage: JetztPosten):
+    try:
+        return {"ergebnis": posten.jetzt_posten(anfrage.post_id, anfrage.plattform)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/meta/verbinden/{dienst}")
+def meta_verbinden(dienst: str):
+    if dienst not in ("facebook", "instagram"):
+        raise HTTPException(status_code=404, detail="Unbekannt.")
+    try:
+        return RedirectResponse(meta.anmelde_url(dienst), status_code=302)
+    except meta.MetaFehler as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+@app.get("/meta/rueckruf/{dienst}")
+def meta_rueckruf(dienst: str, code: Optional[str] = None, state: Optional[str] = None,
+                  error_description: Optional[str] = None, error: Optional[str] = None):
+    try:
+        if dienst not in ("facebook", "instagram"):
+            raise meta.MetaFehler("Unbekannter Dienst.")
+        if not code:
+            raise meta.MetaFehler(error_description or error or "Verbindung abgebrochen.")
+        meta.pruefe_state(dienst, state or "")
+        (meta.verbinde_facebook if dienst == "facebook" else meta.verbinde_instagram)(code.split("#")[0])
+        return RedirectResponse(f"/?verbunden={dienst}#posten", status_code=302)
+    except Exception as e:
+        from urllib.parse import quote
+        return RedirectResponse(f"/?verbindungsfehler={quote(str(e)[:300])}#posten", status_code=302)
+
+
+@app.post("/meta/trennen/{dienst}")
+def meta_trennen(dienst: str):
+    if dienst not in ("facebook", "instagram"):
+        raise HTTPException(status_code=404, detail="Unbekannt.")
+    meta.trennen(dienst)
+    return {"getrennt": dienst}
+
+
+@app.get("/oeffentlich/medien/{name}")
+def oeffentliche_medien(name: str):
+    try:
+        datei = posten.oeffentliches_medium(name)
+    except Exception:
+        datei = None
+    if not datei:
+        raise HTTPException(status_code=404, detail="Nicht gefunden.")
+    return Response(datei[0], media_type=datei[1], headers={"Cache-Control": "public, max-age=3600"})
 
 
 @app.get("/himmel")
