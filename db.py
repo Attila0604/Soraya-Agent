@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
-STATUS = ("entwurf", "freigegeben", "gepostet")
+STATUS = ("entwurf", "freigegeben", "gepostet", "gestoppt")   # gestoppt = "Nicht posten"
 
 
 def _verbindung():
@@ -89,6 +89,25 @@ def init_db():
             );
             """
         )
+        # Automatisch posten: ein Termin pro Post und Plattform (seit Version 0.12)
+        cur.execute(
+            """
+            create table if not exists soraya_veroeffentlichungen (
+                id            bigint generated always as identity primary key,
+                post_id       bigint not null references soraya_posts(id) on delete cascade,
+                plattform     text not null,
+                geplant_um    timestamptz not null,
+                status        text not null default 'geplant',
+                versuche      int not null default 0,
+                fehler        text,
+                extern_id     text,
+                url           text,
+                aktualisiert  timestamptz not null default now(),
+                unique (post_id, plattform)
+            );
+            """
+        )
+        cur.execute("create index if not exists soraya_veroeff_faellig on soraya_veroeffentlichungen (status, geplant_um);")
         # Zielgruppe im Tagesplan verwenden, Land der Recherche (seit Version 0.9)
         cur.execute("alter table soraya_zielgruppen add column if not exists im_tagesplan boolean not null default false;")
         cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
@@ -167,6 +186,76 @@ def lade_posts_zeitraum(von: date, bis: date, *, sprachen: list[str] | None = No
             f"select * from soraya_posts where {' and '.join(bedingungen)} "
             "order by geplant_fuer, sprache, case art when 'post' then 1 when 'reel' then 2 else 3 end, id;",
             werte,
+        )
+        return cur.fetchall()
+
+
+def plane_veroeffentlichung(post_id: int, plattform: str, geplant_um, *, zurueckgeben: bool = False):
+    """Termin anlegen. Normal: bestehende bleiben unveraendert (Rueckgabe 1 = neu, 0 = gab es schon).
+    zurueckgeben=True ("Jetzt posten"): Termin auf jetzt setzen und die id liefern."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        if not zurueckgeben:
+            cur.execute("insert into soraya_veroeffentlichungen (post_id, plattform, geplant_um) values (%s, %s, %s) "
+                        "on conflict (post_id, plattform) do nothing returning id;", (post_id, plattform, geplant_um))
+            neu = cur.fetchone() is not None
+            conn.commit()
+            return 1 if neu else 0
+        cur.execute("select id, status from soraya_veroeffentlichungen where post_id = %s and plattform = %s;",
+                    (post_id, plattform))
+        da = cur.fetchone()
+        if da and da["status"] in ("fertig", "laeuft"):
+            raise ValueError("Dieser Post ist dort schon gepostet." if da["status"] == "fertig"
+                             else "Wird gerade gepostet.")
+        cur.execute("insert into soraya_veroeffentlichungen (post_id, plattform, geplant_um) values (%s, %s, %s) "
+                    "on conflict (post_id, plattform) do update set geplant_um = excluded.geplant_um, "
+                    "status = 'geplant', versuche = 0, fehler = null, aktualisiert = now() returning id;",
+                    (post_id, plattform, geplant_um))
+        zid = cur.fetchone()["id"]
+        conn.commit()
+        return zid
+
+
+def faellige_veroeffentlichungen(jetzt, max_versuche: int = 3) -> list[dict]:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select * from soraya_veroeffentlichungen where geplant_um <= %s and ("
+            " status = 'geplant'"
+            " or (status = 'fehler' and versuche < %s and aktualisiert < now() - interval '15 minutes')"
+            " or (status = 'laeuft' and aktualisiert < now() - interval '30 minutes' and versuche < %s)"
+            ") order by geplant_um, id limit 20;",
+            (jetzt, max_versuche, max_versuche),
+        )
+        return cur.fetchall()
+
+
+def setze_veroeffentlichung(zid: int, status: str, *, fehler: str | None = None, extern_id: str | None = None,
+                            url: str | None = None, versuch: bool = False) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "update soraya_veroeffentlichungen set status = %s, fehler = %s, "
+            "extern_id = coalesce(%s, extern_id), url = coalesce(%s, url), "
+            "versuche = versuche + %s, aktualisiert = now() where id = %s;",
+            (status, fehler, extern_id, url, 1 if versuch else 0, zid),
+        )
+        conn.commit()
+
+
+def alle_veroeffentlicht(post_id: int) -> bool:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("select count(*) as n, count(*) filter (where status = 'fertig') as f "
+                    "from soraya_veroeffentlichungen where post_id = %s;", (post_id,))
+        z = cur.fetchone()
+    return z["n"] > 0 and z["n"] == z["f"]
+
+
+def lade_veroeffentlichungen(von, bis, limit: int = 200) -> list[dict]:
+    """Termine im Zeitraum (fuers Dashboard), mit den wichtigsten Post-Feldern."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select v.*, p.titel, p.art, p.sprache, p.status as post_status, p.geplant_fuer "
+            "from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "
+            "where v.geplant_um between %s and %s order by v.geplant_um, v.plattform limit %s;",
+            (von, bis, limit),
         )
         return cur.fetchall()
 

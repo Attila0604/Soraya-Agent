@@ -171,8 +171,29 @@
   .bildvorschau{display:flex;justify-content:center;margin:12px 0}
   .bildvorschau img,.bildvorschau video{max-width:100%;max-height:60vh;border-radius:12px;border:1px solid var(--line);background:#07040f}
   .bildvorschau{min-height:120px;align-items:center}
-  .fortschritt{height:6px;border-radius:99px;background:rgba(201,162,75,.15);overflow:hidden;margin:10px 0 6px}
-  .fortschritt i{display:block;height:100%;width:0;background:var(--gold);transition:width .4s}
+  .verbindung{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+              padding:12px 0;border-top:1px solid var(--line-soft)}
+  .verbindung:first-of-type{border-top:0}
+  .verbindung .name{font-weight:600;color:#F4EEDD}
+  .verbindung .klein{font-size:12.5px;color:var(--mist-dim)}
+  .verbindung>div{min-width:0}
+  .verbindung code{word-break:break-all;font-size:12px}
+  .punkt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--mist-dim)}
+  .punkt.ok{background:var(--ok)} .punkt.aus{background:var(--bad)}
+  .zeiten{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .termine{width:100%;border-collapse:collapse;font-size:13.5px}
+  .termine td,.termine th{padding:8px 6px;border-top:1px solid var(--line-soft);text-align:left;vertical-align:top}
+  .termine th{font-weight:500;color:var(--mist-dim);font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-top:0}
+  .termine .t{white-space:nowrap;color:#F4EEDD}
+  .termine .fehl{color:#f0c4bc;font-size:12.5px}
+  .vs{font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap}
+  .vs.geplant{color:var(--mist);background:rgba(195,199,214,.1)} .vs.laeuft{color:#1A140A;background:var(--warn)}
+  .vs.fertig{color:#0d2a0d;background:#7fd27f} .vs.fehler{color:#fff;background:var(--bad)}
+  .vs.abgebrochen,.vs.verpasst{color:var(--mist-dim);background:transparent;border:1px solid var(--line)}
+  .st.gestoppt{color:#f0c4bc;background:rgba(208,59,59,.12)}
+  @media (max-width:560px){ .zeiten{grid-template-columns:1fr} .termine .pl{display:none} }
+  .ladebalken{height:6px;border-radius:99px;background:rgba(201,162,75,.15);overflow:hidden;margin:10px 0 6px}
+  .ladebalken i{display:block;height:100%;width:0;background:var(--gold);transition:width .4s}
   .paket-optionen{display:grid;gap:12px;margin:6px 0 14px}
   .paket-optionen .imtp{font-size:14px}
   .feld{margin-top:12px}
@@ -262,6 +283,7 @@
     <button type="button" class="tab" data-tab="plan">Plan</button>
     <button type="button" class="tab" data-tab="studio">Studio</button>
     <button type="button" class="tab" data-tab="who">Zielgruppen</button>
+    <button type="button" class="tab" data-tab="posten">Posten</button>
     <button type="button" class="tab" data-tab="wirkung">Wirkung</button>
   </nav>
   </header>
@@ -432,6 +454,46 @@
   </section>
 
   <!-- ============ WIRKUNG ============ -->
+  <!-- ============ POSTEN ============ -->
+  <section id="view-posten" class="hide">
+    <div class="panel">
+      <h2>Automatisch posten</h2>
+      <label class="imtp" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch auf Facebook und Instagram posten</label>
+      <p class="hint" id="postInfo">Wird geladen …</p>
+      <div class="fehlerbox hide" id="postWarnung" role="alert"></div>
+    </div>
+    <div class="panel">
+      <h2>Verbindungen</h2>
+      <div id="verbindungen"></div>
+    </div>
+    <div class="panel">
+      <h2>Termine</h2>
+      <p class="hint">Gestern bis übermorgen. Stoppen setzt den Post auf „Nicht posten“, er geht dann nirgends raus.</p>
+      <div id="termine"></div>
+    </div>
+    <div class="panel">
+      <h2>Einstellungen</h2>
+      <div class="row">
+        <div><label for="postSprache">Sprache der Posts</label>
+          <select id="postSprache"><option value="en">English</option><option value="de">Deutsch</option>
+            <option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
+        <div><label for="postModus">Freigabe</label>
+          <select id="postModus"><option value="auto">Automatisch, außer ich stoppe</option>
+            <option value="freigabe">Nur freigegebene Posts</option></select></div>
+      </div>
+      <div class="zeiten" style="margin-top:12px">
+        <div><label for="zStory">Story (Wiener Zeit)</label><input type="time" id="zStory"></div>
+        <div><label for="zPost">Feed-Post</label><input type="time" id="zPost"></div>
+        <div><label for="zReel">Reel</label><input type="time" id="zReel"></div>
+      </div>
+      <div class="chips" style="margin-top:12px">
+        <label class="imtp"><input type="checkbox" id="plFacebook"> Facebook-Seite</label>
+        <label class="imtp"><input type="checkbox" id="plInstagram"> Instagram</label>
+      </div>
+      <div class="row" style="margin-top:14px"><button id="postSpeichern">Speichern</button></div>
+    </div>
+  </section>
+
   <section id="view-wirkung" class="hide">
     <div class="row" style="margin-bottom:16px">
       <div><label for="wTage">Zeitraum</label>
@@ -467,7 +529,7 @@ async function api(pfad, opts = {}){
 const SPRACHEN = [['de','Deutsch'],['en','English'],['hu','Magyar'],['it','Italiano']];
 const LINK_IN_BIO = {de:'Link in Bio', en:'Link in bio', hu:'Link a bióban', it:'Link in bio'};
 const ART = {post:'Feed-Post', reel:'Reel', story:'Story'};
-const STATUS = {entwurf:'Entwurf', freigegeben:'Freigegeben', gepostet:'Gepostet'};
+const STATUS = {entwurf:'Entwurf', freigegeben:'Freigegeben', gepostet:'Gepostet', gestoppt:'Nicht posten'};
 const REIHE_ART = ['post','reel','story'], REIHE_SPRACHE = ['de','en','hu','it'];
 const ordne = (a, b) => (REIHE_SPRACHE.indexOf(a.sprache) - REIHE_SPRACHE.indexOf(b.sprache))
   || (REIHE_ART.indexOf(a.art) - REIHE_ART.indexOf(b.art)) || (a.id - b.id);
@@ -729,7 +791,7 @@ function videoDialog(p){
     }
     const pz = Math.min(95, Math.round(100 * (st.vergangen_sekunden || 0) / (st.erwartet_sekunden || 25)));
     $('vBox').innerHTML = `<div style="width:100%"><div class="vorplan"><span class="spin"></span>Video wird erstellt … (${st.vergangen_sekunden || 0} s)</div>
-      <div class="fortschritt"><i style="width:${pz}%"></i></div></div>`;
+      <div class="ladebalken"><i style="width:${pz}%"></i></div></div>`;
     videoTimer = setTimeout(async () => { try{ zeige(await api(`/medien/${p.id}/video/stand`)); }catch(e){ zeige({status: 'fehler', fehler: e.message}); } }, 1500);
   };
   api(`/medien/${p.id}/video`, {method: 'POST'}).then(zeige).catch(e => zeige({status: 'fehler', fehler: e.message}));
@@ -774,7 +836,7 @@ function paketDialog(){
       $('pLaden').classList.remove('hide'); $('pStart').classList.add('hide'); return;
     }
     $('pStand').innerHTML = `<div class="vorplan"><span class="spin"></span>${st.fertig} von ${st.gesamt} · ${esc(st.schritt || 'startet …')}</div>
-      <div class="fortschritt"><i style="width:${pz}%"></i></div>`;
+      <div class="ladebalken"><i style="width:${pz}%"></i></div>`;
     paketTimer = setTimeout(async () => { try{ zeige(await api('/wochenpaket/' + st.id)); }catch(e){ zeige({status: 'fehler', fehler: e.message}); } }, 1200);
   };
   $('pStart').onclick = async () => {
@@ -1270,7 +1332,117 @@ $('wKennzahl').onchange = () => wirkungDaten && zeigeWirkung();
 window.addEventListener('resize', () => { if(aktiv === 'wirkung') zeichneVerlauf(); });
 LADER.wirkung = ladeWirkung;
 
-zeige('heute');
+/* ---------- POSTEN ---------- */
+const PL_NAME = {facebook: 'Facebook', instagram: 'Instagram'};
+const VS_NAME = {geplant: 'geplant', laeuft: 'wird gepostet', fertig: 'gepostet', fehler: 'Fehler', abgebrochen: 'gestoppt', verpasst: 'verpasst'};
+let postDaten = null, postTimer = null;
+const uhr = (iso) => new Date(iso).toLocaleTimeString('de-AT', {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna'});
+const tagName = (iso) => {
+  const d = new Date(iso), heute = new Date();
+  const t = (x) => x.toLocaleDateString('de-AT', {timeZone: 'Europe/Vienna'});
+  if(t(d) === t(heute)) return 'Heute';
+  if(t(d) === t(plusTage(heute, 1))) return 'Morgen';
+  if(t(d) === t(plusTage(heute, -1))) return 'Gestern';
+  return d.toLocaleDateString('de-AT', {weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'Europe/Vienna'});
+};
+async function ladePosten(){
+  clearTimeout(postTimer);
+  try{ postDaten = await api('/posten'); }catch(e){ melde('Fehler: ' + e.message); return; }
+  const d = postDaten, e = d.einstellungen, v = d.verbindungen;
+  const verbunden = ['facebook', 'instagram'].filter(p => e.plattformen[p] && v[p].verbunden);
+  $('postAuto').checked = e.an; $('postAutoSchalter').classList.toggle('on', e.an);
+  $('postInfo').innerHTML = e.an
+    ? `An: ${e.sprache.toUpperCase()} · Story ${esc(e.zeiten.story)}, Feed-Post ${esc(e.zeiten.post)}, Reel ${esc(e.zeiten.reel)} (Wiener Zeit) · ${verbunden.map(p => PL_NAME[p]).join(' + ') || 'keine Plattform verbunden'} · ${e.modus === 'auto' ? 'automatisch, außer du stoppst' : 'nur freigegebene'}`
+    : 'Aus: Es wird nichts automatisch gepostet. „Jetzt posten“ bei den Terminen geht trotzdem (zum Testen).';
+  const warn = [];
+  if(e.an && !verbunden.length) warn.push('Es ist noch keine Plattform verbunden – siehe „Verbindungen“.');
+  if(e.an && !d.tagesplan_auto) warn.push('Der Tagesplan erstellt nicht automatisch (Reiter „Heute“). Ohne neue Posts gibt es nichts zu posten.');
+  if(e.an && !d.tagesplan_sprachen.includes(e.sprache)) warn.push(`Der Tagesplan erstellt keine Posts auf ${e.sprache.toUpperCase()} (TAGESPLAN_SPRACHEN).`);
+  $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => `<div>${esc(w)}</div>`).join('');
+
+  $('verbindungen').innerHTML = ['facebook', 'instagram'].map(p => {
+    const x = v[p];
+    const titel = p === 'facebook' ? 'Facebook-Seite' : 'Instagram (Business-Konto)';
+    const abl = x.laeuft_ab ? ` · Zugang bis ${new Date(x.laeuft_ab * 1000).toLocaleDateString('de-AT')} (verlängert sich selbst)` : '';
+    const stand = x.verbunden ? `<span class="punkt ok"></span>Verbunden: ${esc(x.name || '')}${abl}`
+      : x.eingerichtet ? '<span class="punkt"></span>Noch nicht verbunden'
+      : `<span class="punkt aus"></span>Meta-App fehlt in Railway (${p === 'facebook' ? 'META_APP_ID / META_APP_SECRET' : 'INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET'})`;
+    const knopf = x.verbunden ? `<button class="ghost klein" data-trennen="${p}">Trennen</button>`
+      : `<a class="knopf${x.eingerichtet ? '' : ' hide'}" href="/meta/verbinden/${p}" style="padding:7px 14px;font-size:13px">Verbinden</a>`;
+    return `<div class="verbindung"><div><div class="name">${titel}</div><div class="klein">${stand}</div>
+      ${x.eingerichtet ? '' : `<div class="klein">Rückruf-Adresse für die Meta-App: <code>${esc(x.rueckruf_url)}</code></div>`}</div>${knopf}</div>`;
+  }).join('');
+
+  const termine = d.termine || [];
+  $('termine').innerHTML = termine.length ? `<table class="termine"><thead><tr><th>Wann</th><th>Was</th><th class="pl">Wo</th><th>Stand</th><th></th></tr></thead><tbody>
+    ${termine.map(t => {
+      const gestoppt = t.post_status === 'gestoppt';
+      const offen = ['geplant', 'fehler'].includes(t.status);
+      const aktion = t.status === 'fertig' ? (t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">ansehen</a>` : '')
+        : gestoppt ? `<button class="ghost klein" data-weiter="${t.post_id}">Wieder posten</button>`
+        : offen ? `<button class="ghost klein" data-stopp="${t.post_id}">Stoppen</button> <button class="ghost klein" data-jetzt="${t.post_id}" data-pl="${t.plattform}">Jetzt posten</button>` : '';
+      const st = gestoppt && offen ? 'abgebrochen' : t.status;
+      return `<tr><td class="t">${tagName(t.geplant_um)} ${uhr(t.geplant_um)}</td>
+        <td>${esc(ART[t.art] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>
+          ${t.fehler && t.status !== 'fertig' ? `<div class="fehl">${esc(t.fehler)}${t.status === 'fehler' ? ` (Versuch ${t.versuche} von 3)` : ''}</div>` : ''}</td>
+        <td class="pl">${PL_NAME[t.plattform] || esc(t.plattform)}</td>
+        <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}</td></tr>`;
+    }).join('')}</tbody></table>`
+    : `<div class="empty">Keine Termine.<span>${e.an ? 'Termine entstehen, sobald es Posts für heute oder morgen gibt und eine Plattform verbunden ist.' : 'Termine entstehen, wenn „Automatisch posten“ an ist.'}</span></div>`;
+
+  $('postSprache').value = e.sprache; $('postModus').value = e.modus;
+  $('zStory').value = e.zeiten.story; $('zPost').value = e.zeiten.post; $('zReel').value = e.zeiten.reel;
+  $('plFacebook').checked = !!e.plattformen.facebook; $('plInstagram').checked = !!e.plattformen.instagram;
+  if(e.an && aktiv === 'posten') postTimer = setTimeout(() => aktiv === 'posten' && ladePosten(), 30000);
+}
+$('postAuto').onchange = async () => {
+  const an = $('postAuto').checked;
+  if(an && !confirm('Ab jetzt automatisch auf Facebook und Instagram posten?\n\nDu kannst jeden Post vorher stoppen, und der Schalter hier stoppt alles.')){
+    $('postAuto').checked = false; return; }
+  try{ await api('/posten/einstellungen', {method: 'PUT', body: JSON.stringify({an})});
+       melde(an ? 'Automatisch posten ist an ✓' : 'Automatisch posten ist aus – es geht nichts mehr raus.'); }
+  catch(e){ melde('Fehler: ' + e.message); }
+  ladePosten();
+};
+$('postSpeichern').onclick = async () => {
+  try{
+    await api('/posten/einstellungen', {method: 'PUT', body: JSON.stringify({sprache: $('postSprache').value, modus: $('postModus').value,
+      zeiten: {story: $('zStory').value, post: $('zPost').value, reel: $('zReel').value},
+      plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked}})});
+    melde('Gespeichert ✓ (gilt für neue Termine)'); ladePosten();
+  }catch(e){ melde('Fehler: ' + e.message); }
+};
+$('view-posten').addEventListener('click', async (ev) => {
+  const b = ev.target.closest('button'); if(!b) return;
+  try{
+    if(b.dataset.trennen){
+      if(!confirm(`${PL_NAME[b.dataset.trennen]} wirklich trennen?`)) return;
+      await api('/meta/trennen/' + b.dataset.trennen, {method: 'POST'}); melde('Getrennt.');
+    } else if(b.dataset.stopp){
+      await aendere(b.dataset.stopp, {status: 'gestoppt'}); melde('Gestoppt – dieser Post geht nicht raus.');
+    } else if(b.dataset.weiter){
+      await aendere(b.dataset.weiter, {status: 'entwurf'}); melde('Wird wieder gepostet (zum geplanten Termin).');
+    } else if(b.dataset.jetzt){
+      if(!confirm(`Diesen Post jetzt sofort auf ${PL_NAME[b.dataset.pl]} posten?`)) return;
+      busy(b, true, 'Postet …');
+      const r = await api('/posten/jetzt', {method: 'POST', body: JSON.stringify({post_id: +b.dataset.jetzt, plattform: b.dataset.pl})});
+      melde('Gepostet ✓' + (r.ergebnis && r.ergebnis.url ? ' ' + r.ergebnis.url : ''));
+    } else return;
+  }catch(e){ melde('Fehler: ' + e.message); }
+  ladePosten();
+});
+LADER.posten = ladePosten;
+
+// Rueckkehr von der Meta-Anmeldung
+{
+  const q = new URLSearchParams(location.search);
+  if(q.get('verbunden') || q.get('verbindungsfehler') || location.hash === '#posten'){
+    history.replaceState(null, '', '/');
+    zeige('posten');
+    if(q.get('verbunden')) melde(`${PL_NAME[q.get('verbunden')] || ''} ist verbunden ✓`);
+    if(q.get('verbindungsfehler')) melde('Verbindung fehlgeschlagen: ' + q.get('verbindungsfehler'));
+  } else zeige('heute');
+}
 </script>
 </body>
 </html>
