@@ -49,7 +49,10 @@ Liefere genau drei Einträge, in dieser Reihenfolge:
 2. art "reel", platform "tiktok": Kurzvideo 20-30 Sekunden. "skript" enthält
    "hook" (erster Satz, max. 10 Wörter, macht neugierig), 3 bis 4 "szenen"
    (je ein Satz, was gesagt bzw. gezeigt wird) und "schluss" (Abschluss mit Hinweis
-   auf den Link). "text" ist die Bildunterschrift zum Video (1-3 Sätze).
+   auf den Link). "einblendungen": 3 kurze Texte, die im fertigen Video nacheinander
+   nach dem Hook eingeblendet werden (je höchstens 8 Wörter, ohne Emojis und Hashtags,
+   erzählen die Botschaft Schritt für Schritt). "text" ist die Bildunterschrift zum
+   Video (1-3 Sätze).
 3. art "story", platform "instagram": Story, ein kurzer Satz plus eine Frage oder
    Umfrage-Idee an die Follower ("text", max. 40 Wörter).
 
@@ -57,16 +60,17 @@ Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
 - "untertitel": eine Zeile unter der Überschrift, höchstens 10 Wörter.
 - "hashtags": 4 bis 6 Hashtags in der Sprache des Posts, mit #.
-- Bei "post" und "story" bleibt "skript" leer: hook "", szenen [], schluss ""."""
+- Bei "post" und "story" bleibt "skript" leer: hook "", szenen [], einblendungen [], schluss ""."""
 
 _SKRIPT = {
     "type": "object",
     "properties": {
         "hook": {"type": "string"},
         "szenen": {"type": "array", "items": {"type": "string"}},
+        "einblendungen": {"type": "array", "items": {"type": "string"}},
         "schluss": {"type": "string"},
     },
-    "required": ["hook", "szenen", "schluss"],
+    "required": ["hook", "szenen", "einblendungen", "schluss"],
     "additionalProperties": False,
 }
 SCHEMA = {
