@@ -75,6 +75,20 @@ def init_db():
             );
             """
         )
+        # Fertige Bilder und Reel-Videos (Zwischenspeicher, seit Version 0.11)
+        cur.execute(
+            """
+            create table if not exists soraya_medien (
+                post_id        bigint not null references soraya_posts(id) on delete cascade,
+                art            text not null,
+                fingerabdruck  text not null,
+                mime           text not null,
+                daten          bytea not null,
+                erstellt       timestamptz not null default now(),
+                primary key (post_id, art)
+            );
+            """
+        )
         # Zielgruppe im Tagesplan verwenden, Land der Recherche (seit Version 0.9)
         cur.execute("alter table soraya_zielgruppen add column if not exists im_tagesplan boolean not null default false;")
         cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
@@ -130,6 +144,52 @@ def speichere_posts(posts: list[dict], *, quelle: str = "studio",
             gespeichert.append(cur.fetchone())
         conn.commit()
     return gespeichert
+
+
+def lade_post(post_id: int) -> dict | None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("select * from soraya_posts where id = %s;", (post_id,))
+        return cur.fetchone()
+
+
+def lade_posts_zeitraum(von: date, bis: date, *, sprachen: list[str] | None = None,
+                        status: list[str] | None = None) -> list[dict]:
+    """Nur Posts mit Datum im Zeitraum (fuer das Wochenpaket), nach Datum, Sprache, Art."""
+    bedingungen, werte = ["geplant_fuer between %s and %s"], [von, bis]
+    if sprachen:
+        bedingungen.append("sprache = any(%s)")
+        werte.append(list(sprachen))
+    if status:
+        bedingungen.append("status = any(%s)")
+        werte.append(list(status))
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            f"select * from soraya_posts where {' and '.join(bedingungen)} "
+            "order by geplant_fuer, sprache, case art when 'post' then 1 when 'reel' then 2 else 3 end, id;",
+            werte,
+        )
+        return cur.fetchall()
+
+
+def lade_medium(post_id: int, art: str, fingerabdruck: str) -> bytes | None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("select daten from soraya_medien where post_id = %s and art = %s and fingerabdruck = %s;",
+                    (post_id, art, fingerabdruck))
+        zeile = cur.fetchone()
+    return bytes(zeile["daten"]) if zeile else None
+
+
+def speichere_medium(post_id: int, art: str, fingerabdruck: str, mime: str, daten: bytes) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "insert into soraya_medien (post_id, art, fingerabdruck, mime, daten) values (%s, %s, %s, %s, %s) "
+            "on conflict (post_id, art) do update set fingerabdruck = excluded.fingerabdruck, mime = excluded.mime, "
+            "daten = excluded.daten, erstellt = now();",
+            (post_id, art, fingerabdruck, mime, daten),
+        )
+        # alte Videos/Bilder nicht ewig aufheben
+        cur.execute("delete from soraya_medien where erstellt < now() - interval '21 days';")
+        conn.commit()
 
 
 def lade_posts(limit: int = 50, *, von: date | None = None, bis: date | None = None,

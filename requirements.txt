@@ -7,3 +7,6 @@ google-play-scraper
 beautifulsoup4
 anthropic>=1.13,<2
 tzdata
+pillow>=11
+numpy>=2
+imageio-ffmpeg>=0.6

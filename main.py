@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel
 
 from content_agent import erstelle_posts
@@ -34,9 +34,10 @@ from bereiche import (
 )
 from db import (
     init_db, speichere_posts, lade_posts, aendere_post, loesche_post,
-    speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
+    lade_post, speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
 )
 import himmel
+import paket
 import tagesplan
 from sprachen import SPRACHEN, NAMEN, norm
 from wirkung import hole_statistik, links as wirkung_links
@@ -228,6 +229,97 @@ def content_loeschen(post_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------- Bilder, Reels, Wochenpaket
+def _post_oder_404(post_id: int) -> dict:
+    try:
+        post = lade_post(post_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    if not post:
+        raise HTTPException(status_code=404, detail="Post nicht gefunden.")
+    return post
+
+
+def _dateiname(post: dict, endung: str, format: str = "") -> str:
+    tag = str(post.get("geplant_fuer") or post.get("created_at") or "")[:10]
+    teile = ["soraya", tag, post.get("art") or "post", post.get("sprache") or "de"] + ([format] if format else [])
+    return "-".join(t for t in teile if t) + "." + endung
+
+
+@app.get("/medien/{post_id}/bild")
+def medien_bild(post_id: int, format: Optional[str] = None, download: bool = False):
+    post = _post_oder_404(post_id)
+    try:
+        daten = paket.hole_bild(post, format)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bild konnte nicht erstellt werden: {e}")
+    kopf = {"Cache-Control": "no-store"}
+    if download:
+        kopf["Content-Disposition"] = f'attachment; filename="{_dateiname(post, "jpg", format or "")}"'
+    return Response(daten, media_type="image/jpeg", headers=kopf)
+
+
+@app.get("/medien/{post_id}/video/stand")
+def medien_video_stand(post_id: int):
+    return paket.video_stand(_post_oder_404(post_id))
+
+
+@app.post("/medien/{post_id}/video")
+def medien_video_starten(post_id: int):
+    post = _post_oder_404(post_id)
+    if post.get("art") != "reel":
+        raise HTTPException(status_code=400, detail="Videos gibt es nur für Reels.")
+    return paket.video_anfordern(post)
+
+
+@app.get("/medien/{post_id}/video")
+def medien_video(post_id: int, download: bool = False):
+    post = _post_oder_404(post_id)
+    daten = paket.hole_video(post)
+    if not daten:
+        raise HTTPException(status_code=404, detail="Video ist noch nicht erstellt.")
+    kopf = {"Cache-Control": "no-store", "Accept-Ranges": "none"}
+    if download:
+        kopf["Content-Disposition"] = f'attachment; filename="{_dateiname(post, "mp4")}"'
+    return Response(daten, media_type="video/mp4", headers=kopf)
+
+
+class PaketAnfrage(BaseModel):
+    von: date
+    tage: int = 7
+    sprachen: list[str] = []
+    nur_freigegebene: bool = True
+    mit_videos: bool = True
+
+
+@app.post("/wochenpaket")
+def wochenpaket_starten(anfrage: PaketAnfrage):
+    sprachen = [s for s in SPRACHEN if s in {norm(x) for x in anfrage.sprachen if x.strip()}]
+    status = ["freigegeben", "gepostet"] if anfrage.nur_freigegebene else []
+    try:
+        return paket.wochenpaket_starten(anfrage.von, anfrage.tage, sprachen, status, anfrage.mit_videos)
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/wochenpaket/{job_id}")
+def wochenpaket_stand(job_id: str):
+    stand = paket.paket_stand(job_id)
+    if not stand:
+        raise HTTPException(status_code=404, detail="Paket nicht gefunden (Server neu gestartet?).")
+    return stand
+
+
+@app.get("/wochenpaket/{job_id}/datei")
+def wochenpaket_datei(job_id: str):
+    datei = paket.paket_datei(job_id)
+    if not datei:
+        raise HTTPException(status_code=404, detail="Paket ist nicht (mehr) da.")
+    return FileResponse(datei[0], media_type="application/zip", filename=datei[1])
 
 
 @app.get("/himmel")

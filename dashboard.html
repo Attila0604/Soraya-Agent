@@ -52,9 +52,11 @@
   input::placeholder,textarea::placeholder{color:#5f647c}
   input:focus,select:focus,textarea:focus{border-color:var(--gold)}
   textarea{resize:vertical;min-height:78px;line-height:1.5;font-size:14px}
-  button{font-family:inherit;cursor:pointer;border-radius:10px;font-size:14px;border:1px solid var(--gold);
+  button,a.knopf{font-family:inherit;cursor:pointer;border-radius:10px;font-size:14px;border:1px solid var(--gold);
          background:linear-gradient(180deg,#D8B65E,#C9A24B);color:#1A140A;font-weight:600;
          padding:11px 18px;transition:filter .2s}
+  a.knopf{display:inline-block;text-decoration:none;line-height:1.4}
+  a.knopf.hide{display:none}
   button:hover{filter:brightness(1.07)}
   button:disabled{opacity:.55;cursor:default;filter:none}
   button.ghost{background:transparent;color:var(--gold);border-color:var(--line);font-weight:500}
@@ -167,7 +169,12 @@
   dialog::backdrop{background:rgba(5,6,14,.72)}
   dialog h3{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--champagne);margin:0 0 14px;font-weight:600}
   .bildvorschau{display:flex;justify-content:center;margin:12px 0}
-  .bildvorschau canvas{max-width:100%;max-height:60vh;border-radius:12px;border:1px solid var(--line)}
+  .bildvorschau img,.bildvorschau video{max-width:100%;max-height:60vh;border-radius:12px;border:1px solid var(--line);background:#07040f}
+  .bildvorschau{min-height:120px;align-items:center}
+  .fortschritt{height:6px;border-radius:99px;background:rgba(201,162,75,.15);overflow:hidden;margin:10px 0 6px}
+  .fortschritt i{display:block;height:100%;width:0;background:var(--gold);transition:width .4s}
+  .paket-optionen{display:grid;gap:12px;margin:6px 0 14px}
+  .paket-optionen .imtp{font-size:14px}
   .feld{margin-top:12px}
 
   /* ---------- Wirkung ---------- */
@@ -311,6 +318,7 @@
       <div class="plan-knoepfe">
         <button class="klein" id="btnVorplanen">Nächste 7 Tage vorplanen</button>
         <button class="ghost klein" id="btnAufklappen">Alle aufklappen</button>
+        <button class="ghost klein" id="btnPaket" title="Bilder, Videos und Texte dieser Woche als ZIP">Wochenpaket herunterladen</button>
       </div>
       <div class="vorplan hide" id="vorplanStand" role="status"></div>
     </div>
@@ -525,6 +533,7 @@ function karte(p, {datum = true} = {}){
       <button class="ghost klein" data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
       ${skript ? '<button class="ghost klein" data-aktion="skript">Skript kopieren</button>' : ''}
       <button class="ghost klein" data-aktion="bild">Bild</button>
+      ${p.art === 'reel' ? '<button class="ghost klein" data-aktion="video">Video</button>' : ''}
       <button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button>
       <select data-aktion="status" aria-label="Status">${Object.entries(STATUS).map(([k,v]) =>
         `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
@@ -579,6 +588,7 @@ document.addEventListener('click', async (ev) => {
     return kopiere(btn, [s.hook, ...(s.szenen || []).map((x, i) => (i+1) + '. ' + x), s.schluss].filter(Boolean).join('\n')); }
   if(a === 'link') return kopiere(btn, postLink(p.id));
   if(a === 'bild') return bildDialog(p);
+  if(a === 'video') return videoDialog(p);
   if(a === 'bearbeiten') return bearbeitenDialog(p);
 });
 document.addEventListener('change', async (ev) => {
@@ -655,161 +665,17 @@ function zeichneMond(ctx, cx, cy, r, phaseIndex, beleuchtung){
   ctx.restore();
 }
 
-/* ---------- Post-Bild (Story 1080x1920, Feed 1080x1350) ---------- */
-let schriftenBereit = null;
-function schriften(){
-  if(!schriftenBereit){
-    schriftenBereit = Promise.all([
-      document.fonts.load('600 96px "Cormorant Garamond"'), document.fonts.load('600 46px "Cinzel"'),
-      document.fonts.load('400 40px "Inter"'), document.fonts.load('600 30px "Inter"'),
-    ]).catch(() => null);
-  }
-  return schriftenBereit;
+/* ---------- Bild und Video zum Post (zeichnet der Server, gleich wie im Wochenpaket) ---------- */
+async function teilen(url, name, typ, p){
+  try{
+    const r = await fetch(url); if(!r.ok) throw new Error('Fehler ' + r.status);
+    const datei = new File([await r.blob()], name, {type: typ});
+    if(navigator.canShare && navigator.canShare({files: [datei]})){
+      try{ await navigator.share({files: [datei], text: (p.text || '') + (p.hashtags ? '\n\n' + p.hashtags : '')}); }catch(e){}
+    } else melde('Teilen geht auf diesem Gerät nicht – bitte „Herunterladen“ nutzen.');
+  }catch(e){ melde('Fehler: ' + e.message); }
 }
-/* ---------- Soraya-Zeichen "Portal" (wie das App-Logo, Raster 512, Zeichen 91..421 x 112..424) ---------- */
-const PORTAL_BOGEN = "M160,392 V236 A96,96 0 0 1 352,236 V392";
-function portalStern(ctx, cx, cy, h, farbe){
-  const w = h * .2, b = h * .74;
-  ctx.fillStyle = farbe;
-  ctx.fill(new Path2D(`M${cx},${cy-h} L${cx+w},${cy-w} L${cx+b},${cy} L${cx+w},${cy+w} L${cx},${cy+h} L${cx-w},${cy+w} L${cx-b},${cy} L${cx-w},${cy-w} Z`));
-}
-function zeichnePortal(ctx, cx, oben, hoehe){
-  const s = hoehe / 312;
-  ctx.save();
-  ctx.translate(cx - 256 * s, oben - 112 * s);
-  ctx.scale(s, s);
-  const gold = ctx.createLinearGradient(91, 112, 421, 424);
-  gold.addColorStop(0, '#fff5d1'); gold.addColorStop(.42, '#ebcb86'); gold.addColorStop(1, '#a47b35');
-  const innen = ctx.createLinearGradient(0, 140, 0, 392);
-  innen.addColorStop(0, '#2b1756'); innen.addColorStop(1, '#120a28');
-  const flaeche = new Path2D(PORTAL_BOGEN + " Z");
-  ctx.fillStyle = innen; ctx.fill(flaeche);
-  ctx.save(); ctx.clip(flaeche);                                   // Art-deco-Strahlen
-  ctx.strokeStyle = 'rgba(235,203,134,.24)'; ctx.lineWidth = 1.6;
-  for(let a = 18; a <= 162; a += 12){
-    const r = a * Math.PI / 180;
-    ctx.beginPath(); ctx.moveTo(256, 392); ctx.lineTo(256 + 180 * Math.cos(r), 392 - 180 * Math.sin(r)); ctx.stroke();
-  }
-  ctx.restore();
-  ctx.strokeStyle = gold;
-  ctx.globalAlpha = .7; ctx.lineWidth = 3; ctx.stroke(new Path2D("M181,392 V238 A75,75 0 0 1 331,238 V392")); ctx.globalAlpha = 1;
-  ctx.lineWidth = 11; ctx.stroke(new Path2D(PORTAL_BOGEN));
-  ctx.fillStyle = gold; ctx.fill(new Path2D("M256,126 L266,140 L256,154 L246,140 Z"));   // Schlussstein
-  const schein = ctx.createRadialGradient(256, 232, 0, 256, 232, 70);
-  schein.addColorStop(0, 'rgba(255,233,176,.5)'); schein.addColorStop(1, 'rgba(255,233,176,0)');
-  ctx.fillStyle = schein; ctx.beginPath(); ctx.arc(256, 232, 70, 0, Math.PI * 2); ctx.fill();
-  ctx.save();                                                      // Mondsichel: Kreis minus versetzter Kreis
-  ctx.beginPath(); ctx.arc(256, 232, 44, 0, Math.PI * 2); ctx.clip();
-  const sichel = new Path2D(); sichel.arc(256, 232, 44, 0, Math.PI * 2); sichel.moveTo(316, 218); sichel.arc(276, 218, 40, 0, Math.PI * 2);
-  ctx.fillStyle = gold; ctx.fill(sichel, 'evenodd');
-  ctx.restore();
-  portalStern(ctx, 256, 322, 40, gold);
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(120, 392); ctx.lineTo(392, 392); ctx.stroke();
-  ctx.globalAlpha = .75; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(150, 412); ctx.lineTo(362, 412); ctx.stroke(); ctx.globalAlpha = 1;
-  [[122, 170, 12], [392, 146, 15], [410, 252, 9], [104, 300, 7]].forEach(([x, y, h]) => portalStern(ctx, x, y, h, '#fff5d1'));
-  ctx.restore();
-}
-
-function zufall(seed){ let s = (Number(seed) || 1) * 9301 + 49297; return () => ((s = (s * 9301 + 49297) % 233280) / 233280); }
-function umbrechen(ctx, text, breite){
-  const woerter = String(text || '').split(/\s+/).filter(Boolean), zeilen = [];
-  let z = '';
-  for(const w of woerter){
-    const t = z ? z + ' ' + w : w;
-    if(ctx.measureText(t).width > breite && z){ zeilen.push(z); z = w; } else z = t;
-  }
-  if(z) zeilen.push(z);
-  return zeilen;
-}
-/* Textblock vorab messen (Schrift wird kleiner, bis er in maxZeilen passt), dann zeichnen */
-function messeText(ctx, text, {breite, groesse, schrift, zeilenhoehe = 1.12, maxZeilen = 4, minGroesse = 30}){
-  let g = groesse, zeilen;
-  while(true){
-    ctx.font = schrift.replace('{g}', g); zeilen = umbrechen(ctx, text, breite);
-    if(zeilen.length <= maxZeilen || g - 4 < minGroesse) break;
-    g -= 4;
-  }
-  if(zeilen.length > maxZeilen){                       // notfalls kuerzen statt ueberlaufen
-    zeilen = zeilen.slice(0, maxZeilen);
-    let z = zeilen[maxZeilen - 1];
-    while(z && ctx.measureText(z + ' …').width > breite) z = z.replace(/\s*\S+$/, '');
-    zeilen[maxZeilen - 1] = z + ' …';
-  }
-  return {zeilen, g, schrift, zeilenhoehe, hoehe: (zeilen.length - 1) * g * zeilenhoehe + g};
-}
-function zeichneText(ctx, b, x, oben, farbe){
-  ctx.font = b.schrift.replace('{g}', b.g); ctx.fillStyle = farbe;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  b.zeilen.forEach((z, i) => ctx.fillText(z, x, oben + b.g * .8 + i * b.g * b.zeilenhoehe));
-}
-async function zeichneBild(canvas, p, format){
-  await schriften();
-  const W = 1080, H = format === 'story' ? 1920 : 1350, story = format === 'story';
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  const bg = ctx.createRadialGradient(W/2, 0, 40, W/2, H*0.25, H);
-  bg.addColorStop(0, '#2a1650'); bg.addColorStop(.45, '#120a26'); bg.addColorStop(1, '#07040f');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  const rnd = zufall(p.id);
-  for(let i = 0; i < (story ? 190 : 140); i++){
-    const gold = rnd() < .12;
-    ctx.fillStyle = gold ? `rgba(233,207,156,${.5 + rnd()*.45})` : `rgba(188,178,214,${.2 + rnd()*.45})`;
-    ctx.beginPath(); ctx.arc(rnd()*W, rnd()*H, .6 + rnd()*(gold ? 2.4 : 1.6), 0, Math.PI*2); ctx.fill();
-  }
-  const meta = p.meta || {};
-  const mitMond = meta.phase_index !== undefined && meta.phase_index !== null;
-  ctx.textAlign = 'center';
-  zeichnePortal(ctx, W/2, story ? 118 : 62, story ? 124 : 100);     // Soraya-Zeichen statt "✵"
-  const eyebrow = mitMond ? [meta.datum_kurz, meta.mond_phase].filter(Boolean).join('  ·  ') : 'SORAYA';
-  ctx.font = `500 ${story ? 30 : 26}px "Inter"`; ctx.fillStyle = '#C9A86A';
-  if('letterSpacing' in ctx) ctx.letterSpacing = '4px';
-  ctx.fillText(eyebrow.toUpperCase(), W/2, story ? 285 : 200);
-  if('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-
-  // Mitte: Mond, Ueberschrift, Unterzeile, bei Storys die Frage. Erst messen, dann senkrecht zentrieren.
-  const unten = story ? H - 300 : H - 175;              // Grundlinie "SORAYA"
-  const oben = story ? 350 : 245, platz = (unten - (story ? 150 : 110)) - oben;
-  const titel = messeText(ctx, p.titel || p.text, {breite: W - 180, groesse: story ? 108 : 92,
-    schrift: '600 {g}px "Cormorant Garamond"', maxZeilen: story ? 4 : 3, minGroesse: 56});
-  const unter = p.untertitel ? messeText(ctx, p.untertitel, {breite: W - 220, groesse: story ? 42 : 36,
-    schrift: '400 {g}px "Inter"', zeilenhoehe: 1.35, maxZeilen: 3, minGroesse: 28}) : null;
-  const frageText = p.art === 'story' && p.text && p.text !== p.titel ? p.text : '';
-  const pad = story ? 44 : 34;
-  const frage = frageText ? messeText(ctx, frageText, {breite: W - 220 - 2*pad, groesse: story ? 46 : 36,
-    schrift: '500 {g}px "Inter"', zeilenhoehe: 1.38, maxZeilen: story ? 6 : 4, minGroesse: 28}) : null;
-  const abstand = {mond: story ? 110 : 70, unter: story ? 36 : 26, frage: story ? 70 : 44};
-  const rest = titel.hoehe + (unter ? abstand.unter + unter.hoehe : 0) + (frage ? abstand.frage + frage.hoehe + 2*pad : 0);
-  let r = mitMond ? (story ? 150 : 105) : 0;
-  if(mitMond) r = Math.max(60, Math.min(r, (platz - rest - abstand.mond) / 2));
-  const gesamt = rest + (mitMond ? 2*r + abstand.mond : 0);
-  let y = oben + Math.max(0, (platz - gesamt) / 2);
-  if(mitMond){ zeichneMond(ctx, W/2, y + r, r, meta.phase_index, meta.beleuchtung); y += 2*r + abstand.mond; }
-  zeichneText(ctx, titel, W/2, y, '#F6E3B4'); y += titel.hoehe;
-  if(unter){ y += abstand.unter; zeichneText(ctx, unter, W/2, y, '#C3B7DA'); y += unter.hoehe; }
-  if(frage){
-    y += abstand.frage;
-    ctx.beginPath(); ctx.roundRect(110, y, W - 220, frage.hoehe + 2*pad, 28);
-    ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fill();
-    ctx.strokeStyle = 'rgba(230,207,156,.35)'; ctx.lineWidth = 2; ctx.stroke();
-    zeichneText(ctx, frage, W/2, y + pad, '#EFE8F8');
-  }
-
-  ctx.font = `600 ${story ? 50 : 42}px "Cinzel"`; ctx.fillStyle = '#E6CF9C';
-  if('letterSpacing' in ctx) ctx.letterSpacing = '14px';
-  ctx.fillText('SORAYA', W/2 + 7, unten);
-  ctx.font = `500 ${story ? 22 : 19}px "Inter"`; ctx.fillStyle = '#8f83ad';
-  if('letterSpacing' in ctx) ctx.letterSpacing = '8px';
-  ctx.fillText('LUXURY ASTRO GUIDE', W/2 + 4, unten + (story ? 50 : 42));
-  if('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-  const cta = (LINK_IN_BIO[p.sprache] || 'Link in Bio') + '  ✦';
-  ctx.font = `600 ${story ? 32 : 28}px "Inter"`;
-  const bw = ctx.measureText(cta).width + 70, bh = story ? 74 : 64, by = unten + (story ? 100 : 78);
-  ctx.strokeStyle = 'rgba(230,207,156,.75)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.roundRect(W/2 - bw/2, by, bw, bh, bh/2); ctx.stroke();
-  ctx.fillStyle = '#F3E7C9'; ctx.textBaseline = 'middle'; ctx.fillText(cta, W/2, by + bh/2 + 1);
-  ctx.textBaseline = 'alphabetic';
-}
+const dateiName = (p, endung, format) => `soraya-${(p.geplant_fuer || p.created_at || '').slice(0,10)}-${p.art || 'post'}-${p.sprache || 'de'}${format ? '-' + format : ''}.${endung}`;
 function bildDialog(p){
   const d = $('dlg');
   let format = p.art === 'post' ? 'feed' : 'story';
@@ -817,31 +683,108 @@ function bildDialog(p){
     <div class="chips" role="group" aria-label="Format">
       <button class="chip" data-format="story">Story / Reel 1080×1920</button>
       <button class="chip" data-format="feed">Feed 1080×1350</button></div>
-    <div class="bildvorschau"><canvas id="bild" aria-label="Vorschau des Post-Bildes"></canvas></div>
-    <div class="row"><button id="bLaden">Herunterladen</button>
+    <div class="bildvorschau"><img id="bild" alt="Vorschau des Post-Bildes"></div>
+    <div class="row"><a class="knopf" id="bLaden" download>Herunterladen</a>
       <button class="ghost" id="bTeilen">Teilen …</button>
       <button class="ghost" id="bZu">Schließen</button></div>
-    <p class="note">„Teilen" öffnet auf dem Handy direkt Instagram, TikTok &amp; Co.</p>`;
+    <p class="note">„Teilen“ öffnet auf dem Handy direkt Instagram, TikTok &amp; Co.</p>`;
   d.showModal();
-  const neu = async () => {
+  const url = (dl) => `/medien/${p.id}/bild?format=${format}${dl ? '&download=1' : ''}`;
+  const neu = () => {
     d.querySelectorAll('[data-format]').forEach(b => b.classList.toggle('on', b.dataset.format === format));
-    await zeichneBild($('bild'), p, format);
+    $('bild').src = url(false) + '&t=' + Date.now();
+    $('bLaden').href = url(true);
   };
   d.querySelectorAll('[data-format]').forEach(b => b.onclick = () => { format = b.dataset.format; neu(); });
-  const blob = () => new Promise(r => $('bild').toBlob(r, 'image/png'));
-  const name = () => `soraya-${(p.geplant_fuer || p.created_at || '').slice(0,10)}-${p.art || 'post'}-${p.sprache || 'de'}-${format}.png`;
-  $('bLaden').onclick = async () => {
-    const a = document.createElement('a'); a.href = URL.createObjectURL(await blob()); a.download = name(); a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  };
-  $('bTeilen').onclick = async () => {
-    const datei = new File([await blob()], name(), {type: 'image/png'});
-    if(navigator.canShare && navigator.canShare({files: [datei]})){
-      try{ await navigator.share({files: [datei], text: (p.text || '') + (p.hashtags ? '\n\n' + p.hashtags : '')}); }catch(e){}
-    } else melde('Teilen geht auf diesem Gerät nicht – bitte „Herunterladen" nutzen.');
-  };
+  $('bTeilen').onclick = () => teilen(url(false), dateiName(p, 'jpg', format), 'image/jpeg', p);
   $('bZu').onclick = () => d.close();
   neu();
+}
+let videoTimer = null;
+function videoDialog(p){
+  const d = $('dlg');
+  clearTimeout(videoTimer);
+  d.innerHTML = `<h3>Reel als Video</h3>
+    <div class="bildvorschau" id="vBox"><div class="vorplan" id="vStand" role="status"><span class="spin"></span>Wird geprüft …</div></div>
+    <div class="row"><a class="knopf hide" id="vLaden" download>Herunterladen</a>
+      <button class="ghost hide" id="vTeilen">Teilen …</button>
+      <button class="ghost" id="vZu">Schließen</button></div>
+    <p class="note">15 bis 20 Sekunden, 1080×1920, ohne Musik. Musik am besten beim Posten in Instagram/TikTok
+      hinzufügen – Trend-Sounds bringen mehr Reichweite.</p>`;
+  d.showModal();
+  d.addEventListener('close', () => clearTimeout(videoTimer), {once: true});
+  $('vZu').onclick = () => d.close();
+  const fertig = () => {
+    $('vBox').innerHTML = `<video id="vVideo" controls playsinline src="/medien/${p.id}/video?t=${Date.now()}"></video>`;
+    $('vLaden').href = `/medien/${p.id}/video?download=1`;
+    $('vLaden').classList.remove('hide'); $('vTeilen').classList.remove('hide');
+    $('vTeilen').onclick = () => teilen(`/medien/${p.id}/video`, dateiName(p, 'mp4'), 'video/mp4', p);
+  };
+  const zeige = (st) => {
+    if(!d.open) return;
+    if(st.status === 'fertig') return fertig();
+    if(st.status === 'fehler'){
+      $('vBox').innerHTML = `<div class="fehlerbox" role="alert">${esc(st.fehler || 'Video konnte nicht erstellt werden.')}</div>`;
+      return;
+    }
+    const pz = Math.min(95, Math.round(100 * (st.vergangen_sekunden || 0) / (st.erwartet_sekunden || 25)));
+    $('vBox').innerHTML = `<div style="width:100%"><div class="vorplan"><span class="spin"></span>Video wird erstellt … (${st.vergangen_sekunden || 0} s)</div>
+      <div class="fortschritt"><i style="width:${pz}%"></i></div></div>`;
+    videoTimer = setTimeout(async () => { try{ zeige(await api(`/medien/${p.id}/video/stand`)); }catch(e){ zeige({status: 'fehler', fehler: e.message}); } }, 1500);
+  };
+  api(`/medien/${p.id}/video`, {method: 'POST'}).then(zeige).catch(e => zeige({status: 'fehler', fehler: e.message}));
+}
+
+/* ---------- Wochenpaket (ZIP) ---------- */
+let paketTimer = null;
+function paketDialog(){
+  const d = $('dlg');
+  clearTimeout(paketTimer);
+  const von = iso(planMontag), bis = iso(plusTage(planMontag, 6));
+  const sprachWahl = $('planSprache').value;
+  d.innerHTML = `<h3>Wochenpaket</h3>
+    <p class="hint">${kurz(planMontag)} bis ${kurz(plusTage(planMontag, 6))}: Bilder, Reel-Videos und die Texte zum Kopieren,
+      pro Tag ein Ordner. Damit planst du die Woche z. B. in der Meta Business Suite.</p>
+    <div class="paket-optionen">
+      <div class="chips" id="pSprachen" role="group" aria-label="Sprachen">${SPRACHEN.map(([c]) =>
+        `<label class="imtp${!sprachWahl || sprachWahl === c ? ' on' : ''}"><input type="checkbox" value="${c}"${!sprachWahl || sprachWahl === c ? ' checked' : ''}> ${c.toUpperCase()}</label>`).join('')}</div>
+      <label class="imtp on"><input type="checkbox" id="pFrei" checked> Nur freigegebene (und gepostete) Posts</label>
+      <label class="imtp on"><input type="checkbox" id="pVideo" checked> Reels als Video (dauert pro Reel etwa 20 Sekunden)</label>
+    </div>
+    <div id="pStand" role="status"></div>
+    <div class="row"><button id="pStart">Paket erstellen</button><a class="knopf hide" id="pLaden">Herunterladen</a>
+      <button class="ghost" id="pZu">Schließen</button></div>`;
+  d.showModal();
+  d.addEventListener('close', () => clearTimeout(paketTimer), {once: true});
+  d.querySelectorAll('.paket-optionen input').forEach(cb => cb.onchange = () => cb.closest('.imtp').classList.toggle('on', cb.checked));
+  $('pZu').onclick = () => d.close();
+  const zeige = (st) => {
+    if(!d.open) return;
+    if(st.status === 'leer'){
+      $('pStand').innerHTML = '<p class="hint">In dieser Woche gibt es keine passenden Posts. Tipp: Posts erst freigeben oder „Nur freigegebene“ ausschalten.</p>';
+      $('pStart').disabled = false; return;
+    }
+    if(st.status === 'fehler'){
+      $('pStand').innerHTML = `<div class="fehlerbox" role="alert">${esc(st.fehler || 'Fehler')}</div>`; $('pStart').disabled = false; return;
+    }
+    const pz = st.gesamt ? Math.round(100 * st.fertig / st.gesamt) : 0;
+    if(st.status === 'fertig'){
+      $('pStand').innerHTML = `<p class="hint">Fertig ✓ ${st.gesamt} Posts, ${st.groesse_mb} MB</p>`;
+      $('pLaden').href = `/wochenpaket/${st.id}/datei`; $('pLaden').setAttribute('download', st.dateiname || 'soraya-woche.zip');
+      $('pLaden').classList.remove('hide'); $('pStart').classList.add('hide'); return;
+    }
+    $('pStand').innerHTML = `<div class="vorplan"><span class="spin"></span>${st.fertig} von ${st.gesamt} · ${esc(st.schritt || 'startet …')}</div>
+      <div class="fortschritt"><i style="width:${pz}%"></i></div>`;
+    paketTimer = setTimeout(async () => { try{ zeige(await api('/wochenpaket/' + st.id)); }catch(e){ zeige({status: 'fehler', fehler: e.message}); } }, 1200);
+  };
+  $('pStart').onclick = async () => {
+    const sprachen = [...d.querySelectorAll('#pSprachen input:checked')].map(c => c.value);
+    if(!sprachen.length){ melde('Bitte mindestens eine Sprache wählen.'); return; }
+    $('pStart').disabled = true;
+    try{ zeige(await api('/wochenpaket', {method: 'POST', body: JSON.stringify({von, tage: 7, sprachen,
+      nur_freigegebene: $('pFrei').checked, mit_videos: $('pVideo').checked})})); }
+    catch(e){ zeige({status: 'fehler', fehler: e.message}); }
+  };
 }
 
 /* ---------- HEUTE ---------- */
@@ -1013,6 +956,7 @@ $('btnVorplanen').onclick = async () => {
     setTimeout(ladePlan, 1500);
   }catch(e){ melde('Fehler: ' + e.message); }
 };
+$('btnPaket').onclick = () => paketDialog();
 $('btnAufklappen').onclick = () => {
   planAlleOffen = !planAlleOffen;
   if(!planAlleOffen) OFFEN.clear();
