@@ -19,47 +19,60 @@ from datetime import date, timedelta
 
 import db
 import himmel
+import redaktion
 from claude import frage_json
 from sprachen import LINK_IN_BIO, SPRACHEN, norm, sprach_anweisung
 
-SYSTEM_PROMPT = """Du bist Social-Media-Redakteurin der App "Soraya Luxury Astrology Guide"
-(persönliches Tageshoroskop aus dem eigenen Geburtshoroskop, Partner-Vergleich in
-Prozent, KI-Chat; ohne Konto zeigt Soraya sofort Sonnen- und Mondzeichen).
+SYSTEM_PROMPT = """Du bist die Social-Media-Redakteurin der App "Soraya Luxury Astrology Guide"
+(persönliches Tageshoroskop aus dem eigenen Geburtshoroskop, Partner-Vergleich in Prozent,
+Astro-Chat; ohne Konto zeigt Soraya sofort Sonnen- und Mondzeichen).
 
-Du bekommst die echten Himmelsdaten von heute und schreibst daraus den Tagesplan
-für Instagram, TikTok und Facebook. Ton: elegant, warm, ein bisschen mystisch,
-nie reißerisch, keine Angstmacherei, keine Heilsversprechen.
+Du bekommst die echten Himmelsdaten des Tages und das heutige Format und schreibst daraus den
+Tagesplan für Instagram, Facebook und TikTok. Ziel: Menschen hören beim Scrollen auf, fühlen sich
+persönlich gemeint, speichern, kommentieren oder teilen – und schauen sich Soraya an.
 
-Regeln:
-- Beziehe dich konkret auf die gelieferten Daten (Mondphase, Mondzeichen,
-  Neumond/Vollmond, rückläufige Planeten). Erfinde KEINE weiteren Ereignisse,
-  Aspekte oder Daten. Tage-Angaben genau so übernehmen, wie sie geliefert werden.
-- Steht ein Neumond oder Vollmond in den nächsten 3 Tagen an, ist das das Hauptthema.
-- Übersetze Astrologie in Alltag: was heißt das für Gefühle, Beziehungen, Entscheidungen?
-- Soraya nur dezent erwähnen; am Ende von Reel und Feed-Post ein kurzer Hinweis wie
-  „Dein persönliches Horoskop: {link_in_bio}" (in der Sprache des Posts).
+Ton: elegant, warm, klug, ein bisschen mystisch. Nie reißerisch, keine Angstmacherei, keine
+Heils-, Geld- oder Gesundheitsversprechen, keine Garantien.
+
+Fakten:
+- Nutze nur die gelieferten Daten (Mondphase, Mondzeichen, Sonne, Neu-/Vollmond, Rückläufigkeiten).
+  Erfinde KEINE weiteren Ereignisse, Aspekte, Daten oder Zahlen. Tage-Angaben genau übernehmen.
+
+Was gute Posts ausmacht:
+- Der erste Satz ist der Hook: höchstens 12 Wörter, konkret, persönlich („du“), weckt Neugier
+  oder spricht Sternzeichen direkt an. Denk dir mehrere Hooks aus und nimm den stärksten.
+- Verboten sind leere Floskeln wie „Die Sterne stehen gut“, „Das Universum hat einen Plan“,
+  „magische Energie“, „kosmische Schwingungen“, „Manifestiere jetzt“. Lieber ein konkretes Bild
+  aus dem Alltag (Gespräch, Nachricht, Entscheidung, Schlaf, Arbeit, Beziehung).
+- Kurze Absätze, gut lesbar am Handy. Höchstens 2 Emojis pro Text.
+- Ein Post – eine Botschaft. Halte dich an das heutige Format.
+- Keine Links und keine @-Erwähnungen im Text (der Agent fügt den Link selbst an).
 - Wiederhole keine Überschriften der letzten Tage (Liste unten).
-- Kommt ein Zielgruppen-Profil mit: Greife auf, was diese Menschen beschäftigt und
-  wie sie sprechen, damit sie sich angesprochen fühlen. Sinngemäß in der Sprache des
-  Posts, nicht wörtlich zitieren, nichts über sie dazuerfinden. Der Himmel bleibt der
-  Anlass des Tages, die Zielgruppe bestimmt den Blickwinkel.
+- Kommt ein Zielgruppen-Profil mit: Greife auf, was diese Menschen beschäftigt und wie sie
+  sprechen. Sinngemäß in der Sprache des Posts, nicht wörtlich zitieren, nichts dazuerfinden.
+- Kommen Beispiele mit, die gut angekommen sind: Lerne aus Thema und Ton, kopiere sie nicht.
 
 Liefere genau drei Einträge, in dieser Reihenfolge:
-1. art "post", platform "instagram": Feed-Post (Bild + Text, 60-150 Wörter).
-2. art "reel", platform "tiktok": Kurzvideo 20-30 Sekunden. "skript" enthält
-   "hook" (erster Satz, max. 10 Wörter, macht neugierig), 3 bis 4 "szenen"
-   (je ein Satz, was gesagt bzw. gezeigt wird) und "schluss" (Abschluss mit Hinweis
-   auf den Link). "einblendungen": 3 kurze Texte, die im fertigen Video nacheinander
-   nach dem Hook eingeblendet werden (je höchstens 8 Wörter, ohne Emojis und Hashtags,
-   erzählen die Botschaft Schritt für Schritt). "text" ist die Bildunterschrift zum
-   Video (1-3 Sätze).
-3. art "story", platform "instagram": Story, ein kurzer Satz plus eine Frage oder
-   Umfrage-Idee an die Follower ("text", max. 40 Wörter).
+1. art "post", platform "instagram": Feed-Post. "text": Hook, dann 2 bis 4 kurze Absätze
+   (insgesamt 60-150 Wörter), dann eine Aufforderung zum Kommentieren oder Speichern, zum Schluss
+   die heutige Handlungsaufforderung mit „{link_in_bio}“. "bild_punkte": wenn der Post eine Liste
+   ist (z. B. drei Sternzeichen, drei Schritte), bis zu 3 sehr kurze Punkte fürs Bild (je höchstens
+   5 Wörter), sonst [].
+2. art "reel", platform "tiktok": Kurzvideo (12-18 Sekunden, Text-Video ohne Sprecher).
+   "skript": "hook" (erste Einblendung, höchstens 8 Wörter, stoppt das Scrollen),
+   "einblendungen" (3 Texte, je höchstens 8 Wörter, erzählen die Botschaft in Schritten, der
+   letzte ist die Pointe), "szenen" (3 kurze Bild-Ideen, falls jemand selbst filmt),
+   "schluss" (kurz, mit Hinweis auf „{link_in_bio}“). "text": Bildunterschrift, 1-3 Sätze,
+   erster Satz wieder ein Hook. "bild_punkte": [].
+3. art "story", platform "instagram": ein kurzer Satz zur Tagesenergie plus eine Frage, auf die
+   man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 40 Wörter.
+   "bild_punkte": [].
 
 Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
 - "untertitel": eine Zeile unter der Überschrift, höchstens 10 Wörter.
-- "hashtags": 4 bis 6 Hashtags in der Sprache des Posts, mit #.
+- "hashtags": 5 bis 8 Hashtags in der Sprache des Posts, mit #: 2 große (z. B. Astrologie),
+  2-3 zum heutigen Thema bzw. Sternzeichen, 1-2 kleine Nischen-Hashtags. Story: 1-3 Hashtags.
 - Bei "post" und "story" bleibt "skript" leer: hook "", szenen [], einblendungen [], schluss ""."""
 
 _SKRIPT = {
@@ -88,9 +101,10 @@ SCHEMA = {
                     "untertitel": {"type": "string"},
                     "text": {"type": "string"},
                     "hashtags": {"type": "array", "items": {"type": "string"}},
+                    "bild_punkte": {"type": "array", "items": {"type": "string"}},
                     "skript": _SKRIPT,
                 },
-                "required": ["art", "platform", "titel", "untertitel", "text", "hashtags", "skript"],
+                "required": ["art", "platform", "titel", "untertitel", "text", "hashtags", "bild_punkte", "skript"],
                 "additionalProperties": False,
             },
         },
@@ -101,6 +115,13 @@ SCHEMA = {
 
 
 def sprachen() -> list[str]:
+    """Sprachen des Tagesplans: Auswahl im Dashboard, sonst TAGESPLAN_SPRACHEN, sonst alle."""
+    try:
+        gewaehlt = db.lade_einstellung("tagesplan_sprachen", None)
+    except Exception:
+        gewaehlt = None
+    if gewaehlt:
+        return [s for s in SPRACHEN if s in gewaehlt] or ["de"]
     roh = os.environ.get("TAGESPLAN_SPRACHEN") or ",".join(SPRACHEN)
     gewaehlt = [norm(s) for s in roh.split(",") if s.strip()]
     return [s for s in SPRACHEN if s in gewaehlt] or ["de"]
@@ -120,6 +141,14 @@ def automatisch() -> bool:
     except Exception as e:
         print(f"[Tagesplan] Schalter nicht lesbar, Automatik bleibt aus: {e}", flush=True)
         return False
+
+
+def sprachen_setzen(liste: list[str]) -> list[str]:
+    gewaehlt = [s for s in SPRACHEN if s in {str(x).strip().lower()[:2] for x in liste}]   # Unbekanntes ignorieren
+    if not gewaehlt:
+        raise ValueError("Mindestens eine Sprache wählen.")
+    db.setze_einstellung("tagesplan_sprachen", gewaehlt)
+    return sprachen()
 
 
 def automatik_setzen(an: bool) -> bool:
@@ -180,29 +209,59 @@ def zielgruppen_text(zeile: dict | None) -> str:
     return f"Zielgruppe (Recherche „{zeile.get('bereich')}“):\n" + "\n".join(zeilen)
 
 
-def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None = None) -> list[dict]:
-    """Ein Claude-Aufruf: die drei Eintraege des Tages in einer Sprache."""
-    system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
+def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
+           vorbilder: list[str]) -> str:
     profil = zielgruppen_text(zielgruppe)
-    frage = (
+    return (
         "Himmelsdaten für den Tag des Posts (bereits in der Zielsprache benannt):\n"
         f"{himmel.als_text(info)}\n\n"
+        f"{redaktion.thema_text(thema, LINK_IN_BIO[sprache])}\n\n"
         + (f"{profil}\n\n" if profil else "")
+        + ("Diese eigenen Posts haben zuletzt die meisten Besucher gebracht:\n"
+           + "\n".join(f"- {v}" for v in vorbilder) + "\n\n" if vorbilder else "")
         + "Überschriften der letzten Tage (nicht wiederholen):\n"
         + ("\n".join(f"- {t}" for t in bisherige) if bisherige else "- (noch keine)")
         + f"\n\n{sprach_anweisung(sprache)}"
     )
-    daten = frage_json(system, frage, SCHEMA, effort="medium")
+
+
+def _aufbereiten(daten: dict, sprache: str) -> list[dict]:
     posts = []
     for p in daten.get("posts", [])[:3]:
         skript = p.get("skript") or {}
+        punkte = [x.strip() for x in (p.get("bild_punkte") or []) if x and x.strip()][:3]
         posts.append({
-            **p,
+            **{k: v for k, v in p.items() if k != "bild_punkte"},
             "sprache": sprache,
             "skript": skript if p.get("art") == "reel" and (skript.get("hook") or skript.get("szenen")) else None,
+            "_bild_punkte": punkte if p.get("art") == "post" else [],
         })
+    return posts
+
+
+def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None = None,
+                   thema: dict | None = None, vorbilder: list[str] | None = None) -> list[dict]:
+    """Ein Claude-Aufruf: die drei Eintraege des Tages in einer Sprache. Bei schweren Befunden
+    der Qualitaetspruefung (z. B. falsche Sprache, heikle Versprechen) genau ein Korrekturdurchgang."""
+    tag = date.fromisoformat(info["datum"]) if info.get("datum") else himmel.heute()
+    thema = thema or redaktion.wochenthema(tag, info)
+    system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
+    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [])
+    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache)
+    befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
+    if any(redaktion.schwer(b) for b in befunde.values()):
+        hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
+        korrigiert = _aufbereiten(frage_json(
+            system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,
+            SCHEMA, effort="medium"), sprache)
+        if korrigiert:
+            posts = korrigiert
+            befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if not posts:
         raise RuntimeError("Claude hat keine Posts geliefert.")
+    for i, p in enumerate(posts):
+        p["_pruefung"] = befunde.get(i) or []
+        p["_thema"] = thema["name"]
     return posts
 
 
@@ -228,11 +287,18 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             db.loesche_tagesplan_entwuerfe(tag, sprache)
         info = himmel.aufbereiten(himmel.hole_himmel(tag), tag, sprache)
         zielgruppe = _zielgruppe_fuer(sprache)
-        posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe)
-        meta = himmel.bild_meta(info)
-        if zielgruppe:
-            meta["zielgruppe"] = zielgruppe["bereich"]
-        gespeichert = db.speichere_posts(posts, quelle="himmel", geplant_fuer=tag, meta=meta)
+        thema = redaktion.wochenthema(tag, info)
+        vorbilder = redaktion.gut_angekommen(db.lade_post, sprache)
+        posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder)
+        gespeichert = []
+        for p in posts:
+            meta = himmel.bild_meta(info) | {"thema": p.pop("_thema"), "pruefung": p.pop("_pruefung")}
+            punkte = p.pop("_bild_punkte", [])
+            if punkte:
+                meta["bild_punkte"] = punkte
+            if zielgruppe:
+                meta["zielgruppe"] = zielgruppe["bereich"]
+            gespeichert += db.speichere_posts([p], quelle="himmel", geplant_fuer=tag, meta=meta)
         db.tagesplan_fertig(tag, sprache, info)
         print(f"[Tagesplan] {tag} {sprache}: {len(gespeichert)} Posts", flush=True)
         return {"sprache": sprache, "status": "fertig", "posts": len(gespeichert)}
@@ -275,13 +341,15 @@ def vorplanen(tage: int = 7, liste: list[str] | None = None) -> dict:
 
 
 def pruefe_faellige(jetzt_stunde: int | None = None) -> list[dict]:
-    """Einmal pro Durchlauf des Zeitplans: fehlende Tagesplaene von heute erstellen."""
+    """Einmal pro Durchlauf des Zeitplans: fehlende Tagesplaene von heute und morgen erstellen.
+    Morgen wird schon heute geschrieben -- so bleibt ein ganzer Abend Zeit zum Pruefen und Stoppen."""
     if not automatisch():
         return []
     stunde = jetzt_stunde if jetzt_stunde is not None else himmel.stunde_jetzt()
     if stunde < startstunde():
         return []
-    return [erstelle(s) for s in sprachen()]
+    heute = himmel.heute()
+    return [erstelle(s, tag=t) for t in (heute, heute + timedelta(days=1)) for s in sprachen()]
 
 
 def zeitplan_starten(intervall_sekunden: int = 600) -> None:

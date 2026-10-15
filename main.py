@@ -34,12 +34,13 @@ from bereiche import (
 )
 from db import (
     init_db, speichere_posts, lade_posts, aendere_post, loesche_post,
-    lade_post, lade_veroeffentlichungen, speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
+    lade_post, lade_veroeffentlichungen, setze_meta, speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
 )
 import himmel
 import meta
 import paket
 import posten
+import redaktion
 import tagesplan
 from sprachen import SPRACHEN, NAMEN, norm
 from wirkung import hole_statistik, links as wirkung_links
@@ -216,6 +217,11 @@ def content_ansehen(limit: int = 50, von: Optional[date] = None, bis: Optional[d
 def content_aendern(post_id: int, aenderung: PostAenderung):
     try:
         zeile = aendere_post(post_id, aenderung.model_dump(exclude_unset=True))
+        # nach dem Bearbeiten neu pruefen (Befunde sperren das automatische Posten bis zur Freigabe)
+        if zeile and zeile.get("quelle") == "himmel" and (zeile.get("meta") or {}).get("pruefung") is not None:
+            befunde = redaktion.pruefe_post(zeile, zeile.get("sprache") or "de")
+            setze_meta(post_id, "pruefung", befunde)
+            zeile["meta"] = {**(zeile.get("meta") or {}), "pruefung": befunde}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -448,6 +454,18 @@ def tagesplan_ansehen(datum: Optional[date] = None):
 
 class AutomatikAnfrage(BaseModel):
     an: bool
+
+
+class SprachenAnfrage(BaseModel):
+    sprachen: list[str]
+
+
+@app.put("/tagesplan/sprachen")
+def tagesplan_sprachen(anfrage: SprachenAnfrage):
+    try:
+        return {"sprachen": tagesplan.sprachen_setzen(anfrage.sprachen)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.put("/tagesplan/automatik")

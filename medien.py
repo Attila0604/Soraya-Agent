@@ -382,7 +382,13 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     frage = messe_text(frage_text, breite=W - 220 - 2 * pad, groesse=46 if story else 36, name="inter500",
                        zeilenhoehe=1.38, max_zeilen=6 if story else 4, min_groesse=28) if frage_text else None
     ab_mond, ab_unter, ab_frage = (110, 36, 70) if story else (70, 26, 44)
-    rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + (ab_frage + frage["hoehe"] + 2 * pad if frage else 0)
+    # Liste fuers Bild (z. B. drei Sternzeichen): goldener Stern vor jedem Punkt
+    punkte = [str(x).strip() for x in (meta.get("bild_punkte") or []) if str(x).strip()][:3]
+    pg = (44 if story else 38)
+    punkt_bloecke = [messe_text(x, breite=W - 300, groesse=pg, name="inter500", max_zeilen=1, min_groesse=26) for x in punkte]
+    punkte_h = sum(b["g"] * 1.65 for b in punkt_bloecke)
+    rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + (ab_frage + frage["hoehe"] + 2 * pad if frage else 0) \
+        + (ab_frage + punkte_h if punkte else 0)
     r = (150 if story else 105) if mit_mond else 0
     if mit_mond:
         r = max(60, min(r, (platz - rest - ab_mond) / 2))
@@ -398,6 +404,18 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
         y += ab_unter
         zeichne_text(d, unter, W / 2, y, "#C3B7DA", m)
         y += unter["hoehe"]
+    if punkte:
+        y += ab_frage
+        for b in punkt_bloecke:
+            font = schrift(b["name"], b["g"] * m)
+            tb = font.getlength(b["zeilen"][0])
+            sh = b["g"] * 0.36
+            x0 = W / 2 - (tb / m + sh * 2.4) / 2
+            d.polygon([(px * m, py * m) for px, py in stern_punkte(x0 + sh * 0.74, y + b["g"] * 0.5, sh)],
+                      fill=(233, 207, 156, 255))
+            d.text(((x0 + sh * 2.4) * m, (y + b["g"] * 0.8) * m), b["zeilen"][0], font=font,
+                   fill=(239, 232, 248, 255), anchor="ls")
+            y += b["g"] * 1.65
     if frage:
         y += ab_frage
         d.rounded_rectangle([110 * m, y * m, (W - 110) * m, (y + frage["hoehe"] + 2 * pad) * m], radius=28 * m,
