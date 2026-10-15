@@ -64,6 +64,15 @@ def hole_bild(post: dict, format: str | None = None) -> bytes:
     return daten
 
 
+def vorschau(jpeg: bytes, breite: int = 300) -> bytes:
+    from PIL import Image
+    img = Image.open(io.BytesIO(jpeg))
+    img = img.resize((breite, round(img.height * breite / img.width)), Image.LANCZOS)
+    puffer = io.BytesIO()
+    img.save(puffer, "JPEG", quality=80, optimize=True)
+    return puffer.getvalue()
+
+
 def hole_video(post: dict) -> bytes | None:
     """Fertiges Video aus dem Zwischenspeicher (oder None)."""
     return db.lade_medium(post["id"], "reel", _fingerabdruck(post, "reel"))

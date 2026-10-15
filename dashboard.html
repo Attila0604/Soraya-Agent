@@ -103,6 +103,27 @@
   .skript b{color:var(--champagne);font-weight:600}
   .skript ol{margin:6px 0;padding-left:20px}
   .aktionen{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .card.mit-bild{display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:0 18px}
+  .card.mit-bild>.inhalt{min-width:0}
+  .vorschau{grid-column:2;grid-row:1;align-self:start;display:block;border:1px solid var(--line);border-radius:10px;
+            overflow:hidden;cursor:zoom-in;padding:0;background:#07040f;width:132px}
+  .vorschau img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover}
+  .vorschau.story img{aspect-ratio:9/16}
+  .termin{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px;color:var(--mist);margin:0 0 12px}
+  .termin .vs{font-size:11px}
+  button.freigeben{padding:7px 14px;font-size:13px}
+  details.pz summary .mini{width:30px;height:38px;border-radius:5px;object-fit:cover;border:1px solid var(--line-soft);flex:none}
+  details.pz summary .zeit{font-size:12px;color:var(--champagne);flex:none;font-variant-numeric:tabular-nums}
+  .cockpit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 16px}
+  .cockpit .kachel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;
+                   text-align:left;font-weight:400;color:var(--mist);font-size:13px;line-height:1.45}
+  .cockpit .kachel:hover{border-color:var(--gold);filter:none}
+  .cockpit .kachel b{display:block;font-family:'Cormorant Garamond',serif;font-size:19px;color:#F4EEDD;font-weight:600;margin-bottom:2px}
+  .cockpit .kachel .punkt{vertical-align:middle}
+  @media (max-width:700px){
+    .card.mit-bild{grid-template-columns:minmax(0,1fr) 92px;gap:0 12px} .vorschau{width:92px}
+    .cockpit{grid-template-columns:1fr}
+  }
   .aktionen select,.aktionen input{width:auto;padding:6px 10px;font-size:13px;border-radius:8px}
   .meta{font-size:12px;color:var(--mist-dim)}
   .wirk{font-size:13px;color:var(--champagne);margin:0 0 12px;display:flex;flex-wrap:wrap;gap:4px 12px}
@@ -294,6 +315,7 @@
 
   <!-- ============ HEUTE ============ -->
   <section id="view-heute">
+    <div class="cockpit" id="cockpit" aria-label="Überblick"></div>
     <div class="panel">
       <div class="himmel">
         <canvas id="mondKlein" width="152" height="152" aria-hidden="true"></canvas>
@@ -572,6 +594,15 @@ function neuLaden(){ if(LADER[aktiv]) LADER[aktiv](); }
 
 /* ---------- Post-Karte (in allen Ansichten gleich) ---------- */
 const POSTS = new Map();
+const TERMINE = new Map();            // post_id -> Posting-Termine (Facebook/Instagram)
+let POSTEN_STAND = null;
+async function ladeTermine(){
+  try{ POSTEN_STAND = await api('/posten'); }catch(e){ POSTEN_STAND = null; }
+  TERMINE.clear();
+  ((POSTEN_STAND && POSTEN_STAND.termine) || []).forEach(t => {
+    const k = String(t.post_id); if(!TERMINE.has(k)) TERMINE.set(k, []); TERMINE.get(k).push(t); });
+  return POSTEN_STAND;
+}
 function karte(p, {datum = true} = {}){
   POSTS.set(String(p.id), p);
   const sk = p.skript;
@@ -580,7 +611,17 @@ function karte(p, {datum = true} = {}){
       ${(sk.szenen || []).length ? `<ol>${sk.szenen.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
       ${sk.schluss ? `<div><b>Schluss:</b> ${esc(sk.schluss)}</div>` : ''}</div>` : '';
   const st = p.status || 'entwurf';
-  return `<article class="card" data-id="${esc(p.id)}">
+  const fmt = p.art === 'post' ? 'feed' : 'story';
+  const termine = TERMINE.get(String(p.id)) || [];
+  const termin = termine.length ? `<div class="termin"><span>${p.status === 'gepostet' ? 'Gepostet:' : 'Postet automatisch'}</span>
+      ${termine.map(t => `<span class="vs ${esc(t.status)}">${uhr(t.geplant_um)} ${esc(PL_NAME[t.plattform] || t.plattform)}${t.status === 'fertig' ? ' ✓' : t.status === 'fehler' ? ' ⚠' : ''}</span>`).join('')}</div>` : '';
+  const schnell = st === 'entwurf' ? `<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button>`
+    : st === 'freigegeben' ? `<button class="ghost klein" data-schnell="entwurf">Freigabe zurücknehmen</button>` : '';
+  const stopp = ['entwurf', 'freigegeben'].includes(st) && p.quelle === 'himmel' ? `<button class="ghost klein" data-schnell="gestoppt" title="Wird dann nicht automatisch gepostet">Nicht posten</button>` : '';
+  return `<article class="card mit-bild" data-id="${esc(p.id)}">
+    <button class="vorschau${fmt === 'story' ? ' story' : ''}" data-aktion="bild" aria-label="Bild ansehen">
+      <img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${fmt}&klein=1&v=${esc(p.aktualisiert || p.created_at || '')}"></button>
+    <div class="inhalt">
     <div class="kopf">
       <span class="tag">${esc(ART[p.art] || 'Post')}</span>
       <span class="tag leise">${esc(p.platform)}</span>
@@ -599,7 +640,9 @@ function karte(p, {datum = true} = {}){
     ${skript}
     ${p.hashtags ? `<p class="tags">${esc(p.hashtags)}</p>` : ''}
     <p class="wirk" data-wirk="p${esc(p.id)}">${wirkText('p' + p.id)}</p>
+    ${termin}
     <div class="aktionen">
+      ${schnell}${stopp}
       <button class="ghost klein" data-aktion="kopieren">Text kopieren</button>
       <button class="ghost klein" data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
       ${skript ? '<button class="ghost klein" data-aktion="skript">Skript kopieren</button>' : ''}
@@ -609,6 +652,7 @@ function karte(p, {datum = true} = {}){
       <select data-aktion="status" aria-label="Status">${Object.entries(STATUS).map(([k,v]) =>
         `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
       ${datum ? `<input type="date" data-aktion="datum" aria-label="Geplant für" value="${esc((p.geplant_fuer || '').slice(0,10))}">` : ''}
+    </div>
     </div>
   </article>`;
 }
@@ -649,6 +693,15 @@ async function aendere(id, felder){
   await api('/content/' + id, {method: 'PATCH', body: JSON.stringify(felder)});
 }
 document.addEventListener('click', async (ev) => {
+  const sb = ev.target.closest('button[data-schnell]');
+  if(sb){
+    const id = sb.closest('[data-id]').dataset.id;
+    sb.disabled = true;
+    try{ await aendere(id, {status: sb.dataset.schnell});
+         melde({freigegeben: 'Freigegeben ✓', entwurf: 'Wieder Entwurf', gestoppt: 'Wird nicht gepostet.'}[sb.dataset.schnell]); neuLaden(); }
+    catch(e){ sb.disabled = false; melde('Fehler: ' + e.message); }
+    return;
+  }
   const btn = ev.target.closest('button[data-aktion]');
   if(!btn) return;
   const id = btn.closest('[data-id]').dataset.id, p = POSTS.get(id);
@@ -887,10 +940,35 @@ $('planAuto').onchange = async () => {
   catch(e){ melde('Fehler: ' + e.message); }
   ladeHeute();
 };
+function zeigeCockpit(d, ps){
+  const fertig = d.sprachen.filter(s => (d.laeufe || []).some(l => l.sprache === s && l.status === 'fertig')).length;
+  const e = ps && ps.einstellungen, v = ps && ps.verbindungen;
+  const verbunden = v ? ['facebook', 'instagram'].filter(p => v[p].verbunden).map(p => PL_NAME[p]) : [];
+  const jetzt = Date.now();
+  const naechster = ((ps && ps.termine) || []).filter(t => t.status === 'geplant' && t.post_status !== 'gestoppt'
+    && new Date(t.geplant_um).getTime() > jetzt).sort((a, b) => new Date(a.geplant_um) - new Date(b.geplant_um))[0];
+  const punkt = (an) => `<span class="punkt ${an ? 'ok' : ''}"></span>`;
+  $('cockpit').innerHTML = `
+    <button class="kachel" data-ziel="tagesplan"><b>${punkt(d.automatisch)}Tagesplan ${d.automatisch ? 'an' : 'aus'}</b>
+      Heute ${fertig} von ${d.sprachen.length} Sprachen fertig · ${d.sprachen.map(s => s.toUpperCase()).join(', ')}</button>
+    <button class="kachel" data-ziel="posten"><b>${punkt(e && e.an && verbunden.length)}Posten ${e && e.an ? 'an' : 'aus'}</b>
+      ${verbunden.length ? 'Verbunden: ' + verbunden.join(' + ') : 'Noch keine Plattform verbunden'}</button>
+    <button class="kachel" data-ziel="posten"><b>Nächster Post</b>
+      ${naechster ? `${esc(ART[naechster.art] || naechster.art)} · ${tagName(naechster.geplant_um)} ${uhr(naechster.geplant_um)} · ${esc(PL_NAME[naechster.plattform])}`
+        : (e && e.an ? 'Nichts geplant' : 'Automatisches Posten ist aus')}</button>`;
+}
+$('cockpit').addEventListener('click', (ev) => {
+  const k = ev.target.closest('.kachel'); if(!k) return;
+  if(k.dataset.ziel === 'posten') return zeige('posten');
+  $('planAuto').closest('.panel').scrollIntoView({behavior: 'smooth', block: 'start'});
+});
 async function ladeHeute(){
   clearTimeout(heuteTimer);
-  let d;
-  try{ d = await api('/tagesplan'); }catch(e){ melde('Fehler: ' + e.message); return; }
+  let d, ps;
+  try{ [d, ps] = await Promise.all([api('/tagesplan'), ladeTermine()]); }catch(e){ melde('Fehler: ' + e.message); return; }
+  zeigeCockpit(d, ps);
+  // Wird automatisch gepostet, zeigt "Heute" zuerst die Posting-Sprache
+  if(!heuteGewaehlt && ps && ps.einstellungen.an && d.sprachen.includes(ps.einstellungen.sprache)) heuteSprache = ps.einstellungen.sprache;
   const stand = Object.fromEntries((d.laeufe || []).map(l => [l.sprache, l]));
   $('planAuto').checked = !!d.automatisch; $('planAuto').disabled = !!d.automatik_gesperrt;
   $('autoSchalter').classList.toggle('on', !!d.automatisch);
@@ -959,7 +1037,9 @@ let planAlleOffen = false, planTimer = null, vorplanBis = null;
 function zeile(p){
   const st = p.status || 'entwurf';
   return `<details class="pz" data-pz="${esc(p.id)}"${OFFEN.has(String(p.id)) || planAlleOffen ? ' open' : ''}>
-    <summary><span class="tag">${esc(ART[p.art] || 'Post')}</span><span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
+    <summary><img class="mini" loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${p.art === 'post' ? 'feed' : 'story'}&klein=1&v=${esc(p.aktualisiert || p.created_at || '')}">
+      ${(TERMINE.get(String(p.id)) || [])[0] ? `<span class="zeit">${uhr(TERMINE.get(String(p.id))[0].geplant_um)}</span>` : ''}
+      <span class="tag">${esc(ART[p.art] || 'Post')}</span><span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
       <span class="pt">${esc(p.titel || (p.text || '').slice(0, 60))}</span><span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span></summary>
     ${karte(p)}</details>`;
 }
@@ -984,7 +1064,8 @@ async function ladePlan(){
   try{
     [posts, stand] = await Promise.all([
       api('/content?' + q).then(d => d.posts || []),
-      api(`/tagesplan/zeitraum?von=${iso(planMontag)}&bis=${iso(bis)}`).catch(() => stand)]);
+      api(`/tagesplan/zeitraum?von=${iso(planMontag)}&bis=${iso(bis)}`).catch(() => stand),
+      ladeTermine()]);
   }catch(e){ melde('Fehler: ' + e.message); return; }
   const zaehl = (s) => posts.filter(p => p.geplant_fuer && p.status === s).length;
   $('planZaehler').innerHTML = `<span><b>${posts.filter(p => p.geplant_fuer).length}</b> geplant</span>
