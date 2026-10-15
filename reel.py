@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import math
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -24,7 +25,7 @@ from PIL import Image, ImageDraw
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-2"
+VERSION = "reel-3"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -62,15 +63,59 @@ def texte(post: dict) -> tuple[list[str], str]:
     return zeilen[:5], (sk.get("schluss") or "").strip()
 
 
-def _textkarte(text: str, *, breite: int, groesse: int, name: str, farbe: str, zeilenhoehe=1.15, max_zeilen=4):
-    """Text als RGBA-Ebene (in doppelter Groesse gezeichnet, dann verkleinert)."""
+def _textkarte(text: str, *, breite: int, groesse: int, name: str, farbe: str, zeilenhoehe=1.15, max_zeilen=4,
+               akzent=(233, 207, 156)):
+    """Text als RGBA-Ebene (doppelt gross gezeichnet, dann verkleinert) und die Wort-Kaestchen fuers
+    Wort-fuer-Wort-Einblenden. Beginnt der Text mit einem Sternzeichen ("Scorpio: ..."), steht darueber
+    ein Medaillon mit dem Symbol und dem Namen."""
+    m = 2
+    idx = medien.zeichen_aus_text(text)
+    kopf_h, name_txt = 0, ""
+    if idx is not None:
+        teile = re.split(r"\s*[:–—-]\s*", text, maxsplit=1)
+        if len(teile) > 1 and teile[1].strip():
+            name_txt, text = teile[0], teile[1][:1].upper() + teile[1][1:]
+        kopf_h = 190
     b = medien.messe_text(text, breite=breite, groesse=groesse, name=name, zeilenhoehe=zeilenhoehe,
                           max_zeilen=max_zeilen, min_groesse=max(28, groesse // 2))
-    m = 2
-    hoehe = int(b["hoehe"] + b["g"] * 0.6)
-    ebene = Image.new("RGBA", (breite * m + 40 * m, hoehe * m), (0, 0, 0, 0))
-    medien.zeichne_text(ImageDraw.Draw(ebene), b, breite / 2 + 20, 0, farbe, m)
-    return ebene.resize((ebene.width // m, ebene.height // m), Image.LANCZOS)
+    hoehe = int(kopf_h + b["hoehe"] + b["g"] * 0.6)
+    bw = breite + 40
+    ebene = Image.new("RGBA", (bw * m, hoehe * m), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ebene)
+    kaesten = []
+    if idx is not None:
+        medien._medaillon(d, bw / 2, 62, 58, m, akzent, glyphe=medien.ZEICHEN_GLYPHE[idx])
+        if name_txt:
+            medien.gesperrt(d, name_txt.upper(), bw / 2 * m, 170 * m, medien.schrift("cinzel", 34 * m), 6 * m, akzent + (255,))
+        kaesten.append((0, 0, bw, kopf_h))        # Kopf erscheint als erstes "Wort"
+    font = medien.schrift(b["name"], b["g"] * m)
+    for i, zeile in enumerate(b["zeilen"]):
+        grund = kopf_h + b["g"] * 0.8 + i * b["g"] * b["zh"]
+        d.text((bw / 2 * m, grund * m), zeile, font=font, fill=medien._rgb(farbe) + (255,), anchor="ms")
+        breite_z = font.getlength(zeile) / m
+        x = bw / 2 - breite_z / 2
+        for w in zeile.split(" "):
+            wb = font.getlength(w) / m
+            kaesten.append((x - 4, grund - b["g"] * 0.95, x + wb + 4, grund + b["g"] * 0.35))
+            x += wb + font.getlength(" ") / m
+    return ebene.resize((ebene.width // m, ebene.height // m), Image.LANCZOS), kaesten
+
+
+def _wort_fuer_wort(karte: Image.Image, kaesten: list, fortschritt: float) -> Image.Image:
+    """fortschritt 0..1: Woerter erscheinen nacheinander (jedes blendet kurz weich ein)."""
+    if fortschritt >= 1 or not kaesten:
+        return karte
+    maske = Image.new("L", karte.size, 0)
+    md = ImageDraw.Draw(maske)
+    n = len(kaesten)
+    for i, (x0, y0, x1, y1) in enumerate(kaesten):
+        a = _weich((fortschritt * (n + 1.5) - i) / 1.5)
+        if a > 0:
+            md.rectangle([x0, y0, x1, y1], fill=int(255 * a))
+    alpha = np.asarray(karte.getchannel("A"), dtype=np.uint16) * np.asarray(maske, dtype=np.uint16) // 255
+    out = karte.copy()
+    out.putalpha(Image.fromarray(alpha.astype(np.uint8), "L"))
+    return out
 
 
 def _mit_alpha(ebene: Image.Image, faktor: float) -> Image.Image:
@@ -136,7 +181,9 @@ def erstelle(post: dict, ziel: str) -> dict:
 
     # --- feste Ebenen einmal vorbereiten
     # leichtes, festes Rauschen gegen Farbstufen im Verlauf (H.264 macht sonst sichtbare Ringe)
-    roh = np.asarray(medien._verlauf_hintergrund(W, H), dtype=np.float32)
+    st = medien.stil(post)
+    akzent = medien.PALETTEN[st["palette"]]["akzent"]
+    roh = np.asarray(medien._verlauf_hintergrund(W, H, st["palette"]), dtype=np.float32)
     rauschen = np.random.default_rng(7).uniform(-1.6, 1.6, roh.shape[:2])[..., None]
     grund = Image.fromarray(np.clip(roh + rauschen, 0, 255).astype(np.uint8), "RGB")
     sterne = medien.stern_liste(W, H, seed, True)
@@ -152,6 +199,8 @@ def erstelle(post: dict, ziel: str) -> dict:
     gross.alpha_composite(z, (int(W - 256 * s), int(20 - 112 * s)))
     eyebrow = "  ·  ".join(x for x in (meta.get("datum_kurz"), meta.get("mond_phase")) if x) or "SORAYA"
     medien.gesperrt(ImageDraw.Draw(gross), eyebrow.upper(), W, 2 * 170, medien.schrift("inter500", 2 * 30), 2 * 4, (201, 168, 106, 255))
+    if st["label"]:
+        medien._etikett(ImageDraw.Draw(gross, "RGBA"), st["label"], W / 2, 196, 2, akzent)
     gross = gross.resize((W, 260), Image.LANCZOS)
     oben.alpha_composite(gross, (0, 230))
     oben, oben_pos = _zuschneiden(oben)
@@ -164,7 +213,7 @@ def erstelle(post: dict, ziel: str) -> dict:
                            [(0, "#ffe9b0", 0.22), (1, "#ffe9b0", 0)])
     mond_y = 760
     karten = [_textkarte(z_, breite=W - 160, groesse=92 if i == 0 else 78, name="cormorant", farbe="#F6E3B4",
-                         max_zeilen=4) for i, z_ in enumerate(zeilen)]
+                         max_zeilen=4, akzent=akzent) for i, z_ in enumerate(zeilen)]
     text_mitte = 1270
     endkarte, end_pos = _zuschneiden(_endkarte(post))
 
@@ -195,15 +244,15 @@ def erstelle(post: dict, ziel: str) -> dict:
                 skala = 0.94 + 0.08 * min(1.0, t / max(end_start, 1))   # langsamer Zoom (Bewegung)
                 mb = mond if abs(skala - 1) < 0.002 else mond.resize((int(mond.width * skala), int(mond.height * skala)), Image.BILINEAR)
                 medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
-            for (start, stopp), karte in zip(plan, karten):
+            for (start, stopp), (karte, kaesten) in zip(plan, karten):
                 if start - 0.01 <= t <= stopp + AUSBLENDEN:
-                    rein = 1.0 if start <= 0 else _weich((t - start) / EINBLENDEN)
+                    # Hook steht ab dem ersten Bild ganz da, alle weiteren Texte erscheinen Wort fuer Wort
+                    fortschritt = 1.0 if start <= 0 else min(1.0, (t - start) / min(1.1, 0.16 * len(kaesten) + 0.3))
                     raus = 1 - _weich((t - stopp) / AUSBLENDEN)
-                    alpha = rein * raus
-                    if alpha > 0.003:
-                        hoch = (1 - rein) * 26
-                        medien.aufkleben(bild, _mit_alpha(karte, alpha),
-                                         (W / 2 - karte.width / 2, text_mitte - karte.height / 2 + hoch))
+                    if raus > 0.003:
+                        k = _wort_fuer_wort(karte, kaesten, fortschritt)
+                        medien.aufkleben(bild, _mit_alpha(k, raus),
+                                         (W / 2 - karte.width / 2, text_mitte - karte.height / 2))
             if t >= end_start:
                 medien.aufkleben(bild, _mit_alpha(endkarte, _weich((t - end_start - 0.3) / 0.9)), end_pos)
             schwarz = 1.0          # keine Schwarzblende: das erste Bild zeigt gleich den Hook

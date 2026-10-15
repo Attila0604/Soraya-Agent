@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import io
 import math
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -74,7 +75,8 @@ def linear(breite: int, hoehe: int, x0, y0, x1, y1, stopps) -> Image.Image:
 @lru_cache(maxsize=64)
 def schrift(name: str, groesse: float) -> ImageFont.FreeTypeFont:
     datei = {"cormorant": "CormorantGaramond-SemiBold.ttf", "cinzel": "Cinzel-SemiBold.ttf",
-             "inter400": "Inter-Regular.ttf", "inter500": "Inter-Medium.ttf", "inter600": "Inter-SemiBold.ttf"}[name]
+             "inter400": "Inter-Regular.ttf", "inter500": "Inter-Medium.ttf", "inter600": "Inter-SemiBold.ttf",
+             "zeichen": "NotoSansSymbols-Zodiac.ttf"}[name]
     return ImageFont.truetype(str(SCHRIFTEN / datei), max(1, int(round(groesse))))
 
 
@@ -291,16 +293,82 @@ def gesperrt(draw, text, cx, grundlinie, font, abstand, farbe):
 # ---------------------------------------------------------------------------
 # Das Post-Bild
 # ---------------------------------------------------------------------------
-@lru_cache(maxsize=4)
-def _verlauf_hintergrund(W: int, H: int) -> Image.Image:
+# ---------------------------------------------------------------------------
+# Formate: Farbwelt, Beschriftung, Aufbau (je Wochenformat ein eigener Look)
+# ---------------------------------------------------------------------------
+PALETTEN = {   # Verlauf oben -> Mitte -> unten, Akzent fuer Ringe/Karten
+    "nacht":  {"verlauf": ("#2a1650", "#120a26", "#07040f"), "akzent": (233, 207, 156)},
+    "liebe":  {"verlauf": ("#47163f", "#1f0a22", "#0a0410"), "akzent": (236, 180, 160)},
+    "wissen": {"verlauf": ("#172a5c", "#0b1433", "#04060f"), "akzent": (233, 207, 156)},
+    "ritual": {"verlauf": ("#123f45", "#091f26", "#03090c"), "akzent": (233, 207, 156)},
+    "zeichen": {"verlauf": ("#26206a", "#100c33", "#05040f"), "akzent": (233, 207, 156)},
+    "mitmachen": {"verlauf": ("#3d1866", "#170a2c", "#07040f"), "akzent": (233, 207, 156)},
+}
+THEMEN = {   # Wochenformat (redaktion.py) -> (Layout-Schluessel, Farbwelt)
+    "Deine Woche": ("woche", "nacht"), "Sternzeichen im Fokus": ("zeichen", "zeichen"),
+    "Liebe & Beziehung": ("liebe", "liebe"), "Astro-Wissen": ("wissen", "wissen"), "Ritual": ("ritual", "ritual"),
+    "Mitmachen": ("mitmachen", "mitmachen"), "Rückblick & Vorschau": ("rueckblick", "nacht"),
+}
+BESCHRIFTUNG = {
+    "woche": {"de": "Deine Woche", "en": "Your week", "hu": "A heted", "it": "La tua settimana"},
+    "zeichen": {"de": "Sternzeichen im Fokus", "en": "Signs in focus", "hu": "Csillagjegyek fókuszban", "it": "Segni in primo piano"},
+    "liebe": {"de": "Liebe & Beziehung", "en": "Love & connection", "hu": "Szerelem és kapcsolat", "it": "Amore e relazioni"},
+    "wissen": {"de": "Astro-Wissen", "en": "Astro knowledge", "hu": "Asztro-tudás", "it": "Astro-sapere"},
+    "ritual": {"de": "Ritual", "en": "Ritual", "hu": "Rituálé", "it": "Rituale"},
+    "mitmachen": {"de": "Mitmachen", "en": "Your turn", "hu": "Te jössz", "it": "Tocca a te"},
+    "rueckblick": {"de": "Rückblick & Vorschau", "en": "Look back & ahead", "hu": "Vissza és előre", "it": "Bilancio e anteprima"},
+    "ereignis": {"de": "Besonderer Himmel", "en": "Special sky", "hu": "Különleges égbolt", "it": "Cielo speciale"},
+}
+ZEICHEN_GLYPHE = "♈♉♊♋♌♍♎♏♐♑♒♓"
+ZEICHEN_NAMEN = [  # gleiche Reihenfolge wie die Glyphen
+    ("widder", "aries", "kos", "ariete"), ("stier", "taurus", "bika", "toro"),
+    ("zwillinge", "gemini", "ikrek", "gemelli"), ("krebs", "cancer", "rák", "cancro"),
+    ("löwe", "leo", "oroszlán", "leone"), ("jungfrau", "virgo", "szűz", "vergine"),
+    ("waage", "libra", "mérleg", "bilancia"), ("skorpion", "scorpio", "skorpió", "scorpione"),
+    ("schütze", "sagittarius", "nyilas", "sagittario"), ("steinbock", "capricorn", "bak", "capricorno"),
+    ("wassermann", "aquarius", "vízöntő", "acquario"), ("fische", "pisces", "halak", "pesci"),
+]
+
+
+def zeichen_aus_text(text: str) -> int | None:
+    """Index (0-11) des Sternzeichens, mit dem ein Text beginnt ("Scorpio: ..." / "Skorpió – ..."), sonst None."""
+    kopf = str(text or "").strip().lower()
+    for i, namen in enumerate(ZEICHEN_NAMEN):
+        for n in sorted(namen, key=len, reverse=True):
+            if kopf.startswith(n) and (len(kopf) == len(n) or not kopf[len(n)].isalpha()):
+                return i
+    return None
+
+
+def stil(post: dict) -> dict:
+    """Layout, Farbwelt und Beschriftung eines Posts."""
+    meta = post.get("meta") or {}
+    thema = meta.get("thema") or ""
+    layout, palette = THEMEN.get(thema, ("ereignis", "nacht") if thema.startswith("Großes Ereignis") else ("mond", "nacht"))
+    punkte = [str(x).strip() for x in (meta.get("bild_punkte") or []) if str(x).strip()][:3]
+    if post.get("art") == "post" and punkte:
+        hat_zeichen = sum(zeichen_aus_text(x) is not None for x in punkte) >= 2
+        aufbau = "zeichen" if hat_zeichen else "schritte"
+    elif post.get("art") == "post" and layout == "liebe":
+        aufbau = "liebe"
+    else:
+        aufbau = "mond"
+    sprache = (post.get("sprache") or "de")[:2]
+    label = (BESCHRIFTUNG.get(layout) or {}).get(sprache) if layout in BESCHRIFTUNG else None
+    return {"layout": layout, "aufbau": aufbau, "palette": palette, "label": label, "punkte": punkte}
+
+
+@lru_cache(maxsize=16)
+def _verlauf_hintergrund(W: int, H: int, palette: str = "nacht") -> Image.Image:
     """Der weiche Verlauf reicht in Viertel-Aufloesung (spart Rechenzeit)."""
     q = 4
+    a, b, c = PALETTEN.get(palette, PALETTEN["nacht"])["verlauf"]
     return radial(W // q, H // q, W / 2 / q, 0, 40 / q, W / 2 / q, H * 0.25 / q, H / q,
-                  [(0, "#2a1650", 1), (0.45, "#120a26", 1), (1, "#07040f", 1)]).convert("RGB").resize((W, H), Image.BICUBIC)
+                  [(0, a, 1), (0.45, b, 1), (1, c, 1)]).convert("RGB").resize((W, H), Image.BICUBIC)
 
 
-def hintergrund(W: int, H: int, seed, story: bool, m: float = 1.0) -> Image.Image:
-    bg = _verlauf_hintergrund(W, H).resize((int(W * m), int(H * m)), Image.BICUBIC)
+def hintergrund(W: int, H: int, seed, story: bool, m: float = 1.0, palette: str = "nacht") -> Image.Image:
+    bg = _verlauf_hintergrund(W, H, palette).resize((int(W * m), int(H * m)), Image.BICUBIC)
     sterne(bg, W, H, seed, story, m)
     return bg
 
@@ -351,28 +419,121 @@ def marke(bild: Image.Image, W: int, H: int, story: bool, sprache: str, m: float
     _cta(d, bild, W, unten, story, sprache, m)
 
 
+def _etikett(d, text, cx, y, m, farbe):
+    """Kleine Beschriftung in einer Kapsel (z. B. "ASTRO KNOWLEDGE")."""
+    font = schrift("inter600", 21 * m)
+    text = text.upper()
+    breiten = [font.getlength(ch) for ch in text]
+    tb = sum(breiten) + 3 * m * (len(text) - 1)
+    bw, bh = tb + 44 * m, 44 * m
+    d.rounded_rectangle([cx * m - bw / 2, y * m, cx * m + bw / 2, y * m + bh], radius=bh / 2,
+                        fill=farbe + (28,), outline=farbe + (150,), width=max(1, int(1.5 * m)))
+    gesperrt(d, text, cx * m, y * m + bh / 2 + 8 * m, font, 3 * m, farbe + (255,))
+    return 44 + 26
+
+
+def _medaillon(d, cx, cy, r, m, akzent, glyphe=None, zahl=None):
+    d.ellipse([(cx - r) * m, (cy - r) * m, (cx + r) * m, (cy + r) * m], fill=akzent + (22,),
+              outline=akzent + (210,), width=max(1, int(2.2 * m)))
+    if glyphe:
+        d.text((cx * m, cy * m + r * 0.04 * m), glyphe, font=schrift("zeichen", r * 1.15 * m), fill=akzent + (255,), anchor="mm")
+    elif zahl is not None:
+        d.text((cx * m, cy * m + r * 0.06 * m), str(zahl), font=schrift("cinzel", r * 1.0 * m), fill=akzent + (255,), anchor="mm")
+
+
+def _karten(d, punkte, y, W, story, m, akzent, zeichen: bool):
+    """Drei Karten untereinander: Medaillon (Sternzeichen-Symbol oder Nummer) + Text."""
+    r = 56 if story else 48
+    pad = 28 if story else 24
+    x0, x1 = 90, W - 90
+    for i, p in enumerate(punkte):
+        idx = zeichen_aus_text(p) if zeichen else None
+        name, rest = "", p
+        if idx is not None:
+            teile = re.split(r"\s*[:–—-]\s*", p, maxsplit=1)
+            name, rest = teile[0], (teile[1] if len(teile) > 1 else "")
+            rest = rest[:1].upper() + rest[1:]
+        text_x = x0 + pad + 2 * r + 28
+        breite = x1 - pad - text_x
+        tb = messe_text(rest or p, breite=breite, groesse=44 if story else 38, name="inter500",
+                        zeilenhoehe=1.25, max_zeilen=2, min_groesse=28)
+        nh = (32 if story else 27) if name else 0
+        inhalt = nh + (10 if name else 0) + tb["hoehe"]
+        hoehe = max(2 * r, inhalt) + 2 * pad
+        d.rounded_rectangle([x0 * m, y * m, x1 * m, (y + hoehe) * m], radius=26 * m,
+                            fill=(255, 255, 255, 12), outline=akzent + (70,), width=max(1, int(1.5 * m)))
+        _medaillon(d, x0 + pad + r, y + hoehe / 2, r, m, akzent,
+                   glyphe=ZEICHEN_GLYPHE[idx] if idx is not None else None, zahl=None if idx is not None else i + 1)
+        ty = y + (hoehe - inhalt) / 2
+        if name:
+            font = schrift("cinzel", nh * m)
+            d.text((text_x * m, (ty + nh * 0.82) * m), name.upper(), font=font, fill=akzent + (255,), anchor="ls")
+            ty += nh + 12
+        font = schrift(tb["name"], tb["g"] * m)
+        for j, z in enumerate(tb["zeilen"]):
+            d.text((text_x * m, (ty + tb["g"] * 0.8 + j * tb["g"] * tb["zh"]) * m), z, font=font,
+                   fill=(239, 232, 248, 255), anchor="ls")
+        y += hoehe + (22 if story else 16)
+    return y
+
+
+def _karten_hoehe(punkte, W, story, zeichen: bool):
+    r, pad, h = (56 if story else 48), (28 if story else 24), 0
+    for p in punkte:
+        idx = zeichen_aus_text(p) if zeichen else None
+        rest = re.split(r"\s*[:–—-]\s*", p, maxsplit=1)[-1] if idx is not None else p
+        breite = (W - 90) - pad - (90 + pad + 2 * r + 28)
+        tb = messe_text(rest, breite=breite, groesse=44 if story else 38, name="inter500", zeilenhoehe=1.25,
+                        max_zeilen=2, min_groesse=28)
+        inhalt = ((32 if story else 27) + 10 if idx is not None else 0) + tb["hoehe"]
+        h += max(2 * r, inhalt) + 2 * pad + (22 if story else 16)
+    return h
+
+
+def _liebe_ringe(d, cx, cy, r, m, akzent):
+    """Zwei verschlungene Ringe hinter dem Mond (Partner-Motiv)."""
+    for dx in (-0.5 * r, 0.5 * r):
+        rr = r * 1.32
+        d.ellipse([(cx + dx - rr) * m, (cy - rr) * m, (cx + dx + rr) * m, (cy + rr) * m],
+                  outline=akzent + (120,), width=max(1, int(2.4 * m)))
+
+
 def bild(post: dict, format: str = "feed") -> Image.Image:
-    """Das fertige Post-Bild als RGB (1080x1350 oder 1080x1920)."""
+    """Das fertige Post-Bild als RGB (1080x1350 oder 1080x1920), Look je nach Wochenformat."""
     story = format == "story"
     W, H = 1080, (1920 if story else 1350)
     m = SS
-    leinwand = hintergrund(W, H, post.get("id") or 1, story, m)
+    st = stil(post)
+    akzent = PALETTEN[st["palette"]]["akzent"]
+    leinwand = hintergrund(W, H, post.get("id") or 1, story, m, st["palette"])
     d = ImageDraw.Draw(leinwand, "RGBA")
     meta = post.get("meta") or {}
     mit_mond = meta.get("phase_index") is not None
+
+    # Wasserzeichen: Symbol des Mondzeichens, gross und kaum sichtbar
+    idx_mond = zeichen_aus_text(meta.get("mond_zeichen") or "")
+    wasser = ZEICHEN_GLYPHE[idx_mond] if idx_mond is not None and st["layout"] in ("wissen", "zeichen", "ereignis") \
+        else ("?" if st["layout"] == "mitmachen" else None)
+    if wasser:
+        ebene = Image.new("RGBA", leinwand.size, (0, 0, 0, 0))
+        font = schrift("zeichen" if wasser != "?" else "cormorant", (760 if story else 640) * m)
+        ImageDraw.Draw(ebene).text((W * m / 2, H * m * 0.56), wasser, font=font, fill=akzent + (255,), anchor="mm")
+        aufkleben(leinwand, _mit_alpha(ebene, 0.07))
 
     zeichen_h = 124 if story else 100
     z = portal(int(zeichen_h * m))
     s = zeichen_h * m / 312
     aufkleben(leinwand, z, (W * m / 2 - 256 * s, (118 if story else 62) * m - 112 * s))
-
     eyebrow = "  ·  ".join(x for x in (meta.get("datum_kurz"), meta.get("mond_phase")) if x) if mit_mond else "SORAYA"
     gesperrt(d, eyebrow.upper(), W * m / 2, (285 if story else 200) * m,
              schrift("inter500", (30 if story else 26) * m), 4 * m, (201, 168, 106, 255))
 
     unten = H - 300 if story else H - 175
     oben = 350 if story else 245
+    if st["label"]:
+        oben += _etikett(d, st["label"], W / 2, oben - (10 if story else 18), m, akzent) - (0 if story else 14)
     platz = (unten - (150 if story else 110)) - oben
+
     titel = messe_text(post.get("titel") or post.get("text") or "", breite=W - 180, groesse=108 if story else 92,
                        name="cormorant", max_zeilen=4 if story else 3, min_groesse=56)
     unter = messe_text(post["untertitel"], breite=W - 220, groesse=42 if story else 36, name="inter400",
@@ -382,45 +543,51 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     frage = messe_text(frage_text, breite=W - 220 - 2 * pad, groesse=46 if story else 36, name="inter500",
                        zeilenhoehe=1.38, max_zeilen=6 if story else 4, min_groesse=28) if frage_text else None
     ab_mond, ab_unter, ab_frage = (110, 36, 70) if story else (70, 26, 44)
-    # Liste fuers Bild (z. B. drei Sternzeichen): goldener Stern vor jedem Punkt
-    punkte = [str(x).strip() for x in (meta.get("bild_punkte") or []) if str(x).strip()][:3]
-    pg = (44 if story else 38)
-    punkt_bloecke = [messe_text(x, breite=W - 300, groesse=pg, name="inter500", max_zeilen=1, min_groesse=26) for x in punkte]
-    punkte_h = sum(b["g"] * 1.65 for b in punkt_bloecke)
-    rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + (ab_frage + frage["hoehe"] + 2 * pad if frage else 0) \
-        + (ab_frage + punkte_h if punkte else 0)
-    r = (150 if story else 105) if mit_mond else 0
-    if mit_mond:
-        r = max(60, min(r, (platz - rest - ab_mond) / 2))
-    gesamt = rest + (2 * r + ab_mond if mit_mond else 0)
-    y = oben + max(0, (platz - gesamt) / 2)
-    if mit_mond:
-        mb = mond(r * m, meta.get("phase_index"), meta.get("beleuchtung"))
-        aufkleben(leinwand, mb, (W * m / 2 - mb.width / 2, (y + r) * m - mb.height / 2))
-        y += 2 * r + ab_mond
-    zeichne_text(d, titel, W / 2, y, "#F6E3B4", m)
-    y += titel["hoehe"]
-    if unter:
-        y += ab_unter
-        zeichne_text(d, unter, W / 2, y, "#C3B7DA", m)
-        y += unter["hoehe"]
-    if punkte:
-        y += ab_frage
-        for b in punkt_bloecke:
-            font = schrift(b["name"], b["g"] * m)
-            tb = font.getlength(b["zeilen"][0])
-            sh = b["g"] * 0.36
-            x0 = W / 2 - (tb / m + sh * 2.4) / 2
-            d.polygon([(px * m, py * m) for px, py in stern_punkte(x0 + sh * 0.74, y + b["g"] * 0.5, sh)],
-                      fill=(233, 207, 156, 255))
-            d.text(((x0 + sh * 2.4) * m, (y + b["g"] * 0.8) * m), b["zeilen"][0], font=font,
-                   fill=(239, 232, 248, 255), anchor="ls")
-            y += b["g"] * 1.65
-    if frage:
-        y += ab_frage
-        d.rounded_rectangle([110 * m, y * m, (W - 110) * m, (y + frage["hoehe"] + 2 * pad) * m], radius=28 * m,
-                            fill=(255, 255, 255, 13), outline=(230, 207, 156, 89), width=int(2 * m))
-        zeichne_text(d, frage, W / 2, y + pad, "#EFE8F8", m)
+
+    karten = st["aufbau"] in ("zeichen", "schritte")
+    if karten:   # Karten-Aufbau: kleiner Mond oben rechts, Titel, Karten
+        unter = None if not story else unter
+        kh = _karten_hoehe(st["punkte"], W, story, st["aufbau"] == "zeichen")
+        rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + ab_frage * 0.8 + kh
+        y = oben + max(0, (platz - rest) / 2)
+        zeichne_text(d, titel, W / 2, y, "#F6E3B4", m)
+        y += titel["hoehe"]
+        if unter:
+            y += ab_unter
+            zeichne_text(d, unter, W / 2, y, "#C3B7DA", m)
+            y += unter["hoehe"]
+        _karten(d, st["punkte"], y + ab_frage * 0.8, W, story, m, akzent, st["aufbau"] == "zeichen")
+        if mit_mond:
+            mr = 46 if story else 38
+            mb = mond(mr * m, meta.get("phase_index"), meta.get("beleuchtung"))
+            aufkleben(leinwand, mb, ((W - 110) * m - mb.width / 2, (story and 180 or 120) * m - mb.height / 2))
+    else:
+        rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + (ab_frage + frage["hoehe"] + 2 * pad if frage else 0)
+        r = (150 if story else 105) if mit_mond else 0
+        if mit_mond:
+            r = max(60, min(r, (platz - rest - ab_mond) / 2))
+        gesamt = rest + (2 * r + ab_mond if mit_mond else 0)
+        y = oben + max(0, (platz - gesamt) / 2)
+        if mit_mond:
+            if st["aufbau"] == "liebe":
+                _liebe_ringe(d, W / 2, y + r, r, m, akzent)
+            schein = radial(int(4 * r * m), int(4 * r * m), 2 * r * m, 2 * r * m, r * 0.5 * m, 2 * r * m, 2 * r * m, 2 * r * m,
+                            [(0, "#ffe9b0", 0.16), (1, "#ffe9b0", 0)])
+            aufkleben(leinwand, schein, (W * m / 2 - schein.width / 2, (y + r) * m - schein.height / 2))
+            mb = mond(r * m, meta.get("phase_index"), meta.get("beleuchtung"))
+            aufkleben(leinwand, mb, (W * m / 2 - mb.width / 2, (y + r) * m - mb.height / 2))
+            y += 2 * r + ab_mond
+        zeichne_text(d, titel, W / 2, y, "#F6E3B4", m)
+        y += titel["hoehe"]
+        if unter:
+            y += ab_unter
+            zeichne_text(d, unter, W / 2, y, "#C3B7DA", m)
+            y += unter["hoehe"]
+        if frage:
+            y += ab_frage
+            d.rounded_rectangle([110 * m, y * m, (W - 110) * m, (y + frage["hoehe"] + 2 * pad) * m], radius=28 * m,
+                                fill=(255, 255, 255, 13), outline=akzent + (89,), width=int(2 * m))
+            zeichne_text(d, frage, W / 2, y + pad, "#EFE8F8", m)
     marke(leinwand, W, H, story, post.get("sprache") or "de", m)
     return leinwand.resize((W, H), Image.LANCZOS)
 
