@@ -261,13 +261,15 @@ def _dateiname(post: dict, endung: str, format: str = "") -> str:
 
 
 @app.get("/medien/{post_id}/bild")
-def medien_bild(post_id: int, format: Optional[str] = None, download: bool = False):
+def medien_bild(post_id: int, format: Optional[str] = None, download: bool = False, klein: bool = False):
     post = _post_oder_404(post_id)
     try:
         daten = paket.hole_bild(post, format)
+        if klein:      # Vorschaubild fuer Listen im Dashboard
+            daten = paket.vorschau(daten)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Bild konnte nicht erstellt werden: {e}")
-    kopf = {"Cache-Control": "no-store"}
+    kopf = {"Cache-Control": "private, max-age=120" if klein else "no-store"}
     if download:
         kopf["Content-Disposition"] = f'attachment; filename="{_dateiname(post, "jpg", format or "")}"'
     return Response(daten, media_type="image/jpeg", headers=kopf)
