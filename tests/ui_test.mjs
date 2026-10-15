@@ -249,6 +249,10 @@ await page.click('.tab[data-tab="posten"]'); await wait(900);
 check("Posten: standardmäßig aus", !(await page.isChecked("#postAuto")) && (await page.textContent("#postInfo")).startsWith("Aus:"), await page.textContent("#postInfo"));
 check("Posten: ohne Meta-App Hinweis auf Railway-Variablen", (await page.textContent("#verbindungen")).includes("META_APP_ID") && (await page.$$("#verbindungen a.knopf:not(.hide)")).length === 0, "");
 check("Posten: Rückruf-Adresse angezeigt", (await page.textContent("#verbindungen")).includes("/meta/rueckruf/facebook"), "");
+check("Posten: Einrichtung zeigt Schritt 1 mit Kopier-Adressen", await page.isVisible("#einrichtungPanel") && (await page.$$eval("#einrichtungSchritte li", (l) => l.length)) === 5
+  && (await page.$eval("#einrichtungSchritte li.jetzt", (l) => l.textContent)).includes("datenschutz.html") && (await page.$$("#einrichtungSchritte [data-kopie]")).length === 3, "");
+check("Posten: Testpost-Knöpfe ohne Verbindung gesperrt", (await page.$$("#testposts button[data-jetzt]")).length > 0
+  && (await page.$$eval("#testposts button[data-jetzt]", (b) => b.every((x) => x.disabled))), await page.textContent("#testposts"));
 check("Posten: Standard EN, Zeiten", (await page.inputValue("#postSprache")) === "en" && (await page.inputValue("#zReel")) === "19:00", "");
 await page.check("#postAuto"); await wait(900);
 check("Posten: einschalten mit Rückfrage", await page.isChecked("#postAuto") && (await page.textContent("#postInfo")).startsWith("An: EN"), await page.textContent("#postInfo"));
