@@ -131,6 +131,9 @@ def _freigegeben(post: dict, e: dict) -> tuple[bool, str]:
         return False, "gestoppt"
     if e["modus"] == "freigabe" and st not in ("freigegeben", "gepostet"):
         return False, "warte"
+    # Befund der Qualitaetspruefung: erst nach deiner Freigabe
+    if (post.get("meta") or {}).get("pruefung") and st not in ("freigegeben", "gepostet"):
+        return False, "warte"
     return True, ""
 
 

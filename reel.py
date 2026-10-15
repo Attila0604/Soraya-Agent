@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-1"
+VERSION = "reel-2"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -115,15 +115,15 @@ def _endkarte(post: dict) -> Image.Image:
 
 def zeitplan(zeilen: list[str]) -> tuple[list[tuple[float, float]], float, float]:
     """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden)."""
-    t, plan = 0.7, []
+    t, plan = 0.0, []                     # Hook ab dem ersten Bild (Vorschaubild, erste Sekunde)
     for i, z in enumerate(zeilen):
         dauer = max(2.4, min(4.2, 1.1 + 0.32 * len(z.split())))
         if i == 0:
             dauer += 0.4
         plan.append((t, t + dauer))
         t += dauer + 0.15
-    ende = t + 0.2
-    return plan, ende, ende + 3.8
+    ende = t + 0.1
+    return plan, ende, ende + 3.2
 
 
 def erstelle(post: dict, ziel: str) -> dict:
@@ -186,18 +186,18 @@ def erstelle(post: dict, ziel: str) -> dict:
                 dd.ellipse([x - rr, y - rr, x + rr, y + rr], fill=farbe + (int(a * f * 255),))
             sichtbar_ende = 1 - _weich((t - end_start) / 0.8)      # Mond und Texte gehen vor der Endkarte
             if sichtbar_ende > 0:
-                medien.aufkleben(bild, _mit_alpha(oben, _weich(t / 0.9) * sichtbar_ende), oben_pos)
+                medien.aufkleben(bild, _mit_alpha(oben, sichtbar_ende), oben_pos)
             if mond is not None and sichtbar_ende > 0:
-                auf = _weich(t / 1.6)
+                auf = 1.0
                 puls = 0.75 + 0.25 * math.sin(t * 1.4)
                 medien.aufkleben(bild, _mit_alpha(schein, auf * puls * sichtbar_ende),
                                  (W / 2 - schein.width / 2, mond_y - schein.height / 2))
-                skala = 0.9 + 0.1 * _weich(t / 2.5)
-                mb = mond if skala >= 0.999 else mond.resize((int(mond.width * skala), int(mond.height * skala)), Image.BILINEAR)
+                skala = 0.94 + 0.08 * min(1.0, t / max(end_start, 1))   # langsamer Zoom (Bewegung)
+                mb = mond if abs(skala - 1) < 0.002 else mond.resize((int(mond.width * skala), int(mond.height * skala)), Image.BILINEAR)
                 medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
             for (start, stopp), karte in zip(plan, karten):
                 if start - 0.01 <= t <= stopp + AUSBLENDEN:
-                    rein = _weich((t - start) / EINBLENDEN)
+                    rein = 1.0 if start <= 0 else _weich((t - start) / EINBLENDEN)
                     raus = 1 - _weich((t - stopp) / AUSBLENDEN)
                     alpha = rein * raus
                     if alpha > 0.003:
@@ -206,7 +206,7 @@ def erstelle(post: dict, ziel: str) -> dict:
                                          (W / 2 - karte.width / 2, text_mitte - karte.height / 2 + hoch))
             if t >= end_start:
                 medien.aufkleben(bild, _mit_alpha(endkarte, _weich((t - end_start - 0.3) / 0.9)), end_pos)
-            schwarz = min(_weich(t / 0.6), 1 - _weich((t - (dauer - 0.5)) / 0.5))   # Auf- und Abblende
+            schwarz = 1.0          # keine Schwarzblende: das erste Bild zeigt gleich den Hook
             daten = np.asarray(bild, dtype=np.uint8)
             if schwarz < 0.999:
                 daten = (daten.astype(np.float32) * schwarz).astype(np.uint8)

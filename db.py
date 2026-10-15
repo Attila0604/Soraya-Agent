@@ -334,6 +334,13 @@ def aendere_post(post_id: int, felder: dict) -> dict | None:
     return zeile
 
 
+def setze_meta(post_id: int, schluessel: str, wert) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_posts set meta = coalesce(meta, '{}'::jsonb) || jsonb_build_object(%s::text, %s::jsonb) "
+                    "where id = %s;", (schluessel, Jsonb(wert), post_id))
+        conn.commit()
+
+
 def loesche_post(post_id: int) -> bool:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute("delete from soraya_posts where id = %s;", (post_id,))
