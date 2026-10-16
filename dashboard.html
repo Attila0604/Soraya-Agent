@@ -1542,20 +1542,20 @@ function zeigeEinrichtung(d){
   const e = d.einstellungen, v = d.verbindungen;
   const getestet = (d.termine || []).some(t => t.status === 'fertig');
   const schritte = [
-    {ok: v.facebook.eingerichtet && v.instagram.eingerichtet, was: 'Meta-App anlegen und in Railway eintragen',
+    {ok: v.facebook.eingerichtet || v.instagram.eingerichtet, was: 'Meta-App anlegen und in Railway eintragen',
      wie: `Auf developers.facebook.com mit „Weiter mit Facebook“ eine App „Soraya Agent“ anlegen (Business-Portfolio: keines).
        Datenschutz-URL: ${kopierZeile(DATENSCHUTZ_URL)}
        Gültige Rückruf-Adressen (OAuth-Redirect-URIs): ${kopierZeile(v.facebook.rueckruf_url)}${kopierZeile(v.instagram.rueckruf_url)}
-       Danach in Railway beim Soraya-Agent eintragen: <b>META_APP_ID</b>, <b>META_APP_SECRET</b>, <b>INSTAGRAM_APP_ID</b>, <b>INSTAGRAM_APP_SECRET</b> und die App auf „Live“ stellen.
+       Danach in Railway beim Soraya-Agent eintragen: <b>META_APP_ID</b>, <b>META_APP_SECRET</b>, <b>INSTAGRAM_APP_ID</b>, <b>INSTAGRAM_APP_SECRET</b> (Instagram geht auch später).
        ${v.facebook.eingerichtet !== v.instagram.eingerichtet ? `<br>Noch offen: ${v.facebook.eingerichtet ? 'INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET' : 'META_APP_ID / META_APP_SECRET'}` : ''}`},
     {ok: v.facebook.verbunden, was: 'Facebook-Seite verbinden', wie: 'Unten bei „Verbindungen“ auf „Verbinden“ tippen und die Soraya-Seite auswählen.'},
-    {ok: v.instagram.verbunden, was: 'Instagram verbinden', wie: 'Unten bei „Verbindungen“ auf „Verbinden“ tippen und mit dem Instagram-Business-Konto anmelden.'},
+    {ok: v.instagram.verbunden, spaeter: !v.instagram.eingerichtet, was: 'Instagram verbinden', wie: 'Unten bei „Verbindungen“ auf „Verbinden“ tippen und mit dem Instagram-Business-Konto anmelden.'},
     {ok: getestet, was: 'Einen Testpost machen', wie: 'Im Kasten „Testpost“ einen Post von heute mit „Jetzt posten“ veröffentlichen und auf Facebook/Instagram nachsehen.'},
     {ok: e.an, was: 'Automatisch posten einschalten', wie: 'Wenn der Testpost gut aussieht: oben „Automatisch posten“ einschalten (und im Reiter „Heute“ den Tagesplan).'}];
-  const naechster = schritte.findIndex(x => !x.ok);
+  const naechster = schritte.findIndex(x => !x.ok && !x.spaeter);
   $('einrichtungPanel').classList.toggle('hide', naechster < 0);
   $('einrichtungSchritte').innerHTML = schritte.map((x, i) => `<li class="${x.ok ? 'ok' : i === naechster ? 'jetzt' : ''}">
-    <span class="was">${esc(x.was)}</span>${!x.ok && i === naechster ? `<div class="wie">${x.wie}</div>` : ''}</li>`).join('');
+    <span class="was">${esc(x.was)}${x.spaeter && !x.ok ? ' <span class="klein">(später – INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET fehlen noch)</span>' : ''}</span>${!x.ok && i === naechster ? `<div class="wie">${x.wie}</div>` : ''}</li>`).join('');
 }
 // Testpost: Posts von heute in der Posting-Sprache sofort posten (auch bei ausgeschaltetem Hauptschalter)
 async function zeigeTestposts(d){
