@@ -372,7 +372,7 @@ def test_zielgruppe_speichert_land_und_markierung(monkeypatch):
     d = client.get("/zielgruppen", headers=AUTH).json()
     z = d["zielgruppen"][0]
     assert z["land"] == "hu" and z["im_tagesplan"] is False
-    # nichts markiert -> das neueste Profil gilt automatisch fuer alle Sprachen
+    # nichts markiert -> das einzige Profil gilt automatisch fuer alle Sprachen
     assert d["im_tagesplan"]["de"]["id"] == zid and d["im_tagesplan"]["de"]["automatisch"] is True
     r = client.patch(f"/zielgruppen/{zid}", json={"im_tagesplan": True}, headers=AUTH)
     assert r.status_code == 200 and r.json()["zielgruppe"]["im_tagesplan"] is True
@@ -387,7 +387,9 @@ def test_zielgruppe_je_sprache_nach_land():
     at = db.speichere_zielgruppe("Liebe", _profil("L", "Frauen in Wien", []), land="at")
     neu = db.speichere_zielgruppe("Neueste", _profil("N", "N", []), land="us")
     w = tagesplan.zielgruppen_je_sprache()
-    assert {s: x["id"] for s, x in w.items()} == {s: neu["id"] for s in ("de", "en", "hu", "it")}
+    # nichts markiert: je Sprache passendes Land, sonst ohne Land, sonst das neueste
+    assert {s: x["id"] for s, x in w.items()} == {"de": at["id"], "en": neu["id"], "hu": hu["id"], "it": alt["id"]}
+    assert all(x["automatisch"] for x in w.values())
     for z in (hu, at, alt):
         db.setze_zielgruppe_im_tagesplan(z["id"], True)
     w = tagesplan.zielgruppen_je_sprache()
