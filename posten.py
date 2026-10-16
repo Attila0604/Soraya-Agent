@@ -15,6 +15,7 @@ Nach mehr als 12 Stunden Verspaetung wird ein Termin nicht mehr nachgeholt.
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 from datetime import date, datetime, timedelta
@@ -89,8 +90,23 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
     return neu
 
 
+# Auf Facebook gibt es keine Bio: der Link steht direkt unter dem Text
+BIO_ERSATZ = [(r"link in (the )?bio", "link below"), (r"Link in (der )?Bio", "Link unten"),
+              (r"link a bióban", "link lent"), (r"link nella bio|link in bio", "link qui sotto")]
+
+
+def _ohne_bio(text: str, sprache: str) -> str:
+    regeln = {"en": BIO_ERSATZ[:1], "de": BIO_ERSATZ[1:2], "hu": BIO_ERSATZ[2:3], "it": BIO_ERSATZ[3:]}.get(sprache, [])
+    for muster, ersatz in regeln:
+        text = re.sub(muster, lambda m: ersatz[0].upper() + ersatz[1:] if m.group(0)[0].isupper() else ersatz,
+                      text, flags=re.IGNORECASE)
+    return text
+
+
 def text_fuer(post: dict, plattform: str) -> str:
     teile = [(post.get("text") or "").strip()]
+    if plattform == "facebook" and post.get("art") != "story":
+        teile[0] = _ohne_bio(teile[0], post.get("sprache") or "de")
     if plattform == "facebook" and post.get("art") != "story":
         teile.append(f"{link_basis()}?q=p{post['id']}")      # auf Facebook ist der Link klickbar
     if post.get("hashtags"):
