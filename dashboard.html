@@ -1202,7 +1202,7 @@ function tagesplanInfo(wahl){
   const auto = sprachen.some(s => wahl[s].automatisch);
   info.hidden = false;
   info.innerHTML = 'Der Tagesplan schreibt für: ' + sprachen.map(s => `${s.toUpperCase()} <b>${esc(wahl[s].bereich)}</b>`).join(' &middot; ')
-    + (auto ? '<br>Kein Profil markiert, deshalb nimmt er automatisch das neueste. Mit „Im Tagesplan verwenden“ legst du es selbst fest.' : '');
+    + (auto ? '<br>Kein Profil markiert, deshalb wählt er je Sprache automatisch: passendes Land zuerst, sonst das neueste. Mit „Im Tagesplan verwenden“ legst du es selbst fest.' : '');
 }
 function renderProfile(zeilen, wahl){
   const box = $('profile');

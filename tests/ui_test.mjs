@@ -60,7 +60,7 @@ check("Heute: Karte zeigt das Format des Tages", /Deine Woche|Sternzeichen im Fo
 check("Heute: Prüfhinweis bei zu kurzem Feed-Text", (await page.textContent("#heuteListe .card:first-child")).includes("Bitte prüfen") && (await page.textContent("#heuteListe .card:first-child")).includes("Text zu kurz"), "");
 check("Heute: Bild-Punkte sichtbar", (await page.textContent("#heuteListe .card:first-child")).includes("Im Bild: Skorpion: ehrlich sein"), "");
 check("Heute: Tagesplan-Sprachen wählbar (4 an)", (await page.$$("#planSprachen input:checked")).length === 4, "");
-check("Heute: Karte zeigt Zielgruppe", (await page.textContent("#heuteListe .card .kopf")).includes("Für: Szerelem"), await page.textContent("#heuteListe .card .kopf"));
+check("Heute: deutsche Karte zeigt passende Zielgruppe (Österreich)", (await page.textContent("#heuteListe .card .kopf")).includes("Für: Liebe"), await page.textContent("#heuteListe .card .kopf"));
 check("Heute: Reel zeigt Skript", /Hook:.*Spürst du es auch/.test(await page.textContent("#heuteListe")), "");
 if (OUT) await page.screenshot({ path: OUT + "/ui-heute.png", fullPage: true });
 await page.click('#heuteSprachen [data-s="hu"]'); await wait(600);
@@ -228,7 +228,7 @@ await page.click('.tab[data-tab="who"]'); await wait(700);
 check("Zielgruppen: Bereiche geladen", (await page.$$eval("#bereich option", (x) => x.length)) >= 5, "");
 check("Zielgruppen: zwei Profile mit Land", (await page.$$eval("#profile .card.who .plat", (x) => x.map((e) => e.textContent).join("|"))).includes("Ungarn"), "");
 { const info = await page.textContent("#tpInfo");
-  check("Zielgruppen: ohne Markierung automatisch das neueste", info.includes("automatisch") && info.includes("Szerelem"), info); }
+  check("Zielgruppen: ohne Markierung je Sprache automatisch (Land zuerst)", info.includes("automatisch") && info.includes("HU Szerelem") && info.includes("DE Liebe"), info); }
 const zgLiebe = await page.$eval("#profile .card.who:last-child", (e) => e.dataset.zg);
 await page.check(`input[data-imtp="${zgLiebe}"]`); await wait(700);
 { const info = await page.textContent("#tpInfo");
