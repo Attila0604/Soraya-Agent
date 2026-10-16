@@ -205,6 +205,8 @@
   .punkt.ok{background:var(--ok)} .punkt.aus{background:var(--bad)}
   .zeiten{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
   .termine{width:100%;border-collapse:collapse;font-size:13.5px}
+  .termine a,.testpost a.fertig{color:var(--champagne);text-decoration:none;border-bottom:1px solid rgba(201,168,106,.5)}
+  .testpost a.fertig{font-size:13px;padding:6px 4px}
   .termine td,.termine th{padding:8px 6px;border-top:1px solid var(--line-soft);text-align:left;vertical-align:top}
   .termine th{font-weight:500;color:var(--mist-dim);font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-top:0}
   .termine .t{white-space:nowrap;color:#F4EEDD}
@@ -1561,6 +1563,7 @@ function zeigeEinrichtung(d){
 async function zeigeTestposts(d){
   const e = d.einstellungen, v = d.verbindungen;
   const verbunden = ['facebook', 'instagram'].filter(p => v[p].verbunden);
+  const fertig = (id, pl) => (d.termine || []).find(t => t.post_id === id && t.plattform === pl && t.status === 'fertig');
   let posts = [];
   try{ posts = ((await api('/tagesplan')).posts || []).filter(p => p.sprache === e.sprache && p.status !== 'gestoppt').sort(ordne); }catch(err){}
   $('testpostInfo').textContent = verbunden.length
@@ -1568,7 +1571,8 @@ async function zeigeTestposts(d){
     : 'Sobald Facebook oder Instagram verbunden ist, kannst du hier einen Post von heute sofort posten – auch wenn „Automatisch posten“ aus ist.';
   $('testposts').innerHTML = posts.length ? posts.map(p => `<div class="testpost"><div><span class="tag">${esc(ART[p.art] || 'Post')}</span>
       <p class="titel">${esc(p.titel || p.text.slice(0, 60))}</p></div>
-      <div class="row">${['facebook', 'instagram'].map(pl => `<button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}"${v[pl].verbunden ? '' : ' disabled title="Noch nicht verbunden"'}>Jetzt auf ${PL_NAME[pl]}</button>`).join('')}</div></div>`).join('')
+      <div class="row">${['facebook', 'instagram'].map(pl => { const f = fertig(p.id, pl);
+        return f ? `<a class="fertig" href="${esc(f.url || '#')}" target="_blank" rel="noopener">✓ auf ${PL_NAME[pl]} ansehen</a>` : `<button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}"${v[pl].verbunden ? '' : ' disabled title="Noch nicht verbunden"'}>Jetzt auf ${PL_NAME[pl]}</button>`; }).join('')}</div></div>`).join('')
     : `<div class="empty">Heute gibt es noch keine Posts auf ${esc(e.sprache.toUpperCase())}.<span>${d.tagesplan_sprachen.includes(e.sprache)
         ? `<button class="klein" data-plan-erstellen="1" style="margin-top:10px">Posts für heute erstellen</button>`
         : `Der Tagesplan schreibt gerade nicht auf ${esc(e.sprache.toUpperCase())} – im Reiter „Heute“ bei „Sprachen“ ${esc(e.sprache.toUpperCase())} anhaken.`}</span></div>`;
