@@ -22,7 +22,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 SCHRIFTEN = Path(__file__).parent / "fonts"
-LINK_IN_BIO = {"de": "Link in Bio", "en": "Link in bio", "hu": "Link a bióban", "it": "Link in bio"}
+# Knopf unten im Bild: passt fuer Instagram (Link in Bio) und Facebook (Link unter dem Text)
+LINK_IN_BIO = {"de": "Dein Horoskop gratis", "en": "Your free horoscope", "hu": "Ingyenes horoszkóp", "it": "Oroscopo gratis"}
 SS = 2  # Zeichen-Massstab (Supersampling)
 
 
@@ -394,7 +395,7 @@ def sterne(bild: Image.Image, W, H, seed, story, m=1.0, helligkeit=None):
 
 
 def _cta(draw, bild, W, unten, story, sprache, m):
-    text = LINK_IN_BIO.get(sprache or "de", "Link in Bio")
+    text = LINK_IN_BIO.get(sprache or "de", LINK_IN_BIO["de"])
     font = schrift("inter600", (32 if story else 28) * m)
     stern_h = (13 if story else 11.5) * m
     lueck = 16 * m

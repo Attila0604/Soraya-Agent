@@ -25,7 +25,7 @@ from PIL import Image, ImageDraw
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-3"
+VERSION = "reel-4"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
