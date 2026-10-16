@@ -954,3 +954,11 @@ def test_claude_ohne_schluessel(monkeypatch):
     monkeypatch.setattr(claude, "_client", None)
     with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
         claude.frage_json("S", "F", {})
+
+
+def test_facebook_text_ohne_bio():
+    p = {"id": 7, "art": "post", "sprache": "en", "text": "Your chart awaits. Link in bio ✨", "hashtags": "#astro"}
+    fb = posten.text_fuer(p, "facebook")
+    assert "Link below" in fb and "bio" not in fb.lower() and "?q=p7" in fb
+    assert "Link in bio" in posten.text_fuer(p, "instagram")
+    assert "Link unten" in posten.text_fuer({**p, "sprache": "de", "text": "Dein Horoskop: Link in Bio"}, "facebook")
