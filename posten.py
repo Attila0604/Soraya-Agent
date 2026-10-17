@@ -128,7 +128,8 @@ def text_fuer(post: dict, plattform: str) -> str:
     if plattform == "facebook" and post.get("art") != "story":
         teile[0] = _ohne_bio(teile[0], post.get("sprache") or "de")
     if plattform == "facebook" and post.get("art") != "story":
-        teile.append(f"{link_basis()}?q=p{post['id']}")      # auf Facebook ist der Link klickbar
+        # auf Facebook ist der Link klickbar; lang= oeffnet Landingpage und App in der Sprache des Posts
+        teile.append(f"{link_basis()}?q=p{post['id']}&lang={post.get('sprache') or 'en'}")
     if post.get("hashtags"):
         teile.append(post["hashtags"].strip())
     return "\n\n".join(t for t in teile if t)
