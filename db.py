@@ -260,6 +260,19 @@ def lade_veroeffentlichungen(von, bis, limit: int = 200) -> list[dict]:
         return cur.fetchall()
 
 
+def lade_gepostete(plattform: str, seit, limit: int = 30) -> list[dict]:
+    """Erfolgreich gepostete Beitraege einer Plattform (neueste zuerst), fuer die Reaktionen."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select v.post_id, v.extern_id, v.url, v.aktualisiert, p.titel, p.art, p.sprache "
+            "from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "
+            "where v.plattform = %s and v.status = 'fertig' and v.extern_id is not null and v.aktualisiert >= %s "
+            "order by v.aktualisiert desc limit %s;",
+            (plattform, seit, limit),
+        )
+        return cur.fetchall()
+
+
 def lade_medium(post_id: int, art: str, fingerabdruck: str) -> bytes | None:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute("select daten from soraya_medien where post_id = %s and art = %s and fingerabdruck = %s;",

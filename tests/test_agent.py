@@ -569,6 +569,11 @@ class FakeMeta:
             return self._r({"user_id": "1789", "username": "soraya.astro"})
         if "fields" in (params or {}) and params["fields"].startswith("status_code"):
             return self._r({"status_code": "FINISHED"})
+        if (params or {}).get("fields", "").startswith("reactions"):
+            if "/V9" in url:
+                return self._r({"error": {"message": "nicht gefunden"}}, 400)
+            return self._r({"reactions": {"summary": {"total_count": 5}}, "comments": {"summary": {"total_count": 2}},
+                            "shares": {"count": 1}})
         if (params or {}).get("fields") == "permalink":
             return self._r({"permalink": "https://www.instagram.com/p/ABC/"})
         return self._r({"error": {"message": "unbekannt " + url}}, 400)
@@ -962,3 +967,20 @@ def test_facebook_text_ohne_bio():
     assert "Link below" in fb and "bio" not in fb.lower() and "?q=p7" in fb
     assert "Link in bio" in posten.text_fuer(p, "instagram")
     assert "Link unten" in posten.text_fuer({**p, "sprache": "de", "text": "Dein Horoskop: Link in Bio"}, "facebook")
+
+
+def test_wirkung_facebook_reaktionen(monkeypatch, frische_db):
+    f = FakeMeta()
+    monkeypatch.setattr(meta.requests, "get", f.get)
+    monkeypatch.setattr(meta.requests, "post", f.post)
+    for k, v in {"META_APP_ID": "a", "META_APP_SECRET": "b"}.items():
+        monkeypatch.setenv(k, v)
+    assert client.get("/wirkung/facebook", headers=AUTH).json() == {"verbunden": False, "beitraege": []}
+    _verbinde("facebook")
+    tagesplan.erstelle("en")
+    post = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en" and p["art"] == "post")
+    assert client.post("/posten/jetzt", json={"post_id": post["id"], "plattform": "facebook"}, headers=AUTH).status_code == 200
+    d = client.get("/wirkung/facebook", headers=AUTH).json()
+    assert d["verbunden"] and len(d["beitraege"]) == 1
+    b = d["beitraege"][0]
+    assert (b["reaktionen"], b["kommentare"], b["geteilt"]) == (5, 2, 1) and b["post_id"] == post["id"]

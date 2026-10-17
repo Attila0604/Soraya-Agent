@@ -36,6 +36,7 @@ from db import (
     init_db, speichere_posts, lade_posts, aendere_post, loesche_post,
     lade_post, lade_veroeffentlichungen, setze_meta, speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
 )
+import db
 import himmel
 import meta
 import paket
@@ -519,6 +520,18 @@ def wirkung(tage: int = 30):
         return {"eingerichtet": True, "statistik": hole_statistik(tage)}
     except LookupError as e:
         return {"eingerichtet": False, "hinweis": str(e)}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/wirkung/facebook")
+def wirkung_facebook(tage: int = 30):
+    """Reaktionen auf die zuletzt geposteten Facebook-Beitraege."""
+    if not meta.verbindungen()["facebook"]["verbunden"]:
+        return {"verbunden": False, "beitraege": []}
+    try:
+        seit = datetime.now(himmel.WIEN) - timedelta(days=max(1, min(tage, 90)))
+        return {"verbunden": True, "beitraege": meta.facebook_reaktionen(db.lade_gepostete("facebook", seit))}
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
