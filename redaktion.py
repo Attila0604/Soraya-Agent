@@ -7,7 +7,8 @@ Redaktion: was der Tagesplan heute erzaehlt -- und ob ein Post gut genug zum Pos
 2. Handlungsaufforderung: wechselt zwischen echten Funktionen der App.
 3. Qualitaetspruefung: Laenge, Hashtags, Sprache, heikle Versprechen. Posts mit Befund
    gehen beim automatischen Posten erst raus, wenn du sie freigibst.
-4. Lernen: Posts, deren Link die meisten Besucher gebracht hat, fliessen als Vorbild ein.
+4. Lernen: Punkte je Post aus Link-Besuchen, neuen Konten und Facebook-Reaktionen. Die besten Posts
+   (auch aus anderen Sprachen) fliessen als Vorbild ein, dazu welche Formate am besten ankommen.
 """
 
 from __future__ import annotations
@@ -162,30 +163,116 @@ def schwer(befunde: list[str]) -> bool:
 _CACHE = {"zeit": 0.0, "daten": None}
 
 
-def gut_angekommen(lade_post, sprache: str, statistik=None, min_besuche: int = 3) -> list[str]:
-    """Bis zu 3 eigene Posts, deren Link am meisten Besucher gebracht hat (letzte 30 Tage)."""
-    try:
-        if statistik is None:
-            if time.time() - _CACHE["zeit"] > 3600:
-                from wirkung import hole_statistik
-                _CACHE.update(zeit=time.time(), daten=hole_statistik(30))
-            statistik = _CACHE["daten"] or {}
-        quellen = statistik.get("quellen") or {}
-    except Exception:
-        return []
-    rangliste = []
-    for code, q in quellen.items():
+SPRACH_NAME = {"de": "DE", "en": "EN", "hu": "HU", "it": "IT"}
+
+
+def punkte(besuche: int = 0, konten: int = 0, reaktionen: int = 0, kommentare: int = 0, geteilt: int = 0) -> int:
+    """Eine Zahl fuer "wie gut kam der Post an": neue Konten zaehlen am meisten, dann Teilen,
+    Kommentare, Besuche ueber den Link und Gefaellt-mir."""
+    return int(besuche) * 2 + int(konten) * 15 + int(reaktionen) + int(kommentare) * 3 + int(geteilt) * 4
+
+
+def _statistik():
+    if time.time() - _CACHE["zeit"] > 3600:
+        from wirkung import hole_statistik
+        _CACHE.update(zeit=time.time(), daten=hole_statistik(30))
+    return _CACHE["daten"] or {}
+
+
+def bewerte(lade_post, statistik=None, lern_posts=None) -> list[dict]:
+    """Alle Posts der letzten 30 Tage mit Besuchen (Link) und Reaktionen (Facebook) und Punkten."""
+    if statistik is None:
+        try:
+            statistik = _statistik()
+        except Exception:
+            statistik = {}
+    if lern_posts is None:
+        try:
+            import db
+            from datetime import datetime, timedelta, timezone
+            lern_posts = db.lade_lern_posts(datetime.now(timezone.utc) - timedelta(days=30))
+        except Exception:
+            lern_posts = []
+    posts = {}
+    for p in lern_posts or []:
+        posts[p["id"]] = {"post": p, "besuche": 0, "konten": 0, "reaktionen": int(p.get("reaktionen") or 0),
+                          "kommentare": int(p.get("kommentare") or 0), "geteilt": int(p.get("geteilt") or 0)}
+    for code, q in ((statistik or {}).get("quellen") or {}).items():
         if not re.fullmatch(r"p\d+", code or ""):
             continue
-        besuche = int((q.get("schritte") or {}).get("besuch") or 0)
-        if besuche < min_besuche:
-            continue
-        try:
-            post = lade_post(int(code[1:]))
-        except Exception:
-            post = None
-        if post and post.get("sprache") == sprache and post.get("titel"):
-            rangliste.append((besuche, int(q.get("konten") or 0), post))
-    rangliste.sort(key=lambda x: (x[1], x[0]), reverse=True)
-    return [f"„{p['titel']}“ ({p.get('art')}, {b} Besuche{f', {k} neue Konten' if k else ''})"
-            for b, k, p in rangliste[:3]]
+        pid = int(code[1:])
+        if pid not in posts:
+            try:
+                post = lade_post(pid)
+            except Exception:
+                post = None
+            if not post:
+                continue
+            posts[pid] = {"post": post, "besuche": 0, "konten": 0, "reaktionen": 0, "kommentare": 0, "geteilt": 0}
+        posts[pid]["besuche"] = int((q.get("schritte") or {}).get("besuch") or 0)
+        posts[pid]["konten"] = int(q.get("konten") or 0)
+    out = []
+    for e in posts.values():
+        e["punkte"] = punkte(e["besuche"], e["konten"], e["reaktionen"], e["kommentare"], e["geteilt"])
+        out.append(e)
+    return sorted(out, key=lambda e: e["punkte"], reverse=True)
+
+
+def _details(e: dict) -> str:
+    teile = []
+    for wert, eins, viele in ((e["besuche"], "Besuch", "Besuche"), (e["konten"], "neues Konto", "neue Konten"),
+                              (e["reaktionen"], "Reaktion", "Reaktionen"), (e["kommentare"], "Kommentar", "Kommentare"),
+                              (e["geteilt"], "mal geteilt", "mal geteilt")):
+        if wert:
+            teile.append(f"{wert} {eins if wert == 1 else viele}")
+    return ", ".join(teile)
+
+
+def gut_angekommen(lade_post, sprache: str, statistik=None, min_punkte: int = 6, bewertet=None) -> list[str]:
+    """Bis zu 3 eigene Posts, die am besten ankamen (letzte 30 Tage): zuerst aus dieser Sprache,
+    dann aus den anderen -- Thema und Ton funktionieren oft ueber Sprachen hinweg."""
+    try:
+        bewertet = bewertet if bewertet is not None else bewerte(lade_post, statistik)
+    except Exception:
+        return []
+    gut = [e for e in bewertet if e["punkte"] >= min_punkte and e["post"].get("titel")]
+    gut.sort(key=lambda e: (e["post"].get("sprache") != sprache, -e["punkte"]))
+    zeilen = []
+    for e in gut[:3]:
+        p = e["post"]
+        extra = [p.get("art") or "post"]
+        thema = (p.get("meta") or {}).get("thema")
+        if thema:
+            extra.append(f"Format {thema}")
+        if p.get("sprache") != sprache:
+            extra.append(SPRACH_NAME.get(p.get("sprache"), p.get("sprache") or ""))
+        zeilen.append(f"„{p['titel']}“ ({', '.join(extra)}: {_details(e)})")
+    return zeilen
+
+
+def erkenntnisse(bewertet: list[dict], min_posts: int = 2) -> dict:
+    """Durchschnittliche Punkte je Format und je Art (Post/Reel/Story) -- was kommt an, was weniger?"""
+    def gruppen(schluessel):
+        g = {}
+        for e in bewertet:
+            k = schluessel(e["post"])
+            if k:
+                g.setdefault(k, []).append(e["punkte"])
+        return sorted(({"name": k, "posts": len(v), "schnitt": round(sum(v) / len(v), 1)}
+                       for k, v in g.items() if len(v) >= min_posts), key=lambda x: x["schnitt"], reverse=True)
+    return {"formate": gruppen(lambda p: (p.get("meta") or {}).get("thema")),
+            "arten": gruppen(lambda p: p.get("art")),
+            "sprachen": gruppen(lambda p: p.get("sprache"))}
+
+
+def erkenntnis_text(erk: dict) -> str:
+    """Kurzer Hinweis fuer den Prompt (leer, solange es zu wenige Daten gibt)."""
+    f = erk.get("formate") or []
+    if len(f) < 2:
+        return ""
+    gut = ", ".join(f"{x['name']} (Ø {x['schnitt']:g} Punkte)" for x in f[:2])
+    text = f"Bisher kamen diese Formate am besten an: {gut}."
+    if f[-1]["schnitt"] < f[0]["schnitt"] / 2:
+        text += (f" Schwächer: {f[-1]['name']} (Ø {f[-1]['schnitt']:g}) – ist heute dieses Format dran, "
+                 "mach es besonders konkret, persönlich und zum Mitmachen.")
+    return text + " Übertrage, was dort funktioniert (Ton, Aufbau, Art der Frage), auf das heutige Format."

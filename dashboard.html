@@ -205,6 +205,9 @@
   .punkt.ok{background:var(--ok)} .punkt.aus{background:var(--bad)}
   .zeiten{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
   .termine{width:100%;border-collapse:collapse;font-size:13.5px}
+  h3.unter{font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--champagne);margin:18px 0 8px;font-weight:600}
+  ol.beste{margin:0 0 6px;padding-left:20px} ol.beste li{margin:0 0 8px} ol.beste .meta{display:block}
+  .lernhinweis{margin:14px 0 0;padding:10px 14px;border-left:2px solid var(--gold);background:rgba(201,168,106,.06);border-radius:0 10px 10px 0;font-size:13.5px}
   .kpis.klein3{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}
   .kpis.klein3 .kpi{min-width:0;padding:12px}
   .kpis.klein3 .l{font-size:10.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -540,7 +543,7 @@
       <h2>Einstellungen</h2>
       <div class="row">
         <div><label for="postSprache">Sprache der Posts</label>
-          <select id="postSprache"><option value="en">English</option><option value="de">Deutsch</option>
+          <select id="postSprache"><option value="alle">Alle 4 Sprachen im Wechsel</option><option value="en">English</option><option value="de">Deutsch</option>
             <option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
         <div><label for="postModus">Freigabe</label>
           <select id="postModus"><option value="auto">Automatisch, außer ich stoppe</option>
@@ -1007,7 +1010,7 @@ async function ladeHeute(){
   try{ [d, ps] = await Promise.all([api('/tagesplan'), ladeTermine()]); }catch(e){ melde('Fehler: ' + e.message); return; }
   zeigeCockpit(d, ps);
   // Wird automatisch gepostet, zeigt "Heute" zuerst die Posting-Sprache
-  if(!heuteGewaehlt && ps && ps.einstellungen.an && d.sprachen.includes(ps.einstellungen.sprache)) heuteSprache = ps.einstellungen.sprache;
+  if(!heuteGewaehlt && ps && ps.einstellungen.an && ps.einstellungen.sprache !== 'alle' && d.sprachen.includes(ps.einstellungen.sprache)) heuteSprache = ps.einstellungen.sprache;
   const stand = Object.fromEntries((d.laeufe || []).map(l => [l.sprache, l]));
   $('planAuto').checked = !!d.automatisch; $('planAuto').disabled = !!d.automatik_gesperrt;
   $('autoSchalter').classList.toggle('on', !!d.automatisch);
@@ -1372,6 +1375,7 @@ function zeigeWirkung(){
         <span class="wert" style="left:calc(${(v / maxStufe * 82).toFixed(1)}% + 8px)">${zahl(v)}<small>${stufen[0][1] ? Math.round(v / stufen[0][1] * 100) + ' %' : ''}</small></span>
       </div></div>`).join('')}
     </div>
+    <div id="lernPanel"></div>
     <div id="fbPanel"></div>
     ${herkunftPanel()}
     ${linksPanel()}
@@ -1383,7 +1387,28 @@ function zeigeWirkung(){
         : '<p class="meta">Noch keine Daten.</p>'}
     </div>`;
   zeichneVerlauf();
-  ladeFacebookWirkung();
+  ladeFacebookWirkung().then(ladeLernen);
+}
+// Was der Tagesplan aus der Wirkung lernt (Punkte aus Besuchen, neuen Konten, Reaktionen)
+async function ladeLernen(){
+  const box = $('lernPanel'); if(!box) return;
+  let d; try{ d = await api('/wirkung/lernen'); }catch(e){ box.innerHTML = ''; return; }
+  const f = (d.erkenntnisse || {}).formate || [], s = (d.erkenntnisse || {}).sprachen || [], a = (d.erkenntnisse || {}).arten || [];
+  const balken = (liste, name) => { const max = Math.max(1, ...liste.map(x => x.schnitt));
+    return liste.map(x => `<div class="stufe"><span class="name">${esc(name(x.name))}</span><div class="spur">
+      <div class="balken" style="width:${(x.schnitt / max * 82).toFixed(1)}%"></div>
+      <span class="wert" style="left:calc(${(x.schnitt / max * 82).toFixed(1)}% + 8px)">Ø ${x.schnitt}<small>${x.posts} Posts</small></span></div></div>`).join(''); };
+  box.innerHTML = `<div class="panel trichter"><h2>Was Soraya daraus lernt</h2>
+    <p class="hint">Jeder Post bekommt Punkte: neues Konto 15, geteilt 4, Kommentar 3, Besuch über den Link 2, Gefällt mir 1.
+      Die besten Posts (auch aus anderen Sprachen) und die stärksten Formate fließen in jeden neuen Tagesplan ein.</p>
+    ${d.beste && d.beste.length ? `<h3 class="unter">Am besten angekommen</h3><ol class="beste">${d.beste.map(b => `<li><b>${esc(b.titel || 'Post ' + b.id)}</b>
+        <span class="meta">${esc(ART[b.art] || 'Post')} · ${esc((b.sprache || '').toUpperCase())}${b.format ? ' · ' + esc(b.format) : ''} · ${b.punkte} Punkte (${esc(b.details)})</span></li>`).join('')}</ol>`
+      : '<p class="meta">Noch keine Wirkung gemessen. Sobald Posts Besucher oder Reaktionen bekommen, lernt der Tagesplan daraus.</p>'}
+    ${f.length >= 2 ? `<h3 class="unter">Formate im Vergleich</h3>${balken(f, n => n)}` : ''}
+    ${s.length >= 2 ? `<h3 class="unter">Sprachen im Vergleich</h3>${balken(s, n => n.toUpperCase())}` : ''}
+    ${a.length >= 2 ? `<h3 class="unter">Story, Feed-Post, Reel</h3>${balken(a, n => ART[n] || n)}` : ''}
+    ${d.hinweis ? `<p class="lernhinweis">✦ ${esc(d.hinweis)}</p>` : f.length < 2 && d.beste && d.beste.length ? '<p class="meta">Für den Vergleich der Formate braucht es mindestens je 2 gemessene Posts in zwei Formaten.</p>' : ''}
+  </div>`;
 }
 // Reaktionen auf Facebook (Gefaellt mir, Kommentare, Teilen) je geposteten Beitrag
 async function ladeFacebookWirkung(){
@@ -1513,12 +1538,13 @@ async function ladePosten(){
   const verbunden = ['facebook', 'instagram'].filter(p => e.plattformen[p] && v[p].verbunden);
   $('postAuto').checked = e.an; $('postAutoSchalter').classList.toggle('on', e.an);
   $('postInfo').innerHTML = e.an
-    ? `An: ${e.sprache.toUpperCase()} · Story ${esc(e.zeiten.story)}, Feed-Post ${esc(e.zeiten.post)}, Reel ${esc(e.zeiten.reel)} (Wiener Zeit) · ${verbunden.map(p => PL_NAME[p]).join(' + ') || 'keine Plattform verbunden'} · ${e.modus === 'auto' ? 'automatisch, außer du stoppst' : 'nur freigegebene'}`
+    ? `An: ${sprachText(d)} · Story ${esc(e.zeiten.story)}, Feed-Post ${esc(e.zeiten.post)}, Reel ${esc(e.zeiten.reel)} (Wiener Zeit) · ${verbunden.map(p => PL_NAME[p]).join(' + ') || 'keine Plattform verbunden'} · ${e.modus === 'auto' ? 'automatisch, außer du stoppst' : 'nur freigegebene'}`
     : 'Aus: Es wird nichts automatisch gepostet. Zum Testen gibt es unten den Kasten „Testpost“.';
   const warn = [];
   if(e.an && !verbunden.length) warn.push('Es ist noch keine Plattform verbunden – siehe „Verbindungen“.');
   if(e.an && !d.tagesplan_auto) warn.push('Der Tagesplan erstellt nicht automatisch (Reiter „Heute“). Ohne neue Posts gibt es nichts zu posten.');
-  if(e.an && !d.tagesplan_sprachen.includes(e.sprache)) warn.push(`Der Tagesplan erstellt keine Posts auf ${e.sprache.toUpperCase()} (TAGESPLAN_SPRACHEN).`);
+  const fehlen = (d.benoetigt || []).filter(s => !d.tagesplan_sprachen.includes(s));
+  if(e.an && fehlen.length) warn.push(`Der Tagesplan erstellt keine Posts auf ${fehlen.map(s => s.toUpperCase()).join(', ')} – im Reiter „Heute“ bei „Sprachen“ anhaken.`);
   $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => `<div>${esc(w)}</div>`).join('');
 
   $('verbindungen').innerHTML = ['facebook', 'instagram'].map(p => {
@@ -1583,23 +1609,31 @@ function zeigeEinrichtung(d){
   $('einrichtungSchritte').innerHTML = schritte.map((x, i) => `<li class="${x.ok ? 'ok' : i === naechster ? 'jetzt' : ''}">
     <span class="was">${esc(x.was)}${x.spaeter && !x.ok ? ' <span class="klein">(später – INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET fehlen noch)</span>' : ''}</span>${!x.ok && i === naechster ? `<div class="wie">${x.wie}</div>` : ''}</li>`).join('');
 }
+// "EN" oder bei Wechsel "heute: Story HU, Feed IT, Reel EN"
+function sprachText(d){
+  const e = d.einstellungen;
+  if(e.sprache !== 'alle') return e.sprache.toUpperCase();
+  const h = d.sprachen_heute || {};
+  return 'alle 4 im Wechsel, heute: ' + ['story', 'post', 'reel'].map(a => `${ART[a]} ${(h[a] || '').toUpperCase()}`).join(', ');
+}
 // Testpost: Posts von heute in der Posting-Sprache sofort posten (auch bei ausgeschaltetem Hauptschalter)
 async function zeigeTestposts(d){
   const e = d.einstellungen, v = d.verbindungen;
   const verbunden = ['facebook', 'instagram'].filter(p => v[p].verbunden);
   const fertig = (id, pl) => (d.termine || []).find(t => t.post_id === id && t.plattform === pl && t.status === 'fertig');
   let posts = [];
-  try{ posts = ((await api('/tagesplan')).posts || []).filter(p => p.sprache === e.sprache && p.status !== 'gestoppt').sort(ordne); }catch(err){}
+  const passt = (p) => e.sprache === 'alle' ? (d.sprachen_heute || {})[p.art] === p.sprache : p.sprache === e.sprache;
+  try{ posts = ((await api('/tagesplan')).posts || []).filter(p => passt(p) && p.status !== 'gestoppt').sort(ordne); }catch(err){}
   $('testpostInfo').textContent = verbunden.length
-    ? `Ein Post von heute (${e.sprache.toUpperCase()}) sofort posten – geht auch, wenn „Automatisch posten“ aus ist.`
+    ? `Ein Post von heute (${sprachText(d)}) sofort posten – geht auch, wenn „Automatisch posten“ aus ist.`
     : 'Sobald Facebook oder Instagram verbunden ist, kannst du hier einen Post von heute sofort posten – auch wenn „Automatisch posten“ aus ist.';
   $('testposts').innerHTML = posts.length ? posts.map(p => `<div class="testpost"><div><span class="tag">${esc(ART[p.art] || 'Post')}</span>
       <p class="titel">${esc(p.titel || p.text.slice(0, 60))}</p></div>
       <div class="row">${['facebook', 'instagram'].map(pl => { const f = fertig(p.id, pl);
         return f ? `<a class="fertig" href="${esc(f.url || '#')}" target="_blank" rel="noopener">✓ auf ${PL_NAME[pl]} ansehen</a>` : `<button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}"${v[pl].verbunden ? '' : ' disabled title="Noch nicht verbunden"'}>Jetzt auf ${PL_NAME[pl]}</button>`; }).join('')}</div></div>`).join('')
-    : `<div class="empty">Heute gibt es noch keine Posts auf ${esc(e.sprache.toUpperCase())}.<span>${d.tagesplan_sprachen.includes(e.sprache)
+    : `<div class="empty">Heute gibt es noch keine Posts (${esc(sprachText(d))}).<span>${(d.benoetigt || [e.sprache]).every(s => d.tagesplan_sprachen.includes(s))
         ? `<button class="klein" data-plan-erstellen="1" style="margin-top:10px">Posts für heute erstellen</button>`
-        : `Der Tagesplan schreibt gerade nicht auf ${esc(e.sprache.toUpperCase())} – im Reiter „Heute“ bei „Sprachen“ ${esc(e.sprache.toUpperCase())} anhaken.`}</span></div>`;
+        : `Der Tagesplan schreibt gerade nicht alle nötigen Sprachen (${esc((d.benoetigt || []).map(s => s.toUpperCase()).join(', '))}) – im Reiter „Heute“ bei „Sprachen“ anhaken.`}</span></div>`;
 }
 $('postAuto').onchange = async () => {
   const an = $('postAuto').checked;
