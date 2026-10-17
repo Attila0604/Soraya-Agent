@@ -30,6 +30,23 @@ STANDARD = {"an": False, "sprache": "en", "modus": "auto",
             "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00"},
             "plattformen": {"facebook": True, "instagram": True}}
 PLATTFORMEN = ("facebook", "instagram")
+# "alle": jeder der drei Posts eines Tages in einer anderen Sprache, die Reihenfolge rotiert taeglich --
+# so kommt jede Sprache gleich oft dran (in 4 Tagen je dreimal) und jede Art in jeder Sprache.
+ROTATION = ("en", "de", "hu", "it")
+ARTEN = ("story", "post", "reel")
+
+
+def sprache_fuer(tag: date, art: str, e: dict) -> str:
+    if e.get("sprache") != "alle":
+        return e["sprache"]
+    return ROTATION[(tag.toordinal() * 3 + ARTEN.index(art if art in ARTEN else "post")) % len(ROTATION)]
+
+
+def benoetigte_sprachen(e: dict, tage: list[date]) -> list[str]:
+    """Welche Sprachen der Tagesplan an diesen Tagen fuers Posten liefern muss."""
+    if e.get("sprache") != "alle":
+        return [e["sprache"]]
+    return sorted({sprache_fuer(t, a, e) for t in tage for a in ARTEN}, key=ROTATION.index)
 MAX_VERSUCHE = 3
 _SPERRE = threading.Lock()
 
@@ -49,7 +66,7 @@ def speichere_einstellungen(neu: dict) -> dict:
     e = einstellungen()
     if "an" in neu:
         e["an"] = bool(neu["an"])
-    if neu.get("sprache") in ("de", "en", "hu", "it"):
+    if neu.get("sprache") in ("de", "en", "hu", "it", "alle"):
         e["sprache"] = neu["sprache"]
     if neu.get("modus") in ("auto", "freigabe"):
         e["modus"] = neu["modus"]
@@ -81,9 +98,12 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
     heute = jetzt.astimezone(himmel.WIEN).date()
     neu = 0
     plattformen = _aktive_plattformen(e)
-    for post in db.lade_posts_zeitraum(heute, heute + timedelta(days=1), sprachen=[e["sprache"]]):
+    tage = [heute, heute + timedelta(days=1)]
+    for post in db.lade_posts_zeitraum(heute, heute + timedelta(days=1), sprachen=benoetigte_sprachen(e, tage)):
         zeit = e["zeiten"].get(post.get("art") or "post")
         if not zeit or post.get("status") == "gestoppt":
+            continue
+        if post.get("sprache") != sprache_fuer(post["geplant_fuer"], post.get("art") or "post", e):
             continue
         for p in plattformen:
             neu += db.plane_veroeffentlichung(post["id"], p, termin(post["geplant_fuer"], zeit))
@@ -198,6 +218,27 @@ def fuehre_aus(jetzt: datetime | None = None, e: dict | None = None) -> list[dic
     return ergebnisse
 
 
+_ZAHLEN = {"zuletzt": 0.0}
+ZAHLEN_ALLE_S = 6 * 3600
+
+
+def aktualisiere_zahlen(erzwingen: bool = False) -> int:
+    """Reaktionen der Facebook-Beitraege der letzten 14 Tage holen und merken (fuers Lernen).
+    Laeuft hoechstens alle 6 Stunden; ohne Facebook-Verbindung passiert nichts."""
+    if not erzwingen and time.time() - _ZAHLEN["zuletzt"] < ZAHLEN_ALLE_S:
+        return 0
+    _ZAHLEN["zuletzt"] = time.time()
+    if not meta.verbindungen()["facebook"]["verbunden"]:
+        return 0
+    eintraege = db.lade_gepostete("facebook", datetime.now(himmel.WIEN) - timedelta(days=14), limit=60)
+    n = 0
+    for z in meta.facebook_reaktionen(eintraege):
+        if "fehler" not in z:
+            db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"])
+            n += 1
+    return n
+
+
 def durchlauf(jetzt: datetime | None = None) -> dict:
     """Ein Durchlauf des Zeitplans (auch fuer Tests)."""
     if not _SPERRE.acquire(blocking=False):
@@ -208,6 +249,10 @@ def durchlauf(jetzt: datetime | None = None) -> dict:
             meta.instagram_verlaengern()
         except Exception as ex:  # noqa: BLE001
             print(f"[Posten] Instagram-Zugang nicht verlängert: {ex}", flush=True)
+        try:
+            aktualisiere_zahlen()
+        except Exception as ex:  # noqa: BLE001
+            print(f"[Posten] Reaktionen nicht geholt: {ex}", flush=True)
         if not e["an"]:
             return {"an": False}
         return {"an": True, "geplant": planen(e, jetzt), "ausgefuehrt": fuehre_aus(jetzt, e)}

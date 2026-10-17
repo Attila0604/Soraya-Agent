@@ -345,7 +345,9 @@ def posten_ansehen():
         termine = lade_veroeffentlichungen(jetzt - timedelta(days=2), jetzt + timedelta(days=2))
         return {"einstellungen": posten.einstellungen(), "verbindungen": meta.verbindungen(),
                 "termine": termine, "tagesplan_auto": tagesplan.automatisch(),
-                "tagesplan_sprachen": tagesplan.sprachen(), "jetzt": jetzt}
+                "tagesplan_sprachen": tagesplan.sprachen(), "jetzt": jetzt,
+                "sprachen_heute": {a: posten.sprache_fuer(jetzt.date(), a, posten.einstellungen()) for a in posten.ARTEN},
+                "benoetigt": posten.benoetigte_sprachen(posten.einstellungen(), [jetzt.date(), jetzt.date() + timedelta(days=1)])}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -531,9 +533,28 @@ def wirkung_facebook(tage: int = 30):
         return {"verbunden": False, "beitraege": []}
     try:
         seit = datetime.now(himmel.WIEN) - timedelta(days=max(1, min(tage, 90)))
-        return {"verbunden": True, "beitraege": meta.facebook_reaktionen(db.lade_gepostete("facebook", seit))}
+        beitraege = meta.facebook_reaktionen(db.lade_gepostete("facebook", seit))
+        for z in beitraege:
+            if "fehler" not in z:
+                db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"])
+        return {"verbunden": True, "beitraege": beitraege}
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/wirkung/lernen")
+def wirkung_lernen():
+    """Was der Tagesplan aus der Wirkung lernt: beste Posts, Formate, Arten, Sprachen."""
+    try:
+        bewertet = redaktion.bewerte(db.lade_post)
+        erk = redaktion.erkenntnisse(bewertet)
+        beste = [{"id": e["post"]["id"], "titel": e["post"].get("titel"), "art": e["post"].get("art"),
+                  "sprache": e["post"].get("sprache"), "format": (e["post"].get("meta") or {}).get("thema"),
+                  "punkte": e["punkte"], "details": redaktion._details(e)} for e in bewertet[:5] if e["punkte"] > 0]
+        return {"beste": beste, "erkenntnisse": erk, "hinweis": redaktion.erkenntnis_text(erk),
+                "gemessen": len(bewertet)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/zielgruppe")

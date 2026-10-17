@@ -215,15 +215,16 @@ def zielgruppen_text(zeile: dict | None) -> str:
 
 
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
-           vorbilder: list[str]) -> str:
+           vorbilder: list[str], erkenntnis: str = "") -> str:
     profil = zielgruppen_text(zielgruppe)
     return (
         "Himmelsdaten für den Tag des Posts (bereits in der Zielsprache benannt):\n"
         f"{himmel.als_text(info)}\n\n"
         f"{redaktion.thema_text(thema, LINK_IN_BIO[sprache])}\n\n"
         + (f"{profil}\n\n" if profil else "")
-        + ("Diese eigenen Posts haben zuletzt die meisten Besucher gebracht:\n"
+        + ("Diese eigenen Posts kamen zuletzt am besten an (Besuche, neue Konten, Reaktionen):\n"
            + "\n".join(f"- {v}" for v in vorbilder) + "\n\n" if vorbilder else "")
+        + (f"{erkenntnis}\n\n" if erkenntnis else "")
         + "Überschriften der letzten Tage (nicht wiederholen):\n"
         + ("\n".join(f"- {t}" for t in bisherige) if bisherige else "- (noch keine)")
         + f"\n\n{sprach_anweisung(sprache)}"
@@ -245,13 +246,13 @@ def _aufbereiten(daten: dict, sprache: str) -> list[dict]:
 
 
 def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None = None,
-                   thema: dict | None = None, vorbilder: list[str] | None = None) -> list[dict]:
+                   thema: dict | None = None, vorbilder: list[str] | None = None, erkenntnis: str = "") -> list[dict]:
     """Ein Claude-Aufruf: die drei Eintraege des Tages in einer Sprache. Bei schweren Befunden
     der Qualitaetspruefung (z. B. falsche Sprache, heikle Versprechen) genau ein Korrekturdurchgang."""
     tag = date.fromisoformat(info["datum"]) if info.get("datum") else himmel.heute()
     thema = thema or redaktion.wochenthema(tag, info)
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
-    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [])
+    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis)
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache)
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
@@ -293,8 +294,13 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
         info = himmel.aufbereiten(himmel.hole_himmel(tag), tag, sprache)
         zielgruppe = _zielgruppe_fuer(sprache)
         thema = redaktion.wochenthema(tag, info)
-        vorbilder = redaktion.gut_angekommen(db.lade_post, sprache)
-        posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder)
+        try:
+            bewertet = redaktion.bewerte(db.lade_post)
+        except Exception:
+            bewertet = []
+        vorbilder = redaktion.gut_angekommen(db.lade_post, sprache, bewertet=bewertet)
+        erkenntnis = redaktion.erkenntnis_text(redaktion.erkenntnisse(bewertet))
+        posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder, erkenntnis)
         gespeichert = []
         for p in posts:
             meta = himmel.bild_meta(info) | {"thema": p.pop("_thema"), "pruefung": p.pop("_pruefung")}

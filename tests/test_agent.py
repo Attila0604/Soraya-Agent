@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 
 os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "postgresql://agent@127.0.0.1:55432/agenttest")
@@ -789,7 +789,7 @@ def test_tagesplan_format_vorbilder_und_meta(frische_db, monkeypatch):
     frage, system = frische_db[-1]["frage"], frische_db[-1]["system"]
     thema = redaktion.wochenthema(HEUTE, himmel.aufbereiten(SKY, HEUTE, "de"))
     assert f"Heutiges Format: {thema['name']}" in frage and thema["aufforderung"]["auftrag"] in frage
-    assert "„Drei Zeichen fühlen es“ (post, 12 Besuche, 2 neue Konten)" in frage
+    assert "„Drei Zeichen fühlen es“ (post: 12 Besuche, 2 neue Konten)" in frage
     assert "Floskeln" in system and "Hook" in system and "{link_in_bio}" not in system
     posts = sorted(db.lade_posts(von=HEUTE, bis=HEUTE), key=lambda p: p["id"])
     posts = [p for p in posts if p["geplant_fuer"] == HEUTE]
@@ -984,3 +984,50 @@ def test_wirkung_facebook_reaktionen(monkeypatch, frische_db):
     assert d["verbunden"] and len(d["beitraege"]) == 1
     b = d["beitraege"][0]
     assert (b["reaktionen"], b["kommentare"], b["geteilt"]) == (5, 2, 1) and b["post_id"] == post["id"]
+
+
+def test_sprachen_rotation_alle_vier():
+    e = {**posten.STANDARD, "sprache": "alle"}
+    tage = [HEUTE + timedelta(days=i) for i in range(4)]
+    je_tag = [[posten.sprache_fuer(t, a, e) for a in posten.ARTEN] for t in tage]
+    assert all(len(set(t)) == 3 for t in je_tag)                      # jeden Tag drei verschiedene Sprachen
+    alle = [s for t in je_tag for s in t]
+    assert {s: alle.count(s) for s in "de en hu it".split()} == {"de": 3, "en": 3, "hu": 3, "it": 3}
+    assert posten.benoetigte_sprachen({**e, "sprache": "en"}, tage) == ["en"]
+    assert len(posten.benoetigte_sprachen(e, tage[:2])) == 4 or len(posten.benoetigte_sprachen(e, tage[:2])) == 3
+
+
+def test_planen_mit_rotation(monkeypatch, frische_db):
+    for s in ("de", "en", "hu", "it"):
+        tagesplan.erstelle(s)
+    monkeypatch.setattr(posten, "_aktive_plattformen", lambda e: ["facebook"])
+    e = posten.speichere_einstellungen({"sprache": "alle"})
+    assert e["sprache"] == "alle"
+    jetzt = datetime.now(himmel.WIEN).replace(hour=6, minute=0)
+    assert posten.planen(e, jetzt) == 3
+    termine = client.get("/posten", headers=AUTH).json()
+    heute = {t["art"]: t["sprache"] for t in termine["termine"]}
+    assert heute == termine["sprachen_heute"] and len(set(heute.values())) == 3
+    posten.speichere_einstellungen({"sprache": "en"})
+
+
+def test_lernen_punkte_formate_und_vorbilder():
+    def post(i, sprache, thema, art="post"):
+        return {"id": i, "titel": f"T{i}", "art": art, "sprache": sprache, "meta": {"thema": thema},
+                "reaktionen": 0, "kommentare": 0, "geteilt": 0}
+    lern = [post(1, "en", "Ritual") | {"reaktionen": 10, "kommentare": 2},
+            post(2, "hu", "Ritual") | {"reaktionen": 6},
+            post(3, "en", "Astro-Wissen") | {"reaktionen": 1},
+            post(4, "de", "Astro-Wissen")]
+    stat = {"quellen": {"p4": {"schritte": {"besuch": 4}, "konten": 0}}}
+    b = redaktion.bewerte(lambda i: None, statistik=stat, lern_posts=lern)
+    assert [e["post"]["id"] for e in b] == [1, 4, 2, 3] and b[1]["punkte"] == 4 * 2
+    v = redaktion.gut_angekommen(None, "de", bewertet=b)
+    assert v[0].startswith("„T4“ (post, Format Astro-Wissen:") and "EN" in v[1] and len(v) == 3
+    erk = redaktion.erkenntnisse(b)
+    assert [f["name"] for f in erk["formate"]] == ["Ritual", "Astro-Wissen"]
+    t = redaktion.erkenntnis_text(erk)
+    assert "Ritual" in t and "Astro-Wissen" in t
+    assert redaktion.erkenntnis_text({"formate": erk["formate"][:1]}) == ""
+    d = client.get("/wirkung/lernen", headers=AUTH)
+    assert d.status_code == 200 and "erkenntnisse" in d.json()
