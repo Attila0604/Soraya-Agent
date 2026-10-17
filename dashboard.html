@@ -709,7 +709,7 @@ async function kopiere(btn, text){
 /* ---------- Wirkung pro Post (Links mit Kennung, Zahlen aus der App) ---------- */
 let LINKS = {basis: 'https://www.sorayaluxuryastroguide.com/', bio: {}}, QUELLEN = {}, quellenStand = 0;
 api('/links').then(l => { LINKS = l; }).catch(() => {});
-const postLink = (id) => `${LINKS.basis}?q=p${id}`;
+const postLink = (id) => { const p = POSTS.get(String(id)); return `${LINKS.basis}?q=p${id}${p && p.sprache ? '&lang=' + p.sprache : ''}`; };
 const mehrzahl = (n, eins, viele) => `${zahl(n)} ${n === 1 ? eins : viele}`;
 function wirkText(code){
   const q = QUELLEN[code]; if(!q) return '';

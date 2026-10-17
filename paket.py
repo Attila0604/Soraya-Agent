@@ -128,7 +128,7 @@ def _beschriftung(post: dict) -> str:
 
 
 def _textdatei(post: dict) -> str:
-    link = f"{link_basis()}?q=p{post['id']}"
+    link = f"{link_basis()}?q=p{post['id']}&lang={post.get('sprache') or 'en'}"
     zeilen = [f"{ART_NAME.get(post.get('art'), 'Post')} · {(post.get('platform') or '').title()} · "
               f"{(post.get('sprache') or 'de').upper()} · {post.get('geplant_fuer')}",
               f"Titel: {post.get('titel') or ''}", "",
