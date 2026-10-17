@@ -62,7 +62,9 @@ Liefere genau drei Einträge, in dieser Reihenfolge:
    "skript": "hook" (erste Einblendung, höchstens 8 Wörter, stoppt das Scrollen),
    "einblendungen" (3 Texte, je höchstens 8 Wörter, erzählen die Botschaft in Schritten, der
    letzte ist die Pointe), "szenen" (3 kurze Bild-Ideen, falls jemand selbst filmt),
-   "schluss" (kurz, mit Hinweis auf „{link_in_bio}“). "text": Bildunterschrift, 1-3 Sätze,
+   "schluss" (kurzer Schlusssatz, der neugierig auf das persönliche Horoskop macht, OHNE
+   „{link_in_bio}“ oder andere Link-Hinweise – das Video zeigt darunter schon den Knopf, und es
+   läuft auch auf Facebook). "text": Bildunterschrift, 1-3 Sätze,
    erster Satz wieder ein Hook. "bild_punkte": [].
 3. art "story", platform "instagram": ein kurzer Satz zur Tagesenergie plus eine Frage, auf die
    man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 40 Wörter.

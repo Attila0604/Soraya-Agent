@@ -205,7 +205,10 @@
   .punkt.ok{background:var(--ok)} .punkt.aus{background:var(--bad)}
   .zeiten{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
   .termine{width:100%;border-collapse:collapse;font-size:13.5px}
-  .termine a,.testpost a.fertig{color:var(--champagne);text-decoration:none;border-bottom:1px solid rgba(201,168,106,.5)}
+  .kpis.klein3{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}
+  .kpis.klein3 .kpi{min-width:0;padding:12px}
+  .kpis.klein3 .l{font-size:10.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .termine a,.testpost a.fertig,#fbPanel a.fertig{color:var(--champagne);text-decoration:none;border-bottom:1px solid rgba(201,168,106,.5)}
   .testpost a.fertig{font-size:13px;padding:6px 4px}
   .termine td,.termine th{padding:8px 6px;border-top:1px solid var(--line-soft);text-align:left;vertical-align:top}
   .termine th{font-weight:500;color:var(--mist-dim);font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-top:0}
@@ -1369,6 +1372,7 @@ function zeigeWirkung(){
         <span class="wert" style="left:calc(${(v / maxStufe * 82).toFixed(1)}% + 8px)">${zahl(v)}<small>${stufen[0][1] ? Math.round(v / stufen[0][1] * 100) + ' %' : ''}</small></span>
       </div></div>`).join('')}
     </div>
+    <div id="fbPanel"></div>
     ${herkunftPanel()}
     ${linksPanel()}
     <div class="panel trichter"><h2>Sprachen der aktiven Nutzer</h2>
@@ -1379,6 +1383,26 @@ function zeigeWirkung(){
         : '<p class="meta">Noch keine Daten.</p>'}
     </div>`;
   zeichneVerlauf();
+  ladeFacebookWirkung();
+}
+// Reaktionen auf Facebook (Gefaellt mir, Kommentare, Teilen) je geposteten Beitrag
+async function ladeFacebookWirkung(){
+  const box = $('fbPanel'); if(!box) return;
+  let r; try{ r = await api('/wirkung/facebook?tage=' + $('wTage').value); }catch(e){ box.innerHTML = ''; return; }
+  if(!r.verbunden){ box.innerHTML = ''; return; }
+  const b = r.beitraege || [];
+  const summe = (k) => b.reduce((n, x) => n + (x[k] || 0), 0);
+  box.innerHTML = `<div class="panel"><h2>Auf Facebook</h2>
+    <p class="hint">Reaktionen auf deine geposteten Beiträge im Zeitraum (live von Facebook).</p>
+    ${b.length ? `<div class="kpis klein3">
+        <div class="kpi"><div class="l">Gefällt mir</div><div class="v">${zahl(summe('reaktionen'))}</div></div>
+        <div class="kpi"><div class="l">Kommentare</div><div class="v">${zahl(summe('kommentare'))}</div></div>
+        <div class="kpi"><div class="l">Geteilt</div><div class="v">${zahl(summe('geteilt'))}</div></div></div>
+      <div class="tabwrap"><table class="tabelle herkunft"><thead><tr><th scope="col">Beitrag</th><th scope="col">👍</th><th scope="col">💬</th><th scope="col">↗</th><th scope="col"></th></tr></thead><tbody>
+      ${b.map(x => `<tr><td style="white-space:normal"><b>${esc(x.titel || 'Post ' + x.post_id)}</b><br><span class="meta">${esc(ART[x.art] || 'Post')}${x.gepostet ? ' · ' + esc(kurzIso(String(x.gepostet).slice(0, 10))) : ''}</span></td>
+        ${x.fehler ? `<td colspan="3" class="meta">nicht abrufbar</td>` : `<td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>`}
+        <td>${x.url ? `<a class="fertig" href="${esc(x.url)}" target="_blank" rel="noopener">ansehen</a>` : ''}</td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="meta">Noch nichts auf Facebook gepostet.</p>'}</div>`;
 }
 const BIO_NAMEN = {'bio-ig': 'Bio-Link Instagram', 'bio-tt': 'Bio-Link TikTok', 'bio-fb': 'Bio-Link Facebook'};
 function quellenName(code){

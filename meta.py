@@ -233,6 +233,29 @@ def poste_facebook(art: str, text: str, bild: bytes | None = None, video: bytes 
     return {"id": pid, "url": f"https://www.facebook.com/{pid}"}
 
 
+def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
+    """Gefaellt-mir, Kommentare und Teilen je Facebook-Beitrag (braucht pages_read_engagement)."""
+    z = zugang("facebook")
+    if not z or not z.get("token"):
+        raise MetaFehler("Facebook-Seite ist nicht verbunden.")
+    out = []
+    for e in eintraege:
+        felder = "reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)"
+        if e.get("art") != "reel":
+            felder += ",shares"
+        zeile = {"post_id": e["post_id"], "titel": e.get("titel"), "art": e.get("art"), "url": e.get("url"),
+                 "gepostet": e.get("aktualisiert")}
+        try:
+            d = _get(f"{graph_fb()}/{e['extern_id']}", fields=felder, access_token=z["token"])
+            zeile.update(reaktionen=((d.get("reactions") or {}).get("summary") or {}).get("total_count", 0),
+                         kommentare=((d.get("comments") or {}).get("summary") or {}).get("total_count", 0),
+                         geteilt=(d.get("shares") or {}).get("count", 0))
+        except Exception as ex:  # noqa: BLE001 - ein Beitrag ohne Zahlen soll die Liste nicht stoppen
+            zeile["fehler"] = str(ex)[:160]
+        out.append(zeile)
+    return out
+
+
 def poste_instagram(art: str, text: str, medien_url: str, warten_s: int = 300) -> dict:
     """Instagram holt Bild/Video selbst von medien_url (oeffentliche, signierte Adresse des Agenten)."""
     z = zugang("instagram")
