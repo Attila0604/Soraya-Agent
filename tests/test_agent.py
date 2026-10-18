@@ -1031,3 +1031,69 @@ def test_lernen_punkte_formate_und_vorbilder():
     assert redaktion.erkenntnis_text({"formate": erk["formate"][:1]}) == ""
     d = client.get("/wirkung/lernen", headers=AUTH)
     assert d.status_code == 200 and "erkenntnisse" in d.json()
+
+
+def test_selbsttest_hook_stil_und_aufforderung():
+    import random as zufall
+
+    def e(i, stil, auff, punkte, besuche=0, konten=0):
+        return {"post": {"id": i, "meta": {"hook_stil": stil, "aufforderung": auff}}, "punkte": punkte,
+                "besuche": besuche, "konten": konten}
+    namen = [h["schluessel"] for h in redaktion.HOOK_STILE]
+    # ohne Messung: Aufforderung bleibt der gewohnte Wechsel, Hook-Stil wird ausprobiert
+    t = redaktion.selbsttest(redaktion.wochenthema(HEUTE, {}), [], zufall.Random(1))
+    assert t["aufforderung"]["schluessel"] == redaktion.wochenthema(HEUTE, {})["aufforderung"]["schluessel"]
+    assert t["hook_stil"]["schluessel"] in namen and t["selbsttest"]["hook_stil"] == "test"
+    assert "Hook-Stil heute" in redaktion.thema_text(t, "Link in bio")
+    # alle erprobt: meistens die beste, manchmal (neugier) eine andere
+    b = [e(i * 10 + k, n, "partner", 30 if n == "szene" else 5) for i, n in enumerate(namen) for k in range(3)]
+    wahl = [redaktion.waehle_variante(namen, b, "hook_stil", rnd=zufall.Random(s))["wahl"] for s in range(200)]
+    assert 0.7 < wahl.count("szene") / 200 < 0.92 and len(set(wahl)) > 3
+    # Aufforderung nach Besuchen/Konten, nicht nach Punkten
+    a = [e(i, "frage", k, 50 if k == "chat" else 0, besuche=9 if k == "horoskop" else 1)
+         for k in ("mondzeichen", "partner", "horoskop", "chat") for i in range(3)]
+    gew = [redaktion.selbsttest(redaktion.wochenthema(HEUTE, {}), a, zufall.Random(s))["aufforderung"]["schluessel"]
+           for s in range(100)]
+    assert gew.count("horoskop") > 70
+    erk = redaktion.erkenntnisse(b + a)
+    assert erk["stile"][0]["name"] == "Alltags-Szene" and erk["aufforderungen"]
+
+
+def test_tagesplan_merkt_selbsttest(frische_db):
+    tagesplan.erstelle("en", erzwingen=True)
+    posts = [p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en" and p["geplant_fuer"] == HEUTE]
+    stile = {p["meta"].get("hook_stil") for p in posts}
+    assert len(stile) == 1 and stile.pop() in redaktion.HOOK_NAMEN
+    assert all(p["meta"].get("aufforderung") in redaktion.AUFFORDERUNG_NAMEN for p in posts)
+    assert "Hook-Stil heute" in frische_db[-1]["frage"]
+
+
+def test_punkte_mit_reichweite_und_facebook_reichweite(monkeypatch):
+    assert redaktion.punkte(reichweite=250) == 2 and redaktion.punkte(besuche=1, reichweite=99) == 2
+    aufrufe = []
+
+    def get(url, **params):
+        aufrufe.append(params.get("metric"))
+        if params.get("metric") == "post_media_view":
+            return {"data": [{"name": "post_media_view", "values": [{"value": 321}]}]}
+        raise meta.MetaFehler("veraltet")
+    monkeypatch.setattr(meta, "_get", get)
+    assert meta.facebook_reichweite("1_2", "T") == 321 and aufrufe == ["post_impressions_unique", "post_media_view"]
+    monkeypatch.setattr(meta, "_get", lambda url, **p: (_ for _ in ()).throw(meta.MetaFehler("kein Recht")))
+    assert meta.facebook_reichweite("1_2", "T") is None
+
+
+def test_emojis_im_bild():
+    import numpy as np
+    medien = _medien
+    teile = medien._teile("Antworte mit 🔥 oder 🌙 ☀️ 1️⃣ 🚗")
+    assert [t for t, emoji in teile if emoji] == ["🔥", "🌙", "☀️"]
+    assert "🚗" not in "".join(t for t, _ in teile) and "⃣" not in "".join(t for t, _ in teile)
+    assert medien.ohne_emojis("Hallo 🌙 du ✨") == "Hallo du"
+    post = {"id": 3, "art": "story", "sprache": "de", "titel": "Feuer liegt in der Luft",
+            "text": "Heute zählt Mut. Antworte mit 🔥 oder 🌙", "meta": {"thema": "Mitmachen"}}
+    img = medien.bild(post, "story")
+    assert img.size == (1080, 1920)
+    # irgendwo im Fragekasten muss das Orange der Flamme sein (kein leeres Kaestchen)
+    px = np.asarray(img.crop((100, 900, 980, 1500)))
+    assert ((px[..., 0] > 220) & (px[..., 1] > 90) & (px[..., 1] < 170) & (px[..., 2] < 80)).sum() > 30

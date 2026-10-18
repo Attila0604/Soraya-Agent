@@ -7,12 +7,15 @@ Redaktion: was der Tagesplan heute erzaehlt -- und ob ein Post gut genug zum Pos
 2. Handlungsaufforderung: wechselt zwischen echten Funktionen der App.
 3. Qualitaetspruefung: Laenge, Hashtags, Sprache, heikle Versprechen. Posts mit Befund
    gehen beim automatischen Posten erst raus, wenn du sie freigibst.
-4. Lernen: Punkte je Post aus Link-Besuchen, neuen Konten und Facebook-Reaktionen. Die besten Posts
-   (auch aus anderen Sprachen) fliessen als Vorbild ein, dazu welche Formate am besten ankommen.
+4. Lernen: Punkte je Post aus Link-Besuchen, neuen Konten, Reichweite und Facebook-Reaktionen. Die besten
+   Posts (auch aus anderen Sprachen) fliessen als Vorbild ein, dazu welche Formate am besten ankommen.
+5. Selbst-Tests: Jeder Tagesplan probiert einen Hook-Stil und eine Handlungsaufforderung aus. Was mehr
+   Punkte (bzw. Besuche) bringt, kommt danach oefter dran; ab und zu wird weiter Neues probiert.
 """
 
 from __future__ import annotations
 
+import random
 import re
 import time
 from datetime import date
@@ -83,9 +86,12 @@ def wochenthema(tag: date, info: dict) -> dict:
 
 
 def thema_text(thema: dict, link_in_bio: str) -> str:
-    return (f"Heutiges Format: {thema['name']}\n{thema['auftrag']}\n"
+    text = (f"Heutiges Format: {thema['name']}\n{thema['auftrag']}\n"
             f"Handlungsaufforderung heute (sinngemäß, in der Sprache des Posts, mit „{link_in_bio}“): "
             f"{thema['aufforderung']['auftrag']}")
+    if thema.get("hook_stil"):
+        text += f"\nHook-Stil heute (für Feed-Post und Reel): {thema['hook_stil']['auftrag']}"
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -166,10 +172,12 @@ _CACHE = {"zeit": 0.0, "daten": None}
 SPRACH_NAME = {"de": "DE", "en": "EN", "hu": "HU", "it": "IT"}
 
 
-def punkte(besuche: int = 0, konten: int = 0, reaktionen: int = 0, kommentare: int = 0, geteilt: int = 0) -> int:
+def punkte(besuche: int = 0, konten: int = 0, reaktionen: int = 0, kommentare: int = 0, geteilt: int = 0,
+           reichweite: int = 0) -> int:
     """Eine Zahl fuer "wie gut kam der Post an": neue Konten zaehlen am meisten, dann Teilen,
-    Kommentare, Besuche ueber den Link und Gefaellt-mir."""
-    return int(besuche) * 2 + int(konten) * 15 + int(reaktionen) + int(kommentare) * 3 + int(geteilt) * 4
+    Kommentare, Besuche ueber den Link und Gefaellt-mir; je 100 erreichte Menschen 1 Punkt."""
+    return (int(besuche) * 2 + int(konten) * 15 + int(reaktionen) + int(kommentare) * 3 + int(geteilt) * 4
+            + int(reichweite or 0) // 100)
 
 
 def _statistik():
@@ -196,7 +204,8 @@ def bewerte(lade_post, statistik=None, lern_posts=None) -> list[dict]:
     posts = {}
     for p in lern_posts or []:
         posts[p["id"]] = {"post": p, "besuche": 0, "konten": 0, "reaktionen": int(p.get("reaktionen") or 0),
-                          "kommentare": int(p.get("kommentare") or 0), "geteilt": int(p.get("geteilt") or 0)}
+                          "kommentare": int(p.get("kommentare") or 0), "geteilt": int(p.get("geteilt") or 0),
+                          "reichweite": int(p.get("reichweite") or 0)}
     for code, q in ((statistik or {}).get("quellen") or {}).items():
         if not re.fullmatch(r"p\d+", code or ""):
             continue
@@ -208,19 +217,22 @@ def bewerte(lade_post, statistik=None, lern_posts=None) -> list[dict]:
                 post = None
             if not post:
                 continue
-            posts[pid] = {"post": post, "besuche": 0, "konten": 0, "reaktionen": 0, "kommentare": 0, "geteilt": 0}
+            posts[pid] = {"post": post, "besuche": 0, "konten": 0, "reaktionen": 0, "kommentare": 0, "geteilt": 0,
+                          "reichweite": 0}
         posts[pid]["besuche"] = int((q.get("schritte") or {}).get("besuch") or 0)
         posts[pid]["konten"] = int(q.get("konten") or 0)
     out = []
     for e in posts.values():
-        e["punkte"] = punkte(e["besuche"], e["konten"], e["reaktionen"], e["kommentare"], e["geteilt"])
+        e["punkte"] = punkte(e["besuche"], e["konten"], e["reaktionen"], e["kommentare"], e["geteilt"],
+                             e["reichweite"])
         out.append(e)
     return sorted(out, key=lambda e: e["punkte"], reverse=True)
 
 
 def _details(e: dict) -> str:
     teile = []
-    for wert, eins, viele in ((e["besuche"], "Besuch", "Besuche"), (e["konten"], "neues Konto", "neue Konten"),
+    for wert, eins, viele in ((e.get("reichweite", 0), "erreicht", "erreicht"),
+                              (e["besuche"], "Besuch", "Besuche"), (e["konten"], "neues Konto", "neue Konten"),
                               (e["reaktionen"], "Reaktion", "Reaktionen"), (e["kommentare"], "Kommentar", "Kommentare"),
                               (e["geteilt"], "mal geteilt", "mal geteilt")):
         if wert:
@@ -262,7 +274,9 @@ def erkenntnisse(bewertet: list[dict], min_posts: int = 2) -> dict:
                        for k, v in g.items() if len(v) >= min_posts), key=lambda x: x["schnitt"], reverse=True)
     return {"formate": gruppen(lambda p: (p.get("meta") or {}).get("thema")),
             "arten": gruppen(lambda p: p.get("art")),
-            "sprachen": gruppen(lambda p: p.get("sprache"))}
+            "sprachen": gruppen(lambda p: p.get("sprache")),
+            "stile": gruppen(lambda p: HOOK_NAMEN.get((p.get("meta") or {}).get("hook_stil"))),
+            "aufforderungen": gruppen(lambda p: AUFFORDERUNG_NAMEN.get((p.get("meta") or {}).get("aufforderung")))}
 
 
 def erkenntnis_text(erk: dict) -> str:
@@ -276,3 +290,70 @@ def erkenntnis_text(erk: dict) -> str:
         text += (f" Schwächer: {f[-1]['name']} (Ø {f[-1]['schnitt']:g}) – ist heute dieses Format dran, "
                  "mach es besonders konkret, persönlich und zum Mitmachen.")
     return text + " Übertrage, was dort funktioniert (Ton, Aufbau, Art der Frage), auf das heutige Format."
+
+
+# ---------------------------------------------------------------------------
+# 5. Selbst-Tests: Hook-Stil und Handlungsaufforderung
+# ---------------------------------------------------------------------------
+HOOK_STILE = [
+    {"schluessel": "frage", "name": "Direkte Frage",
+     "auftrag": "Der Hook ist eine direkte, persönliche Frage, auf die man innerlich sofort antwortet."},
+    {"schluessel": "aussage", "name": "Mutige Aussage",
+     "auftrag": "Der Hook ist eine überraschende, mutige Aussage, die man so nicht erwartet (ohne zu übertreiben)."},
+    {"schluessel": "geheimnis", "name": "Neugier-Lücke",
+     "auftrag": "Der Hook öffnet eine Neugier-Lücke („Was kaum jemand über … weiß“), die erst im Text aufgeht."},
+    {"schluessel": "szene", "name": "Alltags-Szene",
+     "auftrag": "Der Hook beginnt mit einer kleinen Szene aus dem Alltag, in der man sich sofort wiedererkennt "
+                "(z. B. die Nachricht, die man seit Tagen nicht abschickt)."},
+    {"schluessel": "zeichen", "name": "Sternzeichen direkt",
+     "auftrag": "Der Hook spricht ein oder mehrere Sternzeichen direkt mit Namen an."},
+    {"schluessel": "zahl", "name": "Zahl & Liste",
+     "auftrag": "Der Hook kündigt eine kurze Liste mit Zahl an (z. B. „3 Dinge, die …“) – der Text löst sie ein."},
+]
+HOOK_NAMEN = {h["schluessel"]: h["name"] for h in HOOK_STILE}
+AUFFORDERUNG_NAMEN = {"mondzeichen": "Sonne & Mond gratis", "partner": "Partner-Vergleich",
+                      "horoskop": "Persönliches Tageshoroskop", "chat": "Astro-Chat"}
+
+
+def _werte_je(bewertet: list[dict], schluessel: str, wert) -> dict:
+    g = {}
+    for e in bewertet or []:
+        k = (e["post"].get("meta") or {}).get(schluessel)
+        if k:
+            g.setdefault(k, []).append(wert(e))
+    return g
+
+
+def waehle_variante(namen: list[str], bewertet: list[dict], schluessel: str, *, wert=None,
+                    mindest: int = 3, neugier: float = 0.2, rnd=None, standard: str | None = None) -> dict:
+    """Welche Variante heute dran ist: Noch zu wenig erprobte zuerst (zufaellig), danach meist die beste
+    (Durchschnitt), mit Wahrscheinlichkeit `neugier` eine andere -- so lernt Soraya weiter dazu.
+    Antwort: {"wahl", "grund"} -- grund: "standard", "test" oder "beste"."""
+    rnd = rnd or random.Random()
+    wert = wert or (lambda e: e["punkte"])
+    werte = _werte_je(bewertet, schluessel, wert)
+    if not any(werte.values()) and standard in namen:
+        return {"wahl": standard, "grund": "standard"}     # noch nichts gemessen: der gewohnte Wechsel
+    wenig = [n for n in namen if len(werte.get(n, [])) < mindest]
+    if wenig and (len(wenig) == len(namen) or rnd.random() < 0.5):
+        return {"wahl": rnd.choice(wenig), "grund": "test"}
+    erprobt = [n for n in namen if n not in wenig]
+    beste = max(erprobt, key=lambda n: sum(werte[n]) / len(werte[n]))
+    if rnd.random() < neugier:
+        andere = [n for n in namen if n != beste]
+        return {"wahl": rnd.choice(andere), "grund": "test"}
+    return {"wahl": beste, "grund": "beste"}
+
+
+def selbsttest(thema: dict, bewertet: list[dict], rnd: random.Random | None = None) -> dict:
+    """Hook-Stil und Handlungsaufforderung fuer den heutigen Tagesplan (veraendert `thema`).
+    Die Handlungsaufforderung wird nach Besuchen und neuen Konten bewertet, nicht nach Gefaellt-mir."""
+    rnd = rnd or random.Random()
+    stil = waehle_variante([h["schluessel"] for h in HOOK_STILE], bewertet, "hook_stil", rnd=rnd)
+    auff = waehle_variante([a["schluessel"] for a in AUFFORDERUNGEN], bewertet, "aufforderung",
+                           wert=lambda e: e["besuche"] * 2 + e["konten"] * 15, rnd=rnd,
+                           standard=thema["aufforderung"]["schluessel"])
+    thema["hook_stil"] = next(h for h in HOOK_STILE if h["schluessel"] == stil["wahl"])
+    thema["aufforderung"] = next(a for a in AUFFORDERUNGEN if a["schluessel"] == auff["wahl"])
+    thema["selbsttest"] = {"hook_stil": stil["grund"], "aufforderung": auff["grund"]}
+    return thema

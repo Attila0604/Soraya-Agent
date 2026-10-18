@@ -13,6 +13,7 @@ Railway-Variablen (alle optional):
 """
 
 import os
+import random
 import threading
 import time
 from datetime import date, timedelta
@@ -44,8 +45,12 @@ Was gute Posts ausmacht:
 - Verboten sind leere Floskeln wie „Die Sterne stehen gut“, „Das Universum hat einen Plan“,
   „magische Energie“, „kosmische Schwingungen“, „Manifestiere jetzt“. Lieber ein konkretes Bild
   aus dem Alltag (Gespräch, Nachricht, Entscheidung, Schlaf, Arbeit, Beziehung).
-- Kurze Absätze, gut lesbar am Handy. Höchstens 2 Emojis pro Text.
-- Ein Post – eine Botschaft. Halte dich an das heutige Format.
+- Lebendig statt Lexikon: wechsle kurze und längere Sätze, schreib wie eine kluge Freundin, die etwas
+  Spannendes erzählt – mit einem konkreten Moment, den man vor sich sieht, und einer kleinen Wendung.
+- Kurze Absätze, gut lesbar am Handy. Höchstens 2 Emojis pro Text, gezielt gesetzt.
+- Die Frage am Ende ist leicht zu beantworten (ein Wort, ein Emoji oder das eigene Sternzeichen) –
+  so kommentieren mehr Menschen.
+- Ein Post – eine Botschaft. Halte dich an das heutige Format und den heutigen Hook-Stil.
 - Keine Links und keine @-Erwähnungen im Text (der Agent fügt den Link selbst an).
 - Wiederhole keine Überschriften der letzten Tage (Liste unten).
 - Kommt ein Zielgruppen-Profil mit: Greife auf, was diese Menschen beschäftigt und wie sie
@@ -60,8 +65,9 @@ Liefere genau drei Einträge, in dieser Reihenfolge:
    5 Wörter), sonst [].
 2. art "reel", platform "tiktok": Kurzvideo (12-18 Sekunden, Text-Video ohne Sprecher).
    "skript": "hook" (erste Einblendung, höchstens 8 Wörter, stoppt das Scrollen),
-   "einblendungen" (3 Texte, je höchstens 8 Wörter, erzählen die Botschaft in Schritten, der
-   letzte ist die Pointe), "szenen" (3 kurze Bild-Ideen, falls jemand selbst filmt),
+   "einblendungen" (3 Texte, je höchstens 8 Wörter, erzählen die Botschaft in Schritten mit
+   Spannung bis zum Schluss, der letzte ist die Pointe; bei Sternzeichen beginnt jede Einblendung
+   mit dem Namen des Zeichens und einem Doppelpunkt), "szenen" (3 kurze Bild-Ideen, falls jemand selbst filmt),
    "schluss" (kurzer Schlusssatz, der neugierig auf das persönliche Horoskop macht, OHNE
    „{link_in_bio}“ oder andere Link-Hinweise – das Video zeigt darunter schon den Knopf, und es
    läuft auch auf Facebook). "text": Bildunterschrift, 1-3 Sätze,
@@ -298,12 +304,16 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             bewertet = redaktion.bewerte(db.lade_post)
         except Exception:
             bewertet = []
+        # gleicher Tag und gleiche Sprache -> gleiche Wahl (auch beim Neu-Erstellen nachvollziehbar)
+        redaktion.selbsttest(thema, bewertet, random.Random(f"{tag.isoformat()}-{sprache}"))
         vorbilder = redaktion.gut_angekommen(db.lade_post, sprache, bewertet=bewertet)
         erkenntnis = redaktion.erkenntnis_text(redaktion.erkenntnisse(bewertet))
         posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder, erkenntnis)
         gespeichert = []
         for p in posts:
-            meta = himmel.bild_meta(info) | {"thema": p.pop("_thema"), "pruefung": p.pop("_pruefung")}
+            meta = himmel.bild_meta(info) | {"thema": p.pop("_thema"), "pruefung": p.pop("_pruefung"),
+                                             "hook_stil": thema["hook_stil"]["schluessel"],
+                                             "aufforderung": thema["aufforderung"]["schluessel"]}
             punkte = p.pop("_bild_punkte", [])
             if punkte:
                 meta["bild_punkte"] = punkte

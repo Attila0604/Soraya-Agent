@@ -233,12 +233,32 @@ def poste_facebook(art: str, text: str, bild: bytes | None = None, video: bytes 
     return {"id": pid, "url": f"https://www.facebook.com/{pid}"}
 
 
+# Wie viele Menschen ein Beitrag erreicht hat. Meta hat die Kennzahlen umbenannt: die erste, die
+# antwortet, gilt. Braucht das Recht read_insights -- fehlt es, gibt es eben keine Reichweite.
+REICHWEITE_METRIKEN = ("post_impressions_unique", "post_media_view")
+
+
+def facebook_reichweite(extern_id: str, token: str) -> int | None:
+    for metrik in REICHWEITE_METRIKEN:
+        try:
+            d = _get(f"{graph_fb()}/{extern_id}/insights", metric=metrik, access_token=token)
+        except Exception:  # noqa: BLE001
+            continue
+        for eintrag in d.get("data") or []:
+            werte = eintrag.get("values") or []
+            if werte and isinstance(werte[-1].get("value"), (int, float)):
+                return int(werte[-1]["value"])
+    return None
+
+
 def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
-    """Gefaellt-mir, Kommentare und Teilen je Facebook-Beitrag (braucht pages_read_engagement)."""
+    """Gefaellt-mir, Kommentare und Teilen je Facebook-Beitrag (braucht pages_read_engagement),
+    dazu die Reichweite, wenn Meta sie herausgibt."""
     z = zugang("facebook")
     if not z or not z.get("token"):
         raise MetaFehler("Facebook-Seite ist nicht verbunden.")
     out = []
+    reichweite_geht = True
     for e in eintraege:
         felder = "reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)"
         if e.get("art") != "reel":
@@ -250,6 +270,9 @@ def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
             zeile.update(reaktionen=((d.get("reactions") or {}).get("summary") or {}).get("total_count", 0),
                          kommentare=((d.get("comments") or {}).get("summary") or {}).get("total_count", 0),
                          geteilt=(d.get("shares") or {}).get("count", 0))
+            if reichweite_geht:
+                zeile["reichweite"] = facebook_reichweite(e["extern_id"], z["token"])
+                reichweite_geht = zeile["reichweite"] is not None   # ohne Recht nicht bei jedem Beitrag fragen
         except Exception as ex:  # noqa: BLE001 - ein Beitrag ohne Zahlen soll die Liste nicht stoppen
             zeile["fehler"] = str(ex)[:160]
         out.append(zeile)

@@ -111,7 +111,7 @@ def init_db():
         # Zielgruppe im Tagesplan verwenden, Land der Recherche (seit Version 0.9)
         cur.execute("alter table soraya_zielgruppen add column if not exists im_tagesplan boolean not null default false;")
         cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
-        for spalte in ("reaktionen int", "kommentare int", "geteilt int", "zahlen_am timestamptz"):
+        for spalte in ("reaktionen int", "kommentare int", "geteilt int", "zahlen_am timestamptz", "reichweite int"):
             cur.execute(f"alter table soraya_veroeffentlichungen add column if not exists {spalte};")
         cur.execute(
             """
@@ -275,12 +275,14 @@ def lade_gepostete(plattform: str, seit, limit: int = 30) -> list[dict]:
         return cur.fetchall()
 
 
-def speichere_zahlen(post_id: int, plattform: str, reaktionen: int, kommentare: int, geteilt: int) -> None:
-    """Reaktionen eines geposteten Beitrags merken (fuer das Lernen ohne staendige API-Aufrufe)."""
+def speichere_zahlen(post_id: int, plattform: str, reaktionen: int, kommentare: int, geteilt: int,
+                     reichweite: int | None = None) -> None:
+    """Reaktionen eines geposteten Beitrags merken (fuer das Lernen ohne staendige API-Aufrufe).
+    reichweite None = nicht gemessen (der alte Wert bleibt stehen)."""
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute("update soraya_veroeffentlichungen set reaktionen = %s, kommentare = %s, geteilt = %s, "
-                    "zahlen_am = now() where post_id = %s and plattform = %s;",
-                    (reaktionen, kommentare, geteilt, post_id, plattform))
+                    "reichweite = coalesce(%s, reichweite), zahlen_am = now() where post_id = %s and plattform = %s;",
+                    (reaktionen, kommentare, geteilt, reichweite, post_id, plattform))
         conn.commit()
 
 
@@ -290,7 +292,7 @@ def lade_lern_posts(seit) -> list[dict]:
         cur.execute(
             "select p.id, p.titel, p.art, p.sprache, p.meta, min(v.aktualisiert) as gepostet, "
             "coalesce(sum(v.reaktionen), 0) as reaktionen, coalesce(sum(v.kommentare), 0) as kommentare, "
-            "coalesce(sum(v.geteilt), 0) as geteilt, bool_or(v.zahlen_am is not null) as gemessen "
+            "coalesce(sum(v.geteilt), 0) as geteilt, coalesce(sum(v.reichweite), 0) as reichweite, bool_or(v.zahlen_am is not null) as gemessen "
             "from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "
             "where v.status = 'fertig' and v.aktualisiert >= %s group by p.id order by gepostet desc limit 200;",
             (seit,),

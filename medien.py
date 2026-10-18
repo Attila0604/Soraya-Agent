@@ -19,7 +19,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 SCHRIFTEN = Path(__file__).parent / "fonts"
 # Knopf unten im Bild: passt fuer Instagram (Link in Bio) und Facebook (Link unter dem Text)
@@ -196,16 +196,65 @@ def portal(hoehe: int) -> Image.Image:
     return bild.resize((max(1, gr // k), max(1, gr // k)), Image.LANCZOS)
 
 
+# Die grossen dunklen "Meere" der sichtbaren Mondseite (x, y, Breite, Hoehe relativ zum Radius, Tiefe)
+MARIA = [(-0.36, -0.36, 0.30, 0.25, 1.0), (0.13, -0.31, 0.18, 0.17, 0.9), (0.27, -0.04, 0.22, 0.18, 0.9),
+         (0.63, -0.22, 0.11, 0.10, 0.9), (0.47, 0.22, 0.13, 0.18, 0.7), (-0.15, 0.43, 0.18, 0.13, 0.6),
+         (-0.62, 0.02, 0.24, 0.44, 0.8), (0.30, 0.37, 0.09, 0.09, 0.6), (-0.05, -0.64, 0.42, 0.07, 0.6),
+         (-0.30, 0.18, 0.16, 0.12, 0.5)]
+
+
+@lru_cache(maxsize=24)
+def _mond_textur(gr: int, r: float) -> np.ndarray:
+    """Helligkeit der Mondoberflaeche (etwa 0.6..1.05): Meere, feine Koernung, Krater, Randabdunklung.
+    Immer gleich (fester Zufall), damit der Mond in jedem Bild derselbe ist."""
+    c = gr / 2
+    ys, xs = np.mgrid[0:gr, 0:gr].astype(np.float32)
+    x, y = (xs + 0.5 - c) / r, (ys + 0.5 - c) / r
+    rr = np.sqrt(x * x + y * y)
+    meer = np.zeros_like(x)
+    for mx, my, bx, by, tiefe in MARIA:
+        d = ((x - mx) / bx) ** 2 + ((y - my) / by) ** 2
+        meer = np.maximum(meer, tiefe * np.clip(1 - d, 0, 1) ** 0.45)
+    rng = np.random.default_rng(11)
+    grob = Image.fromarray((rng.random((12, 12)) * 255).astype(np.uint8), "L").resize((gr, gr), Image.BICUBIC)
+    fein = Image.fromarray((rng.random((48, 48)) * 255).astype(np.uint8), "L").resize((gr, gr), Image.BICUBIC)
+    rauschen = (np.asarray(grob, np.float32) / 255 - 0.5) * 0.7 + (np.asarray(fein, np.float32) / 255 - 0.5) * 0.3
+    meer = np.clip(meer * (0.75 + rauschen * 1.4), 0, 1)
+    weich = Image.fromarray((meer * 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(r * 0.035))
+    meer = np.asarray(weich, np.float32) / 255
+    tex = 1 - 0.42 * meer + 0.07 * rauschen
+    for _ in range(22):                                      # Krater: flache Mulde, zarter heller Rand
+        kx, ky = rng.uniform(-0.85, 0.85, 2)
+        if kx * kx + ky * ky > 0.8:
+            continue
+        kr = rng.uniform(0.015, 0.05)
+        d = np.sqrt((x - kx) ** 2 + (y - ky) ** 2) / kr
+        tex -= 0.035 * np.clip(1 - d, 0, 1)
+        tex += 0.025 * np.clip(1 - np.abs(d - 1.05) * 5, 0, 1)
+    d = np.sqrt((x + 0.12) ** 2 + (y - 0.72) ** 2) / 0.035  # Tycho: heller Fleck unten
+    tex += 0.18 * np.clip(1 - d, 0, 1)
+    tex *= 1 - 0.22 * np.clip(rr, 0, 1) ** 4               # Randabdunklung (wirkt wie eine Kugel)
+    return np.clip(tex, 0.45, 1.1)
+
+
+def _mit_textur(ebene: Image.Image, tex: np.ndarray) -> Image.Image:
+    a = np.asarray(ebene, dtype=np.float32)
+    a[..., :3] = np.clip(a[..., :3] * tex[..., None], 0, 255)
+    return Image.fromarray((a + 0.5).astype(np.uint8), "RGBA")
+
+
 def mond(r: float, phase_index, beleuchtung) -> Image.Image:
-    """Mondscheibe (Licht rechts = zunehmend; Breite nach echter Beleuchtung in %). Mittelpunkt = Bildmitte."""
+    """Mondscheibe (Licht rechts = zunehmend; Breite nach echter Beleuchtung in %). Mittelpunkt = Bildmitte.
+    Mit Oberflaeche (Meere, Krater) und schwachem Erdschein auf der dunklen Seite."""
     rand = max(1.0, r / 40)
     gr = int(math.ceil(2 * r + 2 * rand + 4))
     c = gr / 2
+    tex = _mond_textur(gr, round(r, 1))
     bild = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
     scheibe = Image.new("L", (gr, gr), 0)
     ImageDraw.Draw(scheibe).ellipse([c - r, c - r, c + r, c + r], fill=255)
-    dunkel = radial(gr, gr, c - r * 0.2, c - r * 0.3, r * 0.1, c, c, r, [(0, "#2a2044", 1), (1, "#120c22", 1)])
-    bild.alpha_composite(_durch_maske(dunkel, scheibe))
+    dunkel = radial(gr, gr, c - r * 0.2, c - r * 0.3, r * 0.1, c, c, r, [(0, "#3a3354", 1), (1, "#1a1430", 1)])
+    bild.alpha_composite(_durch_maske(_mit_textur(dunkel, tex), scheibe))
     ring = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
     ImageDraw.Draw(ring).ellipse([c - r, c - r, c + r, c + r], outline=(201, 168, 106, 115), width=max(1, int(round(rand))))
     bild.alpha_composite(ring)
@@ -233,20 +282,142 @@ def mond(r: float, phase_index, beleuchtung) -> Image.Image:
         form = _bogen(c, c, r, 270, 90, 96) + (ellipse(90, 270) if ist_sichel else ellipse(90, -90))
     licht = Image.new("L", (gr, gr), 0)
     ImageDraw.Draw(licht).polygon(form, fill=255)
+    # weiche Schattengrenze, aussen aber scharf an der Scheibe
+    licht = licht.filter(ImageFilter.GaussianBlur(max(0.8, r * 0.07)))
+    licht = Image.fromarray(np.minimum(np.asarray(licht), np.asarray(scheibe)), "L")
     hell = radial(gr, gr, c - r * 0.3, c - r * 0.35, r * 0.1, c, c, r * 1.05,
                   [(0, "#fffbe8", 1), (0.45, "#ffe9b0", 1), (1, "#c9a86a", 1)])
-    bild.alpha_composite(_durch_maske(hell, licht))
+    bild.alpha_composite(_durch_maske(_mit_textur(hell, tex), licht))
     return bild
 
 
 # ---------------------------------------------------------------------------
 # Text
 # ---------------------------------------------------------------------------
+# Emojis: die Textschriften haben keine (sonst erscheinen leere Kaestchen). Sie kommen aus einem kleinen
+# Auszug von Noto Color Emoji (fonts/NotoColorEmoji-Soraya.ttf, OFL); was dort fehlt, wird weggelassen.
+_EMOJI = re.compile(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\u2300-\u23FF]"
+                    r"[\uFE0F\u200D\U0001F3FB-\U0001F3FF\u20E3]*"
+                    r"(?:[\U0001F000-\U0001FAFF\u2600-\u27BF][\uFE0F\U0001F3FB-\U0001F3FF]*)*")
+EMOJI_GROESSE = 109        # die Farb-Emojis gibt es nur in dieser Groesse, sie werden danach skaliert
+EMOJI_BREITE = 1.18        # Platz je Emoji in Schriftgroessen
+
+
+@lru_cache(maxsize=1)
+def _emoji_schrift():
+    try:
+        return ImageFont.truetype(str(SCHRIFTEN / "NotoColorEmoji-Soraya.ttf"), EMOJI_GROESSE)
+    except OSError:
+        return None
+
+
+@lru_cache(maxsize=256)
+def _emoji_bild(zeichen: str) -> Image.Image | None:
+    """Ein Emoji als RGBA in Originalgroesse (None, wenn es nicht im Auszug ist)."""
+    font = _emoji_schrift()
+    basis = zeichen.replace("\uFE0F", "")[:1]
+    if not font or not basis or ord(basis) not in _emoji_zeichen():
+        return None
+    ebene = Image.new("RGBA", (EMOJI_GROESSE * 3 // 2, EMOJI_GROESSE * 3 // 2), (0, 0, 0, 0))
+    ImageDraw.Draw(ebene).text((ebene.width / 2, ebene.height / 2), basis, font=font, embedded_color=True, anchor="mm")
+    box = ebene.getbbox()
+    return ebene.crop(box) if box else None
+
+
+@lru_cache(maxsize=1)
+def _emoji_zeichen() -> frozenset:
+    """Welche Zeichen der Auszug kennt (aus der Zeichentabelle der Schrift)."""
+    try:
+        return frozenset(_cmap(str(SCHRIFTEN / "NotoColorEmoji-Soraya.ttf")) if _emoji_schrift() else ())
+    except Exception:  # noqa: BLE001
+        return frozenset()
+
+
+def _cmap(pfad: str) -> list[int]:
+    """Zeichen einer TrueType-Datei (nur die Format-12/4-Tabellen, ohne fontTools)."""
+    import struct
+    with open(pfad, "rb") as f:
+        daten = f.read()
+    anzahl = struct.unpack(">H", daten[4:6])[0]
+    for i in range(anzahl):
+        tag, _, off, _ = struct.unpack(">4sIII", daten[12 + 16 * i: 28 + 16 * i])
+        if tag == b"cmap":
+            break
+    else:
+        return []
+    zeichen = []
+    n = struct.unpack(">H", daten[off + 2: off + 4])[0]
+    for i in range(n):
+        _, _, sub = struct.unpack(">HHI", daten[off + 4 + 8 * i: off + 12 + 8 * i])
+        t = off + sub
+        if struct.unpack(">H", daten[t:t + 2])[0] == 12:
+            gruppen = struct.unpack(">I", daten[t + 12:t + 16])[0]
+            for g in range(gruppen):
+                a, b, _ = struct.unpack(">III", daten[t + 16 + 12 * g: t + 28 + 12 * g])
+                zeichen.extend(range(a, b + 1))
+            return zeichen
+    return zeichen
+
+
+def _teile(text: str) -> list[tuple[str, bool]]:
+    """Text in Stuecke zerlegen: (Text, False) und (Emoji, True); unbekannte Emojis fallen weg."""
+    teile, pos = [], 0
+    text = re.sub(r"[\uFE0F\u20E3\u200D]", "", text) if not _EMOJI.search(text) else text
+    for m in _EMOJI.finditer(text):
+        if m.start() > pos:
+            teile.append((re.sub(r"[\uFE0F\u20E3\u200D]", "", text[pos:m.start()]), False))
+        if _emoji_bild(m.group(0)) is not None:
+            teile.append((m.group(0), True))
+        pos = m.end()
+    if pos < len(text):
+        teile.append((re.sub(r"[\uFE0F\u20E3\u200D]", "", text[pos:]), False))
+    return teile
+
+
+def ohne_emojis(text: str) -> str:
+    return re.sub(r"\s{2,}", " ", _EMOJI.sub("", str(text or ""))).strip()
+
+
+def laenge(font: ImageFont.FreeTypeFont, text: str) -> float:
+    """Breite eines Textes mit Emojis (fuer den Zeilenumbruch)."""
+    if not _EMOJI.search(text) and not re.search(r"[\uFE0F\u20E3]", text):
+        return font.getlength(text)
+    return sum(font.size * EMOJI_BREITE if emoji else font.getlength(t) for t, emoji in _teile(text))
+
+
+def text_mit_emojis(draw: ImageDraw.ImageDraw, xy, text: str, font, fill, anchor="ms") -> None:
+    """Wie draw.text (Anker "ms" oder "ls"), aber Emojis erscheinen als Farb-Emojis."""
+    if not _EMOJI.search(text) and not re.search(r"[\uFE0F\u20E3]", text):
+        draw.text(xy, text, font=font, fill=fill, anchor=anchor)
+        return
+    x, y = xy
+    if anchor[0] == "m":
+        x -= laenge(font, text) / 2
+    bild = getattr(draw, "_image", None)
+    for t, emoji in _teile(text):
+        if not emoji:
+            draw.text((x, y), t, font=font, fill=fill, anchor="ls")
+            x += font.getlength(t)
+            continue
+        e = _emoji_bild(t)
+        h = font.size * 0.92
+        e = e.resize((max(1, int(e.width * h / e.height)), max(1, int(h))), Image.LANCZOS)
+        if len(fill) == 4 and fill[3] < 255:
+            e = _mit_alpha(e, fill[3] / 255)
+        if bild is not None:
+            px, py = int(x + (font.size * EMOJI_BREITE - e.width) / 2), int(y - font.size * 0.78)
+            if bild.mode == "RGBA":
+                bild.alpha_composite(e, (max(0, px), max(0, py)))
+            else:
+                bild.paste(e, (px, py), e)
+        x += font.size * EMOJI_BREITE
+
+
 def umbrechen(font: ImageFont.FreeTypeFont, text: str, breite: float) -> list[str]:
     zeilen, z = [], ""
     for w in str(text or "").split():
         t = f"{z} {w}" if z else w
-        if font.getlength(t) > breite and z:
+        if laenge(font, t) > breite and z:
             zeilen.append(z)
             z = w
         else:
@@ -268,7 +439,7 @@ def messe_text(text, *, breite, groesse, name, zeilenhoehe=1.12, max_zeilen=4, m
     if len(zeilen) > max_zeilen:
         zeilen = zeilen[:max_zeilen]
         z = zeilen[-1]
-        while z and font.getlength(z + " …") > breite * m:
+        while z and laenge(font, z + " …") > breite * m:
             z = z.rsplit(" ", 1)[0] if " " in z else ""
         zeilen[-1] = z + " …"
     return {"zeilen": zeilen, "g": g, "name": name, "zh": zeilenhoehe,
@@ -279,7 +450,7 @@ def zeichne_text(draw, block, x, oben, farbe, m=1.0, alpha=255):
     font = schrift(block["name"], block["g"] * m)
     for i, z in enumerate(block["zeilen"]):
         y = oben + block["g"] * 0.8 + i * block["g"] * block["zh"]
-        draw.text((x * m, y * m), z, font=font, fill=_rgb(farbe) + (alpha,), anchor="ms")
+        text_mit_emojis(draw, (x * m, y * m), z, font, _rgb(farbe) + (alpha,), anchor="ms")
 
 
 def gesperrt(draw, text, cx, grundlinie, font, abstand, farbe):
@@ -364,8 +535,37 @@ def _verlauf_hintergrund(W: int, H: int, palette: str = "nacht") -> Image.Image:
     """Der weiche Verlauf reicht in Viertel-Aufloesung (spart Rechenzeit)."""
     q = 4
     a, b, c = PALETTEN.get(palette, PALETTEN["nacht"])["verlauf"]
-    return radial(W // q, H // q, W / 2 / q, 0, 40 / q, W / 2 / q, H * 0.25 / q, H / q,
-                  [(0, a, 1), (0.45, b, 1), (1, c, 1)]).convert("RGB").resize((W, H), Image.BICUBIC)
+    grund = radial(W // q, H // q, W / 2 / q, 0, 40 / q, W / 2 / q, H * 0.25 / q, H / q,
+                   [(0, a, 1), (0.45, b, 1), (1, c, 1)]).convert("RGB")
+    return _nebel(grund).resize((W, H), Image.BICUBIC)
+
+
+def _nebel(grund: Image.Image) -> Image.Image:
+    """Zarter Sternennebel als schraeges Band (Milchstrasse): bringt Tiefe, bleibt hinter dem Text ruhig."""
+    w, h = grund.size
+    ys, xs = np.mgrid[0:h, 0:w].astype(np.float32)
+    # Band von links unten nach rechts oben, leicht gewellt
+    nx, ny = 0.55, 1.0
+    abstand = ((xs - w * 0.5) * nx + (ys - h * 0.55) * ny) / math.hypot(nx, ny)
+    abstand += np.sin(xs / w * 5.0) * h * 0.03
+    band = np.exp(-(abstand / (h * 0.16)) ** 2)
+    rng = np.random.default_rng(5)
+    wolken = sum((np.asarray(Image.fromarray((rng.random((g, g)) * 255).astype(np.uint8), "L")
+                             .resize((w, h), Image.BICUBIC), np.float32) / 255) * f
+                 for g, f in ((5, 0.55), (11, 0.3), (23, 0.15)))
+    dichte = np.clip(band * (wolken - 0.25) * 1.6, 0, 1)[..., None]
+    violett = np.array([122, 92, 190], np.float32)
+    rose = np.array([196, 120, 170], np.float32)
+    farbe = violett + (rose - violett) * np.clip(wolken[..., None] - 0.35, 0, 1)
+    a = np.asarray(grund, np.float32)
+    return Image.fromarray(np.clip(a + (farbe - a) * dichte * 0.24, 0, 255).astype(np.uint8), "RGB")
+
+
+def rahmen(d: ImageDraw.ImageDraw, W: int, H: int, m: float, akzent) -> None:
+    """Feiner goldener Doppelrahmen (Art-déco, wie das Logo)."""
+    for abstand, alpha, breite in ((30, 110, 1.6), (40, 45, 1.0)):
+        d.rounded_rectangle([abstand * m, abstand * m, (W - abstand) * m, (H - abstand) * m], radius=(30 - abstand / 4) * m,
+                            outline=akzent + (alpha,), width=max(1, int(breite * m)))
 
 
 def hintergrund(W: int, H: int, seed, story: bool, m: float = 1.0, palette: str = "nacht") -> Image.Image:
@@ -413,7 +613,7 @@ def _cta(draw, bild, W, unten, story, sprache, m):
 def marke(bild: Image.Image, W: int, H: int, story: bool, sprache: str, m: float = 1.0) -> None:
     """SORAYA, LUXURY ASTRO GUIDE und der 'Link in Bio'-Knopf unten."""
     d = ImageDraw.Draw(bild, "RGBA")
-    unten = H - 300 if story else H - 175
+    unten = H - 300 if story else H - 192
     gesperrt(d, "SORAYA", W * m / 2, unten * m, schrift("cinzel", (50 if story else 42) * m), 14 * m, (230, 207, 156, 255))
     gesperrt(d, "LUXURY ASTRO GUIDE", W * m / 2, (unten + (50 if story else 42)) * m,
              schrift("inter500", (22 if story else 19) * m), 8 * m, (143, 131, 173, 255))
@@ -508,6 +708,7 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     akzent = PALETTEN[st["palette"]]["akzent"]
     leinwand = hintergrund(W, H, post.get("id") or 1, story, m, st["palette"])
     d = ImageDraw.Draw(leinwand, "RGBA")
+    rahmen(d, W, H, m, akzent)
     meta = post.get("meta") or {}
     mit_mond = meta.get("phase_index") is not None
 
@@ -529,7 +730,7 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     gesperrt(d, eyebrow.upper(), W * m / 2, (285 if story else 200) * m,
              schrift("inter500", (30 if story else 26) * m), 4 * m, (201, 168, 106, 255))
 
-    unten = H - 300 if story else H - 175
+    unten = H - 300 if story else H - 192
     oben = 350 if story else 245
     if st["label"]:
         oben += _etikett(d, st["label"], W / 2, oben - (10 if story else 18), m, akzent) - (0 if story else 14)
