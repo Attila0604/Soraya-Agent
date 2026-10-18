@@ -178,8 +178,8 @@ LAND_SPRACHE = {"at": "de", "de": "de", "ch": "de", "hu": "hu", "it": "it", "uk"
 def zielgruppen_je_sprache(zeilen: list[dict] | None = None) -> dict:
     """Welches Profil der Tagesplan je Sprache nutzt: markierte Profile (passendes Land
     zuerst, sonst das neueste markierte). Ist keines markiert, je Sprache automatisch:
-    passendes Land, sonst ein Profil ohne Land, sonst das neueste -- so schreibt z. B.
-    Deutsch nicht fuer ein ungarisches Profil, nur weil es zuletzt erstellt wurde.
+    passendes Land, sonst ein Profil ohne Land, sonst keines -- so schreibt z. B. Englisch
+    nicht fuer ein ungarisches Profil, nur weil es kein englisches gibt.
     Antwort: {sprache: {"id", "bereich", "automatisch"}} -- leer, wenn es keine Profile gibt."""
     if zeilen is None:
         zeilen = db.lade_zielgruppen(limit=50)
@@ -189,7 +189,7 @@ def zielgruppen_je_sprache(zeilen: list[dict] | None = None) -> dict:
     for s in SPRACHEN:
         passend = [z for z in kandidaten if LAND_SPRACHE.get(z.get("land") or "") == s]
         ohne_land = [] if markiert else [z for z in kandidaten if not z.get("land")]
-        z = (passend or ohne_land or kandidaten or [None])[0]
+        z = (passend or ohne_land or (kandidaten if markiert else []) or [None])[0]
         if z:
             auswahl[s] = {"id": z["id"], "bereich": z["bereich"], "automatisch": not markiert}
     return auswahl

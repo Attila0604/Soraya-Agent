@@ -29,13 +29,20 @@ def links() -> dict:
             "bio": {plattform: basis + "?q=" + code for plattform, code in BIO_LINKS.items()}}
 
 
+class NichtEingerichtet(LookupError):
+    """Statistik noch nicht verbunden. stand: "agent_fehlt", "engine_fehlt" oder "passt_nicht"."""
+
+    def __init__(self, text: str, stand: str):
+        super().__init__(text)
+        self.stand = stand
+
+
 def hole_statistik(tage: int = 30) -> dict:
     token = (os.environ.get("AGENT_STATS_TOKEN") or "").strip()
     if len(token) < 24:
-        raise LookupError(
+        raise NichtEingerichtet(
             "Noch nicht eingerichtet: Bitte in Railway bei BEIDEN Diensten (astro-engine und "
-            "Soraya-Agent) die Variable AGENT_STATS_TOKEN mit demselben langen Zufallswert setzen."
-        )
+            "Soraya-Agent) die Variable AGENT_STATS_TOKEN mit demselben langen Zufallswert setzen.", "agent_fehlt")
     try:
         antwort = requests.get(
             engine_url() + "/internal/statistik",
@@ -46,9 +53,10 @@ def hole_statistik(tage: int = 30) -> dict:
     except requests.RequestException as e:
         raise RuntimeError(f"Backend nicht erreichbar: {e}")
     if antwort.status_code == 401:
-        raise LookupError("Der AGENT_STATS_TOKEN im Agent passt nicht zu dem in der astro-engine.")
+        raise NichtEingerichtet("Der AGENT_STATS_TOKEN im Agent passt nicht zu dem in der astro-engine.", "passt_nicht")
     if antwort.status_code == 503:
-        raise LookupError("In der astro-engine ist AGENT_STATS_TOKEN noch nicht gesetzt (mind. 24 Zeichen).")
+        raise NichtEingerichtet("In der astro-engine ist AGENT_STATS_TOKEN noch nicht gesetzt (mind. 24 Zeichen).",
+                                "engine_fehlt")
     if antwort.status_code >= 400:
         raise RuntimeError(f"Backend-Fehler {antwort.status_code}: {antwort.text[:200]}")
     daten = antwort.json()

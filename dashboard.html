@@ -122,9 +122,10 @@
   .cockpit .kachel .punkt{vertical-align:middle}
   @media (max-width:700px){
     .card.mit-bild{grid-template-columns:minmax(0,1fr) 92px;gap:0 12px} .vorschau{width:92px}
-    .cockpit{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-    .cockpit .kachel{padding:10px;font-size:11.5px}
-    .cockpit .kachel b{font-size:15.5px}
+    /* am Handy untereinander als kompakte Zeilen statt drei enger Spalten */
+    .cockpit{grid-template-columns:1fr;gap:6px}
+    .cockpit .kachel{padding:9px 12px;font-size:12px;display:flex;align-items:baseline;gap:10px}
+    .cockpit .kachel b{font-size:15.5px;margin:0;white-space:nowrap}
   }
   .aktionen select,.aktionen input{width:auto;padding:6px 10px;font-size:13px;border-radius:8px}
   .meta{font-size:12px;color:var(--mist-dim)}
@@ -270,7 +271,6 @@
   details[open] summary::before{content:"– "}
   .tokenbox{font-family:ui-monospace,Menlo,monospace;font-size:13px;word-break:break-all;background:#0C1022;
             border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0}
-  ol.schritte{padding-left:20px;margin:8px 0} ol.schritte li{margin:6px 0}
 
   /* ---------- Zielgruppen (unveraendert) ---------- */
   .who h4{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--champagne);margin:18px 0 6px;font-weight:600}
@@ -305,6 +305,17 @@
   .schritte .was{font-weight:600;color:#F4EEDD}
   .schritte .wie{grid-column:2;font-size:12.5px;color:var(--mist-dim)}
   .schritte .wie .linkzeile{margin:6px 0 0}
+  .schritte .wie .tokenbox{display:block;margin:8px 0}
+  .schritte .wie .row{display:flex;gap:8px;flex-wrap:wrap}
+  .schritte code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--champagne);background:rgba(201,168,106,.1);
+                 padding:1px 6px;border-radius:5px;word-break:break-all}
+  .statusleiste{display:flex;align-items:center;gap:10px;margin:14px 0 6px;flex-wrap:wrap}
+  .statusleiste span:not(.linie){font-size:12.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line)}
+  .statusleiste .an{color:var(--champagne);border-color:var(--gold)}
+  .statusleiste .an::before{content:"● ";color:#6fcf8e}
+  .statusleiste .aus{color:var(--mist-dim)}
+  .statusleiste .aus::before{content:"○ "}
+  .statusleiste .linie{flex:1;min-width:24px;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
   .testpost{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line-soft)}
   .testpost:first-of-type{border-top:0}
   .testpost .titel{margin:0;font-size:15px}
@@ -320,6 +331,7 @@
     .tabs{justify-content:flex-start;margin:0 -18px;padding:0 18px}
     .woche strong{min-width:0;font-size:18px}
     details.pz>summary .tag.leise{display:none}
+    .tag.nebensache{display:none}
     .trichter .stufe{grid-template-columns:1fr}
     .himmel .gross{font-size:20px;line-height:1.2}
     .himmel canvas{width:60px;height:60px}
@@ -387,6 +399,7 @@
           <button class="ghost klein" id="wocheZurueck" aria-label="Vorherige Woche">&larr;</button>
           <strong id="wocheLabel">Diese Woche</strong>
           <button class="ghost klein" id="wocheVor" aria-label="Nächste Woche">&rarr;</button>
+          <button class="ghost klein" id="wocheHeute" hidden>Ab heute</button>
         </div>
         <div class="row">
           <div><label for="planSprache">Sprache</label>
@@ -610,7 +623,6 @@ const MONATE = ['Jänner','Februar','März','April','Mai','Juni','Juli','August'
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const ausIso = (s) => { const [y,m,t] = String(s).slice(0,10).split('-').map(Number); return new Date(y, m-1, t); };
 const plusTage = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-const montagVon = (d) => plusTage(d, -((d.getDay() + 6) % 7));
 const kurz = (d) => `${d.getDate()}. ${MONATE[d.getMonth()]}`;
 const kurzIso = (s) => kurz(ausIso(s));
 
@@ -669,7 +681,7 @@ function karte(p, {datum = true} = {}){
       <span class="tag">${esc(ART[p.art] || 'Post')}</span>
       <span class="tag leise">${esc(p.platform)}</span>
       <span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
-      ${p.quelle === 'himmel' ? '<span class="tag leise">Himmel</span>' : ''}
+      ${p.quelle === 'himmel' ? '<span class="tag leise nebensache">Himmel</span>' : ''}
       ${p.meta && p.meta.zielgruppe ? `<span class="tag leise" title="Zielgruppe, für die geschrieben wurde">Für: ${esc(p.meta.zielgruppe)}</span>` : ''}
       ${p.meta && p.meta.thema ? `<span class="tag leise" title="Format des Tages">${esc(p.meta.thema)}</span>` : ''}
       ${p.meta && HOOK_STIL[p.meta.hook_stil] && p.art !== 'story' ? `<span class="tag leise" title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Test: ${esc(HOOK_STIL[p.meta.hook_stil])}</span>` : ''}
@@ -908,10 +920,10 @@ let paketTimer = null;
 function paketDialog(){
   const d = $('dlg');
   clearTimeout(paketTimer);
-  const von = iso(planMontag), bis = iso(plusTage(planMontag, 6));
+  const von = iso(planStart), bis = iso(plusTage(planStart, 6));
   const sprachWahl = $('planSprache').value;
   d.innerHTML = `<h3>Wochenpaket</h3>
-    <p class="hint">${kurz(planMontag)} bis ${kurz(plusTage(planMontag, 6))}: Bilder, Reel-Videos und die Texte zum Kopieren,
+    <p class="hint">${kurz(planStart)} bis ${kurz(plusTage(planStart, 6))}: Bilder, Reel-Videos und die Texte zum Kopieren,
       pro Tag ein Ordner. Damit planst du die Woche z. B. in der Meta Business Suite.</p>
     <div class="paket-optionen">
       <div class="chips" id="pSprachen" role="group" aria-label="Sprachen">${SPRACHEN.map(([c]) =>
@@ -984,7 +996,14 @@ $('planAuto').onchange = async () => {
   catch(e){ melde('Fehler: ' + e.message); }
   ladeHeute();
 };
+// Ist die Statistik (Besuche, neue Konten) verbunden? Einmal pro Seitenaufruf nachsehen.
+let statistikVerbunden = null;
+async function pruefeStatistik(){
+  if(statistikVerbunden !== null) return;
+  try{ statistikVerbunden = !!(await api('/wirkung?tage=1')).eingerichtet; }catch(e){ statistikVerbunden = true; }
+}
 function zeigeCockpit(d, ps){
+  if(statistikVerbunden === null) pruefeStatistik().then(() => { if(statistikVerbunden === false) zeigeCockpit(d, ps); });
   const fertig = d.sprachen.filter(s => (d.laeufe || []).some(l => l.sprache === s && l.status === 'fertig')).length;
   const e = ps && ps.einstellungen, v = ps && ps.verbindungen;
   const verbunden = v ? ['facebook', 'instagram'].filter(p => v[p].verbunden).map(p => PL_NAME[p]) : [];
@@ -998,13 +1017,15 @@ function zeigeCockpit(d, ps){
     <button class="kachel" data-ziel="posten"><b>${punkt(e && e.an && verbunden.length)}Posten ${e && e.an ? 'an' : 'aus'}</b>
       ${verbunden.length ? 'Verbunden: ' + verbunden.join(' + ') : 'Noch keine Plattform verbunden'}</button>
     ${v && !verbunden.length ? `<button class="kachel" data-ziel="posten"><b>Nächster Schritt</b>
-      ${v.facebook.eingerichtet ? 'Facebook &amp; Instagram verbinden' : 'Meta-App einrichten'} – Anleitung unter „Posten“</button>` : `<button class="kachel" data-ziel="posten"><b>Nächster Post</b>
+      ${v.facebook.eingerichtet ? 'Facebook &amp; Instagram verbinden' : 'Meta-App einrichten'} – Anleitung unter „Posten“</button>`
+    : statistikVerbunden === false ? `<button class="kachel" data-ziel="wirkung"><b>Nächster Schritt</b>
+      Statistik verbinden, damit Soraya aus Besuchen lernt – Anleitung unter „Wirkung“</button>` : `<button class="kachel" data-ziel="posten"><b>Nächster Post</b>
       ${naechster ? `${esc(ART[naechster.art] || naechster.art)} · ${tagName(naechster.geplant_um)} ${uhr(naechster.geplant_um)} · ${esc(PL_NAME[naechster.plattform])}`
         : (e && e.an ? 'Nichts geplant' : 'Automatisches Posten ist aus')}</button>`}`;
 }
 $('cockpit').addEventListener('click', (ev) => {
   const k = ev.target.closest('.kachel'); if(!k) return;
-  if(k.dataset.ziel === 'posten') return zeige('posten');
+  if(k.dataset.ziel === 'posten' || k.dataset.ziel === 'wirkung') return zeige(k.dataset.ziel);
   $('planAuto').closest('.panel').scrollIntoView({behavior: 'smooth', block: 'start'});
 });
 async function ladeHeute(){
@@ -1071,10 +1092,13 @@ $('btnPlanNeu').onclick = () => starteTagesplan(true);
 LADER.heute = () => { ladeHimmel(); ladeHeute(); ladeQuellen(); };
 
 /* ---------- PLAN ---------- */
-let planMontag = montagVon(new Date());
+// Plan zeigt 7 Tage ab heute (nicht Montag bis Sonntag): so sind am Sonntag nicht 6 vergangene Tage zu sehen
+const heuteNull = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+let planStart = heuteNull();
 $('planSprache').innerHTML += SPRACHEN.map(([c, n]) => `<option value="${c}">${n}</option>`).join('');
-$('wocheZurueck').onclick = () => { planMontag = plusTage(planMontag, -7); ladePlan(); };
-$('wocheVor').onclick = () => { planMontag = plusTage(planMontag, 7); ladePlan(); };
+$('wocheZurueck').onclick = () => { planStart = plusTage(planStart, -7); ladePlan(); };
+$('wocheVor').onclick = () => { planStart = plusTage(planStart, 7); ladePlan(); };
+$('wocheHeute').onclick = () => { planStart = heuteNull(); ladePlan(); };
 $('planSprache').onchange = () => ladePlan();
 $('planStatus').onchange = () => ladePlan();
 const OFFEN = new Set();                       // aufgeklappte Posts bleiben nach dem Neuladen offen
@@ -1100,16 +1124,17 @@ function tagStand(laeufe, sprachen, tIso){
 }
 async function ladePlan(){
   clearTimeout(planTimer);
-  const bis = plusTage(planMontag, 6);
-  $('wocheLabel').textContent = `${kurz(planMontag)} – ${kurz(bis)}`;
-  const q = new URLSearchParams({von: iso(planMontag), bis: iso(bis), limit: 400});
+  const bis = plusTage(planStart, 6);
+  $('wocheLabel').textContent = `${kurz(planStart)} – ${kurz(bis)}`;
+  $('wocheHeute').hidden = iso(planStart) === iso(heuteNull());
+  const q = new URLSearchParams({von: iso(planStart), bis: iso(bis), limit: 400});
   if($('planSprache').value) q.set('sprache', $('planSprache').value);
   if($('planStatus').value) q.set('status', $('planStatus').value);
   let posts, stand = {laeufe: [], sprachen: []};
   try{
     [posts, stand] = await Promise.all([
       api('/content?' + q).then(d => d.posts || []),
-      api(`/tagesplan/zeitraum?von=${iso(planMontag)}&bis=${iso(bis)}`).catch(() => stand),
+      api(`/tagesplan/zeitraum?von=${iso(planStart)}&bis=${iso(bis)}`).catch(() => stand),
       ladeTermine()]);
   }catch(e){ melde('Fehler: ' + e.message); return; }
   const zaehl = (s) => posts.filter(p => p.geplant_fuer && p.status === s).length;
@@ -1119,9 +1144,9 @@ async function ladePlan(){
   const heute = iso(new Date());
   let html = '';
   for(let i = 0; i < 7; i++){
-    const t = plusTage(planMontag, i), tIso = iso(t);
+    const t = plusTage(planStart, i), tIso = iso(t);
     const tagPosts = posts.filter(p => (p.geplant_fuer || '').slice(0,10) === tIso).sort(ordne);
-    html += `<div class="tag-kopf${tIso === heute ? ' heute' : ''}"><h4>${WOCHENTAGE[i]}, ${kurz(t)}</h4>
+    html += `<div class="tag-kopf${tIso === heute ? ' heute' : ''}"><h4>${WOCHENTAGE[(t.getDay() + 6) % 7]}, ${kurz(t)}</h4>
       <span class="meta">${tagStand(stand.laeufe || [], stand.sprachen || [], tIso)} ${tagPosts.length ? tagPosts.length + ' Posts' : 'nichts geplant'}</span></div>`;
     html += tagPosts.map(zeile).join('');
   }
@@ -1212,8 +1237,10 @@ function tagesplanInfo(wahl){
   if(!sprachen.length){ info.hidden = true; return; }
   const auto = sprachen.some(s => wahl[s].automatisch);
   info.hidden = false;
+  const ohne = ['de', 'en', 'hu', 'it'].filter(s => !wahl[s]);
   info.innerHTML = 'Der Tagesplan schreibt für: ' + sprachen.map(s => `${s.toUpperCase()} <b>${esc(wahl[s].bereich)}</b>`).join(' &middot; ')
-    + (auto ? '<br>Kein Profil markiert, deshalb wählt er je Sprache automatisch: passendes Land zuerst, sonst das neueste. Mit „Im Tagesplan verwenden“ legst du es selbst fest.' : '');
+    + (ohne.length ? ` &middot; ${ohne.map(s => s.toUpperCase()).join(', ')} <span class="meta">allgemein (kein passendes Profil – z. B. eines fürs Land ${ohne.map(s => ({de: 'Österreich', en: 'USA/UK', hu: 'Ungarn', it: 'Italien'})[s]).join(' / ')} erforschen)</span>` : '')
+    + (auto ? '<br>Kein Profil markiert, deshalb wählt er je Sprache automatisch: das Profil aus dem passenden Land, sonst eines ohne Land. Mit „Im Tagesplan verwenden“ legst du es selbst fest.' : '');
 }
 function renderProfile(zeilen, wahl){
   const box = $('profile');
@@ -1302,25 +1329,42 @@ function tokenErzeugen(){
   const b = new Uint8Array(24); crypto.getRandomValues(b);
   return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-function einrichtung(hinweis){
-  $('wirkungInhalt').innerHTML = `<div class="panel"><h2>Wirkung messen einrichten</h2>
-    <p class="hint">${esc(hinweis)}</p>
+// Statistik verbinden: Agent und astro-engine brauchen denselben geheimen Schluessel (AGENT_STATS_TOKEN)
+function einrichtung(hinweis, stand){
+  const agentOk = stand === 'engine_fehlt' || stand === 'passt_nicht';
+  const status = {
+    agent_fehlt: 'Im Content Studio (Soraya-Agent) fehlt der Schlüssel noch.',
+    engine_fehlt: 'Das Content Studio hat den Schlüssel – in der astro-engine fehlt er noch.',
+    passt_nicht: 'Beide haben einen Schlüssel, aber sie sind verschieden. Trag bei beiden denselben ein.'}[stand] || hinweis;
+  $('wirkungInhalt').innerHTML = `<div class="panel"><h2>Statistik verbinden</h2>
+    <p class="hint">Damit Soraya sieht, wie viele Menschen über deine Posts in die App kommen und ein Konto anlegen –
+      und daraus lernt –, müssen App-Server und Content Studio einmal verbunden werden. Dauert etwa 5 Minuten.</p>
+    <div class="statusleiste"><span class="${agentOk ? 'an' : 'aus'}">Content Studio</span><span class="linie"></span>
+      <span class="${stand === 'passt_nicht' ? 'an' : 'aus'}">App-Server (astro-engine)</span></div>
+    <p class="lernhinweis">✦ ${esc(status)}</p>
     <ol class="schritte">
-      <li>Erzeuge hier einen geheimen Schlüssel und kopiere ihn:</li>
+      <li class="jetzt"><span class="was">Geheimen Schlüssel kopieren</span>
+        <span class="wie">Er ist hier gerade neu erzeugt worden (nur in deinem Browser, wird nirgends gespeichert).
+          <span class="tokenbox" id="tokenWert">–</span>
+          <span class="row"><button class="ghost klein" id="tokenKopie">Kopieren</button>
+          <button class="ghost klein" id="tokenNeu">Neuen erzeugen</button></span></span></li>
+      <li><span class="was">Railway → Dienst „astro-engine“ → Variables</span>
+        <span class="wie">„New Variable“: Name <code>AGENT_STATS_TOKEN</code>, Wert = der kopierte Schlüssel.
+          Optional zusätzlich <code>STATS_IGNORIEREN</code> = deine eigenen E-Mail-Adressen und das Demo-Konto, mit Komma getrennt – die zählen dann nicht mit.</span></li>
+      <li class="${agentOk && stand !== 'passt_nicht' ? 'ok' : ''}"><span class="was">Railway → Dienst „Soraya-Agent“ → Variables</span>
+        <span class="wie">Dieselbe Variable <code>AGENT_STATS_TOKEN</code> mit <b>demselben</b> Schlüssel${agentOk ? ' (ist schon da – nur ersetzen, wenn du oben einen neuen genommen hast)' : ''}.</span></li>
+      <li><span class="was">Bei beiden Diensten „Deploy“ drücken</span>
+        <span class="wie">2 Minuten warten, dann diese Seite neu laden. Hier erscheinen dann Besucher, neue Konten und die Herkunft je Post.</span></li>
     </ol>
-    <div class="tokenbox" id="tokenWert">–</div>
-    <div class="row"><button class="ghost klein" id="tokenNeu">Schlüssel erzeugen</button>
-      <button class="ghost klein" id="tokenKopie">Kopieren</button></div>
-    <ol class="schritte" start="2">
-      <li>Railway → Dienst <b>astro-engine</b> → Variables → neue Variable <b>AGENT_STATS_TOKEN</b> = dieser Schlüssel.</li>
-      <li>Railway → Dienst <b>Soraya-Agent</b> → Variables → dieselbe Variable <b>AGENT_STATS_TOKEN</b> mit demselben Schlüssel.</li>
-      <li>Optional bei astro-engine: <b>STATS_IGNORIEREN</b> = deine eigenen E-Mail-Adressen und das Demo-Konto, mit Komma getrennt. Die zählen dann nicht mit.</li>
-      <li>Bei beiden Diensten „Deploy" bestätigen, 2 Minuten warten, diese Seite neu laden.</li>
-    </ol>
-    <p class="note">Der Schlüssel entsteht nur hier in deinem Browser und wird nirgends gespeichert. Die Statistik enthält nur Summen pro Tag, keine Namen oder Geburtsdaten.</p></div>
+    <p class="note">Die Statistik enthält nur Summen pro Tag – keine Namen, keine E-Mail-Adressen, keine Geburtsdaten.</p></div>
+    <div id="lernPanel"></div>
+    <div id="fbPanel"></div>
     ${linksPanel()}`;
-  $('tokenNeu').onclick = () => { $('tokenWert').textContent = tokenErzeugen(); };
+  const neu = () => { $('tokenWert').textContent = tokenErzeugen(); };
+  neu();
+  $('tokenNeu').onclick = neu;
   $('tokenKopie').onclick = (e) => { const t = $('tokenWert').textContent; if(t.length > 20) kopiere(e.target, t); };
+  ladeFacebookWirkung().then(ladeLernen);
 }
 async function ladeWirkung(){
   const tage = $('wTage').value;
@@ -1329,7 +1373,8 @@ async function ladeWirkung(){
   try{
     const [w, alle] = await Promise.all([api('/wirkung?tage=' + tage), api('/content?limit=500')]);
     box.style.opacity = 1;
-    if(!w.eingerichtet){ wirkungDaten = null; return einrichtung(w.hinweis); }
+    $('wKennzahl').parentElement.hidden = !w.eingerichtet;   // ohne Statistik gibt es keinen Verlauf
+    if(!w.eingerichtet){ wirkungDaten = null; return einrichtung(w.hinweis, w.stand); }
     wirkungDaten = w.statistik;
     QUELLEN = wirkungDaten.quellen || {}; quellenStand = Date.now();
     // Besuche ueber alle Links pro Tag als eigene Kennzahl im Verlauf

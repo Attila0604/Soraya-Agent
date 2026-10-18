@@ -372,8 +372,9 @@ def test_zielgruppe_speichert_land_und_markierung(monkeypatch):
     d = client.get("/zielgruppen", headers=AUTH).json()
     z = d["zielgruppen"][0]
     assert z["land"] == "hu" and z["im_tagesplan"] is False
-    # nichts markiert -> das einzige Profil gilt automatisch fuer alle Sprachen
-    assert d["im_tagesplan"]["de"]["id"] == zid and d["im_tagesplan"]["de"]["automatisch"] is True
+    # nichts markiert -> das ungarische Profil gilt automatisch nur fuer Ungarisch (nicht fuer fremde Sprachen)
+    assert d["im_tagesplan"]["hu"]["id"] == zid and d["im_tagesplan"]["hu"]["automatisch"] is True
+    assert "de" not in d["im_tagesplan"]
     r = client.patch(f"/zielgruppen/{zid}", json={"im_tagesplan": True}, headers=AUTH)
     assert r.status_code == 200 and r.json()["zielgruppe"]["im_tagesplan"] is True
     assert client.get("/zielgruppen", headers=AUTH).json()["im_tagesplan"]["hu"]["automatisch"] is False
@@ -1097,3 +1098,10 @@ def test_emojis_im_bild():
     # irgendwo im Fragekasten muss das Orange der Flamme sein (kein leeres Kaestchen)
     px = np.asarray(img.crop((100, 900, 980, 1500)))
     assert ((px[..., 0] > 220) & (px[..., 1] > 90) & (px[..., 1] < 170) & (px[..., 2] < 80)).sum() > 30
+
+
+def test_zielgruppe_automatisch_nicht_fremdes_land():
+    zeilen = [{"id": 1, "bereich": "Szerelem", "land": "hu", "im_tagesplan": False},
+              {"id": 2, "bereich": "Liebe", "land": "at", "im_tagesplan": False}]
+    w = tagesplan.zielgruppen_je_sprache(zeilen)
+    assert set(w) == {"hu", "de"} and w["hu"]["id"] == 1 and w["de"]["id"] == 2

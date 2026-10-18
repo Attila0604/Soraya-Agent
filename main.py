@@ -521,7 +521,7 @@ def wirkung(tage: int = 30):
     try:
         return {"eingerichtet": True, "statistik": hole_statistik(tage)}
     except LookupError as e:
-        return {"eingerichtet": False, "hinweis": str(e)}
+        return {"eingerichtet": False, "hinweis": str(e), "stand": getattr(e, "stand", "agent_fehlt")}
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
