@@ -1314,6 +1314,7 @@ LADER.who = () => { ladeBereiche(); ladeProfile(); };
 /* ---------- WIRKUNG ---------- */
 const KENNZAHLEN = [
   ['schnellstart_geoeffnet', 'Schnellstart geöffnet'], ['schnellstart_berechnet', 'Schnellstart berechnet'],
+  ['gratis_tests', 'Sonne/Mond berechnet (App + Landingpage)'],
   ['registrieren_geklickt', 'Registrieren geklickt'], ['neue_konten', 'Neue Konten'], ['neue_profile', 'Profile angelegt'],
   ['aktive_nutzer', 'Aktive Nutzer'], ['app_starts', 'App-Starts'], ['horoskope', 'Horoskope geladen'],
   ['analysen', 'Analysen geladen'], ['partner_vergleiche', 'Partner-Vergleiche'], ['chat_nachrichten', 'Chat-Nachrichten'],
@@ -1403,7 +1404,7 @@ function zeigeWirkung(){
   const maxSprache = Math.max(1, ...sprachen.map(s => s[1]));
   $('wirkungInhalt').innerHTML = `
     <div class="kpis">
-      ${kpi('Schnellstarts berechnet', summe(tage, 'schnellstart_berechnet'))}
+      ${kpi('Schnellstarts berechnet', summe(tage, 'schnellstart_berechnet'), tage.some(t => 'gratis_tests' in t) ? `Sonne/Mond inkl. Landingpage: ${zahl(summe(tage, 'gratis_tests'))}` : 'in der App')}
       ${kpi('Neue Konten', summe(tage, 'neue_konten'), `gesamt ${zahl(d.gesamt && d.gesamt.konten)}`)}
       ${kpi('Aktive Nutzer', d.aktive_nutzer_zeitraum, 'mindestens einmal geöffnet')}
       ${kpi('Einladungen geöffnet', summe(tage, 'einladung_geoeffnet'), `Links gesamt ${zahl(d.gesamt && d.gesamt.einladungslinks)}`)}
