@@ -827,10 +827,22 @@ def test_befund_sperrt_autopost_bis_freigabe(fake_meta, monkeypatch):
     assert feed["meta"]["pruefung"] and "Hashtag" in " ".join(feed["meta"]["pruefung"])
     posten.speichere_einstellungen({"an": True, "plattformen": {"instagram": False}})
     r = posten.durchlauf(_um(12, 40))
+    # nur ein Hashtag ist eine Kleinigkeit: Story und Feed-Post gehen beide raus
+    assert [x["status"] for x in r["ausgefuehrt"]] == ["fertig", "fertig"]
+
+
+def test_ernster_befund_sperrt_autopost_bis_freigabe(fake_meta, monkeypatch):
+    _verbinde("facebook")
+    monkeypatch.setattr(tagesplan, "frage_json", lambda *a, **k: dict(tagesplan_antwort("en"), posts=[
+        dict(tagesplan_antwort("en")["posts"][0], text=tagesplan_antwort("en")["posts"][0]["text"] + " Guaranteed luck!")]
+        + tagesplan_antwort("en")["posts"][1:]))
+    tagesplan.erstelle("en")
+    feed = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post")
+    assert redaktion.schwer(feed["meta"]["pruefung"])
+    posten.speichere_einstellungen({"an": True, "plattformen": {"instagram": False}})
+    r = posten.durchlauf(_um(12, 40))
     assert [x["status"] for x in r["ausgefuehrt"]] == ["fertig"]          # nur die Story; Feed-Post wartet
-    # Bearbeiten behebt den Befund -> geht automatisch raus
-    p = client.patch(f"/content/{feed['id']}", json={"hashtags": "#astrology #moon #scorpio #horoscope"}, headers=AUTH).json()["post"]
-    assert p["meta"]["pruefung"] == []
+    client.patch(f"/content/{feed['id']}", json={"status": "freigegeben"}, headers=AUTH)
     assert [x["status"] for x in posten.durchlauf(_um(12, 45))["ausgefuehrt"]] == ["fertig"]
 
 
@@ -968,6 +980,9 @@ def test_facebook_text_ohne_bio():
     assert "Link below" in fb and "bio" not in fb.lower() and "?q=p7&lang=en" in fb
     assert "Link in bio" in posten.text_fuer(p, "instagram")
     assert "Link unten" in posten.text_fuer({**p, "sprache": "de", "text": "Dein Horoskop: Link in Bio"}, "facebook")
+    viele = {**p, "hashtags": "#a1 #b2 #c3 #d4 #e5"}
+    assert "#c3" in posten.text_fuer(viele, "facebook") and "#d4" not in posten.text_fuer(viele, "facebook")
+    assert "#e5" in posten.text_fuer(viele, "instagram")
 
 
 def test_wirkung_facebook_reaktionen(monkeypatch, frische_db):
@@ -1105,3 +1120,13 @@ def test_zielgruppe_automatisch_nicht_fremdes_land():
               {"id": 2, "bereich": "Liebe", "land": "at", "im_tagesplan": False}]
     w = tagesplan.zielgruppen_je_sprache(zeilen)
     assert set(w) == {"hu", "de"} and w["hu"]["id"] == 1 and w["de"]["id"] == 2
+
+
+def test_reel_klang():
+    import numpy as np
+    import reel
+    k = reel.klang(6.0, [0.0, 2.0, 4.0], seed=3)
+    assert k.shape == (6 * 48000, 2) and k.dtype == np.int16
+    spitze = int(np.abs(k.astype(np.int32)).max())
+    assert 5000 < spitze < 12000                      # hoerbar, aber leise und ohne Uebersteuern
+    assert abs(int(k[0, 0])) < 200 and abs(int(k[-1, 0])) < 200   # sanft rein und raus

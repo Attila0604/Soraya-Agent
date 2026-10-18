@@ -57,7 +57,7 @@ check("Cockpit: drei Kacheln mit Stand", (await page.$$("#cockpit .kachel")).len
 await page.waitForFunction(() => { const i = document.querySelector("#heuteListe .vorschau img"); return i && i.complete && i.naturalWidth === 300; }, null, { timeout: 30000 }).catch(() => {});
 check("Karte: Vorschaubild vom Server (300 px)", await page.$eval("#heuteListe .vorschau img", (i) => i.naturalWidth) === 300, "");
 check("Heute: Karte zeigt das Format des Tages", /Deine Woche|Sternzeichen im Fokus|Liebe & Beziehung|Astro-Wissen|Ritual|Mitmachen|Rückblick|Großes Ereignis/.test(await page.textContent("#heuteListe .card .kopf")), await page.textContent("#heuteListe .card .kopf"));
-check("Heute: Prüfhinweis bei zu kurzem Feed-Text", (await page.textContent("#heuteListe .card:first-child")).includes("Bitte prüfen") && (await page.textContent("#heuteListe .card:first-child")).includes("Text zu kurz"), "");
+check("Heute: leichter Hinweis bei zu kurzem Feed-Text (geht trotzdem raus)", (await page.textContent("#heuteListe .card:first-child")).includes("geht trotzdem automatisch raus") && (await page.textContent("#heuteListe .card:first-child")).includes("Text zu kurz"), "");
 check("Heute: Bild-Punkte sichtbar", (await page.textContent("#heuteListe .card:first-child")).includes("Im Bild: Skorpion: ehrlich sein"), "");
 check("Heute: Tagesplan-Sprachen wählbar (4 an)", (await page.$$("#planSprachen input:checked")).length === 4, "");
 check("Heute: deutsche Karte zeigt passende Zielgruppe (Österreich)", (await page.textContent("#heuteListe .card .kopf")).includes("Für: Liebe"), await page.textContent("#heuteListe .card .kopf"));

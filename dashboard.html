@@ -227,6 +227,8 @@
   .pruefhinweis{margin:10px 0;border:1px solid rgba(230,180,80,.45);background:rgba(230,180,80,.08);border-radius:10px;
                 padding:9px 12px;font-size:13px;color:#F3E7C9}
   .pruefhinweis b{color:#FFE2A6}
+  .pruefhinweis.leicht{border-color:var(--line);background:rgba(255,255,255,.03)}
+  .pruefhinweis.leicht b{color:var(--champagne)}
   .pruefhinweis span{display:block;color:var(--mist-dim);font-size:12px;margin-top:3px}
   .st.gestoppt{color:#f0c4bc;background:rgba(208,59,59,.12)}
   @media (max-width:560px){ .zeiten{grid-template-columns:1fr} .termine .pl{display:none} }
@@ -690,8 +692,11 @@ function karte(p, {datum = true} = {}){
     ${p.titel ? `<p class="titel">${esc(p.titel)}</p>` : ''}
     ${p.untertitel ? `<p class="untertitel">${esc(p.untertitel)}</p>` : ''}
     <p class="txt">${esc(p.text)}</p>
-    ${p.meta && (p.meta.pruefung || []).length && p.status !== 'gepostet' ? `<div class="pruefhinweis" role="note"><b>Bitte prüfen:</b> ${esc(p.meta.pruefung.join(' · '))}
-      <span>Geht beim automatischen Posten erst raus, wenn du ihn freigibst (oder nach dem Bearbeiten nichts mehr auffällt).</span></div>` : ''}
+    ${p.meta && (p.meta.pruefung || []).length && p.status !== 'gepostet' ? (befundSchwer(p.meta.pruefung)
+      ? `<div class="pruefhinweis" role="note"><b>Bitte prüfen und freigeben:</b> ${esc(p.meta.pruefung.join(' · '))}
+      <span>Geht beim automatischen Posten erst raus, wenn du ihn freigibst (oder nach dem Bearbeiten nichts mehr auffällt).</span></div>`
+      : `<div class="pruefhinweis leicht" role="note"><b>Hinweis:</b> ${esc(p.meta.pruefung.join(' · '))}
+      <span>Nur eine Kleinigkeit – geht trotzdem automatisch raus.</span></div>`) : ''}
     ${p.meta && (p.meta.bild_punkte || []).length ? `<p class="tags">Im Bild: ${esc(p.meta.bild_punkte.join(' · '))}</p>` : ''}
     ${skript}
     ${p.hashtags ? `<p class="tags">${esc(p.hashtags)}</p>` : ''}
@@ -1002,6 +1007,8 @@ async function pruefeStatistik(){
   if(statistikVerbunden !== null) return;
   try{ statistikVerbunden = !!(await api('/wirkung?tage=1')).eingerichtet; }catch(e){ statistikVerbunden = true; }
 }
+// wie redaktion.schwer(): nur diese Befunde halten das automatische Posten an
+const befundSchwer = (liste) => (liste || []).some(b => /^(Heikle|Deutsche Wörter|Enthält einen Link|Reel ohne Hook|Überschrift fehlt)/.test(b));
 function zeigeCockpit(d, ps){
   if(statistikVerbunden === null) pruefeStatistik().then(() => { if(statistikVerbunden === false) zeigeCockpit(d, ps); });
   const fertig = d.sprachen.filter(s => (d.laeufe || []).some(l => l.sprache === s && l.status === 'fertig')).length;

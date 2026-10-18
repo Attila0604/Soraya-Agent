@@ -24,6 +24,7 @@ import db
 import himmel
 import meta
 import paket
+import redaktion
 from wirkung import link_basis
 
 STANDARD = {"an": False, "sprache": "en", "modus": "auto",
@@ -131,7 +132,9 @@ def text_fuer(post: dict, plattform: str) -> str:
         # auf Facebook ist der Link klickbar; lang= oeffnet Landingpage und App in der Sprache des Posts
         teile.append(f"{link_basis()}?q=p{post['id']}&lang={post.get('sprache') or 'en'}")
     if post.get("hashtags"):
-        teile.append(post["hashtags"].strip())
+        tags = post["hashtags"].split()
+        # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur die ersten drei
+        teile.append(" ".join(tags[:3] if plattform == "facebook" else tags))
     return "\n\n".join(t for t in teile if t)
 
 
@@ -168,8 +171,9 @@ def _freigegeben(post: dict, e: dict) -> tuple[bool, str]:
         return False, "gestoppt"
     if e["modus"] == "freigabe" and st not in ("freigegeben", "gepostet"):
         return False, "warte"
-    # Befund der Qualitaetspruefung: erst nach deiner Freigabe
-    if (post.get("meta") or {}).get("pruefung") and st not in ("freigegeben", "gepostet"):
+    # Ernster Befund der Qualitaetspruefung (heikle Versprechen, falsche Sprache, Link ...): erst nach deiner
+    # Freigabe. Kleinigkeiten (Laenge, Zahl der Hashtags) halten den Post nicht auf.
+    if redaktion.schwer((post.get("meta") or {}).get("pruefung") or []) and st not in ("freigegeben", "gepostet"):
         return False, "warte"
     return True, ""
 

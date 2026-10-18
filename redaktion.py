@@ -5,8 +5,8 @@ Redaktion: was der Tagesplan heute erzaehlt -- und ob ein Post gut genug zum Pos
    die Plattformen belohnen Speichern, Teilen und Kommentare). Grosse Himmels-
    ereignisse (Neu-/Vollmond, Rueckläufigkeit beginnt) haben Vorrang.
 2. Handlungsaufforderung: wechselt zwischen echten Funktionen der App.
-3. Qualitaetspruefung: Laenge, Hashtags, Sprache, heikle Versprechen. Posts mit Befund
-   gehen beim automatischen Posten erst raus, wenn du sie freigibst.
+3. Qualitaetspruefung: Laenge, Hashtags, Sprache, heikle Versprechen. Posts mit ernstem Befund
+   (siehe schwer()) gehen beim automatischen Posten erst raus, wenn du sie freigibst.
 4. Lernen: Punkte je Post aus Link-Besuchen, neuen Konten, Reichweite und Facebook-Reaktionen. Die besten
    Posts (auch aus anderen Sprachen) fliessen als Vorbild ein, dazu welche Formate am besten ankommen.
 5. Selbst-Tests: Jeder Tagesplan probiert einen Hook-Stil und eine Handlungsaufforderung aus. Was mehr
@@ -158,7 +158,7 @@ def pruefe_post(post: dict, sprache: str) -> list[str]:
 
 
 def schwer(befunde: list[str]) -> bool:
-    """Befunde, bei denen der Tagesplan einmal neu geschrieben wird."""
+    """Ernste Befunde: der Tagesplan schreibt einmal neu, und automatisch gepostet wird erst nach Freigabe."""
     return any(b.startswith(("Heikle", "Deutsche Wörter", "Enthält einen Link", "Reel ohne Hook", "Überschrift fehlt"))
                for b in befunde)
 

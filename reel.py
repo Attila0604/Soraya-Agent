@@ -6,8 +6,9 @@ Reels erscheinen nacheinander (Hook, Einblendungen), am Ende das Soraya-Zeichen 
 Schlusssatz und "Link in Bio". Die Texte stehen in der "sicheren Zone" (Instagram und
 TikTok legen unten Beschriftung und Knoepfe ueber das Video).
 
-Ton: eine stille Tonspur (manche Plattformen erwarten eine). Musik fuegst du beim
-Posten in Instagram/TikTok hinzu -- Trend-Sounds bringen dort mehr Reichweite.
+Ton: eine ruhige, selbst erzeugte Klangflaeche (weiche Akkorde, ein heller Glockenton bei
+jedem neuen Text). Sie ist eigens berechnet -- keine fremde Musik, keine Lizenzfragen. Auf
+Instagram/TikTok kannst du sie beim Posten durch einen Trend-Sound ersetzen.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from PIL import Image, ImageDraw
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-5"
+VERSION = "reel-6"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -176,6 +177,48 @@ def _sternschnuppe(bild: Image.Image, start: tuple[float, float], winkel: float,
     d.ellipse([kx - r, ky - r, kx + r, ky + r], fill=(255, 250, 230, int(255 * staerke)))
 
 
+# Akkordfolgen (Frequenzen in Hz), ruhig und etwas geheimnisvoll; je Post eine andere
+AKKORDE = [
+    [(220.0, 261.63, 329.63), (174.61, 220.0, 261.63), (196.0, 246.94, 293.66), (164.81, 196.0, 246.94)],
+    [(146.83, 220.0, 277.18), (164.81, 207.65, 246.94), (130.81, 196.0, 246.94), (146.83, 185.0, 220.0)],
+    [(196.0, 246.94, 293.66), (164.81, 207.65, 246.94), (174.61, 220.0, 261.63), (196.0, 233.08, 293.66)],
+]
+GLOCKE = [880.0, 987.77, 1174.66, 1318.51, 1567.98]   # pentatonisch, passt zu jedem Akkord
+
+
+def klang(dauer: float, einsaetze: list[float], seed: int = 1, rate: int = 48000) -> np.ndarray:
+    """Stereo-Klangflaeche (int16, Form [n, 2]): Akkorde mit weichem Ein-/Ausblenden, Glocke je Einsatz."""
+    n = int(dauer * rate)
+    t = np.arange(n, dtype=np.float32) / rate
+    folge = AKKORDE[seed % len(AKKORDE)]
+    links, rechts = np.zeros(n, np.float32), np.zeros(n, np.float32)
+    teil = dauer / len(folge)
+    for i, akkord in enumerate(folge):
+        a, b = max(0.0, i * teil - 1.2), min(dauer, (i + 1) * teil + 1.2)    # ueberlappend = weiche Wechsel
+        s, e = int(a * rate), int(b * rate)
+        lokal = t[s:e] - a
+        huelle = np.sin(np.pi * np.clip(lokal / (b - a), 0, 1)) ** 2
+        for k, f in enumerate(akkord):
+            for verstimmt, seite in ((0.997, 0), (1.003, 1)):              # leicht verstimmt = breiter Klang
+                ton = np.sin(2 * np.pi * f * verstimmt * lokal + k) + 0.25 * np.sin(2 * np.pi * f * 2 * verstimmt * lokal)
+                (links if seite == 0 else rechts)[s:e] += ton * huelle * 0.07
+    rnd = np.random.default_rng(seed)
+    for j, start in enumerate(einsaetze):
+        f = GLOCKE[int(rnd.integers(len(GLOCKE)))]
+        s = int(start * rate)
+        lokal = t[s:min(n, s + int(2.5 * rate))] - start
+        glocke = (np.sin(2 * np.pi * f * lokal) + 0.3 * np.sin(2 * np.pi * f * 2.76 * lokal)) * np.exp(-lokal * 2.2) * 0.09
+        schwenk = 0.35 if j % 2 else 0.65
+        links[s:s + len(lokal)] += glocke * (1 - schwenk) * 2
+        rechts[s:s + len(lokal)] += glocke * schwenk * 2
+    gesamt = np.stack([links, rechts], axis=1)
+    rampe = np.minimum(1, np.minimum(t / 1.2, (dauer - t) / 1.5))[:, None]   # sanft rein und raus
+    gesamt *= np.clip(rampe, 0, 1)
+    spitze = float(np.abs(gesamt).max()) or 1.0
+    gesamt *= 0.28 / spitze                                                 # leise: etwa -11 dBFS Spitze
+    return (gesamt * 32767).astype(np.int16)
+
+
 def zeitplan(zeilen: list[str]) -> tuple[list[tuple[float, float]], float, float]:
     """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden)."""
     t, plan = 0.0, []                     # Hook ab dem ersten Bild (Vorschaubild, erste Sekunde)
@@ -241,9 +284,12 @@ def erstelle(post: dict, ziel: str) -> dict:
     endkarte, end_pos = _zuschneiden(_endkarte(post))
 
     ffmpeg = ffmpeg_pfad()
+    ton = os.path.join(os.path.dirname(os.path.abspath(ziel)) or ".", f".klang-{os.getpid()}-{seed}.raw")
+    with open(ton, "wb") as f:
+        f.write(klang(dauer + 0.5, [max(0.0, s) for s, _ in plan] + [end_start], int(seed)).tobytes())
     befehl = [ffmpeg, "-y", "-loglevel", "error",
               "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-              "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+              "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", ton,
               "-shortest", "-map", "0:v", "-map", "1:a",
               "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-profile:v", "high",
               "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", ziel]
@@ -298,6 +344,11 @@ def erstelle(post: dict, ziel: str) -> dict:
     except Exception:
         proz.kill()
         raise
+    finally:
+        try:
+            os.remove(ton)
+        except OSError:
+            pass
     return {"sekunden": round(dauer, 1), "bilder": n}
 
 
