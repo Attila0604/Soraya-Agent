@@ -64,6 +64,31 @@ def hole_bild(post: dict, format: str | None = None) -> bytes:
     return daten
 
 
+def hole_folie(post: dict, nr: int) -> bytes:
+    """Bild nr des Karussells (1 = Titelbild = normales Feed-Bild), mit Zwischenspeicher."""
+    if nr <= 1:
+        return hole_bild(post, "feed")
+    art = f"folie{nr}"
+    fp = _fingerabdruck(post, art)
+    try:
+        daten = db.lade_medium(post["id"], art, fp)
+    except Exception:
+        daten = None
+    if daten:
+        return daten
+    daten = medien.als_bytes(medien.folie(post, nr))
+    try:
+        db.speichere_medium(post["id"], art, fp, "image/jpeg", daten)
+    except Exception as e:
+        print(f"[Medien] Folie nicht gespeichert: {e}", flush=True)
+    return daten
+
+
+def hole_karussell(post: dict) -> list[bytes]:
+    """Alle Bilder eines Feed-Posts (ohne Karussell: nur das Titelbild)."""
+    return [hole_folie(post, nr) for nr in range(1, medien.anzahl_bilder(post) + 1)]
+
+
 def vorschau(jpeg: bytes, breite: int = 300) -> bytes:
     from PIL import Image
     img = Image.open(io.BytesIO(jpeg))
@@ -146,9 +171,10 @@ LIES_MICH = """Soraya – Wochenpaket
 ====================
 
 Pro Tag ein Ordner, darin pro Sprache:
-  1 Feed-Post  -> Bild (.jpg) + Text (.txt)
-  2 Reel       -> Video (.mp4) + Text (.txt); Musik am besten in Instagram/TikTok
-                  hinzufügen (Trend-Sounds bringen mehr Reichweite)
+  1 Feed-Post  -> Bild (.jpg) + Text (.txt); als Karussell mehrere Bilder (_1, _2, ...),
+                  in dieser Reihenfolge hochladen
+  2 Reel       -> Video (.mp4, mit ruhiger Klangfläche) + Text (.txt); in Instagram/TikTok
+                  kannst du einen Trend-Sound darüberlegen
   3 Story      -> Bild (.jpg) + Text (.txt), z. B. mit Umfrage-Sticker
 
 So planst du die Woche in der Meta Business Suite (business.facebook.com):
@@ -178,6 +204,11 @@ def _paket_bauen(job: dict, posts: list[dict], von: date, bis: date) -> None:
             if p.get("art") == "reel" and job["mit_videos"]:
                 datei = f"{ordner}/{name}.mp4"
                 z.writestr(datei, _rendere_video(p), compress_type=zipfile.ZIP_STORED)
+            elif p.get("art") == "post" and medien.anzahl_bilder(p) > 1:
+                for i, daten in enumerate(hole_karussell(p), start=1):
+                    datei = f"{ordner}/{name}_{i}.jpg"
+                    z.writestr(datei, daten, compress_type=zipfile.ZIP_STORED)
+                datei = f"{ordner}/{name}_1.jpg"
             else:
                 datei = f"{ordner}/{name}.jpg"
                 z.writestr(datei, hole_bild(p), compress_type=zipfile.ZIP_STORED)

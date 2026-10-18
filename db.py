@@ -524,6 +524,29 @@ def loesche_tagesplan_entwuerfe(datum: date, sprache: str) -> int:
     return anzahl
 
 
+def letzte_anfaenge(sprache: str, tage: int = 7) -> list[str]:
+    """Erste Zeilen der Feed-Posts und Reels der letzten Tage (gegen gleiche Anfaenge)."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select split_part(trim(text), E'\\n', 1) as anfang from soraya_posts where quelle = 'himmel' "
+            "and sprache = %s and art in ('post', 'reel') and text is not null "
+            "and geplant_fuer >= current_date - %s order by geplant_fuer desc limit 14;",
+            (sprache, tage),
+        )
+        return [z["anfang"][:140] for z in cur.fetchall() if z["anfang"]]
+
+
+def zaehle_format(sprache: str, thema: str, vor) -> int:
+    """Wie viele Tage dieses Format in dieser Sprache schon hatte (fuer die Serien-Nummer)."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select count(distinct geplant_fuer) as n from soraya_posts where quelle = 'himmel' and sprache = %s "
+            "and meta->>'thema' = %s and geplant_fuer < %s;",
+            (sprache, thema, vor),
+        )
+        return int(cur.fetchone()["n"] or 0)
+
+
 def letzte_titel(sprache: str, tage: int = 7) -> list[str]:
     """Bild-Ueberschriften der letzten Tage, damit sich der Tagesplan nicht wiederholt."""
     with _verbindung() as conn, conn.cursor() as cur:

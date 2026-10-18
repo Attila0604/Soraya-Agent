@@ -47,7 +47,11 @@ Was gute Posts ausmacht:
   aus dem Alltag (Gespräch, Nachricht, Entscheidung, Schlaf, Arbeit, Beziehung).
 - Lebendig statt Lexikon: wechsle kurze und längere Sätze, schreib wie eine kluge Freundin, die etwas
   Spannendes erzählt – mit einem konkreten Moment, den man vor sich sieht, und einer kleinen Wendung.
-- Kurze Absätze, gut lesbar am Handy. Höchstens 2 Emojis pro Text, gezielt gesetzt.
+- Aufbau des Textes: Die erste Zeile (Hook) steht allein, dann eine Leerzeile. Danach kurze Absätze
+  mit höchstens 2–3 Sätzen, jeweils durch eine Leerzeile getrennt – gut lesbar am Handy.
+  Höchstens 2 Emojis pro Text, gezielt gesetzt.
+- Nicht ähnlich beginnen wie an den letzten Tagen (Liste der letzten Anfänge unten), keine
+  Lieblingswörter wiederholen.
 - Die Frage am Ende ist leicht zu beantworten (ein Wort, ein Emoji oder das eigene Sternzeichen) –
   so kommentieren mehr Menschen.
 - Ein Post – eine Botschaft. Halte dich an das heutige Format und den heutigen Hook-Stil.
@@ -63,6 +67,10 @@ Liefere genau drei Einträge, in dieser Reihenfolge:
    die heutige Handlungsaufforderung mit „{link_in_bio}“. "bild_punkte": wenn der Post eine Liste
    ist (z. B. drei Sternzeichen, drei Schritte), bis zu 3 sehr kurze Punkte fürs Bild (je höchstens
    5 Wörter), sonst [].
+   "folien": das Karussell zum Durchwischen (nach dem Titelbild): genau 3 Folien, die den Post in
+   Schritten erzählen – je "titel" (höchstens 6 Wörter; bei Sternzeichen der Name des Zeichens) und
+   "text" (höchstens 22 Wörter, ein konkreter Gedanke). Jede Folie muss allein verständlich und
+   wertvoll sein; die letzte macht neugierig auf das persönliche Horoskop.
 2. art "reel", platform "tiktok": Kurzvideo (12-18 Sekunden, Text-Video ohne Sprecher).
    "skript": "hook" (erste Einblendung, höchstens 8 Wörter, stoppt das Scrollen),
    "einblendungen" (3 Texte, je höchstens 8 Wörter, erzählen die Botschaft in Schritten mit
@@ -81,7 +89,8 @@ Für jeden Eintrag:
 - "untertitel": eine Zeile unter der Überschrift, höchstens 10 Wörter.
 - "hashtags": 5 bis 8 Hashtags in der Sprache des Posts, mit #: 2 große (z. B. Astrologie),
   2-3 zum heutigen Thema bzw. Sternzeichen, 1-2 kleine Nischen-Hashtags. Story: 1-3 Hashtags.
-- Bei "post" und "story" bleibt "skript" leer: hook "", szenen [], einblendungen [], schluss ""."""
+- Bei "post" und "story" bleibt "skript" leer: hook "", szenen [], einblendungen [], schluss "".
+- Bei "reel" und "story" ist "folien" []."""
 
 _SKRIPT = {
     "type": "object",
@@ -111,8 +120,13 @@ SCHEMA = {
                     "hashtags": {"type": "array", "items": {"type": "string"}},
                     "bild_punkte": {"type": "array", "items": {"type": "string"}},
                     "skript": _SKRIPT,
+                    "folien": {"type": "array", "items": {
+                        "type": "object",
+                        "properties": {"titel": {"type": "string"}, "text": {"type": "string"}},
+                        "required": ["titel", "text"], "additionalProperties": False}},
                 },
-                "required": ["art", "platform", "titel", "untertitel", "text", "hashtags", "bild_punkte", "skript"],
+                "required": ["art", "platform", "titel", "untertitel", "text", "hashtags", "bild_punkte", "skript",
+                             "folien"],
                 "additionalProperties": False,
             },
         },
@@ -221,7 +235,7 @@ def zielgruppen_text(zeile: dict | None) -> str:
 
 
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
-           vorbilder: list[str], erkenntnis: str = "") -> str:
+           vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None) -> str:
     profil = zielgruppen_text(zielgruppe)
     return (
         "Himmelsdaten für den Tag des Posts (bereits in der Zielsprache benannt):\n"
@@ -233,6 +247,8 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
         + (f"{erkenntnis}\n\n" if erkenntnis else "")
         + "Überschriften der letzten Tage (nicht wiederholen):\n"
         + ("\n".join(f"- {t}" for t in bisherige) if bisherige else "- (noch keine)")
+        + ("\n\nAnfänge (erste Zeilen) der letzten Tage – nicht ähnlich beginnen:\n"
+           + "\n".join(f"- {a}" for a in anfaenge) if anfaenge else "")
         + f"\n\n{sprach_anweisung(sprache)}"
     )
 
@@ -242,23 +258,27 @@ def _aufbereiten(daten: dict, sprache: str) -> list[dict]:
     for p in daten.get("posts", [])[:3]:
         skript = p.get("skript") or {}
         punkte = [x.strip() for x in (p.get("bild_punkte") or []) if x and x.strip()][:3]
+        folien = [{"titel": str(f.get("titel") or "").strip()[:80], "text": str(f.get("text") or "").strip()[:260]}
+                  for f in (p.get("folien") or []) if str(f.get("titel") or f.get("text") or "").strip()][:4]
         posts.append({
-            **{k: v for k, v in p.items() if k != "bild_punkte"},
+            **{k: v for k, v in p.items() if k not in ("bild_punkte", "folien")},
             "sprache": sprache,
             "skript": skript if p.get("art") == "reel" and (skript.get("hook") or skript.get("szenen")) else None,
             "_bild_punkte": punkte if p.get("art") == "post" else [],
+            "_folien": folien if p.get("art") == "post" and len(folien) >= 2 else [],
         })
     return posts
 
 
 def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None = None,
-                   thema: dict | None = None, vorbilder: list[str] | None = None, erkenntnis: str = "") -> list[dict]:
+                   thema: dict | None = None, vorbilder: list[str] | None = None, erkenntnis: str = "",
+                   anfaenge: list[str] | None = None) -> list[dict]:
     """Ein Claude-Aufruf: die drei Eintraege des Tages in einer Sprache. Bei schweren Befunden
     der Qualitaetspruefung (z. B. falsche Sprache, heikle Versprechen) genau ein Korrekturdurchgang."""
     tag = date.fromisoformat(info["datum"]) if info.get("datum") else himmel.heute()
     thema = thema or redaktion.wochenthema(tag, info)
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
-    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis)
+    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge)
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache)
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
@@ -308,7 +328,16 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
         redaktion.selbsttest(thema, bewertet, random.Random(f"{tag.isoformat()}-{sprache}"))
         vorbilder = redaktion.gut_angekommen(db.lade_post, sprache, bewertet=bewertet)
         erkenntnis = redaktion.erkenntnis_text(redaktion.erkenntnisse(bewertet))
-        posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder, erkenntnis)
+        try:
+            anfaenge = db.letzte_anfaenge(sprache)
+        except Exception:
+            anfaenge = []
+        posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder, erkenntnis,
+                               anfaenge)
+        try:   # Serien-Nummer: der wievielte Post dieses Formats in dieser Sprache (z. B. "Ritual · Folge 12")
+            folge = None if thema["name"].startswith("Großes Ereignis") else db.zaehle_format(sprache, thema["name"], tag) + 1
+        except Exception:
+            folge = None
         gespeichert = []
         for p in posts:
             meta = himmel.bild_meta(info) | {"thema": p.pop("_thema"), "pruefung": p.pop("_pruefung"),
@@ -317,6 +346,11 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             punkte = p.pop("_bild_punkte", [])
             if punkte:
                 meta["bild_punkte"] = punkte
+            folien = p.pop("_folien", [])
+            if folien:
+                meta["folien"] = folien
+            if folge:
+                meta["folge"] = folge
             if zielgruppe:
                 meta["zielgruppe"] = zielgruppe["bereich"]
             gespeichert += db.speichere_posts([p], quelle="himmel", geplant_fuer=tag, meta=meta)

@@ -65,20 +65,32 @@ _THEMA_AUFFORDERUNG = {0: "horoskop", 1: "mondzeichen", 2: "partner", 3: "mondze
 
 def wochenthema(tag: date, info: dict) -> dict:
     """{"name", "auftrag", "aufforderung", "anlass"} -- grosse Ereignisse haben Vorrang."""
+    import anlaesse
     thema = dict(WOCHENTHEMEN[tag.weekday()])
-    anlass = ""
+    besondere = anlaesse.anlaesse(tag, info)
+    anlass, auftrag = "", ""
     for name, schluessel in (("Neumond", "neumond"), ("Vollmond", "vollmond")):
         e = info.get(schluessel)
         if e and 0 <= e.get("in_tagen", 99) <= 1:
             anlass = f"{name} {'heute' if e['in_tagen'] <= 0 else 'morgen'}"
+            vm = next((b for b in besondere if b.get("vollmond")), None) if schluessel == "vollmond" else None
+            if vm:
+                anlass += f" – {vm['name'].split(' ', 1)[1]}"
+                auftrag = vm["auftrag"]
     if not anlass:
         for r in info.get("bald_ruecklaeufig") or []:
             if r.get("ab") and r["ab"] in (info.get("datum_kurz"),):
                 anlass = f"{r['planet']} wird heute rückläufig"
+    tag_anlass = next((b for b in besondere if b["wann"] == "heute" and not b.get("vollmond")), None)
+    if not anlass and tag_anlass:          # Saisonbeginn oder Feiertag, wenn der Mond nichts Grosses macht
+        anlass, auftrag = tag_anlass["name"], tag_anlass["auftrag"]
     if anlass:
         thema = {"name": f"Großes Ereignis: {anlass}",
                  "auftrag": f"Heute ist das Ereignis das Hauptthema: {anlass}. Was es bedeutet, wie man es nutzt, "
-                            f"worauf man achten sollte – konkret und alltagsnah."}
+                            f"worauf man achten sollte – konkret und alltagsnah." + (f" {auftrag}" if auftrag else "")}
+    # was sonst noch ansteht (z. B. "morgen beginnt die Skorpion-Saison") darf erwaehnt werden
+    thema["hinweise"] = [f"{b['name']} ({b['wann']})" for b in besondere
+                         if b["name"] not in anlass and not (b.get("vollmond") and "Vollmond" in anlass)]
     key = _THEMA_AUFFORDERUNG[tag.weekday()]
     thema["aufforderung"] = next(a for a in AUFFORDERUNGEN if a["schluessel"] == key)
     thema["anlass"] = anlass
@@ -91,6 +103,8 @@ def thema_text(thema: dict, link_in_bio: str) -> str:
             f"{thema['aufforderung']['auftrag']}")
     if thema.get("hook_stil"):
         text += f"\nHook-Stil heute (für Feed-Post und Reel): {thema['hook_stil']['auftrag']}"
+    if thema.get("hinweise"):
+        text += "\nAußerdem steht an (darf als kurzer Ausblick erwähnt werden): " + "; ".join(thema["hinweise"])
     return text
 
 
@@ -123,6 +137,9 @@ def pruefe_post(post: dict, sprache: str) -> list[str]:
         befunde.append("Überschrift zu lang (max. 8 Wörter)")
     if _woerter(post.get("untertitel")) > 14:
         befunde.append("Unterzeile zu lang")
+    erste = re.split(r"(?<=[.!?…])\s", (post.get("text") or "").strip().split("\n", 1)[0], maxsplit=1)[0]
+    if art in ("post", "reel") and _woerter(erste) > 22:
+        befunde.append("Erste Zeile zu lang (der Hook sollte kurz sein)")
     lo, hi = _GRENZEN.get(art, (1, 300))
     n = _woerter(post.get("text"))
     if n < lo:
@@ -262,6 +279,33 @@ def gut_angekommen(lade_post, sprache: str, statistik=None, min_punkte: int = 6,
     return zeilen
 
 
+def _art_stunde(p: dict) -> str | None:
+    """"post 12" = Feed-Post, gepostet zwischen 12 und 13 Uhr (Wiener Zeit)."""
+    g = p.get("gepostet")
+    if not g or not hasattr(g, "astimezone"):
+        return None
+    from himmel import WIEN
+    return f"{p.get('art') or 'post'} {g.astimezone(WIEN).hour}"
+
+
+def zeit_vorschlaege(erk: dict, min_posts: int = 3) -> list[dict]:
+    """Je Art: beste Uhrzeit, wenn mindestens zwei Uhrzeiten mit je min_posts gemessenen Posts verglichen
+    werden koennen (sonst leer). [{"art", "stunde", "schnitt", "statt", "statt_schnitt"}]"""
+    je_art: dict = {}
+    for z in erk.get("zeiten") or []:
+        if z["posts"] >= min_posts:
+            art, stunde = z["name"].rsplit(" ", 1)
+            je_art.setdefault(art, []).append({**z, "stunde": int(stunde)})
+    out = []
+    for art, liste in je_art.items():
+        if len(liste) < 2:
+            continue
+        liste.sort(key=lambda z: z["schnitt"], reverse=True)
+        out.append({"art": art, "stunde": liste[0]["stunde"], "schnitt": liste[0]["schnitt"],
+                    "statt": liste[-1]["stunde"], "statt_schnitt": liste[-1]["schnitt"]})
+    return out
+
+
 def erkenntnisse(bewertet: list[dict], min_posts: int = 2) -> dict:
     """Durchschnittliche Punkte je Format und je Art (Post/Reel/Story) -- was kommt an, was weniger?"""
     def gruppen(schluessel):
@@ -275,6 +319,7 @@ def erkenntnisse(bewertet: list[dict], min_posts: int = 2) -> dict:
     return {"formate": gruppen(lambda p: (p.get("meta") or {}).get("thema")),
             "arten": gruppen(lambda p: p.get("art")),
             "sprachen": gruppen(lambda p: p.get("sprache")),
+            "zeiten": gruppen(_art_stunde),
             "stile": gruppen(lambda p: HOOK_NAMEN.get((p.get("meta") or {}).get("hook_stil"))),
             "aufforderungen": gruppen(lambda p: AUFFORDERUNG_NAMEN.get((p.get("meta") or {}).get("aufforderung")))}
 
