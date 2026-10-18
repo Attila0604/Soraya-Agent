@@ -536,7 +536,8 @@ def wirkung_facebook(tage: int = 30):
         beitraege = meta.facebook_reaktionen(db.lade_gepostete("facebook", seit))
         for z in beitraege:
             if "fehler" not in z:
-                db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"])
+                db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"],
+                                    z.get("reichweite"))
         return {"verbunden": True, "beitraege": beitraege}
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))

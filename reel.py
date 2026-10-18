@@ -25,7 +25,7 @@ from PIL import Image, ImageDraw
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-4"
+VERSION = "reel-5"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -50,12 +50,12 @@ def texte(post: dict) -> tuple[list[str], str]:
     sk = post.get("skript") or {}
     zeilen = []
     for t in [sk.get("hook")] + list(sk.get("einblendungen") or []):
-        t = (t or "").strip()
+        t = medien.ohne_emojis(t)
         if t and t not in zeilen:
             zeilen.append(t)
     if len(zeilen) < 2:   # aeltere Reels ohne Einblendungen: Ueberschrift und Unterzeile
         for t in (post.get("titel"), post.get("untertitel")):
-            t = (t or "").strip()
+            t = medien.ohne_emojis(t)
             if t and t not in zeilen:
                 zeilen.append(t)
     if not zeilen:
@@ -158,6 +158,24 @@ def _endkarte(post: dict) -> Image.Image:
     return ebene.resize((W, H), Image.LANCZOS)
 
 
+def _sternschnuppe(bild: Image.Image, start: tuple[float, float], winkel: float, fortschritt: float) -> None:
+    """Eine Sternschnuppe: heller Kopf mit goldenem Schweif, fortschritt 0..1 (blendet ein und aus)."""
+    if not 0 < fortschritt < 1:
+        return
+    d = ImageDraw.Draw(bild, "RGBA")
+    weg, schweif = 520, 190
+    dx, dy = math.cos(winkel), math.sin(winkel)
+    kx, ky = start[0] + dx * weg * fortschritt, start[1] + dy * weg * fortschritt
+    staerke = math.sin(math.pi * fortschritt)
+    for i in range(14):
+        a, b = i / 14, (i + 1) / 14
+        alpha = int(200 * staerke * (1 - a) ** 1.6)
+        d.line([(kx - dx * schweif * a, ky - dy * schweif * a), (kx - dx * schweif * b, ky - dy * schweif * b)],
+               fill=(255, 236, 190, alpha), width=max(1, int(4 * (1 - a))))
+    r = 3.2
+    d.ellipse([kx - r, ky - r, kx + r, ky + r], fill=(255, 250, 230, int(255 * staerke)))
+
+
 def zeitplan(zeilen: list[str]) -> tuple[list[tuple[float, float]], float, float]:
     """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden)."""
     t, plan = 0.0, []                     # Hook ab dem ersten Bild (Vorschaubild, erste Sekunde)
@@ -189,9 +207,14 @@ def erstelle(post: dict, ziel: str) -> dict:
     sterne = medien.stern_liste(W, H, seed, True)
     ruhig = [st for st in sterne if st[3] != (233, 207, 156)]
     funkelnd = [st for st in sterne if st[3] == (233, 207, 156)]
-    d = ImageDraw.Draw(grund, "RGBA")
+    # ruhige Sterne auf eigener, etwas hoeherer Ebene: sie wandern waehrend des Videos langsam nach oben
+    DRIFT = 90
+    sternebene = Image.new("RGBA", (W, H + DRIFT), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sternebene, "RGBA")
     for x, y, r, farbe, a in ruhig:
-        d.ellipse([x - r, y - r, x + r, y + r], fill=farbe + (int(a * 255),))
+        for yy in (y, y + H) if y < DRIFT else (y,):        # oben wiederholen, damit unten nichts fehlt
+            d.ellipse([x - r, yy - r, x + r, yy + r], fill=farbe + (int(a * 255),))
+    schnuppen = [(1.4, (W * 0.18, 260), math.radians(28)), (max(4.0, end_start - 3.0), (W * 0.62, 180), math.radians(152))]
     oben = Image.new("RGBA", (W, H), (0, 0, 0, 0))                 # kleines Zeichen + Datumszeile
     z = medien.portal(2 * 110)
     s = 2 * 110 / 312
@@ -229,10 +252,15 @@ def erstelle(post: dict, ziel: str) -> dict:
         for i in range(n):
             t = i / FPS
             bild = grund.copy()
+            versatz = int(DRIFT * t / dauer)
+            bild.paste(sternebene.crop((0, versatz, W, versatz + H)), (0, 0), sternebene.crop((0, versatz, W, versatz + H)))
             dd = ImageDraw.Draw(bild, "RGBA")
             for k, (x, y, rr, farbe, a) in enumerate(funkelnd):      # goldene Sterne funkeln
                 f = 0.55 + 0.45 * math.sin(t * (1.3 + (k % 5) * 0.37) + k * 1.7)
-                dd.ellipse([x - rr, y - rr, x + rr, y + rr], fill=farbe + (int(a * f * 255),))
+                yy = (y - versatz * 1.6) % H                         # naeher, daher etwas schneller
+                dd.ellipse([x - rr, yy - rr, x + rr, yy + rr], fill=farbe + (int(a * f * 255),))
+            for start_t, pos, winkel in schnuppen:
+                _sternschnuppe(bild, pos, winkel, (t - start_t) / 0.9)
             sichtbar_ende = 1 - _weich((t - end_start) / 0.8)      # Mond und Texte gehen vor der Endkarte
             if sichtbar_ende > 0:
                 medien.aufkleben(bild, _mit_alpha(oben, sichtbar_ende), oben_pos)
@@ -251,8 +279,11 @@ def erstelle(post: dict, ziel: str) -> dict:
                     raus = 1 - _weich((t - stopp) / AUSBLENDEN)
                     if raus > 0.003:
                         k = _wort_fuer_wort(karte, kaesten, fortschritt)
+                        # sanft von unten herein, beim Ausblenden ein wenig nach oben
+                        hub = 0 if start <= 0 else 26 * (1 - _weich((t - start) / 0.6))
+                        hub -= 18 * (1 - raus)
                         medien.aufkleben(bild, _mit_alpha(k, raus),
-                                         (W / 2 - karte.width / 2, text_mitte - karte.height / 2))
+                                         (W / 2 - karte.width / 2, text_mitte - karte.height / 2 + hub))
             if t >= end_start:
                 medien.aufkleben(bild, _mit_alpha(endkarte, _weich((t - end_start - 0.3) / 0.9)), end_pos)
             schwarz = 1.0          # keine Schwarzblende: das erste Bild zeigt gleich den Hook

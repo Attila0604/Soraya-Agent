@@ -210,6 +210,8 @@
   .lernhinweis{margin:14px 0 0;padding:10px 14px;border-left:2px solid var(--gold);background:rgba(201,168,106,.06);border-radius:0 10px 10px 0;font-size:13.5px}
   .kpis.klein3{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}
   .kpis.klein3 .kpi{min-width:0;padding:12px}
+  .kpis.klein3.vier{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media (max-width:520px){.kpis.klein3.vier{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .kpis.klein3 .l{font-size:10.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .termine a,.testpost a.fertig,#fbPanel a.fertig{color:var(--champagne);text-decoration:none;border-bottom:1px solid rgba(201,168,106,.5)}
   .testpost a.fertig{font-size:13px;padding:6px 4px}
@@ -670,6 +672,7 @@ function karte(p, {datum = true} = {}){
       ${p.quelle === 'himmel' ? '<span class="tag leise">Himmel</span>' : ''}
       ${p.meta && p.meta.zielgruppe ? `<span class="tag leise" title="Zielgruppe, für die geschrieben wurde">Für: ${esc(p.meta.zielgruppe)}</span>` : ''}
       ${p.meta && p.meta.thema ? `<span class="tag leise" title="Format des Tages">${esc(p.meta.thema)}</span>` : ''}
+      ${p.meta && HOOK_STIL[p.meta.hook_stil] && p.art !== 'story' ? `<span class="tag leise" title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Test: ${esc(HOOK_STIL[p.meta.hook_stil])}</span>` : ''}
       <span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span>
     </div>
     ${p.titel ? `<p class="titel">${esc(p.titel)}</p>` : ''}
@@ -1390,23 +1393,30 @@ function zeigeWirkung(){
   ladeFacebookWirkung().then(ladeLernen);
 }
 // Was der Tagesplan aus der Wirkung lernt (Punkte aus Besuchen, neuen Konten, Reaktionen)
+const HOOK_STIL = {frage: 'Direkte Frage', aussage: 'Mutige Aussage', geheimnis: 'Neugier-Lücke', szene: 'Alltags-Szene',
+  zeichen: 'Sternzeichen direkt', zahl: 'Zahl & Liste'};
 async function ladeLernen(){
   const box = $('lernPanel'); if(!box) return;
   let d; try{ d = await api('/wirkung/lernen'); }catch(e){ box.innerHTML = ''; return; }
   const f = (d.erkenntnisse || {}).formate || [], s = (d.erkenntnisse || {}).sprachen || [], a = (d.erkenntnisse || {}).arten || [];
+  const st = (d.erkenntnisse || {}).stile || [], au = (d.erkenntnisse || {}).aufforderungen || [];
   const balken = (liste, name) => { const max = Math.max(1, ...liste.map(x => x.schnitt));
     return liste.map(x => `<div class="stufe"><span class="name">${esc(name(x.name))}</span><div class="spur">
       <div class="balken" style="width:${(x.schnitt / max * 82).toFixed(1)}%"></div>
       <span class="wert" style="left:calc(${(x.schnitt / max * 82).toFixed(1)}% + 8px)">Ø ${x.schnitt}<small>${x.posts} Posts</small></span></div></div>`).join(''); };
   box.innerHTML = `<div class="panel trichter"><h2>Was Soraya daraus lernt</h2>
-    <p class="hint">Jeder Post bekommt Punkte: neues Konto 15, geteilt 4, Kommentar 3, Besuch über den Link 2, Gefällt mir 1.
-      Die besten Posts (auch aus anderen Sprachen) und die stärksten Formate fließen in jeden neuen Tagesplan ein.</p>
+    <p class="hint">Jeder Post bekommt Punkte: neues Konto 15, geteilt 4, Kommentar 3, Besuch über den Link 2, Gefällt mir 1,
+      je 100 erreichte Menschen 1. Die besten Posts (auch aus anderen Sprachen) und die stärksten Formate fließen in jeden neuen Tagesplan ein.</p>
+    <p class="hint"><b>Selbst-Tests:</b> Jeder Tagesplan probiert einen anderen Anfang (z. B. Frage, Alltags-Szene, Neugier-Lücke) und eine
+      andere Einladung in die App. Sobald je Variante 3 Posts gemessen sind, nimmt Soraya meistens die beste – und probiert ab und zu weiter Neues.</p>
     ${d.beste && d.beste.length ? `<h3 class="unter">Am besten angekommen</h3><ol class="beste">${d.beste.map(b => `<li><b>${esc(b.titel || 'Post ' + b.id)}</b>
         <span class="meta">${esc(ART[b.art] || 'Post')} · ${esc((b.sprache || '').toUpperCase())}${b.format ? ' · ' + esc(b.format) : ''} · ${b.punkte} Punkte (${esc(b.details)})</span></li>`).join('')}</ol>`
       : '<p class="meta">Noch keine Wirkung gemessen. Sobald Posts Besucher oder Reaktionen bekommen, lernt der Tagesplan daraus.</p>'}
     ${f.length >= 2 ? `<h3 class="unter">Formate im Vergleich</h3>${balken(f, n => n)}` : ''}
     ${s.length >= 2 ? `<h3 class="unter">Sprachen im Vergleich</h3>${balken(s, n => n.toUpperCase())}` : ''}
     ${a.length >= 2 ? `<h3 class="unter">Story, Feed-Post, Reel</h3>${balken(a, n => ART[n] || n)}` : ''}
+    ${st.length >= 2 ? `<h3 class="unter">Anfänge im Test (Punkte)</h3>${balken(st, n => n)}` : ''}
+    ${au.length >= 2 ? `<h3 class="unter">Einladungen in die App (Besuche &amp; Konten)</h3>${balken(au, n => n)}` : ''}
     ${d.hinweis ? `<p class="lernhinweis">✦ ${esc(d.hinweis)}</p>` : f.length < 2 && d.beste && d.beste.length ? '<p class="meta">Für den Vergleich der Formate braucht es mindestens je 2 gemessene Posts in zwei Formaten.</p>' : ''}
   </div>`;
 }
@@ -1417,15 +1427,18 @@ async function ladeFacebookWirkung(){
   if(!r.verbunden){ box.innerHTML = ''; return; }
   const b = r.beitraege || [];
   const summe = (k) => b.reduce((n, x) => n + (x[k] || 0), 0);
+  const mitReichweite = b.some(x => x.reichweite != null);
   box.innerHTML = `<div class="panel"><h2>Auf Facebook</h2>
     <p class="hint">Reaktionen auf deine geposteten Beiträge im Zeitraum (live von Facebook).</p>
-    ${b.length ? `<div class="kpis klein3">
+    ${b.length ? `<div class="kpis klein3${mitReichweite ? ' vier' : ''}">
         <div class="kpi"><div class="l">Gefällt mir</div><div class="v">${zahl(summe('reaktionen'))}</div></div>
         <div class="kpi"><div class="l">Kommentare</div><div class="v">${zahl(summe('kommentare'))}</div></div>
-        <div class="kpi"><div class="l">Geteilt</div><div class="v">${zahl(summe('geteilt'))}</div></div></div>
-      <div class="tabwrap"><table class="tabelle herkunft"><thead><tr><th scope="col">Beitrag</th><th scope="col">👍</th><th scope="col">💬</th><th scope="col">↗</th><th scope="col"></th></tr></thead><tbody>
+        <div class="kpi"><div class="l">Geteilt</div><div class="v">${zahl(summe('geteilt'))}</div></div>
+        ${mitReichweite ? `<div class="kpi"><div class="l">Erreicht</div><div class="v">${zahl(summe('reichweite'))}</div></div>` : ''}</div>
+      ${mitReichweite ? '' : '<p class="meta">Reichweite (wie viele Menschen es gesehen haben): dafür braucht die Meta-App zusätzlich das Recht „read_insights“. Ohne es lernt Soraya aus Reaktionen und Besuchen.</p>'}
+      <div class="tabwrap"><table class="tabelle herkunft"><thead><tr><th scope="col">Beitrag</th><th scope="col">👍</th><th scope="col">💬</th><th scope="col">↗</th>${mitReichweite ? '<th scope="col">👁</th>' : ''}<th scope="col"></th></tr></thead><tbody>
       ${b.map(x => `<tr><td style="white-space:normal"><b>${esc(x.titel || 'Post ' + x.post_id)}</b><br><span class="meta">${esc(ART[x.art] || 'Post')}${x.gepostet ? ' · ' + esc(kurzIso(String(x.gepostet).slice(0, 10))) : ''}</span></td>
-        ${x.fehler ? `<td colspan="3" class="meta">nicht abrufbar</td>` : `<td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>`}
+        ${x.fehler ? `<td colspan="${mitReichweite ? 4 : 3}" class="meta">nicht abrufbar</td>` : `<td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>${mitReichweite ? `<td>${x.reichweite != null ? zahl(x.reichweite) : '–'}</td>` : ''}`}
         <td>${x.url ? `<a class="fertig" href="${esc(x.url)}" target="_blank" rel="noopener">ansehen</a>` : ''}</td></tr>`).join('')}</tbody></table></div>`
       : '<p class="meta">Noch nichts auf Facebook gepostet.</p>'}</div>`;
 }

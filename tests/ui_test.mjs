@@ -52,7 +52,7 @@ for (let i = 0; i < 20 && !(await page.textContent("#heuteListe .card:first-chil
 check("Karte: Zahlen über den Post-Link", /34 Besuche.*9 Schnellstarts.*3 × Registrieren.*2 neue Konten/.test(await page.textContent("#heuteListe .card:first-child .wirk")), await page.textContent("#heuteListe .card:first-child .wirk"));
 check("Karte ohne Link-Daten: keine leere Zeile", !(await page.isVisible("#heuteListe .card:nth-child(2) .wirk")), "");
 await page.click('#heuteListe .card:first-child [data-aktion="link"]'); await wait(300);
-check("Karte: Link kopieren", (await page.evaluate(() => navigator.clipboard.readText())) === "https://www.sorayaluxuryastroguide.com/?q=p1", await page.evaluate(() => navigator.clipboard.readText()));
+check("Karte: Link kopieren", (await page.evaluate(() => navigator.clipboard.readText())) === "https://www.sorayaluxuryastroguide.com/?q=p1&lang=de", await page.evaluate(() => navigator.clipboard.readText()));
 check("Cockpit: drei Kacheln mit Stand", (await page.$$("#cockpit .kachel")).length === 3 && (await page.textContent("#cockpit")).includes("Posten aus"), await page.textContent("#cockpit"));
 await page.waitForFunction(() => { const i = document.querySelector("#heuteListe .vorschau img"); return i && i.complete && i.naturalWidth === 300; }, null, { timeout: 30000 }).catch(() => {});
 check("Karte: Vorschaubild vom Server (300 px)", await page.$eval("#heuteListe .vorschau img", (i) => i.naturalWidth) === 300, "");

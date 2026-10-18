@@ -235,7 +235,8 @@ def aktualisiere_zahlen(erzwingen: bool = False) -> int:
     n = 0
     for z in meta.facebook_reaktionen(eintraege):
         if "fehler" not in z:
-            db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"])
+            db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"],
+                                z.get("reichweite"))
             n += 1
     return n
 
