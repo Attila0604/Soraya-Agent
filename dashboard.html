@@ -227,6 +227,9 @@
   .pruefhinweis{margin:10px 0;border:1px solid rgba(230,180,80,.45);background:rgba(230,180,80,.08);border-radius:10px;
                 padding:9px 12px;font-size:13px;color:#F3E7C9}
   .pruefhinweis b{color:#FFE2A6}
+  details.folien{margin:8px 0;font-size:13px;color:var(--mist-dim)}
+  details.folien summary{cursor:pointer;color:var(--champagne)}
+  details.folien ol{margin:6px 0 0;padding-left:20px} details.folien li{margin:3px 0}
   .pruefhinweis.leicht{border-color:var(--line);background:rgba(255,255,255,.03)}
   .pruefhinweis.leicht b{color:var(--champagne)}
   .pruefhinweis span{display:block;color:var(--mist-dim);font-size:12px;margin-top:3px}
@@ -571,6 +574,7 @@
         <div><label for="zPost">Feed-Post</label><input type="time" id="zPost"></div>
         <div><label for="zReel">Reel</label><input type="time" id="zReel"></div>
       </div>
+      <p class="lernhinweis" id="zeitTipp" hidden></p>
       <div class="chips" style="margin-top:12px">
         <label class="imtp"><input type="checkbox" id="plFacebook"> Facebook-Seite</label>
         <label class="imtp"><input type="checkbox" id="plInstagram"> Instagram</label>
@@ -685,7 +689,7 @@ function karte(p, {datum = true} = {}){
       <span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
       ${p.quelle === 'himmel' ? '<span class="tag leise nebensache">Himmel</span>' : ''}
       ${p.meta && p.meta.zielgruppe ? `<span class="tag leise" title="Zielgruppe, für die geschrieben wurde">Für: ${esc(p.meta.zielgruppe)}</span>` : ''}
-      ${p.meta && p.meta.thema ? `<span class="tag leise" title="Format des Tages">${esc(p.meta.thema)}</span>` : ''}
+      ${p.meta && p.meta.thema ? `<span class="tag leise" title="Format des Tages">${esc(p.meta.thema)}${p.meta.folge ? ' · Folge ' + esc(p.meta.folge) : ''}</span>` : ''}
       ${p.meta && HOOK_STIL[p.meta.hook_stil] && p.art !== 'story' ? `<span class="tag leise" title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Test: ${esc(HOOK_STIL[p.meta.hook_stil])}</span>` : ''}
       <span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span>
     </div>
@@ -698,6 +702,8 @@ function karte(p, {datum = true} = {}){
       : `<div class="pruefhinweis leicht" role="note"><b>Hinweis:</b> ${esc(p.meta.pruefung.join(' · '))}
       <span>Nur eine Kleinigkeit – geht trotzdem automatisch raus.</span></div>`) : ''}
     ${p.meta && (p.meta.bild_punkte || []).length ? `<p class="tags">Im Bild: ${esc(p.meta.bild_punkte.join(' · '))}</p>` : ''}
+    ${folienAnzahl(p) > 1 ? `<details class="folien"><summary>Karussell: ${folienAnzahl(p)} Bilder zum Durchwischen</summary><ol>${p.meta.folien.map(f =>
+      `<li><b>${esc(f.titel)}</b> – ${esc(f.text)}</li>`).join('')}<li><b>Schluss:</b> Einladung in die App</li></ol></details>` : ''}
     ${skript}
     ${p.hashtags ? `<p class="tags">${esc(p.hashtags)}</p>` : ''}
     <p class="wirk" data-wirk="p${esc(p.id)}">${wirkText('p' + p.id)}</p>
@@ -861,27 +867,34 @@ async function teilen(url, name, typ, p){
   }catch(e){ melde('Fehler: ' + e.message); }
 }
 const dateiName = (p, endung, format) => `soraya-${(p.geplant_fuer || p.created_at || '').slice(0,10)}-${p.art || 'post'}-${p.sprache || 'de'}${format ? '-' + format : ''}.${endung}`;
+const folienAnzahl = (p) => p.art === 'post' && p.meta && (p.meta.folien || []).length >= 2 ? p.meta.folien.length + 2 : 1;
 function bildDialog(p){
   const d = $('dlg');
-  let format = p.art === 'post' ? 'feed' : 'story';
-  d.innerHTML = `<h3>Bild zum Post</h3>
+  let format = p.art === 'post' ? 'feed' : 'story', nr = 1;
+  const n = folienAnzahl(p);
+  d.innerHTML = `<h3>${n > 1 ? `Karussell – ${n} Bilder` : 'Bild zum Post'}</h3>
     <div class="chips" role="group" aria-label="Format">
       <button class="chip" data-format="story">Story / Reel 1080×1920</button>
       <button class="chip" data-format="feed">Feed 1080×1350</button></div>
+    ${n > 1 ? `<div class="chips" role="group" aria-label="Bild im Karussell">${Array.from({length: n}, (_, i) =>
+      `<button class="chip" data-nr="${i + 1}">${i === 0 ? 'Titelbild' : i === n - 1 ? 'Schluss' : 'Bild ' + (i + 1)}</button>`).join('')}</div>` : ''}
     <div class="bildvorschau"><img id="bild" alt="Vorschau des Post-Bildes"></div>
     <div class="row"><a class="knopf" id="bLaden" download>Herunterladen</a>
       <button class="ghost" id="bTeilen">Teilen …</button>
       <button class="ghost" id="bZu">Schließen</button></div>
     <p class="note">„Teilen“ öffnet auf dem Handy direkt Instagram, TikTok &amp; Co.</p>`;
   d.showModal();
-  const url = (dl) => `/medien/${p.id}/bild?format=${format}${dl ? '&download=1' : ''}`;
+  const url = (dl) => format === 'feed' && nr > 1 ? `/medien/${p.id}/folie/${nr}?x=1${dl ? '&download=1' : ''}`
+    : `/medien/${p.id}/bild?format=${format}${dl ? '&download=1' : ''}`;
   const neu = () => {
     d.querySelectorAll('[data-format]').forEach(b => b.classList.toggle('on', b.dataset.format === format));
+    d.querySelectorAll('[data-nr]').forEach(b => { b.classList.toggle('on', +b.dataset.nr === nr); b.disabled = format !== 'feed'; });
     $('bild').src = url(false) + '&t=' + Date.now();
     $('bLaden').href = url(true);
   };
   d.querySelectorAll('[data-format]').forEach(b => b.onclick = () => { format = b.dataset.format; neu(); });
-  $('bTeilen').onclick = () => teilen(url(false), dateiName(p, 'jpg', format), 'image/jpeg', p);
+  d.querySelectorAll('[data-nr]').forEach(b => b.onclick = () => { nr = +b.dataset.nr; neu(); });
+  $('bTeilen').onclick = () => teilen(url(false), dateiName(p, 'jpg', nr > 1 ? 'folie' + nr : format), 'image/jpeg', p);
   $('bZu').onclick = () => d.close();
   neu();
 }
@@ -894,8 +907,8 @@ function videoDialog(p){
     <div class="row"><a class="knopf hide" id="vLaden" download>Herunterladen</a>
       <button class="ghost hide" id="vTeilen">Teilen …</button>
       <button class="ghost" id="vZu">Schließen</button></div>
-    <p class="note">15 bis 20 Sekunden, 1080×1920, ohne Musik. Musik am besten beim Posten in Instagram/TikTok
-      hinzufügen – Trend-Sounds bringen mehr Reichweite.</p>`;
+    <p class="note">15 bis 20 Sekunden, 1080×1920, mit ruhiger, eigens erzeugter Klangfläche (lizenzfrei).
+      In Instagram/TikTok kannst du sie beim Posten durch einen Trend-Sound ersetzen.</p>`;
   d.showModal();
   d.addEventListener('close', () => clearTimeout(videoTimer), {once: true});
   $('vZu').onclick = () => d.close();
@@ -1597,6 +1610,18 @@ const tagName = (iso) => {
   if(t(d) === t(plusTage(heute, -1))) return 'Gestern';
   return d.toLocaleDateString('de-AT', {weekday: 'short', day: 'numeric', month: 'numeric', timeZone: 'Europe/Vienna'});
 };
+// Welche Uhrzeit am besten ankommt (aus "Was Soraya daraus lernt"); aendern tust du sie selbst
+async function zeigeZeitTipp(){
+  const box = $('zeitTipp'); if(!box) return;
+  let d; try{ d = await api('/wirkung/lernen'); }catch(e){ box.hidden = true; return; }
+  const z = d.zeiten || [];
+  box.hidden = false;
+  box.innerHTML = z.length
+    ? '✦ ' + z.map(x => `${esc(ART[x.art] || x.art)}: um ${x.stunde} Uhr kommen sie besser an (Ø ${x.schnitt} Punkte) als um ${x.statt} Uhr (Ø ${x.statt_schnitt}).`).join(' ')
+      + ' Wenn du magst, stell die Uhrzeit oben um.'
+    : '✦ Uhrzeiten: Soraya vergleicht, wann deine Posts am besten ankommen. Dafür braucht es je Uhrzeit 3 gemessene Posts – '
+      + 'probier z. B. eine Woche lang eine andere Uhrzeit, dann gibt es hier einen Vorschlag.';
+}
 async function ladePosten(){
   clearTimeout(postTimer);
   try{ postDaten = await api('/posten'); }catch(e){ melde('Fehler: ' + e.message); return; }
@@ -1612,6 +1637,7 @@ async function ladePosten(){
   const fehlen = (d.benoetigt || []).filter(s => !d.tagesplan_sprachen.includes(s));
   if(e.an && fehlen.length) warn.push(`Der Tagesplan erstellt keine Posts auf ${fehlen.map(s => s.toUpperCase()).join(', ')} – im Reiter „Heute“ bei „Sprachen“ anhaken.`);
   $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => `<div>${esc(w)}</div>`).join('');
+  zeigeZeitTipp();
 
   $('verbindungen').innerHTML = ['facebook', 'instagram'].map(p => {
     const x = v[p];

@@ -593,6 +593,8 @@ class FakeMeta:
             return self._r({"success": True, "post_id": "123_S"})
         if url.endswith("/photos"):
             return self._r({"id": f"F{self.n}", "post_id": f"123_{self.n}"})
+        if url.endswith("/feed"):
+            return self._r({"id": f"123_FEED{self.n}"})
         if url.endswith("/media"):
             return self._r({"id": f"C{self.n}"})
         if url.endswith("/media_publish"):
@@ -1130,3 +1132,81 @@ def test_reel_klang():
     spitze = int(np.abs(k.astype(np.int32)).max())
     assert 5000 < spitze < 12000                      # hoerbar, aber leise und ohne Uebersteuern
     assert abs(int(k[0, 0])) < 200 and abs(int(k[-1, 0])) < 200   # sanft rein und raus
+
+
+FOLIEN = [{"titel": "Scorpio", "text": "Say the honest thing first."}, {"titel": "Taurus", "text": "Slow is fine today."},
+          {"titel": "Cancer", "text": "Trust the quiet feeling."}]
+
+
+def test_anlaesse_saison_vollmond_feiertage():
+    import anlaesse
+    assert anlaesse.ZEICHEN[anlaesse.zeichenwechsel(date(2026, 10, 23))] == "Skorpion"
+    assert anlaesse.zeichenwechsel(date(2026, 10, 24)) is None
+    assert anlaesse.vollmond_name(date(2026, 10, 26))[1] == "Hunter's Moon"
+    assert anlaesse.vollmond_name(date(2026, 9, 26))[1] == "Harvest Moon"
+    assert anlaesse.vollmond_name(date(2026, 12, 24))[1] == "Cold Moon"
+    t = redaktion.wochenthema(date(2026, 10, 23), {})
+    assert t["name"] == "Großes Ereignis: Skorpion-Saison beginnt" and "Geburtstagssaison" in t["auftrag"]
+    t = redaktion.wochenthema(date(2026, 10, 22), {})
+    assert t["name"] == "Astro-Wissen" and t["hinweise"] == ["Skorpion-Saison beginnt (morgen)"]
+    assert "Außerdem steht an" in redaktion.thema_text(t, "Link in bio")
+    t = redaktion.wochenthema(date(2026, 10, 26), {"vollmond": {"datum": "2026-10-26", "in_tagen": 0}})
+    assert "Jägermond" in t["name"] and "Hunter's Moon" in t["auftrag"]
+    assert redaktion.wochenthema(date(2026, 10, 31), {})["name"] == "Großes Ereignis: Halloween (Samhain)"
+
+
+def test_karussell_bilder_und_posten(fake_meta, monkeypatch):
+    def antwort(*a, **k):
+        r = tagesplan_antwort("en")
+        r["posts"][0] = dict(r["posts"][0], folien=FOLIEN)
+        return r
+    monkeypatch.setattr(tagesplan, "frage_json", antwort)
+    tagesplan.erstelle("en")
+    feed = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post" and p["sprache"] == "en")
+    assert feed["meta"]["folien"] == FOLIEN and _medien.anzahl_bilder(feed) == 5
+    assert feed["meta"]["folge"] == 1 or feed["meta"]["thema"].startswith("Großes Ereignis")
+    for nr in (2, 5):
+        r = client.get(f"/medien/{feed['id']}/folie/{nr}", headers=AUTH)
+        assert r.status_code == 200 and r.content[:2] == b"\xff\xd8"
+    assert client.get(f"/medien/{feed['id']}/folie/6", headers=AUTH).status_code == 404
+    _verbinde("facebook")
+    assert client.post("/posten/jetzt", json={"post_id": feed["id"], "plattform": "facebook"}, headers=AUTH).status_code == 200
+    fotos = [a for a in fake_meta.aufrufe if a[0] == "POST" and a[1].endswith("/photos")]
+    beitrag = [a for a in fake_meta.aufrufe if a[0] == "POST" and a[1].endswith("/feed")][-1]
+    assert len(fotos) >= 5 and all(f[2].get("published") == "false" for f in fotos[-5:])
+    assert sum(k.startswith("attached_media[") for k in beitrag[2]) == 5 and "?q=p" in beitrag[2]["message"]
+    # oeffentliche Adresse einer Folie (fuer Instagram) liefert das Bild nur mit passender Signatur
+    url = posten.medien_url(feed, 3)
+    name = url.rsplit("/", 1)[1]
+    assert "-folie3-" in name and posten.oeffentliches_medium(name)[1] == "image/jpeg"
+    assert posten.oeffentliches_medium(name.replace("folie3", "folie4")) is None
+
+
+def test_instagram_karussell(fake_meta):
+    _verbinde("instagram")
+    r = meta.poste_instagram("post", "Text", "https://x/1.jpg", warten_s=5,
+                             medien_urls=["https://x/1.jpg", "https://x/2.jpg", "https://x/3.jpg"])
+    medien_aufrufe = [a for a in fake_meta.aufrufe if a[0] == "POST" and a[1].endswith("/media")]
+    kinder = [a for a in medien_aufrufe if a[2].get("is_carousel_item") == "true"]
+    haupt = [a for a in medien_aufrufe if a[2].get("media_type") == "CAROUSEL"]
+    assert len(kinder) == 3 and len(haupt) == 1 and haupt[0][2]["children"].count(",") == 2 and r["id"]
+
+
+def test_luftiger_text_und_hook_pruefung():
+    assert posten._luftig("Hook line\nSecond para.\n\n\n\nThird.") == "Hook line\n\nSecond para.\n\nThird."
+    lang = {"art": "post", "titel": "T", "untertitel": "", "hashtags": ["#a", "#b", "#c"],
+            "text": " ".join(["word"] * 25) + "\n\n" + " ".join(["more"] * 40)}
+    assert any(b.startswith("Erste Zeile zu lang") for b in redaktion.pruefe_post(lang, "en"))
+
+
+def test_zeit_vorschlaege():
+    from datetime import timezone
+
+    def e(i, stunde, punkte):
+        return {"post": {"id": i, "art": "post", "meta": {}, "gepostet": datetime(2026, 10, 1, stunde - 2, 30, tzinfo=timezone.utc)},
+                "punkte": punkte, "besuche": 0, "konten": 0}
+    b = [e(i, 12, 4) for i in range(3)] + [e(10 + i, 19, 12) for i in range(3)]
+    erk = redaktion.erkenntnisse(b)
+    v = redaktion.zeit_vorschlaege(erk)
+    assert v == [{"art": "post", "stunde": 19, "schnitt": 12.0, "statt": 12, "statt_schnitt": 4.0}]
+    assert redaktion.zeit_vorschlaege(redaktion.erkenntnisse(b[:4])) == []

@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import json
 import secrets
 import time
 from urllib.parse import urlencode
@@ -206,8 +207,10 @@ def instagram_verlaengern(tage_vorher: int = 20) -> bool:
 # ---------------------------------------------------------------------------
 # Posten
 # ---------------------------------------------------------------------------
-def poste_facebook(art: str, text: str, bild: bytes | None = None, video: bytes | None = None) -> dict:
-    """art: post (Foto mit Text), story (Foto-Story), reel (Video-Reel). Rueckgabe: {"id", "url"}"""
+def poste_facebook(art: str, text: str, bild: bytes | None = None, video: bytes | None = None,
+                   bilder: list[bytes] | None = None) -> dict:
+    """art: post (Foto mit Text; mit mehreren `bilder` als Mehrbild-Beitrag), story (Foto-Story),
+    reel (Video-Reel). Rueckgabe: {"id", "url"}"""
     z = zugang("facebook")
     if not z or not z.get("token"):
         raise MetaFehler("Facebook-Seite ist nicht verbunden.")
@@ -227,8 +230,19 @@ def poste_facebook(art: str, text: str, bild: bytes | None = None, video: bytes 
                      files={"source": ("story.jpg", bild, "image/jpeg")})
         st = _post(f"{graph_fb()}/{seite}/photo_stories", data={"photo_id": foto["id"], "access_token": token})
         return {"id": st.get("post_id") or foto["id"], "url": f"https://www.facebook.com/{seite}"}
+    if bilder and len(bilder) > 1:
+        # Mehrbild-Beitrag: Fotos erst unveroeffentlicht hochladen, dann gemeinsam mit dem Text posten
+        ids = []
+        for i, daten in enumerate(bilder[:10]):
+            f = _post(f"{graph_fb()}/{seite}/photos", data={"published": "false", "access_token": token},
+                      files={"source": (f"bild{i + 1}.jpg", daten, "image/jpeg")})
+            ids.append(f["id"])
+        felder = {"message": text, "access_token": token}
+        felder.update({f"attached_media[{i}]": json.dumps({"media_fbid": fid}) for i, fid in enumerate(ids)})
+        beitrag = _post(f"{graph_fb()}/{seite}/feed", data=felder)
+        return {"id": beitrag["id"], "url": f"https://www.facebook.com/{beitrag['id']}"}
     foto = _post(f"{graph_fb()}/{seite}/photos", data={"message": text, "access_token": token},
-                 files={"source": ("post.jpg", bild, "image/jpeg")})
+                 files={"source": ("post.jpg", bild or (bilder or [None])[0], "image/jpeg")})
     pid = foto.get("post_id") or foto["id"]
     return {"id": pid, "url": f"https://www.facebook.com/{pid}"}
 
@@ -279,31 +293,45 @@ def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
     return out
 
 
-def poste_instagram(art: str, text: str, medien_url: str, warten_s: int = 300) -> dict:
-    """Instagram holt Bild/Video selbst von medien_url (oeffentliche, signierte Adresse des Agenten)."""
+def _warte_auf(behaelter: str, token: str, art: str, warten_s: int) -> None:
+    ende = time.time() + warten_s
+    while True:
+        st = _get(f"{graph_ig()}/{behaelter}", fields="status_code,status", access_token=token)
+        code = st.get("status_code")
+        if code == "FINISHED":
+            return
+        if code in ("ERROR", "EXPIRED"):
+            raise MetaFehler(f"Instagram konnte die Datei nicht verarbeiten ({code}: {st.get('status') or ''}).")
+        if time.time() > ende:
+            raise MetaFehler("Instagram verarbeitet die Datei noch zu lange – nächster Versuch später.")
+        time.sleep(3 if art != "reel" else 6)
+
+
+def poste_instagram(art: str, text: str, medien_url: str, warten_s: int = 300,
+                    medien_urls: list[str] | None = None) -> dict:
+    """Instagram holt Bild/Video selbst von medien_url (oeffentliche, signierte Adresse des Agenten).
+    Mit mehreren medien_urls wird ein Feed-Post zum Karussell."""
     z = zugang("instagram")
     if not z or not z.get("token"):
         raise MetaFehler("Instagram ist nicht verbunden.")
     konto, token = z["konto_id"], z["token"]
     daten = {"access_token": token}
-    if art == "reel":
+    if art == "post" and medien_urls and len(medien_urls) > 1:
+        kinder = []
+        for url in medien_urls[:10]:
+            k = _post(f"{graph_ig()}/{konto}/media", data={"image_url": url, "is_carousel_item": "true",
+                                                         "access_token": token})["id"]
+            _warte_auf(k, token, art, warten_s)
+            kinder.append(k)
+        daten.update(media_type="CAROUSEL", children=",".join(kinder), caption=text)
+    elif art == "reel":
         daten.update(media_type="REELS", video_url=medien_url, caption=text, share_to_feed="true")
     elif art == "story":
         daten.update(media_type="STORIES", image_url=medien_url)
     else:
         daten.update(image_url=medien_url, caption=text)
     behaelter = _post(f"{graph_ig()}/{konto}/media", data=daten)["id"]
-    ende = time.time() + warten_s
-    while True:
-        st = _get(f"{graph_ig()}/{behaelter}", fields="status_code,status", access_token=token)
-        code = st.get("status_code")
-        if code == "FINISHED":
-            break
-        if code in ("ERROR", "EXPIRED"):
-            raise MetaFehler(f"Instagram konnte die Datei nicht verarbeiten ({code}: {st.get('status') or ''}).")
-        if time.time() > ende:
-            raise MetaFehler("Instagram verarbeitet die Datei noch zu lange – nächster Versuch später.")
-        time.sleep(3 if art != "reel" else 6)
+    _warte_auf(behaelter, token, art, warten_s)
     veroeff = _post(f"{graph_ig()}/{konto}/media_publish", data={"creation_id": behaelter, "access_token": token})
     mid = veroeff["id"]
     try:

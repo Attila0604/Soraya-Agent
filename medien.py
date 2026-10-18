@@ -491,6 +491,21 @@ BESCHRIFTUNG = {
     "rueckblick": {"de": "Rückblick & Vorschau", "en": "Look back & ahead", "hu": "Vissza és előre", "it": "Bilancio e anteprima"},
     "ereignis": {"de": "Besonderer Himmel", "en": "Special sky", "hu": "Különleges égbolt", "it": "Cielo speciale"},
 }
+FOLGE = {"de": "Folge {n}", "en": "No. {n}", "hu": "{n}. rész", "it": "N. {n}"}
+WISCHEN = {"de": "Wischen", "en": "Swipe", "hu": "Lapozz", "it": "Scorri"}
+# Schlussfolie des Karussells: Einladung in die App (je Handlungsaufforderung)
+EINLADUNG = {
+    "mondzeichen": {"de": "Dein Sonnen- & Mondzeichen in Sekunden", "en": "Your Sun & Moon sign in seconds",
+                    "hu": "A Nap- és Hold-jegyed másodpercek alatt", "it": "Il tuo segno di Sole e Luna in pochi secondi"},
+    "partner": {"de": "Wie gut passt ihr zusammen?", "en": "How well do you match?",
+                "hu": "Mennyire illetek össze?", "it": "Quanto siete compatibili?"},
+    "horoskop": {"de": "Dein Horoskop aus deinem Geburtshoroskop", "en": "Your horoscope from your own birth chart",
+                 "hu": "Horoszkóp a saját születési képletedből", "it": "Il tuo oroscopo dal tuo tema natale"},
+    "chat": {"de": "Stell Soraya deine Frage", "en": "Ask Soraya your question",
+             "hu": "Tedd fel a kérdésed Sorayának", "it": "Fai la tua domanda a Soraya"},
+}
+GRATIS = {"de": "Kostenlos · ohne Konto testen", "en": "Free · try it without an account",
+          "hu": "Ingyenes · regisztráció nélkül kipróbálható", "it": "Gratis · provalo senza account"}
 ZEICHEN_GLYPHE = "♈♉♊♋♌♍♎♏♐♑♒♓"
 ZEICHEN_NAMEN = [  # gleiche Reihenfolge wie die Glyphen
     ("widder", "aries", "kos", "ariete"), ("stier", "taurus", "bika", "toro"),
@@ -527,6 +542,8 @@ def stil(post: dict) -> dict:
         aufbau = "mond"
     sprache = (post.get("sprache") or "de")[:2]
     label = (BESCHRIFTUNG.get(layout) or {}).get(sprache) if layout in BESCHRIFTUNG else None
+    if label and meta.get("folge") and layout != "ereignis":     # Serie: "Ritual · Folge 12"
+        label = f"{label} · {FOLGE.get(sprache, FOLGE['en']).format(n=int(meta['folge']))}"
     return {"layout": layout, "aufbau": aufbau, "palette": palette, "label": label, "punkte": punkte}
 
 
@@ -791,6 +808,94 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
                                 fill=(255, 255, 255, 13), outline=akzent + (89,), width=int(2 * m))
             zeichne_text(d, frage, W / 2, y + pad, "#EFE8F8", m)
     marke(leinwand, W, H, story, post.get("sprache") or "de", m)
+    if not story and folien_von(post):
+        _wisch_hinweis(d, W, H, m, akzent, post.get("sprache") or "de")
+    return leinwand.resize((W, H), Image.LANCZOS)
+
+
+# ---------------------------------------------------------------------------
+# Karussell: Titelbild (bild) + eine Folie je Gedanke + Schlussfolie mit Einladung
+# ---------------------------------------------------------------------------
+def folien_von(post: dict) -> list[dict]:
+    if (post.get("art") or "post") != "post":
+        return []
+    return [f for f in ((post.get("meta") or {}).get("folien") or []) if f.get("titel") or f.get("text")][:4]
+
+
+def anzahl_bilder(post: dict) -> int:
+    """1 ohne Karussell, sonst Titelbild + Folien + Schlussfolie."""
+    f = folien_von(post)
+    return len(f) + 2 if f else 1
+
+
+def _wisch_hinweis(d, W, H, m, akzent, sprache):
+    """Kleiner Hinweis unten rechts: es geht weiter (Karussell)."""
+    font = schrift("inter500", 21 * m)
+    text = WISCHEN.get(sprache, WISCHEN["en"]).upper()
+    x1, y = (W - 70) * m, (H - 112) * m
+    breite = sum(font.getlength(ch) for ch in text) + 2.5 * m * (len(text) - 1)
+    gesperrt(d, text, x1 - 46 * m - breite / 2, y + 8 * m, font, 2.5 * m, akzent + (210,))
+    d.line([(x1 - 34 * m, y), (x1, y)], fill=akzent + (230,), width=max(1, int(2 * m)))
+    d.polygon([(x1 + 2 * m, y), (x1 - 9 * m, y - 7 * m), (x1 - 9 * m, y + 7 * m)], fill=akzent + (230,))
+
+
+def _seitenzahl(d, W, m, akzent, nr, gesamt):
+    """Punkte oben (wie bei Instagram), aktuelle Seite gold."""
+    abstand, r = 22, 5
+    x0 = W / 2 - (gesamt - 1) * abstand / 2
+    for i in range(gesamt):
+        cx, cy = (x0 + i * abstand) * m, 60 * m
+        farbe = akzent + (255,) if i == nr - 1 else akzent + (70,)
+        d.ellipse([cx - r * m, cy - r * m, cx + r * m, cy + r * m], fill=farbe)
+
+
+def folie(post: dict, nr: int) -> Image.Image:
+    """Bild nr (2 .. anzahl_bilder) des Karussells, 1080x1350. nr 1 ist das normale Titelbild."""
+    folien = folien_von(post)
+    gesamt = anzahl_bilder(post)
+    if nr <= 1 or not folien or nr > gesamt:
+        return bild(post, "feed")
+    W, H, m = 1080, 1350, SS
+    st = stil(post)
+    akzent = PALETTEN[st["palette"]]["akzent"]
+    sprache = (post.get("sprache") or "de")[:2]
+    leinwand = hintergrund(W, H, (post.get("id") or 1) * 7 + nr, False, m, st["palette"])
+    d = ImageDraw.Draw(leinwand, "RGBA")
+    rahmen(d, W, H, m, akzent)
+    _seitenzahl(d, W, m, akzent, nr, gesamt)
+    oben, unten = 110, H - 200                         # freier Bereich zwischen Seitenpunkten und Marke
+    if nr == gesamt:                                   # Schlussfolie: Einladung in die App
+        schluessel = (post.get("meta") or {}).get("aufforderung") or "mondzeichen"
+        einladung = (EINLADUNG.get(schluessel) or EINLADUNG["mondzeichen"]).get(sprache, EINLADUNG["mondzeichen"]["en"])
+        t = messe_text(einladung, breite=W - 200, groesse=84, name="cormorant", max_zeilen=3, min_groesse=52)
+        u = messe_text(GRATIS.get(sprache, GRATIS["en"]), breite=W - 240, groesse=36, name="inter400",
+                       zeilenhoehe=1.35, max_zeilen=2, min_groesse=26)
+        zh = 260
+        y = oben + max(0, (unten - oben - (zh + 70 + t["hoehe"] + 30 + u["hoehe"])) / 2)
+        z = portal(int(zh * m))
+        s = zh * m / 312
+        aufkleben(leinwand, z, (W * m / 2 - 256 * s, y * m - 112 * s))
+        y += zh + 70
+        zeichne_text(d, t, W / 2, y, "#F6E3B4", m)
+        zeichne_text(d, u, W / 2, y + t["hoehe"] + 30, "#C3B7DA", m)
+        marke(leinwand, W, H, False, sprache, m)
+        return leinwand.resize((W, H), Image.LANCZOS)
+    f = folien[nr - 2]
+    titel, text = (f.get("titel") or "").strip(), (f.get("text") or "").strip()
+    idx = zeichen_aus_text(titel)
+    r = 92
+    tt = messe_text(titel, breite=W - 200, groesse=88, name="cormorant", max_zeilen=2, min_groesse=56)
+    tx = messe_text(text, breite=W - 220, groesse=46, name="inter400", zeilenhoehe=1.42, max_zeilen=6, min_groesse=32)
+    hoehe = 2 * r + 70 + tt["hoehe"] + 46 + 44 + tx["hoehe"]
+    cy = oben + max(0, (unten - oben - hoehe) / 2) + r
+    _medaillon(d, W / 2, cy, r, m, akzent, glyphe=ZEICHEN_GLYPHE[idx] if idx is not None else None,
+               zahl=None if idx is not None else nr - 1)
+    zeichne_text(d, tt, W / 2, cy + r + 70, "#F6E3B4", m)
+    y = cy + r + 70 + tt["hoehe"] + 46
+    d.line([((W / 2 - 40) * m, y * m), ((W / 2 + 40) * m, y * m)], fill=akzent + (160,), width=max(1, int(2 * m)))
+    zeichne_text(d, tx, W / 2, y + 44, "#EFE8F8", m)
+    gesperrt(d, "SORAYA", W * m / 2, (H - 120) * m, schrift("cinzel", 34 * m), 12 * m, akzent + (200,))
+    _wisch_hinweis(d, W, H, m, akzent, sprache)
     return leinwand.resize((W, H), Image.LANCZOS)
 
 

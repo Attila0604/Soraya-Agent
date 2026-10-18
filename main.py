@@ -276,6 +276,24 @@ def medien_bild(post_id: int, format: Optional[str] = None, download: bool = Fal
     return Response(daten, media_type="image/jpeg", headers=kopf)
 
 
+@app.get("/medien/{post_id}/folie/{nr}")
+def medien_folie(post_id: int, nr: int, download: bool = False, klein: bool = False):
+    """Bild nr des Karussells (1 = Titelbild)."""
+    post = _post_oder_404(post_id)
+    if not 1 <= nr <= paket.medien.anzahl_bilder(post):
+        raise HTTPException(status_code=404, detail="Diese Folie gibt es nicht.")
+    try:
+        daten = paket.hole_folie(post, nr)
+        if klein:
+            daten = paket.vorschau(daten, 220)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Folie konnte nicht erstellt werden: {e}")
+    kopf = {"Cache-Control": "private, max-age=120" if klein else "no-store"}
+    if download:
+        kopf["Content-Disposition"] = f'attachment; filename="{_dateiname(post, "jpg", f"folie{nr}")}"'
+    return Response(daten, media_type="image/jpeg", headers=kopf)
+
+
 @app.get("/medien/{post_id}/video/stand")
 def medien_video_stand(post_id: int):
     return paket.video_stand(_post_oder_404(post_id))
@@ -553,7 +571,7 @@ def wirkung_lernen():
                   "sprache": e["post"].get("sprache"), "format": (e["post"].get("meta") or {}).get("thema"),
                   "punkte": e["punkte"], "details": redaktion._details(e)} for e in bewertet[:5] if e["punkte"] > 0]
         return {"beste": beste, "erkenntnisse": erk, "hinweis": redaktion.erkenntnis_text(erk),
-                "gemessen": len(bewertet)}
+                "gemessen": len(bewertet), "zeiten": redaktion.zeit_vorschlaege(erk)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

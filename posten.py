@@ -124,8 +124,17 @@ def _ohne_bio(text: str, sprache: str) -> str:
     return text
 
 
+def _luftig(text: str) -> str:
+    """Hook allein in der ersten Zeile, Absaetze mit genau einer Leerzeile dazwischen."""
+    text = re.sub(r"\n{3,}", "\n\n", text.replace("\r", "").strip())
+    zeilen = text.split("\n")
+    if len(zeilen) > 1 and zeilen[1].strip():
+        zeilen.insert(1, "")
+    return "\n".join(zeilen)
+
+
 def text_fuer(post: dict, plattform: str) -> str:
-    teile = [(post.get("text") or "").strip()]
+    teile = [_luftig(post.get("text") or "")]
     if plattform == "facebook" and post.get("art") != "story":
         teile[0] = _ohne_bio(teile[0], post.get("sprache") or "de")
     if plattform == "facebook" and post.get("art") != "story":
@@ -138,9 +147,9 @@ def text_fuer(post: dict, plattform: str) -> str:
     return "\n\n".join(t for t in teile if t)
 
 
-def medien_url(post: dict) -> str:
-    """Oeffentliche, signierte Adresse, von der Instagram Bild oder Video holt."""
-    art = "reel" if post.get("art") == "reel" else paket.medien.standard_format(post)
+def medien_url(post: dict, nr: int = 1) -> str:
+    """Oeffentliche, signierte Adresse, von der Instagram Bild oder Video holt (nr > 1: Karussell-Folie)."""
+    art = "reel" if post.get("art") == "reel" else (f"folie{nr}" if nr > 1 else paket.medien.standard_format(post))
     fp = paket._fingerabdruck(post, art)
     endung = "mp4" if art == "reel" else "jpg"
     sig = meta.signiere(f"{post['id']}:{art}:{fp}")
@@ -155,13 +164,15 @@ def oeffentliches_medium(name: str) -> tuple[bytes, str] | None:
         post = db.lade_post(int(pid))
     except (ValueError, TypeError):
         return None
-    if not post or art not in ("feed", "story", "reel"):
+    if not post or not (art in ("feed", "story", "reel") or re.fullmatch(r"folie([2-9]|10)", art)):
         return None
     fp = paket._fingerabdruck(post, art)
     if sig != meta.signiere(f"{post['id']}:{art}:{fp}"):
         return None
     if art == "reel":
         return paket._rendere_video(post), "video/mp4"
+    if art.startswith("folie"):
+        return paket.hole_folie(post, int(art[5:])), "image/jpeg"
     return paket.hole_bild(post, art), "image/jpeg"
 
 
@@ -184,9 +195,15 @@ def veroeffentliche(zeile: dict, post: dict) -> dict:
     if p == "facebook":
         if art == "reel":
             return meta.poste_facebook("reel", text, video=paket._rendere_video(post))
+        if art == "post" and paket.medien.anzahl_bilder(post) > 1:
+            return meta.poste_facebook(art, text, bilder=paket.hole_karussell(post))
         return meta.poste_facebook(art, text, bild=paket.hole_bild(post))
     if art == "reel":
         paket._rendere_video(post)       # vorher erzeugen, damit Instagram es sofort holen kann
+    elif art == "post" and paket.medien.anzahl_bilder(post) > 1:
+        paket.hole_karussell(post)
+        n = paket.medien.anzahl_bilder(post)
+        return meta.poste_instagram(art, text, medien_url(post), medien_urls=[medien_url(post, i) for i in range(1, n + 1)])
     else:
         paket.hole_bild(post)
     return meta.poste_instagram(art, text, medien_url(post))
