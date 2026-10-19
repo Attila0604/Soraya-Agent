@@ -82,7 +82,8 @@ Liefere genau drei Einträge, in dieser Reihenfolge:
    erster Satz wieder ein Hook. "bild_punkte": [].
 3. art "story", platform "instagram": ein kurzer Satz zur Tagesenergie plus eine Frage, auf die
    man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 40 Wörter.
-   "bild_punkte": [].
+   "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
+   einem passenden Emoji (z. B. „🔥 Ja, total“, „🌙 Eher nicht“) – sie stehen als Knöpfe im Bild.
 
 Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
@@ -264,7 +265,7 @@ def _aufbereiten(daten: dict, sprache: str) -> list[dict]:
             **{k: v for k, v in p.items() if k not in ("bild_punkte", "folien")},
             "sprache": sprache,
             "skript": skript if p.get("art") == "reel" and (skript.get("hook") or skript.get("szenen")) else None,
-            "_bild_punkte": punkte if p.get("art") == "post" else [],
+            "_bild_punkte": punkte if p.get("art") == "post" else (punkte[:2] if p.get("art") == "story" and len(punkte) >= 2 else []),
             "_folien": folien if p.get("art") == "post" and len(folien) >= 2 else [],
         })
     return posts

@@ -578,6 +578,12 @@
       <div class="chips" style="margin-top:12px">
         <label class="imtp"><input type="checkbox" id="plFacebook"> Facebook-Seite</label>
         <label class="imtp"><input type="checkbox" id="plInstagram"> Instagram</label>
+        <label class="imtp"><input type="checkbox" id="plTiktok"> TikTok (nur Reels)</label>
+      </div>
+      <div class="row" id="tiktokZeile" style="margin-top:10px">
+        <div><label for="tiktokModus">TikTok</label>
+          <select id="tiktokModus"><option value="entwurf">Als Entwurf in meine TikTok-App (ich poste selbst, mit Sound)</option>
+            <option value="direkt">Direkt veröffentlichen (erst nach TikTok-Prüfung öffentlich)</option></select></div>
       </div>
       <div class="row" style="margin-top:14px"><button id="postSpeichern">Speichern</button></div>
     </div>
@@ -1598,7 +1604,7 @@ window.addEventListener('resize', () => { if(aktiv === 'wirkung') zeichneVerlauf
 LADER.wirkung = ladeWirkung;
 
 /* ---------- POSTEN ---------- */
-const PL_NAME = {facebook: 'Facebook', instagram: 'Instagram'};
+const PL_NAME = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok'};
 const VS_NAME = {geplant: 'geplant', laeuft: 'wird gepostet', fertig: 'gepostet', fehler: 'Fehler', abgebrochen: 'gestoppt', verpasst: 'verpasst'};
 let postDaten = null, postTimer = null;
 const uhr = (iso) => new Date(iso).toLocaleTimeString('de-AT', {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna'});
@@ -1626,7 +1632,7 @@ async function ladePosten(){
   clearTimeout(postTimer);
   try{ postDaten = await api('/posten'); }catch(e){ melde('Fehler: ' + e.message); return; }
   const d = postDaten, e = d.einstellungen, v = d.verbindungen;
-  const verbunden = ['facebook', 'instagram'].filter(p => e.plattformen[p] && v[p].verbunden);
+  const verbunden = ['facebook', 'instagram', 'tiktok'].filter(p => e.plattformen[p] && v[p] && v[p].verbunden);
   $('postAuto').checked = e.an; $('postAutoSchalter').classList.toggle('on', e.an);
   $('postInfo').innerHTML = e.an
     ? `An: ${sprachText(d)} · Story ${esc(e.zeiten.story)}, Feed-Post ${esc(e.zeiten.post)}, Reel ${esc(e.zeiten.reel)} (Wiener Zeit) · ${verbunden.map(p => PL_NAME[p]).join(' + ') || 'keine Plattform verbunden'} · ${e.modus === 'auto' ? 'automatisch, außer du stoppst' : 'nur freigegebene'}`
@@ -1639,17 +1645,20 @@ async function ladePosten(){
   $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => `<div>${esc(w)}</div>`).join('');
   zeigeZeitTipp();
 
-  $('verbindungen').innerHTML = ['facebook', 'instagram'].map(p => {
-    const x = v[p];
-    const titel = p === 'facebook' ? 'Facebook-Seite' : 'Instagram (Business-Konto)';
+  $('verbindungen').innerHTML = ['facebook', 'instagram', 'tiktok'].map(p => {
+    const x = v[p] || {};
+    const titel = p === 'facebook' ? 'Facebook-Seite' : p === 'instagram' ? 'Instagram (Business-Konto)' : 'TikTok (nur Reels)';
     const abl = x.laeuft_ab ? ` · Zugang bis ${new Date(x.laeuft_ab * 1000).toLocaleDateString('de-AT')} (verlängert sich selbst)` : '';
     const stand = x.verbunden ? `<span class="punkt ok"></span>Verbunden: ${esc(x.name || '')}${abl}`
       : x.eingerichtet ? '<span class="punkt"></span>Noch nicht verbunden'
-      : `<span class="punkt aus"></span>Meta-App fehlt in Railway (${p === 'facebook' ? 'META_APP_ID / META_APP_SECRET' : 'INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET'})`;
+      : `<span class="punkt aus"></span>${p === 'tiktok' ? 'TikTok-App' : 'Meta-App'} fehlt in Railway (${p === 'facebook' ? 'META_APP_ID / META_APP_SECRET' : p === 'instagram' ? 'INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET' : 'TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET'})`;
+    const ziel = p === 'tiktok' ? '/tiktok/verbinden' : `/meta/verbinden/${p}`;
     const knopf = x.verbunden ? `<button class="ghost klein" data-trennen="${p}">Trennen</button>`
-      : `<a class="knopf${x.eingerichtet ? '' : ' hide'}" href="/meta/verbinden/${p}" style="padding:7px 14px;font-size:13px">Verbinden</a>`;
-    return `<div class="verbindung"><div><div class="name">${titel}</div><div class="klein">${stand}</div>
-      ${x.eingerichtet ? '' : `<div class="klein">Rückruf-Adresse für die Meta-App: <code>${esc(x.rueckruf_url)}</code></div>`}</div>${knopf}</div>`;
+      : `<a class="knopf${x.eingerichtet ? '' : ' hide'}" href="${ziel}" style="padding:7px 14px;font-size:13px">Verbinden</a>`;
+    const tt = p === 'tiktok' && x.verbunden ? `<div class="klein">${e.plattformen.tiktok
+      ? `Ein · ${e.tiktok_modus === 'direkt' ? 'veröffentlicht direkt' : 'Reels kommen als Entwurf in deine TikTok-App'}` : 'Aus – es geht nichts auf TikTok (unten bei Einstellungen einschalten)'}</div>` : '';
+    return `<div class="verbindung"><div><div class="name">${titel}</div><div class="klein">${stand}</div>${tt}
+      ${x.eingerichtet ? '' : `<div class="klein">Rückruf-Adresse für die ${p === 'tiktok' ? 'TikTok' : 'Meta'}-App: <code>${esc(x.rueckruf_url || '')}</code></div>`}</div>${knopf}</div>`;
   }).join('');
 
   zeigeEinrichtung(d);
@@ -1675,6 +1684,7 @@ async function ladePosten(){
   $('postSprache').value = e.sprache; $('postModus').value = e.modus;
   $('zStory').value = e.zeiten.story; $('zPost').value = e.zeiten.post; $('zReel').value = e.zeiten.reel;
   $('plFacebook').checked = !!e.plattformen.facebook; $('plInstagram').checked = !!e.plattformen.instagram;
+  $('plTiktok').checked = !!e.plattformen.tiktok; $('tiktokModus').value = e.tiktok_modus || 'entwurf';
   if(e.an && aktiv === 'posten') postTimer = setTimeout(() => aktiv === 'posten' && ladePosten(), 30000);
 }
 const DATENSCHUTZ_URL = 'https://app.sorayaluxuryastroguide.com/datenschutz.html';
@@ -1711,7 +1721,7 @@ function sprachText(d){
 // Testpost: Posts von heute in der Posting-Sprache sofort posten (auch bei ausgeschaltetem Hauptschalter)
 async function zeigeTestposts(d){
   const e = d.einstellungen, v = d.verbindungen;
-  const verbunden = ['facebook', 'instagram'].filter(p => v[p].verbunden);
+  const verbunden = ['facebook', 'instagram', 'tiktok'].filter(p => v[p] && v[p].verbunden);
   const fertig = (id, pl) => (d.termine || []).find(t => t.post_id === id && t.plattform === pl && t.status === 'fertig');
   let posts = [];
   const passt = (p) => e.sprache === 'alle' ? (d.sprachen_heute || {})[p.art] === p.sprache : p.sprache === e.sprache;
@@ -1721,7 +1731,8 @@ async function zeigeTestposts(d){
     : 'Sobald Facebook oder Instagram verbunden ist, kannst du hier einen Post von heute sofort posten – auch wenn „Automatisch posten“ aus ist.';
   $('testposts').innerHTML = posts.length ? posts.map(p => `<div class="testpost"><div><span class="tag">${esc(ART[p.art] || 'Post')}</span>
       <p class="titel">${esc(p.titel || p.text.slice(0, 60))}</p></div>
-      <div class="row">${['facebook', 'instagram'].map(pl => { const f = fertig(p.id, pl);
+      <div class="row">${['facebook', 'instagram', 'tiktok'].filter(pl => pl !== 'tiktok' || (p.art === 'reel' && v.tiktok && v.tiktok.verbunden)).map(pl => { const f = fertig(p.id, pl);
+        if(f && pl === 'tiktok') return `<span class="fertig">✓ an TikTok geschickt</span>`;
         return f ? `<a class="fertig" href="${esc(f.url || '#')}" target="_blank" rel="noopener">✓ auf ${PL_NAME[pl]} ansehen</a>` : `<button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}"${v[pl].verbunden ? '' : ' disabled title="Noch nicht verbunden"'}>Jetzt auf ${PL_NAME[pl]}</button>`; }).join('')}</div></div>`).join('')
     : `<div class="empty">Heute gibt es noch keine Posts (${esc(sprachText(d))}).<span>${(d.benoetigt || [e.sprache]).every(s => d.tagesplan_sprachen.includes(s))
         ? `<button class="klein" data-plan-erstellen="1" style="margin-top:10px">Posts für heute erstellen</button>`
@@ -1740,7 +1751,8 @@ $('postSpeichern').onclick = async () => {
   try{
     await api('/posten/einstellungen', {method: 'PUT', body: JSON.stringify({sprache: $('postSprache').value, modus: $('postModus').value,
       zeiten: {story: $('zStory').value, post: $('zPost').value, reel: $('zReel').value},
-      plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked}})});
+      tiktok_modus: $('tiktokModus').value,
+      plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked, tiktok: $('plTiktok').checked}})});
     melde('Gespeichert ✓ (gilt für neue Termine)'); ladePosten();
   }catch(e){ melde('Fehler: ' + e.message); }
 };
@@ -1760,7 +1772,7 @@ $('view-posten').addEventListener('click', async (ev) => {
     }
     if(b.dataset.trennen){
       if(!confirm(`${PL_NAME[b.dataset.trennen]} wirklich trennen?`)) return;
-      await api('/meta/trennen/' + b.dataset.trennen, {method: 'POST'}); melde('Getrennt.');
+      await api(b.dataset.trennen === 'tiktok' ? '/tiktok/trennen' : '/meta/trennen/' + b.dataset.trennen, {method: 'POST'}); melde('Getrennt.');
     } else if(b.dataset.stopp){
       await aendere(b.dataset.stopp, {status: 'gestoppt'}); melde('Gestoppt – dieser Post geht nicht raus.');
     } else if(b.dataset.weiter){
