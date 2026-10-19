@@ -198,7 +198,7 @@
   .verbindung{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
               padding:12px 0;border-top:1px solid var(--line-soft)}
   .verbindung:first-of-type{border-top:0}
-  .verbindung .name{font-weight:600;color:#F4EEDD}
+  .verbindung .name{font-weight:600;color:#F4EEDD;display:flex;align-items:center;gap:8px}
   .verbindung .klein{font-size:12.5px;color:var(--mist-dim)}
   .verbindung>div{min-width:0}
   .verbindung code{word-break:break-all;font-size:12px}
@@ -335,7 +335,6 @@
     .kopfzeile{flex-direction:column;align-items:stretch;gap:10px;padding:10px 18px}
     .tabs{justify-content:flex-start;margin:0 -18px;padding:0 18px}
     .woche strong{min-width:0;font-size:18px}
-    details.pz>summary .tag.leise{display:none}
     .tag.nebensache{display:none}
     .trichter .stufe{grid-template-columns:1fr}
     .himmel .gross{font-size:20px;line-height:1.2}
@@ -345,6 +344,192 @@
     .card.mit-bild .vorschau{float:right;width:84px;margin:0 0 8px 12px}
     .card.mit-bild .aktionen,.card.mit-bild .skript,.card.mit-bild .pruefhinweis{clear:both}
     .aktionen{gap:6px}
+  }
+
+  /* ================= Überarbeitung: einheitliche Abstände, Schriftgrößen, Zustände ================= */
+  :root{--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;
+        --t-klein:12.5px;--t-text:14.5px;--t-gross:18px;--t-titel:23px;
+        --gelb-bg:rgba(250,178,25,.10);--gelb-rand:rgba(250,178,25,.45);--gruen:#7fd27f}
+  input::placeholder,textarea::placeholder{color:#7d829b}
+  :focus-visible{outline:2px solid var(--champagne);outline-offset:2px}
+  input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,75,.25)}
+  summary:focus-visible{outline:2px solid var(--champagne);outline-offset:3px;border-radius:6px}
+  .panel{padding:var(--s5);margin-bottom:var(--s4)}
+  .panel h2{font-size:var(--t-titel)}
+  .panel p.hint{font-size:13.5px;line-height:1.55}
+  .panel-kopf{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s2) var(--s3);flex-wrap:wrap;margin:0 0 var(--s3)}
+  .panel-kopf h2{margin:0}
+  .tag{font-size:11px;padding:3px 9px;line-height:1.4;white-space:nowrap}
+  .st{font-size:11.5px;padding:3px 10px;line-height:1.4;white-space:nowrap}
+  .st.achtung{color:#1A140A;background:var(--warn)}
+  button.klein,a.knopf.klein{padding:7px 12px;font-size:13px;line-height:1.3}
+  button{line-height:1.3}
+  #status{position:fixed;left:50%;bottom:var(--s5);transform:translateX(-50%);z-index:20;margin:0;min-height:0;
+          max-width:min(560px,calc(100vw - 32px));padding:10px 18px;border-radius:12px;background:#1B2040;
+          border:1px solid var(--gold);color:var(--champagne);box-shadow:0 10px 30px rgba(0,0,0,.45);
+          font-size:14px;transition:opacity .25s,transform .25s}
+  #status.leer{opacity:0;pointer-events:none;transform:translate(-50%,8px)}
+  .ikon{display:inline-flex;width:16px;height:16px;flex:none}
+  .ikon svg{width:100%;height:100%;fill:currentColor}
+  .plk{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--mist);border:1px solid var(--line-soft);
+       border-radius:999px;padding:3px 9px 3px 6px;white-space:nowrap;text-decoration:none}
+  .plk .ikon{width:14px;height:14px}
+  .plk.fertig{color:#0d2a0d;background:var(--gruen);border-color:var(--gruen)}
+  .plk.fehler{color:#fff;background:var(--bad);border-color:var(--bad)}
+  .plk.nicht{color:var(--mist-dim);border-style:dashed}
+  .plk.verpasst,.plk.abgebrochen{color:var(--mist-dim)}
+  a.plk:hover{filter:brightness(1.1)}
+
+  /* Cockpit */
+  .cockpit .kachel{padding:var(--s3) var(--s4);border-radius:14px;transition:border-color .2s}
+  .cockpit .kachel b{font-size:19px}
+  .cockpit .kachel.achtung{border-color:var(--gelb-rand);background:linear-gradient(180deg,rgba(250,178,25,.08),var(--panel))}
+
+  /* Heute geht raus */
+  .raus{list-style:none;margin:0;padding:0}
+  .raus>li{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:var(--s2) var(--s4);align-items:center;
+           padding:var(--s3) 0;border-top:1px solid var(--line-soft)}
+  .raus>li:first-child{border-top:0;padding-top:var(--s1)}
+  .raus .wann{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#F4EEDD;line-height:1;font-variant-numeric:tabular-nums}
+  .raus .wann small{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-top:6px}
+  .raus .was{min-width:0;display:grid;gap:6px}
+  .raus .was .titelzeile{display:flex;align-items:baseline;gap:var(--s2);min-width:0}
+  .raus .was button.tz{all:unset;cursor:pointer;font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:#F4EEDD;
+                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;line-height:1.25}
+  .raus .was button.tz:hover{color:var(--champagne);text-decoration:underline;text-decoration-color:var(--line)}
+  .raus .was button.tz:focus-visible{outline:2px solid var(--champagne);outline-offset:2px;border-radius:4px}
+  .raus .sp{font-size:11px;color:var(--mist-dim);border:1px solid var(--line-soft);border-radius:999px;padding:1px 7px;flex:none}
+  .raus .wo{display:flex;flex-wrap:wrap;gap:6px}
+  .raus .zustand{font-size:var(--t-klein);color:var(--mist-dim);line-height:1.45}
+  .raus .zustand b{font-weight:600}
+  .raus .zustand.ok b{color:var(--gruen)} .raus .zustand.plan b{color:var(--champagne)}
+  .raus .zustand.achtung b{color:#FFD27A} .raus .zustand.bad b{color:#ff9d8f} .raus .zustand.aus b{color:var(--mist)}
+  .raus .knoepfe{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .raus .bilder{display:flex;gap:6px;justify-content:flex-end}
+  .daumen{all:unset;cursor:zoom-in;position:relative;display:block;border-radius:8px;overflow:hidden;border:1px solid var(--line);
+          background:#07040f linear-gradient(135deg,#1a1430,#0b0e1a);flex:none}
+  .daumen:focus-visible{outline:2px solid var(--champagne);outline-offset:2px}
+  .daumen img{display:block;width:100%;height:100%;object-fit:cover}
+  .daumen.feed{width:52px;height:65px} .daumen.hoch{width:44px;height:78px}
+  .daumen .nr{position:absolute;right:3px;bottom:3px;font-size:10px;font-weight:600;color:#F4EEDD;background:rgba(7,4,15,.75);border-radius:5px;padding:0 4px}
+  .daumen .play{position:absolute;inset:0;display:grid;place-items:center}
+  .daumen .play::before{content:"";width:26px;height:26px;border-radius:50%;background:rgba(7,4,15,.65);border:1px solid rgba(231,211,161,.7)}
+  .daumen .play::after{content:"";position:absolute;border-left:9px solid var(--champagne);border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:3px}
+  .raus .mehr-bilder{font-size:11px;color:var(--mist-dim);align-self:center}
+  .raus-leer{color:var(--mist-dim);font-size:14px;padding:var(--s3) 0}
+  .achtung-box{border:1px solid var(--gelb-rand);background:var(--gelb-bg);border-radius:12px;padding:var(--s3) var(--s4);margin:0 0 var(--s4)}
+  .achtung-box h3{margin:0 0 6px;font-family:'Inter',sans-serif;font-size:14.5px;font-weight:600;color:#FFE2A6}
+  .achtung-box .eintrag{display:flex;align-items:center;justify-content:space-between;gap:var(--s2) var(--s3);flex-wrap:wrap;
+                        padding:var(--s2) 0;border-top:1px solid rgba(250,178,25,.2);font-size:13.5px;color:#F3E7C9}
+  .achtung-box .eintrag:first-of-type{border-top:0}
+  .achtung-box .eintrag span.warum{display:block;font-size:12.5px;color:#d9c9a3}
+  .alles-gut{display:flex;align-items:center;gap:var(--s2);font-size:13.5px;color:var(--mist);margin:0 0 var(--s3)}
+  .alles-gut::before{content:"✓";display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(127,210,127,.15);color:var(--gruen);font-size:12px;font-weight:700}
+  .kurzwirkung{display:flex;align-items:center;justify-content:space-between;gap:var(--s2) var(--s4);flex-wrap:wrap;
+               margin-top:var(--s3);padding-top:var(--s3);border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--mist)}
+  .kurzwirkung .zahlen{display:flex;gap:var(--s1) var(--s4);flex-wrap:wrap}
+  .kurzwirkung b{color:#F4EEDD;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+
+  /* Post-Karte */
+  .card{padding:var(--s4) var(--s5) var(--s4) var(--s5);border-radius:14px}
+  .kopf{gap:6px;margin:0 0 var(--s2)}
+  .kopf .kmeta{flex-basis:100%;font-size:12px;color:var(--mist-dim);line-height:1.5;order:5}
+  .kopf .kmeta:empty{display:none}
+  .card .tag.art{color:var(--champagne);border-color:var(--gold)}
+  .titel{font-size:22px}
+  .txt{font-size:var(--t-text);line-height:1.6}
+  .aktionen{gap:var(--s2);padding-top:var(--s3);border-top:1px solid var(--line-soft);margin-top:var(--s1)}
+  .aktionen .gruppe{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .aktionen .nebenbei button{border-color:var(--line-soft);color:var(--champagne)}
+  .aktionen .nebenbei button:hover{border-color:var(--gold)}
+  .folienstreifen{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 var(--s3)}
+  .folienstreifen .daumen{width:48px;height:60px}
+  .vorschau{position:relative}
+  .vorschau .play{position:absolute;inset:0;display:grid;place-items:center}
+  .vorschau .play::before{content:"";width:38px;height:38px;border-radius:50%;background:rgba(7,4,15,.6);border:1px solid rgba(231,211,161,.7)}
+  .vorschau .play::after{content:"";position:absolute;border-left:13px solid var(--champagne);border-top:8px solid transparent;border-bottom:8px solid transparent;margin-left:4px}
+  .vorschau.story img{aspect-ratio:9/16}
+  .termin{gap:6px}
+  .termin>span:first-child{color:var(--mist-dim)}
+  details.folien{margin:0 0 var(--s3)}
+  details.folien summary{text-transform:none;letter-spacing:0;font-size:13px}
+
+  /* Tagesplan */
+  .tagesplan-panel .himmel{padding:0 0 var(--s4);margin:0 0 var(--s4);border-bottom:1px solid var(--line-soft)}
+  .schalter{font-size:14px;color:var(--mist);padding:var(--s2) var(--s3);border:1px solid var(--line-soft);border-radius:10px;width:fit-content;max-width:100%;margin:0 0 var(--s2)}
+  .schalter.on{border-color:var(--gold);background:rgba(201,162,75,.08)}
+  .schalter input{width:18px;height:18px}
+  #planSprachen{margin:0 0 var(--s3)}
+  .laeufe{margin:0 0 var(--s1)}
+  .knopfzeile{margin-top:var(--s4)}
+
+  /* Plan */
+  .plan-kopf{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--s3) var(--s4);flex-wrap:wrap}
+  .zaehler span{display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;border:1px solid var(--line-soft);border-radius:999px}
+  details.pz>summary{gap:var(--s2);min-height:52px}
+  details.pz summary .mini{background:#07040f}
+  details.pz summary .wo{display:inline-flex;gap:3px;color:var(--mist-dim);flex:none}
+  details.pz summary .wo .ikon{width:13px;height:13px}
+  details.pz summary .wo .ikon.fertig{color:var(--gruen)}
+  .tag-kopf h4{font-size:20px}
+
+  /* Wirkung */
+  .werkzeug{display:flex;gap:var(--s3);flex-wrap:wrap;align-items:flex-end;margin:0 0 var(--s4)}
+  .werkzeug>div{min-width:170px}
+  .kpi{border-radius:14px}
+  .kpi .v{font-variant-numeric:tabular-nums}
+  .termine td .plk{margin-top:1px}
+
+  .card.blitz{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,75,.25)}
+  .card{transition:box-shadow .4s,border-color .4s}
+  .who-raster{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 var(--s5)}
+  .who-teil h4,.who h4{font-size:18px;margin:var(--s4) 0 var(--s1)}
+  .card.who .lede{font-size:15.5px}
+  .card.who .foot{flex-wrap:wrap;border-top:1px solid var(--line-soft);padding-top:var(--s3)}
+  .card.who .schalter{margin:0}
+  /* Dialog */
+  dialog .row{gap:var(--s2)}
+  dialog .chips{margin:0 0 var(--s2)}
+
+  @media (max-width:700px){
+    .raus>li{grid-template-columns:52px minmax(0,1fr);gap:var(--s2) var(--s3)}
+    .raus .bilder{grid-column:2;justify-content:flex-start}
+    .raus .wann{font-size:21px}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 16px 96px}
+    .kopfzeile{margin:0 -16px var(--s4);padding:10px 16px}
+    .tabs{margin:0 -16px;padding:0 16px}
+    .panel{padding:var(--s4);border-radius:14px}
+    .panel h2{font-size:21px}
+    .card{padding:var(--s4)}
+    .cockpit .kachel b{font-size:15.5px}
+    .bar h3{font-size:23px}
+    .werkzeug>div{flex:1;min-width:140px}
+    .row>.grow{flex-basis:100%}
+    .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2)}
+    .kpis>.kpi:last-child:nth-child(odd){grid-column:1 / -1}
+    .kpi{padding:var(--s3)}
+    .kpi .v{font-size:26px}
+    .schalter{width:100%}
+    #status{bottom:var(--s4)}
+    details.pz>summary{flex-wrap:wrap;row-gap:4px;padding:10px 12px}
+    details.pz>summary .pt{flex:1 1 100%;order:10;padding-left:56px;font-size:17px}
+    details.pz>summary .st{margin-left:auto}
+    details.pz summary .mini{order:-1}
+    #planListe details.pz>summary::before{order:-2}
+    .tag-kopf{flex-wrap:wrap;gap:4px 10px}
+    .tag-kopf .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .zaehler{gap:6px}
+    .zaehler span{padding:3px 8px;font-size:12.5px}
+    .termine thead{display:none}
+    .termine tr{display:grid;grid-template-columns:1fr auto;gap:6px 10px;padding:12px 0;border-top:1px solid var(--line-soft)}
+    .termine tbody tr:first-child{border-top:0}
+    .termine td{border:0;padding:0}
+    .termine td:nth-child(1){grid-column:1;grid-row:1}
+    .termine td:nth-child(4){grid-column:2;grid-row:1;justify-self:end}
+    .termine td:nth-child(2),.termine td:nth-child(5){grid-column:1 / -1}
+    .termine td:nth-child(5):empty{display:none}
   }
 </style>
 </head>
@@ -366,40 +551,46 @@
   <!-- ============ HEUTE ============ -->
   <section id="view-heute">
     <div class="cockpit" id="cockpit" aria-label="Überblick"></div>
-    <div class="panel">
-      <div class="himmel">
-        <canvas id="mondKlein" width="152" height="152" aria-hidden="true"></canvas>
-        <div id="himmelText"><div class="gross">Der Himmel heute</div><div class="zeile meta">wird geladen …</div></div>
-      </div>
-    </div>
 
-    <div class="panel">
-      <h2>Tagesplan</h2>
-      <label class="imtp" id="autoSchalter"><input type="checkbox" id="planAuto"> Jeden Morgen automatisch erstellen (heute und morgen)</label>
-      <div class="chips" id="planSprachen" role="group" aria-label="Sprachen des Tagesplans" style="margin:10px 0 4px"></div>
-      <p class="hint" id="planInfo">Pro Sprache: ein Feed-Post, ein Reel mit Skript und eine Story.</p>
-      <div class="chips" id="laeufe"></div>
-      <div class="fehlerbox hide" id="planFehler" role="alert"></div>
-      <div class="row" style="margin-top:14px">
-        <button id="btnPlanJetzt">Fehlende jetzt erstellen</button>
-        <button class="ghost" id="btnPlanNeu">Alle neu erstellen</button>
-      </div>
-      <div class="fortschritt hide" id="fortschritt"></div>
-      <p class="note">Jeder Lauf ist ein Claude-Aufruf pro Sprache (bei Mängeln in der Qualitätsprüfung ein zweiter zum Verbessern). „Neu erstellen" ersetzt nur Entwürfe,
-        die du nicht bearbeitet hast.</p>
+    <div class="panel raus-panel" id="rausPanel">
+      <div class="panel-kopf"><h2>Heute geht raus</h2><span class="meta" id="rausZusammen"></span></div>
+      <div id="achtung"></div>
+      <ol class="raus" id="raus" aria-label="Zeitplan für heute"><li class="raus-leer">Wird geladen …</li></ol>
+      <div class="kurzwirkung hide" id="kurzWirkung"></div>
     </div>
 
     <div class="bar">
       <h3>Posts von heute</h3>
       <div class="chips" id="heuteSprachen" role="group" aria-label="Sprache"></div>
     </div>
-    <div id="heuteListe"></div>
+    <div id="heuteListe"><div class="empty">Wird geladen …</div></div>
+
+    <div class="panel tagesplan-panel">
+      <div class="himmel">
+        <canvas id="mondKlein" width="152" height="152" aria-hidden="true"></canvas>
+        <div id="himmelText"><div class="gross">Der Himmel heute</div><div class="zeile meta">wird geladen …</div></div>
+      </div>
+      <h2>Tagesplan</h2>
+      <p class="hint">Soraya schreibt aus dem Himmel von heute pro Sprache einen Feed-Post, ein Reel und eine Story.</p>
+      <label class="imtp schalter" id="autoSchalter"><input type="checkbox" id="planAuto"> Jeden Morgen automatisch erstellen (heute und morgen)</label>
+      <p class="hint" id="planInfo">Pro Sprache: ein Feed-Post, ein Reel mit Skript und eine Story.</p>
+      <div class="chips" id="planSprachen" role="group" aria-label="Sprachen des Tagesplans"></div>
+      <div class="chips laeufe" id="laeufe"></div>
+      <div class="fehlerbox hide" id="planFehler" role="alert"></div>
+      <div class="row knopfzeile">
+        <button id="btnPlanJetzt">Fehlende jetzt erstellen</button>
+        <button class="ghost" id="btnPlanNeu">Alle neu erstellen</button>
+      </div>
+      <div class="fortschritt hide" id="fortschritt"></div>
+      <p class="note">Kostet pro Sprache ein paar Cent (findet die Prüfung etwas, wird einmal nachgebessert).
+        „Alle neu erstellen“ ersetzt nur Entwürfe, die du nicht bearbeitet hast.</p>
+    </div>
   </section>
 
   <!-- ============ PLAN ============ -->
   <section id="view-plan" class="hide">
     <div class="panel">
-      <div class="row" style="justify-content:space-between">
+      <div class="plan-kopf">
         <div class="woche">
           <button class="ghost klein" id="wocheZurueck" aria-label="Vorherige Woche">&larr;</button>
           <strong id="wocheLabel">Diese Woche</strong>
@@ -422,7 +613,7 @@
       </div>
       <div class="vorplan hide" id="vorplanStand" role="status"></div>
     </div>
-    <div id="planListe"></div>
+    <div id="planListe"><div class="empty">Wird geladen …</div></div>
   </section>
 
   <!-- ============ STUDIO ============ -->
@@ -457,7 +648,9 @@
       <h3>Deine Posts</h3>
       <button class="ghost" id="btnStudioLaden">Aktualisieren</button>
     </div>
-    <div id="studioListe"></div>
+    <p class="tpinfo">Diese Posts gehen nicht von selbst raus. Gib einem Post unten auf der Karte ein Datum – dann steht er im Plan
+      (und wird, wenn die Sprache passt, automatisch gepostet). Oder kopiere Text und Bild und poste selbst.</p>
+    <div id="studioListe"><div class="empty">Wird geladen …</div></div>
   </section>
 
   <!-- ============ ZIELGRUPPEN ============ -->
@@ -493,7 +686,7 @@
           <label class="q on"><input type="checkbox" value="playstore" checked> Play Store <small>gratis</small></label>
         </div>
         <p class="note">Reddit und Play Store sind kostenlos. Die Websuche läuft über deinen
-           Anthropic-Zugang und kostet ein paar Cent pro Recherche. Rechne mit ein bis zwei Minuten.</p>
+           KI-Zugang und kostet ein paar Cent pro Recherche. Rechne mit ein bis zwei Minuten.</p>
       </div>
 
       <details>
@@ -528,36 +721,36 @@
       <button class="ghost" id="btnProfileLaden">Aktualisieren</button>
     </div>
     <p class="tpinfo" id="tpInfo" hidden></p>
-    <div id="profile"></div>
+    <div id="profile"><div class="empty">Wird geladen …</div></div>
   </section>
 
   <!-- ============ WIRKUNG ============ -->
   <!-- ============ POSTEN ============ -->
   <section id="view-posten" class="hide">
+    <div class="panel">
+      <h2>Automatisch posten</h2>
+      <label class="imtp schalter" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch auf Facebook und Instagram posten</label>
+      <p class="hint" id="postInfo">Wird geladen …</p>
+      <div class="achtung-box hide" id="postWarnung" role="alert"></div>
+    </div>
     <div class="panel hide" id="einrichtungPanel">
       <h2>Einrichtung – Schritt für Schritt</h2>
       <p class="hint">Was schon erledigt ist, wird abgehakt. Wenn alles fertig ist, verschwindet dieser Kasten.</p>
       <ol class="schritte" id="einrichtungSchritte"></ol>
     </div>
     <div class="panel">
-      <h2>Automatisch posten</h2>
-      <label class="imtp" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch auf Facebook und Instagram posten</label>
-      <p class="hint" id="postInfo">Wird geladen …</p>
-      <div class="fehlerbox hide" id="postWarnung" role="alert"></div>
-    </div>
-    <div class="panel">
       <h2>Verbindungen</h2>
       <div id="verbindungen"></div>
+    </div>
+    <div class="panel">
+      <h2>Termine</h2>
+      <p class="hint">Gestern bis übermorgen (Wiener Zeit). Stoppen setzt den Post auf „Nicht posten“, er geht dann nirgends raus.</p>
+      <div id="termine"></div>
     </div>
     <div class="panel">
       <h2>Testpost</h2>
       <p class="hint" id="testpostInfo">Ein Post von heute sofort posten – geht auch, wenn „Automatisch posten“ aus ist.</p>
       <div id="testposts"></div>
-    </div>
-    <div class="panel">
-      <h2>Termine</h2>
-      <p class="hint">Gestern bis übermorgen. Stoppen setzt den Post auf „Nicht posten“, er geht dann nirgends raus.</p>
-      <div id="termine"></div>
     </div>
     <div class="panel">
       <h2>Einstellungen</h2>
@@ -575,7 +768,8 @@
         <div><label for="zReel">Reel</label><input type="time" id="zReel"></div>
       </div>
       <p class="lernhinweis" id="zeitTipp" hidden></p>
-      <div class="chips" style="margin-top:12px">
+      <label style="margin-top:16px">Wohin posten</label>
+      <div class="chips">
         <label class="imtp"><input type="checkbox" id="plFacebook"> Facebook-Seite</label>
         <label class="imtp"><input type="checkbox" id="plInstagram"> Instagram</label>
         <label class="imtp"><input type="checkbox" id="plTiktok"> TikTok (nur Reels)</label>
@@ -590,7 +784,7 @@
   </section>
 
   <section id="view-wirkung" class="hide">
-    <div class="row" style="margin-bottom:16px">
+    <div class="werkzeug">
       <div><label for="wTage">Zeitraum</label>
         <select id="wTage"><option value="7">Letzte 7 Tage</option><option value="30" selected>Letzte 30 Tage</option><option value="90">Letzte 90 Tage</option></select></div>
       <div><label for="wKennzahl">Kennzahl im Verlauf</label>
@@ -599,7 +793,7 @@
     <div id="wirkungInhalt"><div class="empty">Wird geladen …</div></div>
   </section>
 
-  <div id="status" role="status" aria-live="polite"></div>
+  <div id="status" class="leer" role="status" aria-live="polite"></div>
   <footer>Soraya &#10022; Content Studio</footer>
 </div>
 
@@ -608,7 +802,18 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function melde(m){ $('status').textContent = m || ''; }
+let meldeTimer = null;
+function melde(m){
+  const el = $('status'); el.textContent = m || ''; el.classList.toggle('leer', !m);
+  clearTimeout(meldeTimer); if(m) meldeTimer = setTimeout(() => el.classList.add('leer'), m.startsWith('Fehler') ? 9000 : 4500);
+}
+// kleine Zeichen (einfarbig, folgen der Schriftfarbe)
+const SVG = (d) => `<span class="ikon" aria-hidden="true"><svg viewBox="0 0 24 24">${d}</svg></span>`;
+const IKON = {
+  facebook: SVG('<path d="M13.5 21v-7.2h2.4l.4-2.8h-2.8V9.2c0-.8.2-1.4 1.4-1.4h1.5V5.3c-.3 0-1.1-.1-2.2-.1-2.2 0-3.6 1.3-3.6 3.7V11H8.2v2.8h2.4V21h2.9z"/>'),
+  instagram: SVG('<path d="M12 7.3a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm4.9-8.9a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM12 3.6c2.3 0 2.5 0 3.4.1 2.3.1 3.4 1.2 3.5 3.5.1.9.1 1.1.1 3.4v2.8c0 2.3 0 2.5-.1 3.4-.1 2.3-1.2 3.4-3.5 3.5-.9.1-1.1.1-3.4.1H9.2c-2.3 0-2.5 0-3.4-.1-2.3-.1-3.4-1.2-3.5-3.5-.1-.9-.1-1.1-.1-3.4V10.6c0-2.3 0-2.5.1-3.4.1-2.3 1.2-3.4 3.5-3.5.9-.1 1.1-.1 3.4-.1H12zm0-1.6H9.1c-2.4 0-2.7 0-3.6.1C2.4 2.2 2.2 4.4 2.1 5.5 2 6.4 2 6.7 2 9.1v5.8c0 2.4 0 2.7.1 3.6.1 3.1 2.3 3.3 3.4 3.4.9.1 1.2.1 3.6.1h5.8c2.4 0 2.7 0 3.6-.1 3.1-.1 3.3-2.3 3.4-3.4.1-.9.1-1.2.1-3.6V9.1c0-2.4 0-2.7-.1-3.6-.1-3.1-2.3-3.3-3.4-3.4-.9-.1-1.2-.1-3.6-.1H12z"/>'),
+  tiktok: SVG('<path d="M16.6 2h-3.2v13.4a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .8.1V9.3a6.1 6.1 0 1 0 5.3 6.1V8.6a7.6 7.6 0 0 0 4.4 1.4V6.8a4.4 4.4 0 0 1-4.4-4.4z"/>')};
+const plIkon = (pl, cls = '', zusatz = '') => `<span class="plk ${cls}" title="${esc((PL_NAME[pl] || pl) + (zusatz ? ': ' + zusatz : ''))}">${IKON[pl] || ''}${esc(PL_NAME[pl] || pl)}</span>`;
 function busy(btn, on, text){
   btn.disabled = on;
   if(on){ btn.dataset.label = btn.textContent; btn.innerHTML = '<span class="spin"></span>' + esc(text); }
@@ -679,52 +884,59 @@ function karte(p, {datum = true} = {}){
       ${sk.schluss ? `<div><b>Schluss:</b> ${esc(sk.schluss)}</div>` : ''}</div>` : '';
   const st = p.status || 'entwurf';
   const fmt = p.art === 'post' ? 'feed' : 'story';
+  const m = p.meta || {};
   const termine = TERMINE.get(String(p.id)) || [];
-  const termin = termine.length ? `<div class="termin"><span>${p.status === 'gepostet' ? 'Gepostet:' : 'Postet automatisch'}</span>
+  const termin = termine.length ? `<div class="termin"><span>${p.status === 'gepostet' ? 'Gepostet:' : 'Postet automatisch:'}</span>
       ${termine.map(t => `<span class="vs ${esc(t.status)}">${uhr(t.geplant_um)} ${esc(PL_NAME[t.plattform] || t.plattform)}${t.status === 'fertig' ? ' ✓' : t.status === 'fehler' ? ' ⚠' : ''}</span>`).join('')}</div>` : '';
   const schnell = st === 'entwurf' ? `<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button>`
     : st === 'freigegeben' ? `<button class="ghost klein" data-schnell="entwurf">Freigabe zurücknehmen</button>` : '';
   const stopp = ['entwurf', 'freigegeben'].includes(st) && p.quelle === 'himmel' ? `<button class="ghost klein" data-schnell="gestoppt" title="Wird dann nicht automatisch gepostet">Nicht posten</button>` : '';
+  const kmeta = [m.thema ? `<span title="Format des Tages">${esc(m.thema)}${m.folge ? ' · Folge ' + esc(m.folge) : ''}</span>` : '',
+    m.zielgruppe ? `<span title="Zielgruppe, für die geschrieben wurde">Für: ${esc(m.zielgruppe)}</span>` : '',
+    HOOK_STIL[m.hook_stil] && p.art !== 'story' ? `<span title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Test: ${esc(HOOK_STIL[m.hook_stil])}</span>` : '']
+    .filter(Boolean).join(' · ');
+  const n = folienAnzahl(p);
+  const v = esc(p.aktualisiert || p.created_at || '');
+  const streifen = n > 1 ? `<div class="folienstreifen" aria-label="Karussell: ${n} Bilder">${Array.from({length: n}, (_, i) =>
+    `<button class="daumen" data-aktion="folie" data-nr="${i + 1}" aria-label="Bild ${i + 1} von ${n} ansehen"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/folie/${i + 1}?klein=1&v=${v}"><span class="nr">${i + 1}</span></button>`).join('')}</div>` : '';
   return `<article class="card mit-bild" data-id="${esc(p.id)}">
-    <button class="vorschau${fmt === 'story' ? ' story' : ''}" data-aktion="bild" aria-label="Bild ansehen">
-      <img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${fmt}&klein=1&v=${esc(p.aktualisiert || p.created_at || '')}"></button>
+    <button class="vorschau${fmt === 'story' ? ' story' : ''}" data-aktion="bild" aria-label="${p.art === 'reel' ? 'Bild zum Reel ansehen' : 'Bild ansehen'}">
+      <img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${fmt}&klein=1&v=${v}">${p.art === 'reel' ? '<span class="play" aria-hidden="true"></span>' : ''}</button>
     <div class="inhalt">
     <div class="kopf">
-      <span class="tag">${esc(ART[p.art] || 'Post')}</span>
-      <span class="tag leise">${esc(p.platform)}</span>
+      <span class="tag art">${esc(ART[p.art] || 'Post')}</span>
       <span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
-      ${p.quelle === 'himmel' ? '<span class="tag leise nebensache">Himmel</span>' : ''}
-      ${p.meta && p.meta.zielgruppe ? `<span class="tag leise" title="Zielgruppe, für die geschrieben wurde">Für: ${esc(p.meta.zielgruppe)}</span>` : ''}
-      ${p.meta && p.meta.thema ? `<span class="tag leise" title="Format des Tages">${esc(p.meta.thema)}${p.meta.folge ? ' · Folge ' + esc(p.meta.folge) : ''}</span>` : ''}
-      ${p.meta && HOOK_STIL[p.meta.hook_stil] && p.art !== 'story' ? `<span class="tag leise" title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Test: ${esc(HOOK_STIL[p.meta.hook_stil])}</span>` : ''}
       <span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span>
+      <span class="kmeta">${kmeta}</span>
     </div>
     ${p.titel ? `<p class="titel">${esc(p.titel)}</p>` : ''}
     ${p.untertitel ? `<p class="untertitel">${esc(p.untertitel)}</p>` : ''}
     <p class="txt">${esc(p.text)}</p>
-    ${p.meta && (p.meta.pruefung || []).length && p.status !== 'gepostet' ? (befundSchwer(p.meta.pruefung)
-      ? `<div class="pruefhinweis" role="note"><b>Bitte prüfen und freigeben:</b> ${esc(p.meta.pruefung.join(' · '))}
+    ${(m.pruefung || []).length && p.status !== 'gepostet' ? (befundSchwer(m.pruefung)
+      ? `<div class="pruefhinweis" role="note"><b>Bitte prüfen und freigeben:</b> ${esc(m.pruefung.join(' · '))}
       <span>Geht beim automatischen Posten erst raus, wenn du ihn freigibst (oder nach dem Bearbeiten nichts mehr auffällt).</span></div>`
-      : `<div class="pruefhinweis leicht" role="note"><b>Hinweis:</b> ${esc(p.meta.pruefung.join(' · '))}
+      : `<div class="pruefhinweis leicht" role="note"><b>Hinweis:</b> ${esc(m.pruefung.join(' · '))}
       <span>Nur eine Kleinigkeit – geht trotzdem automatisch raus.</span></div>`) : ''}
-    ${p.meta && (p.meta.bild_punkte || []).length ? `<p class="tags">Im Bild: ${esc(p.meta.bild_punkte.join(' · '))}</p>` : ''}
-    ${folienAnzahl(p) > 1 ? `<details class="folien"><summary>Karussell: ${folienAnzahl(p)} Bilder zum Durchwischen</summary><ol>${p.meta.folien.map(f =>
+    ${(m.bild_punkte || []).length ? `<p class="tags">Im Bild: ${esc(m.bild_punkte.join(' · '))}</p>` : ''}
+    ${streifen}
+    ${n > 1 ? `<details class="folien"><summary>Texte der ${n} Karussell-Bilder</summary><ol>${m.folien.map(f =>
       `<li><b>${esc(f.titel)}</b> – ${esc(f.text)}</li>`).join('')}<li><b>Schluss:</b> Einladung in die App</li></ol></details>` : ''}
     ${skript}
     ${p.hashtags ? `<p class="tags">${esc(p.hashtags)}</p>` : ''}
     <p class="wirk" data-wirk="p${esc(p.id)}">${wirkText('p' + p.id)}</p>
     ${termin}
     <div class="aktionen">
-      ${schnell}${stopp}
-      <button class="ghost klein" data-aktion="kopieren">Text kopieren</button>
-      <button class="ghost klein" data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
-      ${skript ? '<button class="ghost klein" data-aktion="skript">Skript kopieren</button>' : ''}
-      <button class="ghost klein" data-aktion="bild">Bild</button>
-      ${p.art === 'reel' ? '<button class="ghost klein" data-aktion="video">Video</button>' : ''}
-      <button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button>
-      <select data-aktion="status" aria-label="Status">${Object.entries(STATUS).map(([k,v]) =>
-        `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
-      ${datum ? `<input type="date" data-aktion="datum" aria-label="Geplant für" value="${esc((p.geplant_fuer || '').slice(0,10))}">` : ''}
+      <div class="gruppe">${schnell}${stopp}
+        <select data-aktion="status" aria-label="Status">${Object.entries(STATUS).map(([k,v]) =>
+          `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
+        ${datum ? `<input type="date" data-aktion="datum" aria-label="Geplant für" value="${esc((p.geplant_fuer || '').slice(0,10))}">` : ''}</div>
+      <div class="gruppe nebenbei rechts">
+        <button class="ghost klein" data-aktion="kopieren">Text kopieren</button>
+        <button class="ghost klein" data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
+        ${skript ? '<button class="ghost klein" data-aktion="skript">Skript kopieren</button>' : ''}
+        <button class="ghost klein" data-aktion="bild">${n > 1 ? 'Bilder' : 'Bild'}</button>
+        ${p.art === 'reel' ? '<button class="ghost klein" data-aktion="video">Video</button>' : ''}
+        <button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button></div>
     </div>
     </div>
   </article>`;
@@ -785,7 +997,9 @@ document.addEventListener('click', async (ev) => {
     return kopiere(btn, [s.hook, ...(s.szenen || []).map((x, i) => (i+1) + '. ' + x), s.schluss].filter(Boolean).join('\n')); }
   if(a === 'link') return kopiere(btn, postLink(p.id));
   if(a === 'bild') return bildDialog(p);
-  if(a === 'video') return videoDialog(p);
+  if(a === 'folie') return bildDialog(p, +btn.dataset.nr || 1);
+  if(a === 'video' || a === 'film') return videoDialog(p);
+  if(a === 'zeigen') return zeigeKarte(p);
   if(a === 'bearbeiten') return bearbeitenDialog(p);
 });
 document.addEventListener('change', async (ev) => {
@@ -874,9 +1088,9 @@ async function teilen(url, name, typ, p){
 }
 const dateiName = (p, endung, format) => `soraya-${(p.geplant_fuer || p.created_at || '').slice(0,10)}-${p.art || 'post'}-${p.sprache || 'de'}${format ? '-' + format : ''}.${endung}`;
 const folienAnzahl = (p) => p.art === 'post' && p.meta && (p.meta.folien || []).length >= 2 ? p.meta.folien.length + 2 : 1;
-function bildDialog(p){
+function bildDialog(p, start = 1){
   const d = $('dlg');
-  let format = p.art === 'post' ? 'feed' : 'story', nr = 1;
+  let format = p.art === 'post' ? 'feed' : 'story', nr = start;
   const n = folienAnzahl(p);
   d.innerHTML = `<h3>${n > 1 ? `Karussell – ${n} Bilder` : 'Bild zum Post'}</h3>
     <div class="chips" role="group" aria-label="Format">
@@ -1020,16 +1234,130 @@ $('planAuto').onchange = async () => {
   catch(e){ melde('Fehler: ' + e.message); }
   ladeHeute();
 };
-// Ist die Statistik (Besuche, neue Konten) verbunden? Einmal pro Seitenaufruf nachsehen.
-let statistikVerbunden = null;
+// Ist die Statistik (Besuche, neue Konten) verbunden? Dazu die Zahlen der letzten 7 Tage fuer "Heute".
+let statistikVerbunden = null, kurzStand = 0, kurzDaten = null;
 async function pruefeStatistik(){
-  if(statistikVerbunden !== null) return;
-  try{ statistikVerbunden = !!(await api('/wirkung?tage=1')).eingerichtet; }catch(e){ statistikVerbunden = true; }
+  if(Date.now() - kurzStand < 5 * 60 * 1000) return;
+  kurzStand = Date.now();
+  try{ const w = await api('/wirkung?tage=7'); statistikVerbunden = !!w.eingerichtet; kurzDaten = w.eingerichtet ? w.statistik : null; }
+  catch(e){ statistikVerbunden = true; kurzDaten = null; }
+  zeigeKurzWirkung();
 }
+function zeigeKurzWirkung(){
+  const box = $('kurzWirkung'), d = kurzDaten;
+  if(!d){ box.classList.add('hide'); return; }
+  const tage = d.tage || [];
+  const besuche = Object.values(d.quellen || {}).reduce((n, q) => n + ((q.schritte || {}).besuch || 0), 0);
+  box.innerHTML = `<div class="zahlen"><span class="meta">Letzte 7 Tage:</span>
+      <span><b>${zahl(besuche)}</b> ${besuche === 1 ? 'Besuch' : 'Besuche'} über deine Links</span>
+      <span><b>${zahl(summe(tage, 'schnellstart_berechnet'))}</b> Schnellstarts</span>
+      <span><b>${zahl(summe(tage, 'neue_konten'))}</b> neue Konten</span></div>
+    <button class="ghost klein" data-ziel-tab="wirkung">Mehr unter „Wirkung“ ›</button>`;
+  box.classList.remove('hide');
+}
+document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-ziel-tab]'); if(b) zeige(b.dataset.zielTab); });
+
+/* ---------- Heute geht raus: Zeitplan von heute mit Plattformen, Bildern und Stand ---------- */
+// wie posten.sprache_fuer(): bei "alle 4 Sprachen" rotiert die Sprache je Tag und Art
+const ROTATION = ['en', 'de', 'hu', 'it'], ARTEN_POSTEN = ['story', 'post', 'reel'];
+const ordinal = (isoTag) => { const [y, m, t] = String(isoTag).slice(0, 10).split('-').map(Number); return Date.UTC(y, m - 1, t) / 864e5 + 719163; };
+const spracheFuer = (isoTag, art, e) => e.sprache !== 'alle' ? e.sprache : ROTATION[(ordinal(isoTag) * 3 + ARTEN_POSTEN.indexOf(art)) % 4];
+function daumen(p, klein = true){
+  const v = esc(p.aktualisiert || p.created_at || ''), n = folienAnzahl(p);
+  if(p.art === 'reel') return `<button class="daumen hoch" data-aktion="film" aria-label="Reel-Video ansehen"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=story&klein=1&v=${v}"><span class="play" aria-hidden="true"></span></button>`;
+  if(p.art === 'story') return `<button class="daumen hoch" data-aktion="bild" aria-label="Story-Bild ansehen"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=story&klein=1&v=${v}"></button>`;
+  if(n < 2) return `<button class="daumen feed" data-aktion="bild" aria-label="Bild ansehen"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=feed&klein=1&v=${v}"></button>`;
+  const zeigen = Math.min(n, klein ? 3 : n);
+  return Array.from({length: zeigen}, (_, i) => `<button class="daumen feed" data-aktion="folie" data-nr="${i + 1}" aria-label="Karussell-Bild ${i + 1} von ${n}"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/folie/${i + 1}?klein=1&v=${v}"><span class="nr">${i + 1}</span></button>`).join('')
+    + (n > zeigen ? `<span class="mehr-bilder">+${n - zeigen}</span>` : '');
+}
+// Was passiert mit diesem Post heute? -> {cls, text, sub}
+function rausZustand(p, tt, wo, e, art, zeit){
+  if(!p) return {cls: 'achtung', text: 'Noch kein Post', sub: 'Der Tagesplan für heute fehlt noch.'};
+  const st = p.status || 'entwurf', befunde = (p.meta || {}).pruefung || [];
+  if(st === 'gestoppt') return {cls: 'aus', text: 'Nicht posten', sub: 'Du hast ihn gestoppt – er geht nirgends raus.'};
+  if(st === 'gepostet' || (tt.length && tt.every(t => t.status === 'fertig'))) return {cls: 'ok', text: 'Gepostet ✓', sub: ''};
+  const f = tt.find(t => t.status === 'fehler');
+  if(f) return {cls: 'bad', text: 'Fehler beim Posten', sub: `${PL_NAME[f.plattform] || f.plattform}: ${f.fehler || 'unbekannt'} (Versuch ${f.versuche || 1} von 3${(f.versuche || 1) < 3 ? ', Soraya versucht es selbst nochmal' : ''})`};
+  if(tt.length && tt.every(t => ['verpasst', 'abgebrochen'].includes(t.status))) return {cls: 'aus', text: 'Nicht gepostet', sub: 'Der Termin ist verpasst oder abgebrochen.'};
+  if(!e.an) return {cls: 'aus', text: 'Geht nicht von selbst raus', sub: 'Automatisch posten ist aus (Reiter „Posten“).'};
+  if(!wo.some(w => w.st !== 'nicht')) return {cls: 'achtung', text: 'Keine Plattform verbunden', sub: 'Unter „Posten“ → Verbindungen.'};
+  const schwer = befundSchwer(befunde);
+  if(st !== 'freigegeben' && (schwer || e.modus === 'freigabe'))
+    return {cls: 'achtung', text: schwer ? 'Wartet: bitte prüfen und freigeben' : 'Wartet auf deine Freigabe',
+            sub: schwer ? befunde.join(' · ') : 'Du hast „Nur freigegebene Posts“ eingestellt.', freigeben: true};
+  if(tt.some(t => t.status === 'fertig')) return {cls: 'ok', text: 'Teilweise gepostet', sub: ''};
+  if(tt.some(t => t.status === 'laeuft')) return {cls: 'plan', text: 'Wird gerade gepostet …', sub: ''};
+  const termin = tt[0] && new Date(tt[0].geplant_um).getTime();
+  if(termin && termin < Date.now()) return {cls: 'plan', text: 'Wird gleich gepostet', sub: ''};
+  return {cls: 'plan', text: `Geht um ${zeit} Uhr raus`, sub: ''};
+}
+function zeigeRaus(d, ps, morgen){
+  const box = $('raus');
+  if(!ps || !ps.einstellungen){ box.innerHTML = '<li class="raus-leer">Der Stand zum Posten konnte nicht geladen werden. Bitte die Seite neu laden.</li>'; return; }
+  const e = ps.einstellungen, v = ps.verbindungen || {}, tag = String(d.datum).slice(0, 10);
+  const termineHeute = (ps.termine || []).filter(t => String(t.geplant_fuer || '').slice(0, 10) === tag);
+  const zeilen = ARTEN_POSTEN.slice().sort((a, b) => String(e.zeiten[a]).localeCompare(String(e.zeiten[b]))).map(art => {
+    const sprache = e.sprache === 'alle' ? ((ps.sprachen_heute || {})[art] || spracheFuer(tag, art, e)) : e.sprache;
+    const p = (d.posts || []).find(x => x.art === art && x.sprache === sprache);
+    if(p) POSTS.set(String(p.id), p);
+    const tt = p ? termineHeute.filter(t => t.post_id === p.id) : [];
+    const zeit = tt[0] ? uhr(tt[0].geplant_um) : e.zeiten[art];
+    const wo = tt.length ? tt.map(t => ({pl: t.plattform, st: t.status, url: t.url}))
+      : ['facebook', 'instagram', 'tiktok'].filter(pl => e.plattformen[pl] && (pl !== 'tiktok' || art === 'reel'))
+          .map(pl => ({pl, st: v[pl] && v[pl].verbunden ? 'geplant' : 'nicht'}));
+    return {art, sprache, p, tt, zeit, wo, z: rausZustand(p, tt, wo, e, art, zeit)};
+  });
+  box.innerHTML = zeilen.map(({art, sprache, p, zeit, wo, z}) => `<li${p ? ` data-id="${esc(p.id)}"` : ''}>
+    <div class="wann">${esc(zeit)}<small>${esc(ART[art])}</small></div>
+    <div class="was">
+      <div class="titelzeile">${p ? `<button class="tz" data-aktion="zeigen" title="Zum Post springen">${esc(p.titel || (p.text || '').slice(0, 60))}</button>` : '<span class="meta">–</span>'}<span class="sp">${esc(String(sprache || '').toUpperCase())}</span></div>
+      <div class="wo">${wo.length ? wo.map(w => w.url && w.st === 'fertig'
+          ? `<a class="plk fertig" href="${esc(w.url)}" target="_blank" rel="noopener" title="Auf ${esc(PL_NAME[w.pl])} ansehen">${IKON[w.pl] || ''}${esc(PL_NAME[w.pl])} ✓</a>`
+          : plIkon(w.pl, w.st, w.st === 'nicht' ? 'nicht verbunden' : VS_NAME[w.st] || w.st)).join('') : '<span class="meta">Keine Plattform eingeschaltet</span>'}</div>
+      <div class="zustand ${z.cls}"><b>${esc(z.text)}</b>${z.sub ? ' · ' + esc(z.sub) : ''}</div>
+      ${z.freigeben || !p ? `<div class="knoepfe">${z.freigeben ? '<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button>' : ''}
+        ${!p ? '<button class="klein" data-raus-plan="1">Tagesplan jetzt erstellen</button>' : ''}</div>` : ''}
+    </div>
+    <div class="bilder">${p ? daumen(p) : ''}</div></li>`).join('');
+  // Zusammenfassung + was braucht dich (heute und morgen)
+  const warten = zeilen.filter(x => x.z.freigeben).length, raus = zeilen.filter(x => x.z.cls === 'plan').length,
+        fertig = zeilen.filter(x => x.z.cls === 'ok').length;
+  $('rausZusammen').textContent = !e.an ? 'Automatisch posten ist aus'
+    : [fertig && `${fertig} gepostet`, raus && `${raus} geplant`, warten && `${warten} ${warten === 1 ? 'wartet' : 'warten'} auf dich`,
+       zeilen.filter(x => x.z.cls === 'bad').length && 'Fehler', 'Sprache: ' + sprachText(ps)].filter(Boolean).join(' · ');
+  const offen = [];
+  zeilen.forEach(x => { if(x.z.freigeben || x.z.cls === 'bad') offen.push({tag: 'Heute', p: x.p, z: x.z}); });
+  if(e.an && morgen && morgen.posts){
+    const mTag = String(morgen.datum).slice(0, 10);
+    ARTEN_POSTEN.forEach(art => {
+      const p = morgen.posts.find(x => x.art === art && x.sprache === spracheFuer(mTag, art, e));
+      if(!p) return; POSTS.set(String(p.id), p);
+      const z = rausZustand(p, [], [{st: 'geplant'}], e, art, e.zeiten[art]);
+      if(z.freigeben) offen.push({tag: 'Morgen', p, z});
+    });
+  }
+  const k3 = $('cockpit').querySelector('.kachel:last-child');
+  if(k3) k3.classList.toggle('achtung', e.an && offen.length > 0);
+  $('achtung').innerHTML = !e.an ? '' : offen.length ? `<div class="achtung-box" role="alert"><h3>${offen.length === 1 ? '1 Post braucht dich' : offen.length + ' Posts brauchen dich'}</h3>
+      ${offen.map(o => `<div class="eintrag" data-id="${esc(o.p.id)}"><div><b>${o.tag} · ${esc(ART[o.p.art])} ${esc((o.p.sprache || '').toUpperCase())}:</b> ${esc(o.p.titel || '')}
+        <span class="warum">${esc(o.z.text)}${o.z.sub ? ' – ' + esc(o.z.sub) : ''}</span></div>
+        <div class="gruppe">${o.z.freigeben ? '<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Ansehen &amp; bearbeiten</button>'
+          : '<button class="ghost klein" data-ziel-tab="posten">Zu den Terminen</button>'}</div></div>`).join('')}</div>`
+    : '<p class="alles-gut">Nichts zu tun – alles Geplante geht von selbst raus.</p>';
+}
+// Klick auf den Titel: zur vollen Karte unten springen (Sprache wird umgestellt)
+function zeigeKarte(p){
+  const hin = () => { const k = document.querySelector(`#heuteListe .card[data-id="${p.id}"]`);
+    if(k){ k.scrollIntoView({behavior: 'smooth', block: 'start'}); k.classList.add('blitz'); setTimeout(() => k.classList.remove('blitz'), 1600); } };
+  if(aktiv !== 'heute') return;
+  if(heuteSprache !== p.sprache){ heuteSprache = p.sprache; heuteGewaehlt = true; ladeHeute().then(hin); } else hin();
+}
+document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-raus-plan]'); if(b){ starteTagesplan(false); $('btnPlanJetzt').scrollIntoView({behavior: 'smooth', block: 'center'}); } });
 // wie redaktion.schwer(): nur diese Befunde halten das automatische Posten an
 const befundSchwer = (liste) => (liste || []).some(b => /^(Heikle|Deutsche Wörter|Enthält einen Link|Reel ohne Hook|Überschrift fehlt)/.test(b));
 function zeigeCockpit(d, ps){
-  if(statistikVerbunden === null) pruefeStatistik().then(() => { if(statistikVerbunden === false) zeigeCockpit(d, ps); });
+  pruefeStatistik().then(() => { if(statistikVerbunden === false && !$('cockpit').textContent.includes('Statistik')) zeigeCockpit(d, ps); });
   const fertig = d.sprachen.filter(s => (d.laeufe || []).some(l => l.sprache === s && l.status === 'fertig')).length;
   const e = ps && ps.einstellungen, v = ps && ps.verbindungen;
   const verbunden = v ? ['facebook', 'instagram'].filter(p => v[p].verbunden).map(p => PL_NAME[p]) : [];
@@ -1038,8 +1366,8 @@ function zeigeCockpit(d, ps){
     && new Date(t.geplant_um).getTime() > jetzt).sort((a, b) => new Date(a.geplant_um) - new Date(b.geplant_um))[0];
   const punkt = (an) => `<span class="punkt ${an ? 'ok' : ''}"></span>`;
   $('cockpit').innerHTML = `
-    <button class="kachel" data-ziel="tagesplan"><b>${punkt(d.automatisch)}Tagesplan ${d.automatisch ? 'an' : 'aus'}</b>
-      Heute ${fertig} von ${d.sprachen.length} Sprachen fertig · ${d.sprachen.map(s => s.toUpperCase()).join(', ')}</button>
+    <button class="kachel${!d.automatisch && e && e.an ? ' achtung' : ''}" data-ziel="tagesplan"><b>${punkt(d.automatisch)}Tagesplan ${d.automatisch ? 'an' : 'aus'}</b>
+      ${!d.automatisch && e && e.an ? 'Posten ist an, aber ohne Tagesplan-Automatik entstehen keine neuen Posts · ' : ''}Heute ${fertig} von ${d.sprachen.length} Sprachen fertig</button>
     <button class="kachel" data-ziel="posten"><b>${punkt(e && e.an && verbunden.length)}Posten ${e && e.an ? 'an' : 'aus'}</b>
       ${verbunden.length ? 'Verbunden: ' + verbunden.join(' + ') : 'Noch keine Plattform verbunden'}</button>
     ${v && !verbunden.length ? `<button class="kachel" data-ziel="posten"><b>Nächster Schritt</b>
@@ -1054,11 +1382,18 @@ $('cockpit').addEventListener('click', (ev) => {
   if(k.dataset.ziel === 'posten' || k.dataset.ziel === 'wirkung') return zeige(k.dataset.ziel);
   $('planAuto').closest('.panel').scrollIntoView({behavior: 'smooth', block: 'start'});
 });
+let heuteNr = 0;
 async function ladeHeute(){
   clearTimeout(heuteTimer);
+  const nr = ++heuteNr;
   let d, ps;
-  try{ [d, ps] = await Promise.all([api('/tagesplan'), ladeTermine()]); }catch(e){ melde('Fehler: ' + e.message); return; }
+  let morgen = null;
+  try{ [d, ps, morgen] = await Promise.all([api('/tagesplan'), ladeTermine(),
+         api('/tagesplan?datum=' + iso(plusTage(new Date(), 1))).catch(() => null)]);
+       if(nr !== heuteNr) return; }
+  catch(e){ if(nr !== heuteNr) return; melde('Fehler: ' + e.message); $('raus').innerHTML = `<li class="raus-leer">Konnte nicht laden: ${esc(e.message)}</li>`; return; }
   zeigeCockpit(d, ps);
+  zeigeRaus(d, ps, morgen);
   // Wird automatisch gepostet, zeigt "Heute" zuerst die Posting-Sprache
   if(!heuteGewaehlt && ps && ps.einstellungen.an && ps.einstellungen.sprache !== 'alle' && d.sprachen.includes(ps.einstellungen.sprache)) heuteSprache = ps.einstellungen.sprache;
   const stand = Object.fromEntries((d.laeufe || []).map(l => [l.sprache, l]));
@@ -1133,7 +1468,8 @@ function zeile(p){
   const st = p.status || 'entwurf';
   return `<details class="pz" data-pz="${esc(p.id)}"${OFFEN.has(String(p.id)) || planAlleOffen ? ' open' : ''}>
     <summary><img class="mini" loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${p.art === 'post' ? 'feed' : 'story'}&klein=1&v=${esc(p.aktualisiert || p.created_at || '')}">
-      ${(TERMINE.get(String(p.id)) || [])[0] ? `<span class="zeit">${uhr(TERMINE.get(String(p.id))[0].geplant_um)}</span>` : ''}
+      ${(TERMINE.get(String(p.id)) || [])[0] ? `<span class="zeit">${uhr(TERMINE.get(String(p.id))[0].geplant_um)}</span><span class="wo" aria-label="Plattformen">${TERMINE.get(String(p.id)).map(t =>
+        (IKON[t.plattform] || '').replace('class="ikon" aria-hidden="true"', `class="ikon${t.status === 'fertig' ? ' fertig' : ''}" title="${esc(PL_NAME[t.plattform] + ': ' + (VS_NAME[t.status] || t.status))}"`)).join('')}</span>` : ''}
       <span class="tag">${esc(ART[p.art] || 'Post')}</span><span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
       <span class="pt">${esc(p.titel || (p.text || '').slice(0, 60))}</span><span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span></summary>
     ${karte(p)}</details>`;
@@ -1148,8 +1484,10 @@ function tagStand(laeufe, sprachen, tIso){
   const st = Object.fromEntries(l.map(x => [x.sprache, x.status]));
   return `<span class="tagstand" aria-label="Tagesplan">${sprachen.map(s => `<span class="${esc(st[s] || '')}" title="${esc(st[s] || 'noch nicht erstellt')}"><i></i>${s.toUpperCase()}</span>`).join('')}</span>`;
 }
+let planNr = 0;
 async function ladePlan(){
   clearTimeout(planTimer);
+  const nr = ++planNr;
   const bis = plusTage(planStart, 6);
   $('wocheLabel').textContent = `${kurz(planStart)} – ${kurz(bis)}`;
   $('wocheHeute').hidden = iso(planStart) === iso(heuteNull());
@@ -1162,7 +1500,9 @@ async function ladePlan(){
       api('/content?' + q).then(d => d.posts || []),
       api(`/tagesplan/zeitraum?von=${iso(planStart)}&bis=${iso(bis)}`).catch(() => stand),
       ladeTermine()]);
-  }catch(e){ melde('Fehler: ' + e.message); return; }
+    if(nr !== planNr) return;
+  }catch(e){ if(nr !== planNr) return; melde('Fehler: ' + e.message);
+    $('planListe').innerHTML = `<div class="empty">Plan konnte nicht geladen werden.<span>${esc(e.message)} – bitte gleich nochmal versuchen.</span></div>`; return; }
   const zaehl = (s) => posts.filter(p => p.geplant_fuer && p.status === s).length;
   $('planZaehler').innerHTML = `<span><b>${posts.filter(p => p.geplant_fuer).length}</b> geplant</span>
     <span><b>${zaehl('entwurf')}</b> Entwurf</span><span><b>${zaehl('freigegeben')}</b> freigegeben</span>
@@ -1226,11 +1566,15 @@ LADER.plan = () => { ladePlan(); ladeQuellen(); };
 
 /* ---------- STUDIO ---------- */
 document.querySelectorAll('.sprachwahl').forEach(s => s.innerHTML = SPRACHEN.map(([c, n]) => `<option value="${c}">${n}</option>`).join(''));
+let studioNr = 0;
 async function ladeStudio(){
+  const nr = ++studioNr;               // nur die neueste Antwort zeigen (aeltere kommen manchmal spaeter an)
   try{
     const posts = (await api('/content?himmel=false&limit=40')).posts || [];
+    if(nr !== studioNr) return;
     liste($('studioListe'), posts, 'Noch keine Posts.<span>Gib oben ein Thema ein und leg los.</span>');
-  }catch(e){ melde('Konnte Posts nicht laden.'); }
+  }catch(e){ melde('Konnte Posts nicht laden.');
+    $('studioListe').innerHTML = `<div class="empty">Posts konnten nicht geladen werden.<span>${esc(e.message)}</span></div>`; }
 }
 $('btnStudioLaden').onclick = ladeStudio;
 $('btnThema').onclick = async () => {
@@ -1255,7 +1599,7 @@ LADER.studio = () => { ladeStudio(); ladeQuellen(); };
 /* ---------- ZIELGRUPPEN ---------- */
 function liPunkte(titel, arr){
   if(!arr || !arr.length) return '';
-  return `<h4>${titel}</h4><ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+  return `<div class="who-teil"><h4>${titel}</h4><ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
 }
 const LAENDER = {at:'Österreich', de:'Deutschland', ch:'Schweiz', hu:'Ungarn', it:'Italien', uk:'Vereinigtes Königreich', us:'USA'};
 function tagesplanInfo(wahl){
@@ -1283,16 +1627,16 @@ function renderProfile(zeilen, wahl){
       ${p._quellen && p._quellen.length ? `<p class="src">Quellen: ${p._quellen.map(esc).join(' &middot; ')}</p>` : ''}
       <p class="lede">${esc(p.wer_sind_sie || '')}</p>
       ${p.antwort_auf_frage ? `<div class="answer">${esc(p.antwort_auf_frage)}</div>` : ''}
-      ${liPunkte('Was sie beschäftigt', p.beschaeftigt_sie || p['beschäftigt_sie'])}
+      <div class="who-raster">${liPunkte('Was sie beschäftigt', p.beschaeftigt_sie || p['beschäftigt_sie'])}
       ${liPunkte('Was sie sich wünschen', p.wuensche)}
       ${liPunkte('Ihre Sprache', p.sprache)}
       ${liPunkte('Content-Ideen', p.content_ideen)}
       ${liPunkte('Worauf achten', p.worauf_achten)}
-      ${liPunkte('Lücke am Markt', p.luecke_am_markt)}
+      ${liPunkte('Lücke am Markt', p.luecke_am_markt)}</div>
       ${(p.unsicher && p.unsicher.length) ? `<h4>Unsicher</h4><p class="warn">${p.unsicher.map(esc).join(' &middot; ')}</p>` : ''}
       ${(p._gesucht && p._gesucht.length) ? `<h4>Gesucht wurde nach</h4><p class="warn">${p._gesucht.map(esc).join(' &middot; ')}</p>` : ''}
       <div class="foot" style="margin-top:14px">
-        <label class="imtp${z.im_tagesplan ? ' on' : ''}"><input type="checkbox" data-imtp="${esc(z.id)}"${z.im_tagesplan ? ' checked' : ''}>
+        <label class="imtp schalter${z.im_tagesplan ? ' on' : ''}"><input type="checkbox" data-imtp="${esc(z.id)}"${z.im_tagesplan ? ' checked' : ''}>
           Im Tagesplan verwenden${fuer.length ? ` <span class="tag leise">${fuer.join(' · ')}</span>` : ''}</label>
         <span class="stamp">${esc((z.created_at || '').slice(0,10))}</span></div>
     </div>`;
@@ -1443,6 +1787,8 @@ function zeigeWirkung(){
       <div class="viz" id="verlauf"></div>
       <details><summary>Als Tabelle</summary><div class="tabwrap">${tabelle(tage)}</div></details>
     </div>
+    ${herkunftPanel()}
+    <div id="fbPanel"></div>
     <div class="panel trichter"><h2>Vom Schnellstart zum Profil</h2>
       <p class="hint">Summen im Zeitraum. Prozent bezogen auf die erste Stufe.</p>
       ${stufen.map(([n, v]) => `<div class="stufe"><span class="name">${n}</span><div class="spur">
@@ -1451,8 +1797,6 @@ function zeigeWirkung(){
       </div></div>`).join('')}
     </div>
     <div id="lernPanel"></div>
-    <div id="fbPanel"></div>
-    ${herkunftPanel()}
     ${linksPanel()}
     <div class="panel trichter"><h2>Sprachen der aktiven Nutzer</h2>
       <p class="hint">Welche App-Sprache die Nutzer im Zeitraum hatten.</p>
@@ -1642,12 +1986,12 @@ async function ladePosten(){
   if(e.an && !d.tagesplan_auto) warn.push('Der Tagesplan erstellt nicht automatisch (Reiter „Heute“). Ohne neue Posts gibt es nichts zu posten.');
   const fehlen = (d.benoetigt || []).filter(s => !d.tagesplan_sprachen.includes(s));
   if(e.an && fehlen.length) warn.push(`Der Tagesplan erstellt keine Posts auf ${fehlen.map(s => s.toUpperCase()).join(', ')} – im Reiter „Heute“ bei „Sprachen“ anhaken.`);
-  $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => `<div>${esc(w)}</div>`).join('');
+  $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => `<div class="eintrag">${esc(w)}</div>`).join('');
   zeigeZeitTipp();
 
   $('verbindungen').innerHTML = ['facebook', 'instagram', 'tiktok'].map(p => {
     const x = v[p] || {};
-    const titel = p === 'facebook' ? 'Facebook-Seite' : p === 'instagram' ? 'Instagram (Business-Konto)' : 'TikTok (nur Reels)';
+    const titel = IKON[p] + ' ' + (p === 'facebook' ? 'Facebook-Seite' : p === 'instagram' ? 'Instagram (Business-Konto)' : 'TikTok (nur Reels)');
     const abl = x.laeuft_ab ? ` · Zugang bis ${new Date(x.laeuft_ab * 1000).toLocaleDateString('de-AT')} (verlängert sich selbst)` : '';
     const stand = x.verbunden ? `<span class="punkt ok"></span>Verbunden: ${esc(x.name || '')}${abl}`
       : x.eingerichtet ? '<span class="punkt"></span>Noch nicht verbunden'
@@ -1658,7 +2002,7 @@ async function ladePosten(){
     const tt = p === 'tiktok' && x.verbunden ? `<div class="klein">${e.plattformen.tiktok
       ? `Ein · ${e.tiktok_modus === 'direkt' ? 'veröffentlicht direkt' : 'Reels kommen als Entwurf in deine TikTok-App'}` : 'Aus – es geht nichts auf TikTok (unten bei Einstellungen einschalten)'}</div>` : '';
     return `<div class="verbindung"><div><div class="name">${titel}</div><div class="klein">${stand}</div>${tt}
-      ${x.eingerichtet ? '' : `<div class="klein">Rückruf-Adresse für die ${p === 'tiktok' ? 'TikTok' : 'Meta'}-App: <code>${esc(x.rueckruf_url || '')}</code></div>`}</div>${knopf}</div>`;
+      ${x.eingerichtet || x.verbunden ? '' : `<div class="klein">Rückruf-Adresse für die ${p === 'tiktok' ? 'TikTok' : 'Meta'}-App: <code>${esc(x.rueckruf_url || '')}</code></div>`}</div>${knopf}</div>`;
   }).join('');
 
   zeigeEinrichtung(d);
@@ -1676,7 +2020,7 @@ async function ladePosten(){
       return `<tr><td class="t">${tagName(t.geplant_um)} ${uhr(t.geplant_um)}</td>
         <td>${esc(ART[t.art] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>
           ${t.fehler && t.status !== 'fertig' ? `<div class="fehl">${esc(t.fehler)}${t.status === 'fehler' ? ` (Versuch ${t.versuche} von 3)` : ''}</div>` : ''}</td>
-        <td class="pl">${PL_NAME[t.plattform] || esc(t.plattform)}</td>
+        <td class="pl">${plIkon(t.plattform)}</td>
         <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}</td></tr>`;
     }).join('')}</tbody></table>`
     : `<div class="empty">Keine Termine.<span>${e.an ? 'Termine entstehen, sobald es Posts für heute oder morgen gibt und eine Plattform verbunden ist.' : 'Termine entstehen, wenn „Automatisch posten“ an ist. Zum Testen: Kasten „Testpost“ oben.'}</span></div>`;
@@ -1696,7 +2040,7 @@ function zeigeEinrichtung(d){
   const e = d.einstellungen, v = d.verbindungen;
   const getestet = (d.termine || []).some(t => t.status === 'fertig');
   const schritte = [
-    {ok: v.facebook.eingerichtet || v.instagram.eingerichtet, was: 'Meta-App anlegen und in Railway eintragen',
+    {ok: v.facebook.eingerichtet || v.instagram.eingerichtet || v.facebook.verbunden || v.instagram.verbunden, was: 'Meta-App anlegen und in Railway eintragen',
      wie: `Auf developers.facebook.com mit „Weiter mit Facebook“ eine App „Soraya Agent“ anlegen (Business-Portfolio: keines).
        Datenschutz-URL: ${kopierZeile(DATENSCHUTZ_URL)}
        Gültige Rückruf-Adressen (OAuth-Redirect-URIs): ${kopierZeile(v.facebook.rueckruf_url)}${kopierZeile(v.instagram.rueckruf_url)}
