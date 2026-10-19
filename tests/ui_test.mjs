@@ -193,7 +193,8 @@ if (OUT) await page.screenshot({ path: OUT + "/ui-plan-kompakt.png", fullPage: f
 // Studio
 await page.click('.tab[data-tab="studio"]'); await wait(500);
 await page.fill("#thema", "Venus rückläufig"); await page.selectOption("#sprache1", "it");
-await page.click("#btnThema"); await wait(1200);
+await page.click("#btnThema");
+await page.waitForFunction(() => [...document.querySelectorAll("#studioListe .card")].filter((c) => c.textContent.includes("IT")).length >= 3, null, { timeout: 20000 }).catch(() => {});
 check("Studio: 3 Posts auf Italienisch erstellt", (await page.$$eval("#studioListe .card", (x) => x.filter((c) => c.textContent.includes("IT")).length)) === 3, "");
 check("Studio: Himmel-Posts erscheinen hier nicht", !(await page.textContent("#studioListe")).includes("Himmel"), "");
 
