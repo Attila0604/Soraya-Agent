@@ -25,12 +25,15 @@ import himmel
 import meta
 import paket
 import redaktion
+import tiktok
 from wirkung import link_basis
 
-STANDARD = {"an": False, "sprache": "en", "modus": "auto",
+STANDARD = {"an": False, "sprache": "en", "modus": "auto", "tiktok_modus": "entwurf",
             "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00"},
-            "plattformen": {"facebook": True, "instagram": True}}
-PLATTFORMEN = ("facebook", "instagram")
+            "plattformen": {"facebook": True, "instagram": True, "tiktok": False}}
+PLATTFORMEN = ("facebook", "instagram", "tiktok")
+# TikTok nimmt nur Videos: dort gehen nur die Reels hin
+NUR_REELS = {"tiktok"}
 # "alle": jeder der drei Posts eines Tages in einer anderen Sprache, die Reihenfolge rotiert taeglich --
 # so kommt jede Sprache gleich oft dran (in 4 Tagen je dreimal) und jede Art in jeder Sprache.
 ROTATION = ("en", "de", "hu", "it")
@@ -71,6 +74,8 @@ def speichere_einstellungen(neu: dict) -> dict:
         e["sprache"] = neu["sprache"]
     if neu.get("modus") in ("auto", "freigabe"):
         e["modus"] = neu["modus"]
+    if neu.get("tiktok_modus") in ("entwurf", "direkt"):
+        e["tiktok_modus"] = neu["tiktok_modus"]
     for art, zeit in (neu.get("zeiten") or {}).items():
         if art in STANDARD["zeiten"]:
             datetime.strptime(zeit, "%H:%M")       # wirft bei falscher Uhrzeit
@@ -87,8 +92,13 @@ def termin(tag: date, zeit: str) -> datetime:
     return datetime(tag.year, tag.month, tag.day, h, m, tzinfo=himmel.WIEN)
 
 
+def verbindungen() -> dict:
+    """Facebook, Instagram und TikTok zusammen (fuers Dashboard und den Zeitplan)."""
+    return {**meta.verbindungen(), "tiktok": tiktok.verbindung()}
+
+
 def _aktive_plattformen(e: dict) -> list[str]:
-    v = meta.verbindungen()
+    v = verbindungen()
     return [p for p in PLATTFORMEN if e["plattformen"].get(p) and v[p]["verbunden"]]
 
 
@@ -107,6 +117,8 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
         if post.get("sprache") != sprache_fuer(post["geplant_fuer"], post.get("art") or "post", e):
             continue
         for p in plattformen:
+            if p in NUR_REELS and post.get("art") != "reel":
+                continue
             neu += db.plane_veroeffentlichung(post["id"], p, termin(post["geplant_fuer"], zeit))
     return neu
 
@@ -189,9 +201,13 @@ def _freigegeben(post: dict, e: dict) -> tuple[bool, str]:
     return True, ""
 
 
-def veroeffentliche(zeile: dict, post: dict) -> dict:
+def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
     p, art = zeile["plattform"], post.get("art") or "post"
     text = text_fuer(post, p)
+    if p == "tiktok":
+        if art != "reel":
+            raise ValueError("Auf TikTok gehen nur Reels (Videos).")
+        return tiktok.poste_video(paket._rendere_video(post), text, (e or einstellungen()).get("tiktok_modus", "entwurf"))
     if p == "facebook":
         if art == "reel":
             return meta.poste_facebook("reel", text, video=paket._rendere_video(post))
@@ -227,7 +243,7 @@ def fuehre_aus(jetzt: datetime | None = None, e: dict | None = None) -> list[dic
             continue                                   # "warte": spaeter noch einmal ansehen
         db.setze_veroeffentlichung(zeile["id"], "laeuft", versuch=True)
         try:
-            r = veroeffentliche(zeile, post)
+            r = veroeffentliche(zeile, post, e)
             db.setze_veroeffentlichung(zeile["id"], "fertig", extern_id=r.get("id"), url=r.get("url"))
             ergebnisse.append({"id": zeile["id"], "status": "fertig"})
         except Exception as ex:  # noqa: BLE001 -- landet im Protokoll
@@ -290,6 +306,8 @@ def jetzt_posten(post_id: int, plattform: str) -> dict:
         raise ValueError("Post nicht gefunden.")
     if plattform not in PLATTFORMEN:
         raise ValueError("Unbekannte Plattform.")
+    if plattform in NUR_REELS and post.get("art") != "reel":
+        raise ValueError("Auf TikTok gehen nur Reels (Videos).")
     zid = db.plane_veroeffentlichung(post_id, plattform, datetime.now(himmel.WIEN), zurueckgeben=True)
     db.setze_veroeffentlichung(zid, "laeuft", versuch=True)
     try:

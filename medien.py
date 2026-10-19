@@ -533,7 +533,9 @@ def stil(post: dict) -> dict:
     thema = meta.get("thema") or ""
     layout, palette = THEMEN.get(thema, ("ereignis", "nacht") if thema.startswith("Großes Ereignis") else ("mond", "nacht"))
     punkte = [str(x).strip() for x in (meta.get("bild_punkte") or []) if str(x).strip()][:3]
-    if post.get("art") == "post" and punkte:
+    if post.get("art") == "story":
+        aufbau = "mond"
+    elif post.get("art") == "post" and punkte:
         hat_zeichen = sum(zeichen_aus_text(x) is not None for x in punkte) >= 2
         aufbau = "zeichen" if hat_zeichen else "schritte"
     elif post.get("art") == "post" and layout == "liebe":
@@ -758,6 +760,7 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     unter = messe_text(post["untertitel"], breite=W - 220, groesse=42 if story else 36, name="inter400",
                        zeilenhoehe=1.35, max_zeilen=3, min_groesse=28) if post.get("untertitel") else None
     frage_text = post.get("text") if post.get("art") == "story" and post.get("text") and post.get("text") != post.get("titel") else ""
+    antworten = st["punkte"][:2] if story and post.get("art") == "story" and len(st["punkte"]) >= 2 else []
     pad = 44 if story else 34
     frage = messe_text(frage_text, breite=W - 220 - 2 * pad, groesse=46 if story else 36, name="inter500",
                        zeilenhoehe=1.38, max_zeilen=6 if story else 4, min_groesse=28) if frage_text else None
@@ -781,7 +784,8 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
             mb = mond(mr * m, meta.get("phase_index"), meta.get("beleuchtung"))
             aufkleben(leinwand, mb, ((W - 110) * m - mb.width / 2, (story and 180 or 120) * m - mb.height / 2))
     else:
-        rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + (ab_frage + frage["hoehe"] + 2 * pad if frage else 0)
+        rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + (ab_frage + frage["hoehe"] + 2 * pad if frage else 0) \
+            + (40 + 96 if antworten else 0)
         r = (150 if story else 105) if mit_mond else 0
         if mit_mond:
             r = max(60, min(r, (platz - rest - ab_mond) / 2))
@@ -807,6 +811,19 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
             d.rounded_rectangle([110 * m, y * m, (W - 110) * m, (y + frage["hoehe"] + 2 * pad) * m], radius=28 * m,
                                 fill=(255, 255, 255, 13), outline=akzent + (89,), width=int(2 * m))
             zeichne_text(d, frage, W / 2, y + pad, "#EFE8F8", m)
+            y += frage["hoehe"] + 2 * pad
+        if antworten:      # zwei Antwort-Knoepfe wie ein Umfrage-Sticker (Antwort per Nachricht)
+            y += 40
+            font = schrift("inter600", 38 * m)
+            breite, luecke = (W - 220 - 30) / 2, 30
+            for i, a in enumerate(antworten):
+                x0 = 110 + i * (breite + luecke)
+                d.rounded_rectangle([x0 * m, y * m, (x0 + breite) * m, (y + 96) * m], radius=48 * m,
+                                    fill=akzent + (40 if i == 0 else 18,), outline=akzent + (200,), width=max(1, int(2 * m)))
+                text = a if laenge(font, a) <= (breite - 40) * m else ohne_emojis(a)
+                text_mit_emojis(d, ((x0 + breite / 2) * m, (y + 96 / 2 + 13) * m), text, font, (246, 227, 180, 255))
+    if not story and not karten and st["layout"] in ("wissen", "ritual") and post.get("art") == "post":
+        _merken_zeichen(d, W, m, akzent, post.get("sprache") or "de")
     marke(leinwand, W, H, story, post.get("sprache") or "de", m)
     if not story and folien_von(post):
         _wisch_hinweis(d, W, H, m, akzent, post.get("sprache") or "de")
@@ -826,6 +843,19 @@ def anzahl_bilder(post: dict) -> int:
     """1 ohne Karussell, sonst Titelbild + Folien + Schlussfolie."""
     f = folien_von(post)
     return len(f) + 2 if f else 1
+
+
+MERKEN = {"de": "Zum Speichern", "en": "Save this", "hu": "Mentsd el", "it": "Da salvare"}
+
+
+def _merken_zeichen(d, W, m, akzent, sprache):
+    """Lesezeichen oben rechts: Wissen und Rituale sind zum Speichern gedacht (das belohnen die Plattformen)."""
+    x, y, b, h = W - 112, 92, 26, 34
+    d.polygon([(x * m, y * m), ((x + b) * m, y * m), ((x + b) * m, (y + h) * m), ((x + b / 2) * m, (y + h - 9) * m),
+               (x * m, (y + h) * m)], outline=akzent + (230,), width=max(1, int(2 * m)))
+    font = schrift("inter500", 17 * m)
+    text = MERKEN.get(sprache, MERKEN["en"]).upper()
+    gesperrt(d, text, (x + b / 2) * m, (y + h + 30) * m, font, 2 * m, akzent + (200,))
 
 
 def _wisch_hinweis(d, W, H, m, akzent, sprache):

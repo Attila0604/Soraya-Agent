@@ -756,7 +756,7 @@ import redaktion
 
 def test_wochenthemen_und_ereignisse():
     info = himmel.aufbereiten(SKY, HEUTE, "de")          # Vollmond in 2 Tagen: noch kein Ereignis-Tag
-    montag = HEUTE - timedelta(days=HEUTE.weekday())
+    montag = date(2026, 11, 2)                          # eine Woche ohne Saisonbeginn und Feiertag
     namen = [redaktion.wochenthema(montag + timedelta(days=i), info)["name"] for i in range(7)]
     assert namen == ["Deine Woche", "Sternzeichen im Fokus", "Liebe & Beziehung", "Astro-Wissen", "Ritual",
                      "Mitmachen", "Rückblick & Vorschau"]
@@ -1210,3 +1210,83 @@ def test_zeit_vorschlaege():
     v = redaktion.zeit_vorschlaege(erk)
     assert v == [{"art": "post", "stunde": 19, "schnitt": 12.0, "statt": 12, "statt_schnitt": 4.0}]
     assert redaktion.zeit_vorschlaege(redaktion.erkenntnisse(b[:4])) == []
+
+
+class FakeTikTok:
+    def __init__(self):
+        self.aufrufe = []
+
+    @staticmethod
+    def _r(d, code=200):
+        return SimpleNamespace(status_code=code, json=lambda: d, text=json.dumps(d))
+
+    def post(self, url, data=None, json=None, headers=None, timeout=None):
+        self.aufrufe.append(("POST", url, data or json))
+        if url.endswith("/oauth/token/"):
+            return self._r({"access_token": "TT1", "expires_in": 86400, "refresh_token": "R1",
+                            "refresh_expires_in": 31536000, "open_id": "o1"})
+        if url.endswith("/creator_info/query/"):
+            return self._r({"data": {"privacy_level_options": ["SELF_ONLY"]}, "error": {"code": "ok"}})
+        if url.endswith("/video/init/"):
+            return self._r({"data": {"publish_id": "P1", "upload_url": "https://upload.tiktok/x"}, "error": {"code": "ok"}})
+        return self._r({"error": {"code": "unknown", "message": url}}, 400)
+
+    def get(self, url, params=None, headers=None, timeout=None):
+        self.aufrufe.append(("GET", url, params))
+        return self._r({"data": {"user": {"display_name": "Soraya"}}, "error": {"code": "ok"}})
+
+    def put(self, url, data=None, headers=None, timeout=None):
+        self.aufrufe.append(("PUT", url, {"bytes": len(data or b""), "range": (headers or {}).get("Content-Range")}))
+        return self._r({})
+
+
+def test_tiktok_verbinden_schalter_und_posten(fake_meta, monkeypatch, frische_db):
+    import tiktok
+    f = FakeTikTok()
+    monkeypatch.setattr(tiktok.requests, "post", f.post)
+    monkeypatch.setattr(tiktok.requests, "get", f.get)
+    monkeypatch.setattr(tiktok.requests, "put", f.put)
+    assert client.get("/tiktok/verbinden", headers=AUTH, follow_redirects=False).status_code == 409   # ohne App
+    monkeypatch.setenv("TIKTOK_CLIENT_KEY", "ck"); monkeypatch.setenv("TIKTOK_CLIENT_SECRET", "cs")
+    r = client.get("/tiktok/verbinden", headers=AUTH, follow_redirects=False)
+    assert r.status_code == 302 and "tiktok.com/v2/auth/authorize" in r.headers["location"]
+    state = _pq(_up(r.headers["location"]).query)["state"][0]
+    r = client.get(f"/tiktok/rueckruf?code=abc&state={state}", headers=AUTH, follow_redirects=False)
+    assert r.headers["location"].startswith("/?verbunden=tiktok")
+    d = client.get("/posten", headers=AUTH).json()
+    assert d["verbindungen"]["tiktok"]["verbunden"] and d["verbindungen"]["tiktok"]["name"] == "Soraya"
+    assert "token" not in json.dumps(d["verbindungen"]["tiktok"])
+    # Standard: TikTok aus -> nichts geplant
+    tagesplan.erstelle("en")
+    _verbinde("facebook")
+    posten.speichere_einstellungen({"an": True, "plattformen": {"instagram": False}})
+    posten.durchlauf(_um(8))
+    assert not [t for t in db.lade_veroeffentlichungen(_um(0), _um(23)) if t["plattform"] == "tiktok"]
+    # einschalten: nur das Reel geht an TikTok, als Entwurf in den Posteingang
+    posten.speichere_einstellungen({"plattformen": {"tiktok": True}})
+    posten.durchlauf(_um(18, 59))
+    tt = [t for t in db.lade_veroeffentlichungen(_um(0), _um(23)) if t["plattform"] == "tiktok"]
+    assert len(tt) == 1 and tt[0]["art"] == "reel"
+    posten.durchlauf(_um(19, 1))
+    assert any(a[1].endswith("/inbox/video/init/") for a in f.aufrufe)
+    put = [a for a in f.aufrufe if a[0] == "PUT"][-1]
+    assert put[2]["range"].startswith("bytes 0-")
+    # direkt: fragt erst die erlaubte Sichtbarkeit ab (ohne Pruefung nur privat)
+    tiktok.poste_video(b"video", "Titel", "direkt")
+    init = [a for a in f.aufrufe if a[1].endswith("/post/publish/video/init/")][-1]
+    assert init[2]["post_info"]["privacy_level"] == "SELF_ONLY"
+    # Feed-Post an TikTok geht nicht
+    feed = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post")
+    assert client.post("/posten/jetzt", json={"post_id": feed["id"], "plattform": "tiktok"}, headers=AUTH).status_code == 400
+    assert client.post("/tiktok/trennen", headers=AUTH).status_code == 200
+    assert not client.get("/posten", headers=AUTH).json()["verbindungen"]["tiktok"]["verbunden"]
+
+
+def test_tiktok_token_erneuern(monkeypatch):
+    import tiktok
+    f = FakeTikTok()
+    monkeypatch.setattr(tiktok.requests, "post", f.post)
+    monkeypatch.setenv("TIKTOK_CLIENT_KEY", "ck"); monkeypatch.setenv("TIKTOK_CLIENT_SECRET", "cs")
+    db.setze_einstellung("tiktok_zugang", {"token": "ALT", "laeuft_ab": int(time.time()) + 60, "refresh": "R0"})
+    assert tiktok.gueltiger_token() == "TT1"
+    assert f.aufrufe[-1][2]["grant_type"] == "refresh_token" and db.lade_einstellung("tiktok_zugang", {})["refresh"] == "R1"

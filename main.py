@@ -43,6 +43,7 @@ import paket
 import posten
 import redaktion
 import tagesplan
+import tiktok
 from sprachen import SPRACHEN, NAMEN, norm
 from wirkung import hole_statistik, links as wirkung_links
 
@@ -361,7 +362,7 @@ def posten_ansehen():
     try:
         jetzt = datetime.now(himmel.WIEN)
         termine = lade_veroeffentlichungen(jetzt - timedelta(days=2), jetzt + timedelta(days=2))
-        return {"einstellungen": posten.einstellungen(), "verbindungen": meta.verbindungen(),
+        return {"einstellungen": posten.einstellungen(), "verbindungen": posten.verbindungen(),
                 "termine": termine, "tagesplan_auto": tagesplan.automatisch(),
                 "tagesplan_sprachen": tagesplan.sprachen(), "jetzt": jetzt,
                 "sprachen_heute": {a: posten.sprache_fuer(jetzt.date(), a, posten.einstellungen()) for a in posten.ARTEN},
@@ -374,6 +375,7 @@ class PostenEinstellungen(BaseModel):
     an: Optional[bool] = None
     sprache: Optional[str] = None
     modus: Optional[str] = None
+    tiktok_modus: Optional[str] = None
     zeiten: Optional[dict] = None
     plattformen: Optional[dict] = None
 
@@ -435,6 +437,34 @@ def meta_trennen(dienst: str):
         raise HTTPException(status_code=404, detail="Unbekannt.")
     meta.trennen(dienst)
     return {"getrennt": dienst}
+
+
+@app.get("/tiktok/verbinden")
+def tiktok_verbinden():
+    try:
+        return RedirectResponse(tiktok.anmelde_url(), status_code=302)
+    except tiktok.TikTokFehler as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+@app.get("/tiktok/rueckruf")
+def tiktok_rueckruf(code: Optional[str] = None, state: Optional[str] = None,
+                    error_description: Optional[str] = None, error: Optional[str] = None):
+    try:
+        if not code:
+            raise tiktok.TikTokFehler(error_description or error or "Verbindung abgebrochen.")
+        meta.pruefe_state("tiktok", state or "")
+        tiktok.verbinde(code)
+        return RedirectResponse("/?verbunden=tiktok#posten", status_code=302)
+    except Exception as e:
+        from urllib.parse import quote
+        return RedirectResponse(f"/?verbindungsfehler={quote(str(e)[:300])}#posten", status_code=302)
+
+
+@app.post("/tiktok/trennen")
+def tiktok_trennen():
+    tiktok.trennen()
+    return {"getrennt": "tiktok"}
 
 
 @app.get("/oeffentlich/medien/{name}")
