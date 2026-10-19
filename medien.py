@@ -536,7 +536,7 @@ def stil(post: dict) -> dict:
     punkte = [str(x).strip() for x in (meta.get("bild_punkte") or []) if str(x).strip()][:3]
     ereignis_zeichen = zeichen_aus_text(thema.split(": ", 1)[-1]) if layout == "ereignis" else None
     if post.get("art") == "story":
-        aufbau = "mond"
+        aufbau = "glyphe" if ereignis_zeichen is not None else "mond"
     elif post.get("art") == "post" and punkte and layout == "mitmachen":
         aufbau = "umfrage"                       # Antwortmoeglichkeiten A/B/C wie eine Umfrage
     elif post.get("art") == "post" and punkte:
