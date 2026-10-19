@@ -995,6 +995,22 @@ def test_facebook_text_ohne_bio():
     assert "#e5" in posten.text_fuer(viele, "instagram")
 
 
+def test_instagram_bio_hinweis(monkeypatch):
+    monkeypatch.setattr(meta, "zugang", lambda d: {"name": "soraya.astroguide"})
+    p = {"id": 7, "art": "post", "sprache": "en", "text": "Your chart awaits. Link in bio ✨", "hashtags": "#astro"}
+    ig = posten.text_fuer(p, "instagram")
+    assert ig.count("bio") == 1 and "👉 @soraya.astroguide" in ig and ig.index("@soraya") < ig.index("#astro")
+    reel = posten.text_fuer({**p, "art": "reel", "sprache": "hu", "text": "Mit hoz a hét?"}, "instagram")
+    assert "Ingyenes horoszkóp: link a bióban 👉 @soraya.astroguide" in reel
+    assert "@soraya" not in posten.text_fuer({**p, "art": "story"}, "instagram")
+    fb = posten.text_fuer(p, "facebook")
+    assert "@soraya" not in fb and "🔗 Your free horoscope 👉 http" in fb and "?q=p7&lang=en" in fb
+    assert "🔗 Ingyenes horoszkóp 👉 http" in posten.text_fuer({**p, "sprache": "hu"}, "facebook")
+    assert posten.text_fuer({**p, "text": "Hi @soraya.astroguide"}, "instagram").count("@soraya") == 1
+    monkeypatch.setattr(meta, "zugang", lambda d: None)
+    assert "Your free horoscope: link in bio" in posten.text_fuer({**p, "text": "Hello"}, "instagram")
+
+
 def test_wirkung_facebook_reaktionen(monkeypatch, frische_db):
     f = FakeMeta()
     monkeypatch.setattr(meta.requests, "get", f.get)
