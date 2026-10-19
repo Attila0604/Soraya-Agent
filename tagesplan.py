@@ -66,7 +66,8 @@ Liefere genau drei Einträge, in dieser Reihenfolge:
    (insgesamt 60-150 Wörter), dann eine Aufforderung zum Kommentieren oder Speichern, zum Schluss
    die heutige Handlungsaufforderung mit „{link_in_bio}“. "bild_punkte": wenn der Post eine Liste
    ist (z. B. drei Sternzeichen, drei Schritte), bis zu 3 sehr kurze Punkte fürs Bild (je höchstens
-   5 Wörter), sonst [].
+   5 Wörter); beim Format „Mitmachen“ 2 bis 3 Antwortmöglichkeiten (je höchstens 5 Wörter) – sie
+   stehen im Bild wie eine Umfrage A/B/C; sonst [].
    "folien": das Karussell zum Durchwischen (nach dem Titelbild): genau 3 Folien, die den Post in
    Schritten erzählen – je "titel" (höchstens 6 Wörter; bei Sternzeichen der Name des Zeichens) und
    "text" (höchstens 22 Wörter, ein konkreter Gedanke). Jede Folie muss allein verständlich und

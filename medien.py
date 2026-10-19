@@ -15,6 +15,7 @@ from __future__ import annotations
 import io
 import math
 import re
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
 
@@ -533,20 +534,74 @@ def stil(post: dict) -> dict:
     thema = meta.get("thema") or ""
     layout, palette = THEMEN.get(thema, ("ereignis", "nacht") if thema.startswith("Großes Ereignis") else ("mond", "nacht"))
     punkte = [str(x).strip() for x in (meta.get("bild_punkte") or []) if str(x).strip()][:3]
+    ereignis_zeichen = zeichen_aus_text(thema.split(": ", 1)[-1]) if layout == "ereignis" else None
     if post.get("art") == "story":
         aufbau = "mond"
+    elif post.get("art") == "post" and punkte and layout == "mitmachen":
+        aufbau = "umfrage"                       # Antwortmoeglichkeiten A/B/C wie eine Umfrage
     elif post.get("art") == "post" and punkte:
         hat_zeichen = sum(zeichen_aus_text(x) is not None for x in punkte) >= 2
         aufbau = "zeichen" if hat_zeichen else "schritte"
     elif post.get("art") == "post" and layout == "liebe":
         aufbau = "liebe"
+    elif post.get("art") == "post" and layout == "woche":
+        aufbau = "woche"                         # Mondphasen der ganzen Woche als Leiste
+    elif post.get("art") == "post" and layout == "rueckblick":
+        aufbau = "zitat"
+    elif ereignis_zeichen is not None:
+        aufbau = "glyphe"                        # Saisonbeginn: grosses Sternzeichen statt Mond
     else:
         aufbau = "mond"
     sprache = (post.get("sprache") or "de")[:2]
     label = (BESCHRIFTUNG.get(layout) or {}).get(sprache) if layout in BESCHRIFTUNG else None
     if label and meta.get("folge") and layout != "ereignis":     # Serie: "Ritual · Folge 12"
         label = f"{label} · {FOLGE.get(sprache, FOLGE['en']).format(n=int(meta['folge']))}"
-    return {"layout": layout, "aufbau": aufbau, "palette": palette, "label": label, "punkte": punkte}
+    return {"layout": layout, "aufbau": aufbau, "palette": palette, "label": label, "punkte": punkte,
+            "zeichen": ereignis_zeichen}
+
+
+# Mondphasen ohne Internet (fuer die Wochenleiste): Alter seit einem bekannten Neumond
+_NEUMOND = datetime(2000, 1, 6, 18, 14, tzinfo=timezone.utc)
+SYNODISCH = 29.530588853
+WOCHENTAG_KURZ = {"de": "MDMDFSS", "en": "MTWTFSS", "hu": "HKSCPSV", "it": "LMMGVSD"}
+
+
+def mond_am(tag) -> tuple[int, float]:
+    """(phase_index 0..7, Beleuchtung in %) mittags (UTC) an einem Tag."""
+    alter = ((datetime(tag.year, tag.month, tag.day, 12, tzinfo=timezone.utc) - _NEUMOND).total_seconds()
+             / 86400) % SYNODISCH
+    return int(alter / SYNODISCH * 8 + 0.5) % 8, round((1 - math.cos(2 * math.pi * alter / SYNODISCH)) / 2 * 100, 1)
+
+
+def _post_tag(post: dict):
+    t = post.get("geplant_fuer")
+    if isinstance(t, str):
+        try:
+            return date.fromisoformat(t[:10])
+        except ValueError:
+            t = None
+    return t if isinstance(t, date) else date.today()
+
+
+def _wochenleiste(leinwand, d, post, y, W, m, akzent):
+    """Sieben kleine Monde (Montag bis Sonntag) mit Wochentag, der heutige Tag golden umrandet."""
+    tag = _post_tag(post)
+    start = tag - timedelta(days=tag.weekday())
+    kurz = WOCHENTAG_KURZ.get((post.get("sprache") or "de")[:2], WOCHENTAG_KURZ["en"])
+    r, abstand = 30, 118
+    x0 = W / 2 - 3 * abstand
+    font = schrift("inter600", 22 * m)
+    for i in range(7):
+        t = start + timedelta(days=i)
+        cx, cy = x0 + i * abstand, y + r + 6
+        idx, licht = mond_am(t)
+        if t == tag:
+            d.ellipse([(cx - r - 12) * m, (cy - r - 12) * m, (cx + r + 12) * m, (cy + r + 12) * m],
+                      outline=akzent + (230,), width=max(1, int(2 * m)))
+        mb = mond(r * m, idx, licht)
+        aufkleben(leinwand, mb, (cx * m - mb.width / 2, cy * m - mb.height / 2))
+        d.text((cx * m, (cy + r + 40) * m), kurz[i], font=font, fill=akzent + (255 if t == tag else 150,), anchor="ms")
+    return 2 * r + 6 + 52
 
 
 @lru_cache(maxsize=16)
@@ -661,8 +716,8 @@ def _medaillon(d, cx, cy, r, m, akzent, glyphe=None, zahl=None):
         d.text((cx * m, cy * m + r * 0.06 * m), str(zahl), font=schrift("cinzel", r * 1.0 * m), fill=akzent + (255,), anchor="mm")
 
 
-def _karten(d, punkte, y, W, story, m, akzent, zeichen: bool):
-    """Drei Karten untereinander: Medaillon (Sternzeichen-Symbol oder Nummer) + Text."""
+def _karten(d, punkte, y, W, story, m, akzent, zeichen: bool, buchstaben: bool = False):
+    """Drei Karten untereinander: Medaillon (Sternzeichen-Symbol, Nummer oder A/B/C) + Text."""
     r = 56 if story else 48
     pad = 28 if story else 24
     x0, x1 = 90, W - 90
@@ -683,7 +738,8 @@ def _karten(d, punkte, y, W, story, m, akzent, zeichen: bool):
         d.rounded_rectangle([x0 * m, y * m, x1 * m, (y + hoehe) * m], radius=26 * m,
                             fill=(255, 255, 255, 12), outline=akzent + (70,), width=max(1, int(1.5 * m)))
         _medaillon(d, x0 + pad + r, y + hoehe / 2, r, m, akzent,
-                   glyphe=ZEICHEN_GLYPHE[idx] if idx is not None else None, zahl=None if idx is not None else i + 1)
+                   glyphe=ZEICHEN_GLYPHE[idx] if idx is not None else None,
+                   zahl=None if idx is not None else ("ABC"[i] if buchstaben else i + 1))
         ty = y + (hoehe - inhalt) / 2
         if name:
             font = schrift("cinzel", nh * m)
@@ -732,7 +788,7 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     mit_mond = meta.get("phase_index") is not None
 
     # Wasserzeichen: Symbol des Mondzeichens, gross und kaum sichtbar
-    idx_mond = zeichen_aus_text(meta.get("mond_zeichen") or "")
+    idx_mond = st["zeichen"] if st.get("zeichen") is not None else zeichen_aus_text(meta.get("mond_zeichen") or "")
     wasser = ZEICHEN_GLYPHE[idx_mond] if idx_mond is not None and st["layout"] in ("wissen", "zeichen", "ereignis") \
         else ("?" if st["layout"] == "mitmachen" else None)
     if wasser:
@@ -766,7 +822,7 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
                        zeilenhoehe=1.38, max_zeilen=6 if story else 4, min_groesse=28) if frage_text else None
     ab_mond, ab_unter, ab_frage = (110, 36, 70) if story else (70, 26, 44)
 
-    karten = st["aufbau"] in ("zeichen", "schritte")
+    karten = st["aufbau"] in ("zeichen", "schritte", "umfrage")
     if karten:   # Karten-Aufbau: kleiner Mond oben rechts, Titel, Karten
         unter = None if not story else unter
         kh = _karten_hoehe(st["punkte"], W, story, st["aufbau"] == "zeichen")
@@ -778,7 +834,8 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
             y += ab_unter
             zeichne_text(d, unter, W / 2, y, "#C3B7DA", m)
             y += unter["hoehe"]
-        _karten(d, st["punkte"], y + ab_frage * 0.8, W, story, m, akzent, st["aufbau"] == "zeichen")
+        _karten(d, st["punkte"], y + ab_frage * 0.8, W, story, m, akzent, st["aufbau"] == "zeichen",
+                buchstaben=st["aufbau"] == "umfrage")
         if mit_mond:
             mr = 46 if story else 38
             mb = mond(mr * m, meta.get("phase_index"), meta.get("beleuchtung"))
@@ -786,11 +843,26 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     else:
         rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + (ab_frage + frage["hoehe"] + 2 * pad if frage else 0) \
             + (40 + 96 if antworten else 0)
+        held = st["aufbau"] if st["aufbau"] in ("woche", "zitat", "glyphe") else None
+        held_h = {"woche": 118, "zitat": 130, "glyphe": 2 * (150 if story else 120)}.get(held, 0)
+        mit_mond = mit_mond and not held
         r = (150 if story else 105) if mit_mond else 0
         if mit_mond:
             r = max(60, min(r, (platz - rest - ab_mond) / 2))
-        gesamt = rest + (2 * r + ab_mond if mit_mond else 0)
+        gesamt = rest + (2 * r + ab_mond if mit_mond else 0) + (held_h + ab_mond * 0.8 if held else 0)
         y = oben + max(0, (platz - gesamt) / 2)
+        if held == "woche":
+            y += _wochenleiste(leinwand, d, post, y, W, m, akzent) + ab_mond * 0.8
+        elif held == "zitat":
+            d.text((W * m / 2, (y + 150) * m), "\u201C", font=schrift("cormorant", 260 * m), fill=akzent + (230,), anchor="ms")
+            y += held_h + ab_mond * 0.8
+        elif held == "glyphe":
+            gr = held_h / 2
+            schein = radial(int(4 * gr * m), int(4 * gr * m), 2 * gr * m, 2 * gr * m, gr * 0.5 * m, 2 * gr * m, 2 * gr * m,
+                            2 * gr * m, [(0, "#ffe9b0", 0.14), (1, "#ffe9b0", 0)])
+            aufkleben(leinwand, schein, (W * m / 2 - schein.width / 2, (y + gr) * m - schein.height / 2))
+            _medaillon(d, W / 2, y + gr, gr, m, akzent, glyphe=ZEICHEN_GLYPHE[st["zeichen"]])
+            y += held_h + ab_mond * 0.8
         if mit_mond:
             if st["aufbau"] == "liebe":
                 _liebe_ringe(d, W / 2, y + r, r, m, akzent)
@@ -913,6 +985,12 @@ def folie(post: dict, nr: int) -> Image.Image:
     f = folien[nr - 2]
     titel, text = (f.get("titel") or "").strip(), (f.get("text") or "").strip()
     idx = zeichen_aus_text(titel)
+    if idx is not None:          # grosses, kaum sichtbares Zeichen im Hintergrund (wie auf dem Titelbild)
+        ebene = Image.new("RGBA", leinwand.size, (0, 0, 0, 0))
+        ImageDraw.Draw(ebene).text((W * m / 2, H * m * 0.55), ZEICHEN_GLYPHE[idx], font=schrift("zeichen", 640 * m),
+                                   fill=akzent + (255,), anchor="mm")
+        aufkleben(leinwand, _mit_alpha(ebene, 0.06))
+        d = ImageDraw.Draw(leinwand, "RGBA")
     r = 92
     tt = messe_text(titel, breite=W - 200, groesse=88, name="cormorant", max_zeilen=2, min_groesse=56)
     tx = messe_text(text, breite=W - 220, groesse=46, name="inter400", zeilenhoehe=1.42, max_zeilen=6, min_groesse=32)
