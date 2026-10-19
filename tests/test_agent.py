@@ -876,11 +876,19 @@ def test_looks_je_format():
     assert _medien.stil({"art": "story", "meta": {"thema": "Liebe & Beziehung"}})["aufbau"] == "mond"
     assert _medien.stil({"art": "post", "meta": {"thema": "Großes Ereignis: Vollmond morgen"}})["layout"] == "ereignis"
     assert _medien.stil({"art": "post", "meta": {}}) == {"layout": "mond", "aufbau": "mond", "palette": "nacht",
-                                                         "label": None, "punkte": []}
+                                                         "label": None, "punkte": [], "zeichen": None}
+    # eigene Aufbauten je Format: Wochenleiste, Zitat, Umfrage, grosses Zeichen zum Saisonbeginn
+    assert _medien.stil({"art": "post", "meta": {"thema": "Deine Woche"}})["aufbau"] == "woche"
+    assert _medien.stil({"art": "post", "meta": {"thema": "Rückblick & Vorschau"}})["aufbau"] == "zitat"
+    assert _medien.stil({"art": "post", "meta": {"thema": "Mitmachen", "bild_punkte": ["A", "B"]}})["aufbau"] == "umfrage"
+    saison = _medien.stil({"art": "post", "meta": {"thema": "Großes Ereignis: Skorpion-Saison beginnt"}})
+    assert saison["aufbau"] == "glyphe" and saison["zeichen"] == 7
+    assert _medien.mond_am(date(2026, 10, 26))[0] == 4 and _medien.mond_am(date(2026, 11, 9))[0] == 0
     basis = {"phase_index": 1, "beleuchtung": 12, "datum_kurz": "15. Oktober", "mond_phase": "Sichel", "mond_zeichen": "Skorpion"}
     for thema, punkte in (("Sternzeichen im Fokus", ["Skorpion: ehrlich", "Stier: langsam", "Krebs: Bauch"]),
                           ("Ritual", ["Kerze", "Wunsch", "Lesen"]), ("Liebe & Beziehung", []), ("Astro-Wissen", []),
-                          ("Mitmachen", [])):
+                          ("Mitmachen", []), ("Mitmachen", ["Ja", "Nein", "Vielleicht"]), ("Deine Woche", []),
+                          ("Rückblick & Vorschau", []), ("Großes Ereignis: Skorpion-Saison beginnt", [])):
         for f in ("feed", "story"):
             im = _medien.bild({"id": 3, "art": "post", "titel": "T", "untertitel": "U",
                                "meta": basis | {"thema": thema, "bild_punkte": punkte}}, f)
