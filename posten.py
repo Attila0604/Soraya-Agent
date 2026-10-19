@@ -145,13 +145,41 @@ def _luftig(text: str) -> str:
     return "\n".join(zeilen)
 
 
+# Auf Instagram sind Links im Text nicht klickbar: der Weg zur App geht ueber das Profil (Link in Bio)
+IG_HINWEIS = {"de": "🔗 Dein Horoskop gratis: Link in Bio", "en": "🔗 Your free horoscope: link in bio",
+              "hu": "🔗 Ingyenes horoszkóp: link a bióban", "it": "🔗 Il tuo oroscopo gratis: link in bio"}
+
+
+def _instagram_name() -> str | None:
+    try:
+        return (meta.zugang("instagram") or {}).get("name")
+    except Exception:  # noqa: BLE001 -- ohne Namen geht der Hinweis auch
+        return None
+
+
+def _mit_bio_hinweis(text: str, sprache: str) -> str:
+    """Schlusszeile mit 'Link in Bio' und dem Profil (@name ist auf Instagram antippbar)."""
+    name = _instagram_name()
+    if name and f"@{name}".lower() in text.lower():
+        return text
+    hat_bio = re.search(r"\bbio\b|bióban", text, flags=re.IGNORECASE)
+    zeile = "" if hat_bio else IG_HINWEIS.get(sprache, IG_HINWEIS["en"])
+    if name:
+        zeile = f"{zeile} 👉 @{name}".strip()
+    return f"{text}\n\n{zeile}" if zeile else text
+
+
 def text_fuer(post: dict, plattform: str) -> str:
     teile = [_luftig(post.get("text") or "")]
     if plattform == "facebook" and post.get("art") != "story":
         teile[0] = _ohne_bio(teile[0], post.get("sprache") or "de")
     if plattform == "facebook" and post.get("art") != "story":
         # auf Facebook ist der Link klickbar; lang= oeffnet Landingpage und App in der Sprache des Posts
-        teile.append(f"{link_basis()}?q=p{post['id']}&lang={post.get('sprache') or 'en'}")
+        sprache = post.get("sprache") or "en"
+        vorne = IG_HINWEIS.get(sprache, IG_HINWEIS["en"]).split(":")[0]
+        teile.append(f"{vorne} 👉 {link_basis()}?q=p{post['id']}&lang={sprache}")
+    if plattform == "instagram" and post.get("art") != "story":
+        teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en")
     if post.get("hashtags"):
         tags = post["hashtags"].split()
         # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur die ersten drei
