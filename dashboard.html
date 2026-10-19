@@ -75,7 +75,7 @@
   @media (prefers-reduced-motion:no-preference){.spin{animation:s .8s linear infinite}}
   @keyframes s{to{transform:rotate(360deg)}}
   footer{text-align:center;color:var(--mist-dim);font-size:12px;margin-top:40px}
-  .hide{display:none!important}
+  .hide,[hidden]{display:none!important}
   .note{font-size:12px;color:var(--mist-dim);margin:10px 0 0;line-height:1.5}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;
@@ -387,7 +387,7 @@
 
   /* Heute geht raus */
   .raus{list-style:none;margin:0;padding:0}
-  .raus>li{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:var(--s2) var(--s4);align-items:center;
+  .raus>li{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:var(--s2) var(--s4);align-items:center;
            padding:var(--s3) 0;border-top:1px solid var(--line-soft)}
   .raus>li:first-child{border-top:0;padding-top:var(--s1)}
   .raus .wann{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#F4EEDD;line-height:1;font-variant-numeric:tabular-nums}
@@ -492,7 +492,7 @@
   dialog .chips{margin:0 0 var(--s2)}
 
   @media (max-width:700px){
-    .raus>li{grid-template-columns:52px minmax(0,1fr);gap:var(--s2) var(--s3)}
+    .raus>li{grid-template-columns:66px minmax(0,1fr);gap:var(--s2) var(--s3)}
     .raus .bilder{grid-column:2;justify-content:flex-start}
     .raus .wann{font-size:21px}
   }
@@ -531,6 +531,43 @@
     .termine td:nth-child(2),.termine td:nth-child(5){grid-column:1 / -1}
     .termine td:nth-child(5):empty{display:none}
   }
+
+  /* ================= Runde 2: Hilfe, Fehlerzustände, Feinschliff ================= */
+  /* kleines "?" mit Erklärung zum Aufklappen */
+  .hilfe-wrap{position:relative;display:inline-flex;vertical-align:middle;margin-left:6px;font-family:'Inter',sans-serif;
+              letter-spacing:0;text-transform:none;font-weight:400}
+  button.hilfe{all:unset;box-sizing:border-box;cursor:pointer;width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;
+               font-size:12px;font-weight:600;line-height:1;color:var(--gold);border:1px solid var(--line);background:rgba(201,162,75,.06);
+               font-family:'Inter',sans-serif}
+  button.hilfe:hover,button.hilfe[aria-expanded="true"]{border-color:var(--gold);color:var(--champagne);background:rgba(201,162,75,.14)}
+  button.hilfe:focus-visible{outline:2px solid var(--champagne);outline-offset:2px}
+  .hilfe-text{position:absolute;top:calc(100% + 8px);left:-10px;z-index:30;width:min(320px,calc(100vw - 32px));
+              background:#0A0D1C;border:1px solid var(--gold);border-radius:10px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.5);
+              font-size:13px;line-height:1.55;color:var(--mist);text-align:left;white-space:normal;font-weight:400;letter-spacing:0;text-transform:none}
+  .hilfe-text b{color:var(--champagne);font-weight:600}
+  label .hilfe-wrap{margin-left:4px}
+  label button.hilfe{width:17px;height:17px;font-size:10.5px}
+  /* Fehler beim Laden: klar sagen, was los ist, und "Nochmal versuchen" anbieten */
+  .ladefehler-box{border:1px solid rgba(208,59,59,.4);background:rgba(208,59,59,.07);border-radius:12px;padding:var(--s3) var(--s4);
+                  display:flex;align-items:center;justify-content:space-between;gap:var(--s2) var(--s3);flex-wrap:wrap;color:#f0c4bc;font-size:13.5px;
+                  list-style:none}
+  .ladefehler-box b{display:block;color:#ffd9d2;font-weight:600;font-size:14.5px}
+  .ladefehler-box button{flex:none}
+  #view-posten.ladefehler .panel:not(#postenFehler){display:none}
+  #postenFehler{background:none;border:0;padding:0}
+  .raus>li.raus-leer,.raus>li.ladefehler-box{grid-column:1 / -1;display:flex}
+  .raus>li.ladefehler-box{margin-top:var(--s1);padding:var(--s3) var(--s4);border-top:1px solid rgba(208,59,59,.4)}
+  .raus .wann small{white-space:nowrap;letter-spacing:.06em}
+  .raus .was .leer-titel{font-size:14px;color:var(--mist-dim);font-style:italic}
+  .raus-aktion{display:flex;align-items:center;gap:var(--s2) var(--s3);flex-wrap:wrap;padding:var(--s3) 0 0;border-top:1px solid var(--line-soft);
+               font-size:13.5px;color:var(--mist)}
+  .kleinlabel{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mist-dim);margin:0 6px 0 0;align-self:center}
+  .ungespeichert{font-size:13px;color:#FFD27A;align-self:center}
+  .paar{display:inline-flex;align-items:center;gap:2px}
+  .plan-leer{margin:var(--s3) 0 0;font-size:13.5px;color:var(--mist-dim)}
+  .kpi .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .zeiten-kopf{display:flex;align-items:center;margin:var(--s3) 0 6px;font-size:13px;color:var(--mist-dim)}
+  @media (max-width:700px){ .raus>li.raus-leer,.raus>li.ladefehler-box{grid-column:1 / -1} }
 </style>
 </head>
 <body>
@@ -553,24 +590,24 @@
     <div class="cockpit" id="cockpit" aria-label="Überblick"></div>
 
     <div class="panel raus-panel" id="rausPanel">
-      <div class="panel-kopf"><h2>Heute geht raus</h2><span class="meta" id="rausZusammen"></span></div>
+      <div class="panel-kopf"><h2>Heute geht raus<span data-hilfe="raus"></span></h2><span class="meta" id="rausZusammen"></span></div>
       <div id="achtung"></div>
-      <ol class="raus" id="raus" aria-label="Zeitplan für heute"><li class="raus-leer">Wird geladen …</li></ol>
+      <ol class="raus" id="raus" aria-label="Zeitplan für heute"><li class="raus-leer"><span class="spin"></span>Wird geladen …</li></ol>
       <div class="kurzwirkung hide" id="kurzWirkung"></div>
     </div>
 
     <div class="bar">
-      <h3>Posts von heute</h3>
+      <h3>Posts von heute<span data-hilfe="karten"></span></h3>
       <div class="chips" id="heuteSprachen" role="group" aria-label="Sprache"></div>
     </div>
-    <div id="heuteListe"><div class="empty">Wird geladen …</div></div>
+    <div id="heuteListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
 
     <div class="panel tagesplan-panel">
       <div class="himmel">
         <canvas id="mondKlein" width="152" height="152" aria-hidden="true"></canvas>
         <div id="himmelText"><div class="gross">Der Himmel heute</div><div class="zeile meta">wird geladen …</div></div>
       </div>
-      <h2>Tagesplan</h2>
+      <h2>Tagesplan<span data-hilfe="tagesplan"></span></h2>
       <p class="hint">Soraya schreibt aus dem Himmel von heute pro Sprache einen Feed-Post, ein Reel und eine Story.</p>
       <label class="imtp schalter" id="autoSchalter"><input type="checkbox" id="planAuto"> Jeden Morgen automatisch erstellen (heute und morgen)</label>
       <p class="hint" id="planInfo">Pro Sprache: ein Feed-Post, ein Reel mit Skript und eine Story.</p>
@@ -602,25 +639,26 @@
             <select id="planSprache"><option value="">Alle</option></select></div>
           <div><label for="planStatus">Status</label>
             <select id="planStatus"><option value="">Alle</option><option value="entwurf">Entwurf</option>
-              <option value="freigegeben">Freigegeben</option><option value="gepostet">Gepostet</option></select></div>
+              <option value="freigegeben">Freigegeben</option><option value="gepostet">Gepostet</option><option value="gestoppt">Nicht posten</option></select></div>
         </div>
       </div>
       <div class="zaehler" id="planZaehler" style="margin-top:14px"></div>
       <div class="plan-knoepfe">
-        <button class="klein" id="btnVorplanen">Nächste 7 Tage vorplanen</button>
+        <span class="paar"><button class="klein" id="btnVorplanen">Nächste 7 Tage vorplanen</button><span data-hilfe="vorplanen"></span></span>
         <button class="ghost klein" id="btnAufklappen">Alle aufklappen</button>
-        <button class="ghost klein" id="btnPaket" title="Bilder, Videos und Texte dieser Woche als ZIP">Wochenpaket herunterladen</button>
+        <span class="paar"><button class="ghost klein" id="btnPaket">Wochenpaket herunterladen</button><span data-hilfe="paket"></span></span>
       </div>
       <div class="vorplan hide" id="vorplanStand" role="status"></div>
+      <p class="plan-leer hide" id="planLeer"></p>
     </div>
-    <div id="planListe"><div class="empty">Wird geladen …</div></div>
+    <div id="planListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
   </section>
 
   <!-- ============ STUDIO ============ -->
   <section id="view-studio" class="hide">
     <div class="panel">
-      <h2>Aus einem Thema</h2>
-      <p class="hint">Gib ein Stichwort ein, der Rest passiert von selbst.</p>
+      <h2>Aus einem Thema<span data-hilfe="studio"></span></h2>
+      <p class="hint">Gib ein Stichwort ein, der Rest passiert von selbst. Leer gelassen, sucht Soraya selbst ein Thema aus.</p>
       <div class="row">
         <div class="grow"><label for="thema">Thema</label>
           <input id="thema" placeholder="z. B. Vollmond in der Waage"></div>
@@ -636,7 +674,7 @@
       <p class="hint">Eine Quelle einlesen &mdash; Soraya macht daraus eigene Posts.</p>
       <div class="row">
         <div class="grow"><label for="url">Webseite (URL)</label>
-          <input id="url" placeholder="https://..."></div>
+          <input id="url" type="url" inputmode="url" placeholder="https://… (z. B. ein Artikel über den Vollmond)"></div>
         <div><label for="sprache2">Sprache</label><select id="sprache2" class="sprachwahl"></select></div>
         <div><label for="anzahl2">Anzahl</label>
           <select id="anzahl2"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
@@ -645,19 +683,19 @@
     </div>
 
     <div class="bar">
-      <h3>Deine Posts</h3>
+      <h3>Studio-Posts</h3>
       <button class="ghost" id="btnStudioLaden">Aktualisieren</button>
     </div>
     <p class="tpinfo">Diese Posts gehen nicht von selbst raus. Gib einem Post unten auf der Karte ein Datum – dann steht er im Plan
       (und wird, wenn die Sprache passt, automatisch gepostet). Oder kopiere Text und Bild und poste selbst.</p>
-    <div id="studioListe"><div class="empty">Wird geladen …</div></div>
+    <div id="studioListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
   </section>
 
   <!-- ============ ZIELGRUPPEN ============ -->
   <section id="view-who" class="hide">
     <div class="panel">
-      <h2>Kunden verstehen</h2>
-      <p class="hint">Wähle einen Bereich. Der Agent durchsucht das Netz und erstellt ein Profil:
+      <h2>Kunden verstehen<span data-hilfe="zielgruppen"></span></h2>
+      <p class="hint">Wähle einen Bereich. Soraya durchsucht das Netz und erstellt ein Profil:
          wer diese Menschen sind, was sie beschäftigt, welche Worte sie benutzen.</p>
       <div class="row">
         <div class="grow"><label for="bereich">Bereich</label>
@@ -717,19 +755,20 @@
     </div>
 
     <div class="bar">
-      <h3>Deine Profile</h3>
+      <h3>Deine Profile<span data-hilfe="profile"></span></h3>
       <button class="ghost" id="btnProfileLaden">Aktualisieren</button>
     </div>
     <p class="tpinfo" id="tpInfo" hidden></p>
-    <div id="profile"><div class="empty">Wird geladen …</div></div>
+    <div id="profile"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
   </section>
 
   <!-- ============ WIRKUNG ============ -->
   <!-- ============ POSTEN ============ -->
   <section id="view-posten" class="hide">
+    <div class="panel hide" id="postenFehler"></div>
     <div class="panel">
-      <h2>Automatisch posten</h2>
-      <label class="imtp schalter" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch auf Facebook und Instagram posten</label>
+      <h2>Automatisch posten<span data-hilfe="posten"></span></h2>
+      <label class="imtp schalter" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch posten (zu den Uhrzeiten unten)</label>
       <p class="hint" id="postInfo">Wird geladen …</p>
       <div class="achtung-box hide" id="postWarnung" role="alert"></div>
     </div>
@@ -743,7 +782,7 @@
       <div id="verbindungen"></div>
     </div>
     <div class="panel">
-      <h2>Termine</h2>
+      <h2>Termine<span data-hilfe="termine"></span></h2>
       <p class="hint">Gestern bis übermorgen (Wiener Zeit). Stoppen setzt den Post auf „Nicht posten“, er geht dann nirgends raus.</p>
       <div id="termine"></div>
     </div>
@@ -755,15 +794,16 @@
     <div class="panel">
       <h2>Einstellungen</h2>
       <div class="row">
-        <div><label for="postSprache">Sprache der Posts</label>
+        <div><label for="postSprache">Sprache der Posts<span data-hilfe="sprache"></span></label>
           <select id="postSprache"><option value="alle">Alle 4 Sprachen im Wechsel</option><option value="en">English</option><option value="de">Deutsch</option>
             <option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
-        <div><label for="postModus">Freigabe</label>
+        <div><label for="postModus">Freigabe<span data-hilfe="modus"></span></label>
           <select id="postModus"><option value="auto">Automatisch, außer ich stoppe</option>
             <option value="freigabe">Nur freigegebene Posts</option></select></div>
       </div>
-      <div class="zeiten" style="margin-top:12px">
-        <div><label for="zStory">Story (Wiener Zeit)</label><input type="time" id="zStory"></div>
+      <div class="zeiten-kopf">Uhrzeiten (Wiener Zeit)</div>
+      <div class="zeiten">
+        <div><label for="zStory">Story</label><input type="time" id="zStory"></div>
         <div><label for="zPost">Feed-Post</label><input type="time" id="zPost"></div>
         <div><label for="zReel">Reel</label><input type="time" id="zReel"></div>
       </div>
@@ -775,11 +815,11 @@
         <label class="imtp"><input type="checkbox" id="plTiktok"> TikTok (nur Reels)</label>
       </div>
       <div class="row" id="tiktokZeile" style="margin-top:10px">
-        <div><label for="tiktokModus">TikTok</label>
+        <div><label for="tiktokModus">So kommt das Reel zu TikTok</label>
           <select id="tiktokModus"><option value="entwurf">Als Entwurf in meine TikTok-App (ich poste selbst, mit Sound)</option>
             <option value="direkt">Direkt veröffentlichen (erst nach TikTok-Prüfung öffentlich)</option></select></div>
       </div>
-      <div class="row" style="margin-top:14px"><button id="postSpeichern">Speichern</button></div>
+      <div class="row" style="margin-top:14px"><button id="postSpeichern">Speichern</button><span class="ungespeichert" id="postUngespeichert" hidden>Noch nicht gespeichert</span></div>
     </div>
   </section>
 
@@ -787,10 +827,10 @@
     <div class="werkzeug">
       <div><label for="wTage">Zeitraum</label>
         <select id="wTage"><option value="7">Letzte 7 Tage</option><option value="30" selected>Letzte 30 Tage</option><option value="90">Letzte 90 Tage</option></select></div>
-      <div><label for="wKennzahl">Kennzahl im Verlauf</label>
+      <div><label for="wKennzahl">Kennzahl im Verlauf<span data-hilfe="kennzahl"></span></label>
         <select id="wKennzahl"></select></div>
     </div>
-    <div id="wirkungInhalt"><div class="empty">Wird geladen …</div></div>
+    <div id="wirkungInhalt"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
   </section>
 
   <div id="status" class="leer" role="status" aria-live="polite"></div>
@@ -819,6 +859,48 @@ function busy(btn, on, text){
   if(on){ btn.dataset.label = btn.textContent; btn.innerHTML = '<span class="spin"></span>' + esc(text); }
   else if(btn.dataset.label){ btn.textContent = btn.dataset.label; }
 }
+// "?" mit kurzer Erklärung (Text darf <b> enthalten, kommt nur aus dieser Datei)
+let hilfeNr = 0;
+const hilfe = (text, name = 'Erklärung') => { const id = 'hilfe' + (++hilfeNr);
+  return `<span class="hilfe-wrap"><button type="button" class="hilfe" aria-expanded="false" aria-controls="${id}" aria-label="${esc(name)}: Was ist das?">?</button><span class="hilfe-text" id="${id}" role="note" hidden>${text}</span></span>`; };
+function schliesseHilfen(ausser){
+  document.querySelectorAll('button.hilfe[aria-expanded="true"]').forEach(b => { if(b === ausser) return;
+    b.setAttribute('aria-expanded', 'false'); const t = document.getElementById(b.getAttribute('aria-controls')); if(t) t.hidden = true; });
+}
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('button.hilfe');
+  if(!b){ if(!ev.target.closest('.hilfe-text')) schliesseHilfen(); return; }
+  ev.preventDefault(); ev.stopPropagation();          // nicht das Label/die Kachel darunter auslösen
+  const t = document.getElementById(b.getAttribute('aria-controls')), auf = b.getAttribute('aria-expanded') !== 'true';
+  schliesseHilfen(b); b.setAttribute('aria-expanded', String(auf)); t.hidden = !auf;
+  if(auf){ t.style.left = '-10px'; const r = t.getBoundingClientRect(), rand = document.documentElement.clientWidth - 16;
+    if(r.right > rand) t.style.left = (-10 - (r.right - rand)) + 'px';
+    if(t.getBoundingClientRect().left < 16) t.style.left = (parseFloat(t.style.left) + 16 - t.getBoundingClientRect().left) + 'px'; }
+}, true);
+document.addEventListener('keydown', (ev) => { if(ev.key === 'Escape') schliesseHilfen(); });
+const HILFE = {
+  raus: ['Heute geht raus', 'Die drei Posts, die heute zu deinen Uhrzeiten automatisch gepostet werden – mit Plattform und Stand. <b>Gelb</b> heißt: hier musst du etwas tun (z. B. freigeben).'],
+  karten: ['Posts von heute', 'Alle Posts, die der Tagesplan für heute geschrieben hat, je Sprache. <b>Entwurf</b> = fertig geschrieben, geht im Modus „Automatisch“ trotzdem raus. <b>Freigegeben</b> = von dir geprüft. <b>Nicht posten</b> = geht nirgends raus.'],
+  tagesplan: ['Tagesplan', 'Soraya liest jeden Tag die echten Himmelsdaten und schreibt daraus pro Sprache einen Feed-Post, ein Reel und eine Story. Jeder Wochentag hat ein eigenes Format (z. B. Montag „Deine Woche“).'],
+  vorplanen: ['Vorplanen', 'Schreibt die Posts für die nächsten 7 Tage schon jetzt. Tage, die es schon gibt, werden übersprungen und kosten nichts.'],
+  paket: ['Wochenpaket', 'Eine ZIP-Datei mit allen Bildern, Reel-Videos und Texten dieser 7 Tage, pro Tag ein Ordner – zum Posten von Hand, z. B. in der Meta Business Suite.'],
+  studio: ['Studio', 'Posts zu einem eigenen Thema, außerhalb des Tagesplans. Sie gehen nicht von selbst raus, bis du ihnen ein Datum gibst.'],
+  zielgruppen: ['Zielgruppen', 'Soraya sucht im Netz, was eine Zielgruppe beschäftigt und wie sie spricht. Daraus entsteht ein Profil, das der Tagesplan beim Schreiben nutzt.'],
+  profile: ['Im Tagesplan verwenden', 'Hakst du ein Profil an, schreibt der nächste Tagesplan für diese Menschen. Ohne Häkchen nimmt er je Sprache das Profil aus dem passenden Land.'],
+  posten: ['Automatisch posten', 'Ist der Schalter an, postet Soraya jeden Tag Story, Feed-Post und Reel zu den Uhrzeiten unten auf die verbundenen Plattformen. Ausschalten stoppt sofort alles.'],
+  termine: ['Termine', 'Jeder Post bekommt pro Plattform einen Termin. Gibt es einen Fehler, versucht Soraya es bis zu 3-mal. Was mehr als 12 Stunden zu spät wäre, gilt als verpasst.'],
+  modus: ['Freigabe', '<b>Automatisch, außer ich stoppe:</b> alles geht raus, außer du stoppst es (Posts mit ernstem Hinweis warten trotzdem auf dich). <b>Nur freigegebene:</b> nur Posts, die du freigegeben hast.'],
+  sprache: ['Sprache der Posts', '<b>Alle 4 Sprachen im Wechsel:</b> Story, Feed-Post und Reel kommen jeden Tag in einer anderen Sprache. Dafür muss der Tagesplan alle 4 Sprachen schreiben.'],
+  kennzahl: ['Kennzahl', 'Welche Zahl das Balken-Diagramm pro Tag zeigt. Lila Punkte unter den Balken = an diesem Tag wurde etwas gepostet.'],
+};
+function fuelleHilfen(root = document){
+  root.querySelectorAll('[data-hilfe]').forEach(el => { const h = HILFE[el.dataset.hilfe]; if(h) el.outerHTML = hilfe(h[1], h[0]); });
+}
+fuelleHilfen();
+// Kasten "konnte nicht laden" mit Knopf, der den aktuellen Reiter neu lädt
+const ladeFehler = (was, e, tag = 'div') => `<${tag} class="ladefehler-box" role="alert"><div><b>${esc(was)} konnte nicht geladen werden.</b>${esc(e && e.message || e || '')}</div>
+  <button class="ghost klein" data-nochmal="1">Nochmal versuchen</button></${tag}>`;
+document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-nochmal]'); if(b){ b.disabled = true; neuLaden(); } });
 async function api(pfad, opts = {}){
   const r = await fetch(pfad, {...opts, headers: {'Content-Type': 'application/json', ...(opts.headers || {})}});
   let d = null; try{ d = await r.json(); }catch(e){}
@@ -842,6 +924,7 @@ const ausIso = (s) => { const [y,m,t] = String(s).slice(0,10).split('-').map(Num
 const plusTage = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 const kurz = (d) => `${d.getDate()}. ${MONATE[d.getMonth()]}`;
 const kurzIso = (s) => kurz(ausIso(s));
+const datumLang = (s) => { const d = ausIso(s); return `${kurz(d)} ${d.getFullYear()}`; };
 
 /* ---------- Tabs ---------- */
 let aktiv = 'heute';
@@ -850,13 +933,18 @@ function zeige(tab){
   aktiv = tab;
   document.querySelectorAll('.tab').forEach(b => {
     b.classList.toggle('on', b.dataset.tab === tab);
+    if(b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     if(b.dataset.tab === tab && leiste.scrollWidth > leiste.clientWidth) b.scrollIntoView({block: 'nearest', inline: 'nearest'});
   });
   mehrReiter();
   document.querySelectorAll('section[id^="view-"]').forEach(s => s.classList.toggle('hide', s.id !== 'view-' + tab));
-  melde('');
+  melde(''); schliesseHilfen();
+  document.title = 'Soraya · ' + (REITER_NAME[tab] || 'Content Studio');
+  // Reiter in der Adresse merken: Neuladen bleibt im selben Reiter
+  if(location.hash.slice(1) !== tab) history.replaceState(null, '', tab === 'heute' ? location.pathname : '#' + tab);
   if(LADER[tab]) LADER[tab]();
 }
+const REITER_NAME = {heute: 'Heute', plan: 'Plan', studio: 'Studio', who: 'Zielgruppen', posten: 'Posten', wirkung: 'Wirkung'};
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => zeige(b.dataset.tab)));
 // Reiter-Leiste am Handy: rechts ausblenden, solange noch Reiter versteckt sind
 const leiste = document.querySelector('.tabs');
@@ -893,7 +981,7 @@ function karte(p, {datum = true} = {}){
   const stopp = ['entwurf', 'freigegeben'].includes(st) && p.quelle === 'himmel' ? `<button class="ghost klein" data-schnell="gestoppt" title="Wird dann nicht automatisch gepostet">Nicht posten</button>` : '';
   const kmeta = [m.thema ? `<span title="Format des Tages">${esc(m.thema)}${m.folge ? ' · Folge ' + esc(m.folge) : ''}</span>` : '',
     m.zielgruppe ? `<span title="Zielgruppe, für die geschrieben wurde">Für: ${esc(m.zielgruppe)}</span>` : '',
-    HOOK_STIL[m.hook_stil] && p.art !== 'story' ? `<span title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Test: ${esc(HOOK_STIL[m.hook_stil])}</span>` : '']
+    HOOK_STIL[m.hook_stil] && p.art !== 'story' ? `<span title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Anfang im Test: ${esc(HOOK_STIL[m.hook_stil])}</span>` : '']
     .filter(Boolean).join(' · ');
   const n = folienAnzahl(p);
   const v = esc(p.aktualisiert || p.created_at || '');
@@ -1187,7 +1275,7 @@ function paketDialog(){
     }
     const pz = st.gesamt ? Math.round(100 * st.fertig / st.gesamt) : 0;
     if(st.status === 'fertig'){
-      $('pStand').innerHTML = `<p class="hint">Fertig ✓ ${st.gesamt} Posts, ${st.groesse_mb} MB</p>`;
+      $('pStand').innerHTML = `<p class="hint">Fertig ✓ ${st.gesamt} Posts, ${zahl(st.groesse_mb)} MB</p>`;
       $('pLaden').href = `/wochenpaket/${st.id}/datei`; $('pLaden').setAttribute('download', st.dateiname || 'soraya-woche.zip');
       $('pLaden').classList.remove('hide'); $('pStart').classList.add('hide'); return;
     }
@@ -1223,7 +1311,8 @@ async function ladeHimmel(){
       <div class="zeile">${esc(h.datum_text)} · ${esc(h.beleuchtung)} % beleuchtet · Sonne in ${esc(h.sonne_zeichen)}</div>
       <div class="zeile meta">${esc([ereignis('Vollmond', h.vollmond), ereignis('Neumond', h.neumond)].filter(Boolean).join(' · '))}</div>
       ${rueck ? `<div class="zeile meta">Rückläufig: ${esc(rueck)}</div>` : ''}`;
-  }catch(e){ $('himmelText').innerHTML = `<div class="gross">Der Himmel heute</div><div class="zeile meta">${esc(e.message)}</div>`; }
+  }catch(e){ const ctx = $('mondKlein').getContext('2d'); ctx.clearRect(0, 0, 152, 152); zeichneMond(ctx, 76, 76, 66, null);
+    $('himmelText').innerHTML = `<div class="gross">Der Himmel heute</div><div class="zeile meta">Himmelsdaten gerade nicht erreichbar (${esc(e.message)}). Der Tagesplan versucht es beim Erstellen selbst noch einmal.</div>`; }
 }
 $('planAuto').onchange = async () => {
   const an = $('planAuto').checked;
@@ -1273,7 +1362,7 @@ function daumen(p, klein = true){
 }
 // Was passiert mit diesem Post heute? -> {cls, text, sub}
 function rausZustand(p, tt, wo, e, art, zeit){
-  if(!p) return {cls: 'achtung', text: 'Noch kein Post', sub: 'Der Tagesplan für heute fehlt noch.'};
+  if(!p) return {cls: 'achtung', text: 'Wartet auf den Tagesplan', sub: ''};
   const st = p.status || 'entwurf', befunde = (p.meta || {}).pruefung || [];
   if(st === 'gestoppt') return {cls: 'aus', text: 'Nicht posten', sub: 'Du hast ihn gestoppt – er geht nirgends raus.'};
   if(st === 'gepostet' || (tt.length && tt.every(t => t.status === 'fertig'))) return {cls: 'ok', text: 'Gepostet ✓', sub: ''};
@@ -1294,7 +1383,7 @@ function rausZustand(p, tt, wo, e, art, zeit){
 }
 function zeigeRaus(d, ps, morgen){
   const box = $('raus');
-  if(!ps || !ps.einstellungen){ box.innerHTML = '<li class="raus-leer">Der Stand zum Posten konnte nicht geladen werden. Bitte die Seite neu laden.</li>'; return; }
+  if(!ps || !ps.einstellungen){ box.innerHTML = ladeFehler('Der Stand zum Posten', 'Uhrzeiten und Plattformen fehlen gerade.', 'li'); $('rausZusammen').textContent = ''; $('achtung').innerHTML = ''; return; }
   const e = ps.einstellungen, v = ps.verbindungen || {}, tag = String(d.datum).slice(0, 10);
   const termineHeute = (ps.termine || []).filter(t => String(t.geplant_fuer || '').slice(0, 10) === tag);
   const zeilen = ARTEN_POSTEN.slice().sort((a, b) => String(e.zeiten[a]).localeCompare(String(e.zeiten[b]))).map(art => {
@@ -1311,15 +1400,17 @@ function zeigeRaus(d, ps, morgen){
   box.innerHTML = zeilen.map(({art, sprache, p, zeit, wo, z}) => `<li${p ? ` data-id="${esc(p.id)}"` : ''}>
     <div class="wann">${esc(zeit)}<small>${esc(ART[art])}</small></div>
     <div class="was">
-      <div class="titelzeile">${p ? `<button class="tz" data-aktion="zeigen" title="Zum Post springen">${esc(p.titel || (p.text || '').slice(0, 60))}</button>` : '<span class="meta">–</span>'}<span class="sp">${esc(String(sprache || '').toUpperCase())}</span></div>
+      <div class="titelzeile">${p ? `<button class="tz" data-aktion="zeigen" title="Zum Post springen">${esc(p.titel || (p.text || '').slice(0, 60))}</button>` : '<span class="leer-titel">Noch kein Post</span>'}<span class="sp">${esc(String(sprache || '').toUpperCase())}</span></div>
       <div class="wo">${wo.length ? wo.map(w => w.url && w.st === 'fertig'
           ? `<a class="plk fertig" href="${esc(w.url)}" target="_blank" rel="noopener" title="Auf ${esc(PL_NAME[w.pl])} ansehen">${IKON[w.pl] || ''}${esc(PL_NAME[w.pl])} ✓</a>`
           : plIkon(w.pl, w.st, w.st === 'nicht' ? 'nicht verbunden' : VS_NAME[w.st] || w.st)).join('') : '<span class="meta">Keine Plattform eingeschaltet</span>'}</div>
       <div class="zustand ${z.cls}"><b>${esc(z.text)}</b>${z.sub ? ' · ' + esc(z.sub) : ''}</div>
-      ${z.freigeben || !p ? `<div class="knoepfe">${z.freigeben ? '<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button>' : ''}
-        ${!p ? '<button class="klein" data-raus-plan="1">Tagesplan jetzt erstellen</button>' : ''}</div>` : ''}
+      ${z.freigeben ? `<div class="knoepfe"><button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button></div>` : ''}
     </div>
-    <div class="bilder">${p ? daumen(p) : ''}</div></li>`).join('');
+    <div class="bilder">${p ? daumen(p) : ''}</div></li>`).join('')
+    // fehlt etwas, gibt es EINEN Knopf statt drei gleicher
+    + (zeilen.some(x => !x.p) ? `<li class="raus-leer raus-aktion"><span>${zeilen.every(x => !x.p) ? 'Für heute gibt es noch keine Posts' : 'Ein Teil der Posts für heute fehlt noch'} – das Erstellen dauert etwa 1–2 Minuten.</span>
+        <button class="klein" data-raus-plan="1">Tagesplan jetzt erstellen</button></li>` : '');
   // Zusammenfassung + was braucht dich (heute und morgen)
   const warten = zeilen.filter(x => x.z.freigeben).length, raus = zeilen.filter(x => x.z.cls === 'plan').length,
         fertig = zeilen.filter(x => x.z.cls === 'ok').length;
@@ -1327,6 +1418,9 @@ function zeigeRaus(d, ps, morgen){
     : [fertig && `${fertig} gepostet`, raus && `${raus} geplant`, warten && `${warten} ${warten === 1 ? 'wartet' : 'warten'} auf dich`,
        zeilen.filter(x => x.z.cls === 'bad').length && 'Fehler', 'Sprache: ' + sprachText(ps)].filter(Boolean).join(' · ');
   const offen = [];
+  // ohne verbundene Plattform kann nichts rausgehen: einmal sagen, nicht "Nichts zu tun"
+  if(zeilen.some(x => x.p && x.z.text === 'Keine Plattform verbunden'))
+    offen.push({tag: 'Heute', z: {text: 'Keine Plattform verbunden', sub: 'Automatisch posten ist an, aber es kann nichts rausgehen.'}, ziel: 'Zu den Verbindungen'});
   zeilen.forEach(x => { if(x.z.freigeben || x.z.cls === 'bad') offen.push({tag: 'Heute', p: x.p, z: x.z}); });
   if(e.an && morgen && morgen.posts){
     const mTag = String(morgen.datum).slice(0, 10);
@@ -1339,8 +1433,10 @@ function zeigeRaus(d, ps, morgen){
   }
   const k3 = $('cockpit').querySelector('.kachel:last-child');
   if(k3) k3.classList.toggle('achtung', e.an && offen.length > 0);
-  $('achtung').innerHTML = !e.an ? '' : offen.length ? `<div class="achtung-box" role="alert"><h3>${offen.length === 1 ? '1 Post braucht dich' : offen.length + ' Posts brauchen dich'}</h3>
-      ${offen.map(o => `<div class="eintrag" data-id="${esc(o.p.id)}"><div><b>${o.tag} · ${esc(ART[o.p.art])} ${esc((o.p.sprache || '').toUpperCase())}:</b> ${esc(o.p.titel || '')}
+  $('achtung').innerHTML = !e.an ? '' : offen.length ? `<div class="achtung-box" role="alert"><h3>${offen.every(o => o.p) ? (offen.length === 1 ? '1 Post braucht dich' : offen.length + ' Posts brauchen dich') : 'Hier braucht es dich'}</h3>
+      ${offen.map(o => !o.p ? `<div class="eintrag"><div><b>${esc(o.z.text)}</b><span class="warum">${esc(o.z.sub)}</span></div>
+        <div class="gruppe"><button class="ghost klein" data-ziel-tab="posten">${esc(o.ziel)}</button></div></div>`
+        : `<div class="eintrag" data-id="${esc(o.p.id)}"><div><b>${o.tag} · ${esc(ART[o.p.art])} ${esc((o.p.sprache || '').toUpperCase())}:</b> ${esc(o.p.titel || '')}
         <span class="warum">${esc(o.z.text)}${o.z.sub ? ' – ' + esc(o.z.sub) : ''}</span></div>
         <div class="gruppe">${o.z.freigeben ? '<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Ansehen &amp; bearbeiten</button>'
           : '<button class="ghost klein" data-ziel-tab="posten">Zu den Terminen</button>'}</div></div>`).join('')}</div>`
@@ -1391,7 +1487,11 @@ async function ladeHeute(){
   try{ [d, ps, morgen] = await Promise.all([api('/tagesplan'), ladeTermine(),
          api('/tagesplan?datum=' + iso(plusTage(new Date(), 1))).catch(() => null)]);
        if(nr !== heuteNr) return; }
-  catch(e){ if(nr !== heuteNr) return; melde('Fehler: ' + e.message); $('raus').innerHTML = `<li class="raus-leer">Konnte nicht laden: ${esc(e.message)}</li>`; return; }
+  catch(e){ if(nr !== heuteNr) return;
+    $('raus').innerHTML = ladeFehler('Der Stand für heute', e, 'li'); $('rausZusammen').textContent = ''; $('achtung').innerHTML = '';
+    $('cockpit').innerHTML = ''; $('kurzWirkung').classList.add('hide');
+    $('heuteListe').innerHTML = '<div class="empty">Posts nicht verfügbar.<span>Sobald die Verbindung wieder klappt, erscheinen sie hier.</span></div>';
+    $('laeufe').innerHTML = ''; $('btnPlanJetzt').disabled = $('btnPlanNeu').disabled = true; return; }
   zeigeCockpit(d, ps);
   zeigeRaus(d, ps, morgen);
   // Wird automatisch gepostet, zeigt "Heute" zuerst die Posting-Sprache
@@ -1399,7 +1499,7 @@ async function ladeHeute(){
   const stand = Object.fromEntries((d.laeufe || []).map(l => [l.sprache, l]));
   $('planAuto').checked = !!d.automatisch; $('planAuto').disabled = !!d.automatik_gesperrt;
   $('autoSchalter').classList.toggle('on', !!d.automatisch);
-  $('planSprachen').innerHTML = '<span class="hint" style="margin:0 6px 0 0">Sprachen:</span>' + SPRACHEN.map(([c]) =>
+  $('planSprachen').innerHTML = '<span class="kleinlabel">Sprachen</span>' + SPRACHEN.map(([c]) =>
     `<label class="imtp${d.sprachen.includes(c) ? ' on' : ''}"><input type="checkbox" data-plansprache="${c}"${d.sprachen.includes(c) ? ' checked' : ''}> ${c.toUpperCase()}</label>`).join('');
   if(!heuteGewaehlt && !d.sprachen.includes(heuteSprache)) heuteSprache = d.sprachen[0];
   $('planInfo').textContent = d.automatisch
@@ -1501,19 +1601,25 @@ async function ladePlan(){
       api(`/tagesplan/zeitraum?von=${iso(planStart)}&bis=${iso(bis)}`).catch(() => stand),
       ladeTermine()]);
     if(nr !== planNr) return;
-  }catch(e){ if(nr !== planNr) return; melde('Fehler: ' + e.message);
-    $('planListe').innerHTML = `<div class="empty">Plan konnte nicht geladen werden.<span>${esc(e.message)} – bitte gleich nochmal versuchen.</span></div>`; return; }
+  }catch(e){ if(nr !== planNr) return;
+    $('planZaehler').innerHTML = ''; $('planLeer').classList.add('hide');
+    $('planListe').innerHTML = ladeFehler('Der Plan', e); return; }
   const zaehl = (s) => posts.filter(p => p.geplant_fuer && p.status === s).length;
-  $('planZaehler').innerHTML = `<span><b>${posts.filter(p => p.geplant_fuer).length}</b> geplant</span>
-    <span><b>${zaehl('entwurf')}</b> Entwurf</span><span><b>${zaehl('freigegeben')}</b> freigegeben</span>
-    <span><b>${zaehl('gepostet')}</b> gepostet</span>`;
+  $('planZaehler').innerHTML = `<span><b>${zahl(posts.filter(p => p.geplant_fuer).length)}</b> geplant</span>
+    <span><b>${zahl(zaehl('entwurf'))}</b> ${zaehl('entwurf') === 1 ? 'Entwurf' : 'Entwürfe'}</span><span><b>${zahl(zaehl('freigegeben'))}</b> freigegeben</span>
+    <span><b>${zahl(zaehl('gepostet'))}</b> gepostet</span>${zaehl('gestoppt') ? `<span><b>${zahl(zaehl('gestoppt'))}</b> nicht posten</span>` : ''}`;
+  const filter = $('planSprache').value || $('planStatus').value;
+  $('planLeer').classList.toggle('hide', posts.some(p => p.geplant_fuer));
+  $('planLeer').textContent = filter ? 'Mit diesem Filter gibt es in diesen 7 Tagen keine Posts. Stell Sprache oder Status auf „Alle“.'
+    : 'In diesen 7 Tagen ist noch nichts geplant. „Nächste 7 Tage vorplanen“ schreibt die Posts im Voraus – oder erstelle im Reiter „Heute“ den Tagesplan.';
+  $('btnAufklappen').disabled = !posts.length;
   const heute = iso(new Date());
   let html = '';
   for(let i = 0; i < 7; i++){
     const t = plusTage(planStart, i), tIso = iso(t);
     const tagPosts = posts.filter(p => (p.geplant_fuer || '').slice(0,10) === tIso).sort(ordne);
     html += `<div class="tag-kopf${tIso === heute ? ' heute' : ''}"><h4>${WOCHENTAGE[(t.getDay() + 6) % 7]}, ${kurz(t)}</h4>
-      <span class="meta">${tagStand(stand.laeufe || [], stand.sprachen || [], tIso)} ${tagPosts.length ? tagPosts.length + ' Posts' : 'nichts geplant'}</span></div>`;
+      <span class="meta">${tagStand(stand.laeufe || [], stand.sprachen || [], tIso)} ${tagPosts.length ? mehrzahl(tagPosts.length, 'Post', 'Posts') : 'nichts geplant'}</span></div>`;
     html += tagPosts.map(zeile).join('');
   }
   const ohne = posts.filter(p => !p.geplant_fuer);
@@ -1573,25 +1679,25 @@ async function ladeStudio(){
     const posts = (await api('/content?himmel=false&limit=40')).posts || [];
     if(nr !== studioNr) return;
     liste($('studioListe'), posts, 'Noch keine Posts.<span>Gib oben ein Thema ein und leg los.</span>');
-  }catch(e){ melde('Konnte Posts nicht laden.');
-    $('studioListe').innerHTML = `<div class="empty">Posts konnten nicht geladen werden.<span>${esc(e.message)}</span></div>`; }
+  }catch(e){ if(nr !== studioNr) return; $('studioListe').innerHTML = ladeFehler('Die Studio-Posts', e); }
 }
-$('btnStudioLaden').onclick = ladeStudio;
+$('btnStudioLaden').onclick = async () => { const b = $('btnStudioLaden'); busy(b, true, 'Lädt …'); await ladeStudio(); busy(b, false); };
 $('btnThema').onclick = async () => {
-  const b = $('btnThema'); busy(b, true, 'Die Sterne schreiben …'); melde('');
+  const b = $('btnThema'); busy(b, true, 'Wird geschrieben … (etwa 30 Sekunden)'); melde('');
   try{
     await api('/content', {method: 'POST', body: JSON.stringify({thema: $('thema').value.trim() || null,
       anzahl: +$('anzahl1').value, sprache: $('sprache1').value})});
-    await ladeStudio(); melde('Fertig ✓');
+    await ladeStudio(); melde('Fertig ✓ Die neuen Posts stehen unten.');
   }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
 };
 $('btnUrl').onclick = async () => {
-  const b = $('btnUrl'), url = $('url').value.trim();
-  if(!url){ melde('Bitte eine Webseite eingeben.'); return; }
-  busy(b, true, 'Lese Seite …'); melde('');
+  const b = $('btnUrl'); let url = $('url').value.trim();
+  if(!url){ melde('Bitte eine Webseite eingeben.'); $('url').focus(); return; }
+  if(!/^https?:\/\//i.test(url)){ url = 'https://' + url; $('url').value = url; }   // "www.…" ohne https:// geht auch
+  busy(b, true, 'Seite wird gelesen …'); melde('');
   try{
     await api('/content-von-url', {method: 'POST', body: JSON.stringify({url, anzahl: +$('anzahl2').value, sprache: $('sprache2').value})});
-    await ladeStudio(); melde('Fertig ✓');
+    await ladeStudio(); melde('Fertig ✓ Die neuen Posts stehen unten.');
   }catch(e){ melde('Fehler: ' + e.message); } finally{ busy(b, false); }
 };
 LADER.studio = () => { ladeStudio(); ladeQuellen(); };
@@ -1638,7 +1744,7 @@ function renderProfile(zeilen, wahl){
       <div class="foot" style="margin-top:14px">
         <label class="imtp schalter${z.im_tagesplan ? ' on' : ''}"><input type="checkbox" data-imtp="${esc(z.id)}"${z.im_tagesplan ? ' checked' : ''}>
           Im Tagesplan verwenden${fuer.length ? ` <span class="tag leise">${fuer.join(' · ')}</span>` : ''}</label>
-        <span class="stamp">${esc((z.created_at || '').slice(0,10))}</span></div>
+        <span class="stamp">${z.created_at ? 'Erstellt am ' + esc(datumLang(z.created_at)) : ''}</span></div>
     </div>`;
   }).join('');
 }
@@ -1654,16 +1760,20 @@ $('profile').addEventListener('change', async (ev) => {
 async function ladeBereiche(){
   try{ const d = await api('/bereiche');
     $('bereich').innerHTML = d.bereiche.map(b => `<option value="${esc(b.schluessel)}">${esc(b.titel)}</option>`).join('');
-  }catch(e){}
+  }catch(e){ if(!$('bereich').options.length) $('bereich').innerHTML = '<option value="">– Liste nicht geladen, unten eigenen Bereich eintragen –</option>'; }
 }
+let profilNr = 0;
 async function ladeProfile(){
-  try{ const d = await api('/zielgruppen'); renderProfile(d.zielgruppen, d.im_tagesplan); }catch(e){ melde('Konnte Profile nicht laden.'); }
+  const nr = ++profilNr;               // nur die neueste Antwort zeigen (schnelles Klicken)
+  try{ const d = await api('/zielgruppen'); if(nr === profilNr) renderProfile(d.zielgruppen, d.im_tagesplan); }
+  catch(e){ if(nr !== profilNr) return; $('tpInfo').hidden = true; $('profile').innerHTML = ladeFehler('Die Profile', e); }
 }
 document.querySelectorAll('#quellen input').forEach(cb => cb.addEventListener('change', () => cb.closest('.q').classList.toggle('on', cb.checked)));
-$('btnProfileLaden').onclick = ladeProfile;
+$('btnProfileLaden').onclick = async () => { const b = $('btnProfileLaden'); busy(b, true, 'Lädt …'); await ladeProfile(); busy(b, false); };
 $('btnWho').onclick = async () => {
   const b = $('btnWho');
   const bereich = $('eigen').value.trim() || $('bereich').value;
+  if(!bereich){ melde('Bitte einen Bereich wählen oder unten selbst eintragen.'); $('eigen').focus(); return; }
   const quellen = [...document.querySelectorAll('#quellen input:checked')].map(c => c.value);
   if(!quellen.length){ melde('Bitte mindestens eine Quelle wählen.'); return; }
   const zeilen = (id) => $(id).value.split('\n').map(x => x.trim()).filter(Boolean);
@@ -1760,13 +1870,13 @@ async function ladeWirkung(){
       if(t) gepostetProTag[t] = (gepostetProTag[t] || 0) + 1;
     });
     zeigeWirkung();
-  }catch(e){ box.style.opacity = 1; box.innerHTML = `<div class="empty">Statistik nicht erreichbar.<span>${esc(e.message)}</span></div>`; }
+  }catch(e){ box.style.opacity = 1; wirkungDaten = null; box.innerHTML = ladeFehler('Die Statistik', e); }
 }
 function zeigeWirkung(){
   const d = wirkungDaten, tage = d.tage || [];
   const posts = Object.entries(gepostetProTag).filter(([t]) => t >= d.von && t <= d.bis).reduce((s, [, n]) => s + n, 0);
   const kpi = (l, v, sub) => `<div class="kpi"><div class="l">${l}</div><div class="v">${zahl(v)}</div>${sub ? `<div class="d">${sub}</div>` : ''}</div>`;
-  const stufen = [['schnellstart_geoeffnet', 'Schnellstart geöffnet'], ['schnellstart_berechnet', 'Sternzeichen berechnet'],
+  const stufen = [['schnellstart_geoeffnet', 'Schnellstart geöffnet'], ['schnellstart_berechnet', 'Schnellstart berechnet'],
     ['registrieren_geklickt', 'Registrieren geklickt'], ['neue_konten', 'Neues Konto'], ['neue_profile', 'Profil angelegt']]
     .map(([k, n]) => [n, summe(tage, k)]);
   const maxStufe = Math.max(1, ...stufen.map(s => s[1]));
@@ -1774,11 +1884,11 @@ function zeigeWirkung(){
   const maxSprache = Math.max(1, ...sprachen.map(s => s[1]));
   $('wirkungInhalt').innerHTML = `
     <div class="kpis">
-      ${kpi('Schnellstarts berechnet', summe(tage, 'schnellstart_berechnet'), tage.some(t => 'gratis_tests' in t) ? `Sonne/Mond inkl. Landingpage: ${zahl(summe(tage, 'gratis_tests'))}` : 'in der App')}
+      ${kpi('Schnellstarts', summe(tage, 'schnellstart_berechnet'), tage.some(t => 'gratis_tests' in t) ? `berechnet · mit Landingpage ${zahl(summe(tage, 'gratis_tests'))}` : 'berechnet in der App')}
       ${kpi('Neue Konten', summe(tage, 'neue_konten'), `gesamt ${zahl(d.gesamt && d.gesamt.konten)}`)}
       ${kpi('Aktive Nutzer', d.aktive_nutzer_zeitraum, 'mindestens einmal geöffnet')}
       ${kpi('Einladungen geöffnet', summe(tage, 'einladung_geoeffnet'), `Links gesamt ${zahl(d.gesamt && d.gesamt.einladungslinks)}`)}
-      ${kpi('Posts gepostet', posts, 'laut Redaktionsplan')}
+      ${kpi('Posts gepostet', posts, 'laut Plan')}
     </div>
     <div class="panel"><h2>${esc(($('wKennzahl').selectedOptions[0] || {}).text || '')} pro Tag</h2>
       <p class="hint">${esc(kurzIso(d.von))} – ${esc(kurzIso(d.bis))}${d.ignoriert ? ` · ${d.ignoriert} eigene Konten ausgeblendet` : ''}</p>
@@ -1789,7 +1899,7 @@ function zeigeWirkung(){
     </div>
     ${herkunftPanel()}
     <div id="fbPanel"></div>
-    <div class="panel trichter"><h2>Vom Schnellstart zum Profil</h2>
+    <div class="panel trichter"><h2>Vom Schnellstart zum Profil${hilfe('Wie viele Menschen von Stufe zu Stufe weiterkommen. Wird der Balken zwischen zwei Stufen plötzlich viel kürzer, springen dort viele ab – dort lohnt sich eine Verbesserung in der App.', 'Trichter')}</h2>
       <p class="hint">Summen im Zeitraum. Prozent bezogen auf die erste Stufe.</p>
       ${stufen.map(([n, v]) => `<div class="stufe"><span class="name">${n}</span><div class="spur">
         <div class="balken" style="width:${(v / maxStufe * 82).toFixed(1)}%"></div>
@@ -1819,14 +1929,14 @@ async function ladeLernen(){
   const balken = (liste, name) => { const max = Math.max(1, ...liste.map(x => x.schnitt));
     return liste.map(x => `<div class="stufe"><span class="name">${esc(name(x.name))}</span><div class="spur">
       <div class="balken" style="width:${(x.schnitt / max * 82).toFixed(1)}%"></div>
-      <span class="wert" style="left:calc(${(x.schnitt / max * 82).toFixed(1)}% + 8px)">Ø ${x.schnitt}<small>${x.posts} Posts</small></span></div></div>`).join(''); };
+      <span class="wert" style="left:calc(${(x.schnitt / max * 82).toFixed(1)}% + 8px)">Ø ${zahl(x.schnitt)}<small>${mehrzahl(x.posts, 'Post', 'Posts')}</small></span></div></div>`).join(''); };
   box.innerHTML = `<div class="panel trichter"><h2>Was Soraya daraus lernt</h2>
     <p class="hint">Jeder Post bekommt Punkte: neues Konto 15, geteilt 4, Kommentar 3, Besuch über den Link 2, Gefällt mir 1,
       je 100 erreichte Menschen 1. Die besten Posts (auch aus anderen Sprachen) und die stärksten Formate fließen in jeden neuen Tagesplan ein.</p>
     <p class="hint"><b>Selbst-Tests:</b> Jeder Tagesplan probiert einen anderen Anfang (z. B. Frage, Alltags-Szene, Neugier-Lücke) und eine
       andere Einladung in die App. Sobald je Variante 3 Posts gemessen sind, nimmt Soraya meistens die beste – und probiert ab und zu weiter Neues.</p>
     ${d.beste && d.beste.length ? `<h3 class="unter">Am besten angekommen</h3><ol class="beste">${d.beste.map(b => `<li><b>${esc(b.titel || 'Post ' + b.id)}</b>
-        <span class="meta">${esc(ART[b.art] || 'Post')} · ${esc((b.sprache || '').toUpperCase())}${b.format ? ' · ' + esc(b.format) : ''} · ${b.punkte} Punkte (${esc(b.details)})</span></li>`).join('')}</ol>`
+        <span class="meta">${esc(ART[b.art] || 'Post')} · ${esc((b.sprache || '').toUpperCase())}${b.format ? ' · ' + esc(b.format) : ''} · ${zahl(b.punkte)} Punkte (${esc(b.details)})</span></li>`).join('')}</ol>`
       : '<p class="meta">Noch keine Wirkung gemessen. Sobald Posts Besucher oder Reaktionen bekommen, lernt der Tagesplan daraus.</p>'}
     ${f.length >= 2 ? `<h3 class="unter">Formate im Vergleich</h3>${balken(f, n => n)}` : ''}
     ${s.length >= 2 ? `<h3 class="unter">Sprachen im Vergleich</h3>${balken(s, n => n.toUpperCase())}` : ''}
@@ -1873,7 +1983,7 @@ function herkunftPanel(){
       ${zeilen.map(z => `<tr><td style="white-space:normal">${quellenName(z.code)}</td><td>${zahl(z.s.besuch)}</td><td>${zahl(z.s.store_klick)}</td>
         <td>${zahl(z.s.schnellstart)}</td><td>${zahl(z.s.register_click)}</td><td><b>${zahl(z.konten)}</b></td></tr>`).join('')}</tbody></table></div>`
     : `<p class="meta">Noch keine Besuche über deine Links. Trag die Bio-Links unten in deine Profile ein und nutze bei Storys und Facebook-Posts „Link kopieren“ auf der Post-Karte.</p>`;
-  return `<div class="panel"><h2>Welche Posts wirken</h2>
+  return `<div class="panel"><h2>Welche Posts wirken${hilfe('Jeder Post und jeder Bio-Link hat eine eigene Kennung im Link (z. B. <b>?q=p12</b>). So zählt die App, woher Besucher und neue Konten kommen.', 'Welche Posts wirken')}</h2>
     <p class="hint">Besuche und Konten über deine Links im Zeitraum. Neue Konten zählen, wenn sich jemand innerhalb von 7 Tagen nach dem Klick registriert.</p>${inhalt}</div>`;
 }
 function linksPanel(){
@@ -1967,14 +2077,18 @@ async function zeigeZeitTipp(){
   const z = d.zeiten || [];
   box.hidden = false;
   box.innerHTML = z.length
-    ? '✦ ' + z.map(x => `${esc(ART[x.art] || x.art)}: um ${x.stunde} Uhr kommen sie besser an (Ø ${x.schnitt} Punkte) als um ${x.statt} Uhr (Ø ${x.statt_schnitt}).`).join(' ')
+    ? '✦ ' + z.map(x => `${esc(ART[x.art] || x.art)}: um ${esc(x.stunde)} Uhr kommen sie besser an (Ø ${zahl(x.schnitt)} Punkte) als um ${esc(x.statt)} Uhr (Ø ${zahl(x.statt_schnitt)}).`).join(' ')
       + ' Wenn du magst, stell die Uhrzeit oben um.'
     : '✦ Uhrzeiten: Soraya vergleicht, wann deine Posts am besten ankommen. Dafür braucht es je Uhrzeit 3 gemessene Posts – '
       + 'probier z. B. eine Woche lang eine andere Uhrzeit, dann gibt es hier einen Vorschlag.';
 }
 async function ladePosten(){
   clearTimeout(postTimer);
-  try{ postDaten = await api('/posten'); }catch(e){ melde('Fehler: ' + e.message); return; }
+  try{ postDaten = await api('/posten'); }
+  catch(e){ // ohne Daten nichts Leeres anzeigen, das man versehentlich speichern könnte
+    $('view-posten').classList.add('ladefehler'); $('postenFehler').classList.remove('hide');
+    $('postenFehler').innerHTML = ladeFehler('Der Stand zum Posten', e); return; }
+  $('view-posten').classList.remove('ladefehler'); $('postenFehler').classList.add('hide');
   const d = postDaten, e = d.einstellungen, v = d.verbindungen;
   const verbunden = ['facebook', 'instagram', 'tiktok'].filter(p => e.plattformen[p] && v[p] && v[p].verbunden);
   $('postAuto').checked = e.an; $('postAutoSchalter').classList.toggle('on', e.an);
@@ -2023,12 +2137,13 @@ async function ladePosten(){
         <td class="pl">${plIkon(t.plattform)}</td>
         <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}</td></tr>`;
     }).join('')}</tbody></table>`
-    : `<div class="empty">Keine Termine.<span>${e.an ? 'Termine entstehen, sobald es Posts für heute oder morgen gibt und eine Plattform verbunden ist.' : 'Termine entstehen, wenn „Automatisch posten“ an ist. Zum Testen: Kasten „Testpost“ oben.'}</span></div>`;
+    : `<div class="empty">Keine Termine.<span>${e.an ? 'Termine entstehen, sobald es Posts für heute oder morgen gibt und eine Plattform verbunden ist.' : 'Termine entstehen, wenn „Automatisch posten“ an ist. Zum Testen: Kasten „Testpost“ unten.'}</span></div>`;
 
   $('postSprache').value = e.sprache; $('postModus').value = e.modus;
   $('zStory').value = e.zeiten.story; $('zPost').value = e.zeiten.post; $('zReel').value = e.zeiten.reel;
   $('plFacebook').checked = !!e.plattformen.facebook; $('plInstagram').checked = !!e.plattformen.instagram;
   $('plTiktok').checked = !!e.plattformen.tiktok; $('tiktokModus').value = e.tiktok_modus || 'entwurf';
+  $('tiktokZeile').hidden = !$('plTiktok').checked; $('postUngespeichert').hidden = true;
   if(e.an && aktiv === 'posten') postTimer = setTimeout(() => aktiv === 'posten' && ladePosten(), 30000);
 }
 const DATENSCHUTZ_URL = 'https://app.sorayaluxuryastroguide.com/datenschutz.html';
@@ -2091,7 +2206,14 @@ $('postAuto').onchange = async () => {
   catch(e){ melde('Fehler: ' + e.message); }
   ladePosten();
 };
+// Einstellungen: zeigen, dass noch nicht gespeichert ist; TikTok-Auswahl nur, wenn TikTok angehakt ist
+$('postSpeichern').closest('.panel').addEventListener('input', () => { $('postUngespeichert').hidden = false; });
+$('postSpeichern').closest('.panel').addEventListener('change', () => { $('postUngespeichert').hidden = false; $('tiktokZeile').hidden = !$('plTiktok').checked; });
 $('postSpeichern').onclick = async () => {
+  const zeiten = [$('zStory'), $('zPost'), $('zReel')];
+  const leer = zeiten.find(z => !/^\d{2}:\d{2}/.test(z.value));
+  if(leer){ melde('Bitte bei jeder Uhrzeit eine Zeit eintragen.'); leer.focus(); return; }
+  if(!$('plFacebook').checked && !$('plInstagram').checked && !$('plTiktok').checked && !confirm('Keine Plattform angehakt – dann geht nichts raus. Trotzdem speichern?')) return;
   try{
     await api('/posten/einstellungen', {method: 'PUT', body: JSON.stringify({sprache: $('postSprache').value, modus: $('postModus').value,
       zeiten: {story: $('zStory').value, post: $('zPost').value, reel: $('zReel').value},
@@ -2140,7 +2262,7 @@ LADER.posten = ladePosten;
     zeige('posten');
     if(q.get('verbunden')) melde(`${PL_NAME[q.get('verbunden')] || ''} ist verbunden ✓`);
     if(q.get('verbindungsfehler')) melde('Verbindung fehlgeschlagen: ' + q.get('verbindungsfehler'));
-  } else zeige('heute');
+  } else zeige(REITER_NAME[location.hash.slice(1)] ? location.hash.slice(1) : 'heute');
 }
 </script>
 </body>
