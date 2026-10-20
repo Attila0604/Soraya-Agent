@@ -160,13 +160,19 @@ def _instagram_name() -> str | None:
 def _mit_bio_hinweis(text: str, sprache: str) -> str:
     """Schlusszeile mit 'Link in Bio' und dem Profil (@name ist auf Instagram antippbar)."""
     name = _instagram_name()
-    if name and f"@{name}".lower() in text.lower():
-        return text
-    hat_bio = re.search(r"\bbio\b|bióban", text, flags=re.IGNORECASE)
-    zeile = "" if hat_bio else IG_HINWEIS.get(sprache, IG_HINWEIS["en"])
-    if name:
-        zeile = f"{zeile} 👉 @{name}".strip()
-    return f"{text}\n\n{zeile}" if zeile else text
+    zeilen = []
+    if not (name and f"@{name}".lower() in text.lower()):
+        hat_bio = re.search(r"\bbio\b|bióban", text, flags=re.IGNORECASE)
+        zeile = "" if hat_bio else IG_HINWEIS.get(sprache, IG_HINWEIS["en"])
+        if name:
+            zeile = f"{zeile} 👉 @{name}".strip()
+        if zeile:
+            zeilen.append(zeile)
+    # Die Adresse der Landingpage zum Abtippen (im Instagram-Text nicht klickbar)
+    adresse = re.sub(r"^https?://(www\.)?", "", link_basis()).rstrip("/")
+    if adresse.lower() not in text.lower():
+        zeilen.append(f"🌐 {adresse}")
+    return f"{text}\n\n" + "\n".join(zeilen) if zeilen else text
 
 
 def text_fuer(post: dict, plattform: str) -> str:
