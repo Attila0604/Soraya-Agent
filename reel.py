@@ -21,12 +21,12 @@ import subprocess
 import tempfile
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-6"
+VERSION = "reel-7"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -99,7 +99,13 @@ def _textkarte(text: str, *, breite: int, groesse: int, name: str, farbe: str, z
             wb = font.getlength(w) / m
             kaesten.append((x - 4, grund - b["g"] * 0.95, x + wb + 4, grund + b["g"] * 0.35))
             x += wb + font.getlength(" ") / m
-    return ebene.resize((ebene.width // m, ebene.height // m), Image.LANCZOS), kaesten
+    # weicher dunkler Schein hinter der Schrift: bleibt auch ueber hellen Sternen/Nebel und nach der
+    # Video-Kompression gut lesbar (feine Serifen der Cormorant werden sonst schnell matschig)
+    alpha = ebene.getchannel("A").filter(ImageFilter.GaussianBlur(14 * m))
+    schatten = Image.new("RGBA", ebene.size, (6, 3, 18, 0))
+    schatten.putalpha(alpha.point(lambda v: min(255, int(v * 0.85))))
+    schatten.alpha_composite(ebene)
+    return schatten.resize((ebene.width // m, ebene.height // m), Image.LANCZOS), kaesten
 
 
 def _wort_fuer_wort(karte: Image.Image, kaesten: list, fortschritt: float) -> Image.Image:
@@ -155,7 +161,7 @@ def _endkarte(post: dict) -> Image.Image:
     else:
         y += 20
     # "Link in Bio"-Knopf, gleiche Form wie auf den Bildern
-    medien._cta(d, ebene, W, y - 100, True, post.get("sprache") or "de", m)
+    medien._cta(d, ebene, W, y - 100, True, post.get("sprache") or "de", m, "voll")
     return ebene.resize((W, H), Image.LANCZOS)
 
 
@@ -261,13 +267,11 @@ def erstelle(post: dict, ziel: str) -> dict:
     oben = Image.new("RGBA", (W, H), (0, 0, 0, 0))                 # kleines Zeichen + Datumszeile
     z = medien.portal(2 * 110)
     s = 2 * 110 / 312
-    gross = Image.new("RGBA", (W * 2, 520), (0, 0, 0, 0))
+    gross = Image.new("RGBA", (W * 2, 640), (0, 0, 0, 0))
     gross.alpha_composite(z, (int(W - 256 * s), int(20 - 112 * s)))
-    eyebrow = "  ·  ".join(x for x in (meta.get("datum_kurz"), meta.get("mond_phase")) if x) or "SORAYA"
-    medien.gesperrt(ImageDraw.Draw(gross), eyebrow.upper(), W, 2 * 170, medien.schrift("inter500", 2 * 30), 2 * 4, (201, 168, 106, 255))
-    if st["label"]:
-        medien._etikett(ImageDraw.Draw(gross, "RGBA"), st["label"], W / 2, 196, 2, akzent)
-    gross = gross.resize((W, 260), Image.LANCZOS)
+    # gleicher Kopf wie auf den Bildern: Format (gold) und darunter Datum · Mondphase
+    medien.kopf(ImageDraw.Draw(gross, "RGBA"), W, 2, True, akzent, st["label"], medien.datumszeile(meta), y=172)
+    gross = gross.resize((W, 320), Image.LANCZOS)
     oben.alpha_composite(gross, (0, 230))
     oben, oben_pos = _zuschneiden(oben)
     mit_mond = meta.get("phase_index") is not None

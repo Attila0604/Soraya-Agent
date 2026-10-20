@@ -26,8 +26,10 @@ aufdringlich zu wirken. Keine Heilsversprechen, keine Angstmacherei.
 Zu jedem Post gehören:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
 - "untertitel": eine kurze Zeile unter der Überschrift, höchstens 12 Wörter.
-- "text": der Post-Text.
-- "hashtags": 3 bis 6 passende Hashtags in der Sprache des Posts, mit #."""
+- "text": der Post-Text, 50 bis 120 Wörter: erste Zeile ein kurzer Hook (höchstens 110 Zeichen,
+  Instagram kürzt danach), dann eine Leerzeile und kurze Absätze mit 1–2 Sätzen, durch Leerzeilen
+  getrennt; höchstens 2 Emojis.
+- "hashtags": 3 bis 5 passende Hashtags in der Sprache des Posts, mit # (Instagram nimmt höchstens 5)."""
 
 POST_SCHEMA = {
     "type": "object",

@@ -136,13 +136,71 @@ def _ohne_bio(text: str, sprache: str) -> str:
     return text
 
 
+HASHTAGS_MAX = 5
+HOOK_MAX = 125           # so viel zeigt Instagram vor "… mehr"
+ABSATZ_MAX = 230          # laengere Absaetze werden an Satzgrenzen geteilt (gut lesbar am Handy)
+_ABK = re.compile(r"\b(z\. ?B\.|d\. ?h\.|u\. ?a\.|bzw\.|ca\.|Nr\.|vs\.|e\. ?g\.|i\. ?e\.|pl\.|kb\.|ill\.|ecc\.)", re.IGNORECASE)
+_SATZ = re.compile(r"(?<=[.!?…])\s+(?=[^\s])|(?<=[\U0001F300-\U0001FAFF☀-➿])\s+(?=[A-ZÄÖÜÁÉÍÓŐÚŰ])")
+_BIO = re.compile(r"\bbio\b|bióban", re.IGNORECASE)
+
+
+def _saetze(absatz: str) -> list[str]:
+    geschuetzt = _ABK.sub(lambda m: m.group(0).replace(".", "\x00"), absatz)
+    return [s.replace("\x00", ".").strip() for s in _SATZ.split(geschuetzt) if s.strip()]
+
+
+def _teile_absatz(absatz: str) -> list[str]:
+    """Zu langen Absatz in Stuecke von hoechstens ABSATZ_MAX Zeichen teilen (nur an Satzgrenzen)."""
+    if len(absatz) <= ABSATZ_MAX:
+        return [absatz]
+    stuecke, akt = [], ""
+    for s in _saetze(absatz):
+        if akt and len(akt) + 1 + len(s) > ABSATZ_MAX:
+            stuecke.append(akt)
+            akt = s
+        else:
+            akt = f"{akt} {s}".strip()
+    return stuecke + ([akt] if akt else [])
+
+
 def _luftig(text: str) -> str:
-    """Hook allein in der ersten Zeile, Absaetze mit genau einer Leerzeile dazwischen."""
-    text = re.sub(r"\n{3,}", "\n\n", text.replace("\r", "").strip())
-    zeilen = text.split("\n")
-    if len(zeilen) > 1 and zeilen[1].strip():
-        zeilen.insert(1, "")
-    return "\n".join(zeilen)
+    """Bildunterschrift wie von einer Social-Media-Redaktion gesetzt:
+    - Hook allein in der ersten Zeile (steht er mit weiteren Saetzen in einem Absatz, wird er abgetrennt,
+      sofern er in die ersten 125 Zeichen passt -- mehr zeigt Instagram nicht vor "… mehr"),
+    - kurze Absaetze (lange werden an Satzgrenzen geteilt), genau eine Leerzeile dazwischen,
+    - die Handlungsaufforderung mit "Link in Bio" als eigener letzter Absatz."""
+    text = re.sub(r"[ \t]+\n", "\n", text.replace("\r", "").strip())
+    absaetze = [a.strip() for a in re.split(r"\n\s*\n", text) if a.strip()]
+    if not absaetze:
+        return ""
+    # Zeilen innerhalb des ersten Absatzes: die erste Zeile ist der Hook
+    erste = absaetze[0].split("\n")
+    if len(erste) > 1:
+        absaetze[0:1] = [erste[0].strip(), "\n".join(erste[1:]).strip()]
+    else:
+        s = _saetze(absaetze[0])
+        if len(s) > 1 and len(s[0]) <= HOOK_MAX:
+            absaetze[0:1] = [s[0], " ".join(s[1:])]
+    # Aufforderung mit Link in Bio ans Ende, als eigener Absatz
+    letzter = absaetze[-1]
+    if len(absaetze) > 1 or "\n" not in letzter:
+        s = _saetze(letzter)
+        i = next((k for k in range(len(s) - 1, -1, -1) if _BIO.search(s[k])), None)
+        if i is not None and i > 0:
+            if len(s[i].split()) <= 4 and i > 1 and not s[i - 1].rstrip().endswith("?"):
+                i -= 1                               # "… gratis, ohne Konto. Link in Bio ✨" bleibt zusammen
+            absaetze[-1:] = [" ".join(s[:i]), " ".join(s[i:])]
+    # die Frage zum Kommentieren ("Welches Zeichen bist du? Schreib es in die Kommentare 👇") steht allein
+    k = len(absaetze) - (2 if len(absaetze) > 1 and _BIO.search(absaetze[-1]) else 1)
+    if k >= 1 and "\n" not in absaetze[k]:
+        s = _saetze(absaetze[k])
+        j = next((x for x in range(len(s) - 1, max(-1, len(s) - 3), -1) if s[x].rstrip().endswith("?")), None)
+        if j:
+            absaetze[k:k + 1] = [" ".join(s[:j]), " ".join(s[j:])]
+    aus = []
+    for a in absaetze:
+        aus += [a] if "\n" in a else _teile_absatz(a)
+    return "\n\n".join(aus)
 
 
 # Auf Instagram sind Links im Text nicht klickbar: der Weg zur App geht ueber das Profil (Link in Bio)
@@ -162,12 +220,15 @@ def _mit_bio_hinweis(text: str, sprache: str) -> str:
     name = _instagram_name()
     zeilen = []
     if not (name and f"@{name}".lower() in text.lower()):
-        hat_bio = re.search(r"\bbio\b|bióban", text, flags=re.IGNORECASE)
-        zeile = "" if hat_bio else IG_HINWEIS.get(sprache, IG_HINWEIS["en"])
-        if name:
-            zeile = f"{zeile} 👉 @{name}".strip()
-        if zeile:
-            zeilen.append(zeile)
+        absaetze = text.split("\n\n")
+        mit_bio = [i for i, a in enumerate(absaetze) if _BIO.search(a)]
+        if mit_bio and name:
+            # "@name" direkt hinter "Link in Bio" (eine Aufforderung statt zwei Zeilen)
+            absaetze[mit_bio[-1]] = f"{absaetze[mit_bio[-1]].rstrip()} 👉 @{name}"
+            text = "\n\n".join(absaetze)
+        elif not mit_bio:
+            zeile = IG_HINWEIS.get(sprache, IG_HINWEIS["en"])
+            zeilen.append(f"{zeile} 👉 @{name}" if name else zeile)
     # Die Adresse der Landingpage zum Abtippen (im Instagram-Text nicht klickbar)
     adresse = re.sub(r"^https?://(www\.)?", "", link_basis()).rstrip("/")
     if adresse.lower() not in text.lower():
@@ -188,8 +249,9 @@ def text_fuer(post: dict, plattform: str) -> str:
         teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en")
     if post.get("hashtags"):
         tags = post["hashtags"].split()
-        # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur die ersten drei
-        teile.append(" ".join(tags[:3] if plattform == "facebook" else tags))
+        # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur die ersten drei; Instagram nimmt
+        # hoechstens 5 Hashtags je Beitrag (mehr wirken dort auch nicht besser)
+        teile.append(" ".join(tags[:3] if plattform == "facebook" else tags[:HASHTAGS_MAX]))
     return "\n\n".join(t for t in teile if t)
 
 

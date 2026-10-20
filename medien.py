@@ -428,8 +428,25 @@ def umbrechen(font: ImageFont.FreeTypeFont, text: str, breite: float) -> list[st
     return zeilen
 
 
-def messe_text(text, *, breite, groesse, name, zeilenhoehe=1.12, max_zeilen=4, min_groesse=30, m=1.0):
-    """Wie messeText im Dashboard: Schrift wird kleiner, bis der Text in max_zeilen passt."""
+def ausgleichen(font: ImageFont.FreeTypeFont, text: str, breite: float) -> list[str]:
+    """Zeilen gleich lang machen (kein einzelnes Wort allein in der letzten Zeile): die schmalste Breite
+    suchen, bei der die Zeilenzahl gleich bleibt -- wie text-wrap: balance im Browser."""
+    zeilen = umbrechen(font, text, breite)
+    if len(zeilen) < 2:
+        return zeilen
+    lo, hi = breite * 0.5, breite
+    for _ in range(12):
+        mitte = (lo + hi) / 2
+        if len(umbrechen(font, text, mitte)) <= len(zeilen):
+            hi = mitte
+        else:
+            lo = mitte
+    return umbrechen(font, text, hi + 1)
+
+
+def messe_text(text, *, breite, groesse, name, zeilenhoehe=1.12, max_zeilen=4, min_groesse=30, m=1.0, ausgleich=True):
+    """Wie messeText im Dashboard: Schrift wird kleiner, bis der Text in max_zeilen passt.
+    Mit ausgleich werden die Zeilen gleich lang umbrochen (ruhigeres Schriftbild, keine Waisen)."""
     g = groesse
     while True:
         font = schrift(name, g * m)
@@ -437,6 +454,8 @@ def messe_text(text, *, breite, groesse, name, zeilenhoehe=1.12, max_zeilen=4, m
         if len(zeilen) <= max_zeilen or g - 4 < min_groesse:
             break
         g -= 4
+    if ausgleich and 1 < len(zeilen) <= max_zeilen:
+        zeilen = ausgleichen(font, text, breite * m)
     if len(zeilen) > max_zeilen:
         zeilen = zeilen[:max_zeilen]
         z = zeilen[-1]
@@ -590,7 +609,7 @@ def _wochenleiste(leinwand, d, post, y, W, m, akzent):
     kurz = WOCHENTAG_KURZ.get((post.get("sprache") or "de")[:2], WOCHENTAG_KURZ["en"])
     r, abstand = 30, 118
     x0 = W / 2 - 3 * abstand
-    font = schrift("inter600", 22 * m)
+    font = schrift("inter600", 28 * m)
     for i in range(7):
         t = start + timedelta(days=i)
         cx, cy = x0 + i * abstand, y + r + 6
@@ -668,30 +687,91 @@ def sterne(bild: Image.Image, W, H, seed, story, m=1.0, helligkeit=None):
         d.ellipse([(x - r) * m, (y - r) * m, (x + r) * m, (y + r) * m], fill=farbe + (int(a * f * 255),))
 
 
-def _cta(draw, bild, W, unten, story, sprache, m):
-    text = LINK_IN_BIO.get(sprache or "de", LINK_IN_BIO["de"])
-    font = schrift("inter600", (32 if story else 28) * m)
-    stern_h = (13 if story else 11.5) * m
+def _cta(draw, bild, W, unten, story, sprache, m, art="link"):
+    """Knopf unten: "link" (Rand, Text + Stern), "voll" (goldene Flaeche: die eine Hauptaufforderung,
+    z. B. auf der Schlussfolie) oder "wischen" (Titelbild des Karussells: Text + Pfeil)."""
+    voll = art == "voll"
+    text = (WISCHEN.get(sprache or "de", WISCHEN["en"]).upper() if art == "wischen"
+            else LINK_IN_BIO.get(sprache or "de", LINK_IN_BIO["de"]))
+    font = schrift("inter600", (34 if story else 30) * m)
+    stern_h = (13 if story else 12) * m
     lueck = 16 * m
-    tb = font.getlength(text)
-    bw = tb + lueck + 2 * stern_h * 0.74 + 70 * m
-    bh, by = (74 if story else 64) * m, (unten + (100 if story else 78)) * m
+    if art == "wischen":
+        breiten = [font.getlength(ch) for ch in text]
+        tb = sum(breiten) + 3 * m * (len(text) - 1)
+        zeichen_b = 40 * m
+    else:
+        tb = font.getlength(text)
+        zeichen_b = 2 * stern_h * 0.74
+    bw = tb + lueck + zeichen_b + 76 * m
+    bh, by = (78 if story else 68) * m, (unten + (100 if story else 72)) * m
     x0 = W * m / 2 - bw / 2
-    draw.rounded_rectangle([x0, by, x0 + bw, by + bh], radius=bh / 2, outline=(230, 207, 156, 191), width=max(1, int(2 * m)))
-    tx = W * m / 2 - (tb + lueck + 2 * stern_h * 0.74) / 2
-    draw.text((tx, by + bh / 2 + m), text, font=font, fill=(243, 231, 201, 255), anchor="lm")
+    tinte = (26, 18, 8, 255) if voll else (243, 231, 201, 255)
+    if voll:
+        verlauf = linear(int(bw), int(bh), 0, 0, 0, bh, [(0, "#efd9a4", 1), (1, "#cfae62", 1)])
+        maske = Image.new("L", verlauf.size, 0)
+        ImageDraw.Draw(maske).rounded_rectangle([0, 0, verlauf.width - 1, verlauf.height - 1], radius=bh / 2, fill=255)
+        bild.paste(verlauf, (int(x0), int(by)), maske)
+    else:
+        draw.rounded_rectangle([x0, by, x0 + bw, by + bh], radius=bh / 2, fill=(230, 207, 156, 18),
+                               outline=(230, 207, 156, 200), width=max(1, int(2 * m)))
+    tx = W * m / 2 - (tb + lueck + zeichen_b) / 2
+    mitte = by + bh / 2 + m
+    if art == "wischen":
+        gesperrt(draw, text, tx + tb / 2, mitte + font.size * 0.36, font, 3 * m, tinte)
+        x1 = tx + tb + lueck + zeichen_b
+        draw.line([(x1 - zeichen_b, mitte), (x1, mitte)], fill=tinte, width=max(1, int(2.4 * m)))
+        draw.polygon([(x1 + 2 * m, mitte), (x1 - 10 * m, mitte - 8 * m), (x1 - 10 * m, mitte + 8 * m)], fill=tinte)
+        return
+    draw.text((tx, mitte), text, font=font, fill=tinte, anchor="lm")
     sx = tx + tb + lueck + stern_h * 0.74
-    draw.polygon(stern_punkte(sx, by + bh / 2 + m, stern_h), fill=(243, 231, 201, 255))
+    draw.polygon(stern_punkte(sx, mitte, stern_h), fill=tinte)
 
 
-def marke(bild: Image.Image, W: int, H: int, story: bool, sprache: str, m: float = 1.0) -> None:
-    """SORAYA, LUXURY ASTRO GUIDE und der 'Link in Bio'-Knopf unten."""
+def marke(bild: Image.Image, W: int, H: int, story: bool, sprache: str, m: float = 1.0, knopf: str = "link") -> None:
+    """Fuss des Bildes: Wortmarke SORAYA und darunter der Knopf (siehe _cta). Im Feed ohne die winzige
+    Zeile "Luxury Astro Guide" (am Handy unlesbar) -- in der Story ist Platz und sie bleibt."""
     d = ImageDraw.Draw(bild, "RGBA")
     unten = H - 300 if story else H - 192
-    gesperrt(d, "SORAYA", W * m / 2, unten * m, schrift("cinzel", (50 if story else 42) * m), 14 * m, (230, 207, 156, 255))
-    gesperrt(d, "LUXURY ASTRO GUIDE", W * m / 2, (unten + (50 if story else 42)) * m,
-             schrift("inter500", (22 if story else 19) * m), 8 * m, (143, 131, 173, 255))
-    _cta(d, bild, W, unten, story, sprache, m)
+    gesperrt(d, "SORAYA", W * m / 2, (unten + (0 if story else 26)) * m, schrift("cinzel", (50 if story else 40) * m),
+             14 * m, (230, 207, 156, 255))
+    if story:
+        gesperrt(d, "LUXURY ASTRO GUIDE", W * m / 2, (unten + 50) * m, schrift("inter500", 25 * m), 8 * m,
+                 (160, 148, 190, 255))
+    if knopf:
+        _cta(d, bild, W, unten, story, sprache, m, knopf)
+
+
+def kopf(d, W, m, story, akzent, label=None, datum=None, y=None):
+    """Kopfzeilen unter dem Logo: Format (gold, Versalien) und darunter Datum · Mondphase (ruhig, normal
+    geschrieben). Ersetzt die fruehere Kapsel + Versal-Datumszeile: weniger Rahmen, klarere Reihenfolge.
+    Rueckgabe: y unter dem Kopf (Beginn des Inhalts)."""
+    y = y if y is not None else (282 if story else 196)
+    if label:
+        gesperrt(d, label.upper(), W * m / 2, y * m, schrift("inter600", (28 if story else 25) * m), 4 * m, akzent + (255,))
+        y += 46 if story else 40
+    if datum:
+        d.text((W * m / 2, y * m), datum, font=schrift("inter400", (31 if story else 28) * m), fill=(196, 186, 220, 255),
+               anchor="ms")
+        y += 46 if story else 40
+    return y + (28 if story else 18)
+
+
+_ANLEITUNG = re.compile(r"^(antworte|antwort|reply|answer|respond|válaszolj|valaszolj|rispondi|scrivi|schreib)\b", re.IGNORECASE)
+
+
+def ohne_antwort_anleitung(text: str) -> str:
+    """Story mit Antwort-Knoepfen: Saetze wie "Antworte mit 🌙 oder ☀️" weglassen -- die Knoepfe im Bild
+    zeigen die Antworten schon (weniger Text im Bild)."""
+    saetze = re.split(r"(?<=[.!?…])\s+", str(text or "").strip())
+    rest = [s for s in saetze if not _ANLEITUNG.match(s.strip())]
+    return " ".join(rest).strip() or str(text or "").strip()
+
+
+def datumszeile(meta: dict) -> str | None:
+    """'20. Okt · Zunehmende Sichel' (Mondphase gross geschrieben, wie geliefert)."""
+    teile = [str(x).strip() for x in (meta.get("datum_kurz"), meta.get("mond_phase")) if x and str(x).strip()]
+    return "  ·  ".join(teile) or None
 
 
 def _etikett(d, text, cx, y, m, farbe):
@@ -795,21 +875,17 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
         ebene = Image.new("RGBA", leinwand.size, (0, 0, 0, 0))
         font = schrift("zeichen" if wasser != "?" else "cormorant", (760 if story else 640) * m)
         ImageDraw.Draw(ebene).text((W * m / 2, H * m * 0.56), wasser, font=font, fill=akzent + (255,), anchor="mm")
-        aufkleben(leinwand, _mit_alpha(ebene, 0.07))
+        # hinter Karten noch leiser: das Zeichen soll Tiefe geben, nicht mit dem Text konkurrieren
+        aufkleben(leinwand, _mit_alpha(ebene, 0.03 if st["aufbau"] in ("zeichen", "schritte", "umfrage") else 0.045))
 
     zeichen_h = 124 if story else 100
     z = portal(int(zeichen_h * m))
     s = zeichen_h * m / 312
     aufkleben(leinwand, z, (W * m / 2 - 256 * s, (118 if story else 62) * m - 112 * s))
-    eyebrow = "  ·  ".join(x for x in (meta.get("datum_kurz"), meta.get("mond_phase")) if x) if mit_mond else "SORAYA"
-    gesperrt(d, eyebrow.upper(), W * m / 2, (285 if story else 200) * m,
-             schrift("inter500", (30 if story else 26) * m), 4 * m, (201, 168, 106, 255))
-
+    datum = datumszeile(meta) if mit_mond else None
     unten = H - 300 if story else H - 192
-    oben = 350 if story else 245
-    if st["label"]:
-        oben += _etikett(d, st["label"], W / 2, oben - (10 if story else 18), m, akzent) - (0 if story else 14)
-    platz = (unten - (150 if story else 110)) - oben
+    oben = kopf(d, W, m, story, akzent, st["label"], datum)
+    platz = (unten - (150 if story else 72)) - oben
 
     titel = messe_text(post.get("titel") or post.get("text") or "", breite=W - 180, groesse=108 if story else 92,
                        name="cormorant", max_zeilen=4 if story else 3, min_groesse=56)
@@ -817,6 +893,8 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
                        zeilenhoehe=1.35, max_zeilen=3, min_groesse=28) if post.get("untertitel") else None
     frage_text = post.get("text") if post.get("art") == "story" and post.get("text") and post.get("text") != post.get("titel") else ""
     antworten = st["punkte"][:2] if story and post.get("art") == "story" and len(st["punkte"]) >= 2 else []
+    if antworten and frage_text:
+        frage_text = ohne_antwort_anleitung(frage_text)
     pad = 44 if story else 34
     frage = messe_text(frage_text, breite=W - 220 - 2 * pad, groesse=46 if story else 36, name="inter500",
                        zeilenhoehe=1.38, max_zeilen=6 if story else 4, min_groesse=28) if frage_text else None
@@ -896,9 +974,9 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
                 text_mit_emojis(d, ((x0 + breite / 2) * m, (y + 96 / 2 + 13) * m), text, font, (246, 227, 180, 255))
     if not story and not karten and st["layout"] in ("wissen", "ritual") and post.get("art") == "post":
         _merken_zeichen(d, W, m, akzent, post.get("sprache") or "de")
-    marke(leinwand, W, H, story, post.get("sprache") or "de", m)
-    if not story and folien_von(post):
-        _wisch_hinweis(d, W, H, m, akzent, post.get("sprache") or "de")
+    # Karussell: das Titelbild laedt zum Wischen ein (die Einladung in die App kommt auf der Schlussfolie)
+    knopf = "wischen" if not story and folien_von(post) else "link"
+    marke(leinwand, W, H, story, post.get("sprache") or "de", m, knopf)
     return leinwand.resize((W, H), Image.LANCZOS)
 
 
@@ -922,17 +1000,15 @@ MERKEN = {"de": "Zum Speichern", "en": "Save this", "hu": "Mentsd el", "it": "Da
 
 def _merken_zeichen(d, W, m, akzent, sprache):
     """Lesezeichen oben rechts: Wissen und Rituale sind zum Speichern gedacht (das belohnen die Plattformen)."""
-    x, y, b, h = W - 112, 92, 26, 34
-    d.polygon([(x * m, y * m), ((x + b) * m, y * m), ((x + b) * m, (y + h) * m), ((x + b / 2) * m, (y + h - 9) * m),
-               (x * m, (y + h) * m)], outline=akzent + (230,), width=max(1, int(2 * m)))
-    font = schrift("inter500", 17 * m)
-    text = MERKEN.get(sprache, MERKEN["en"]).upper()
-    gesperrt(d, text, (x + b / 2) * m, (y + h + 30) * m, font, 2 * m, akzent + (200,))
+    # nur das Zeichen (wie bei Instagram) -- die fruehere 17-px-Beschriftung war am Handy unlesbar
+    x, y, b, h = W - 118, 84, 32, 42
+    d.polygon([(x * m, y * m), ((x + b) * m, y * m), ((x + b) * m, (y + h) * m), ((x + b / 2) * m, (y + h - 11) * m),
+               (x * m, (y + h) * m)], outline=akzent + (230,), width=max(1, int(2.4 * m)))
 
 
 def _wisch_hinweis(d, W, H, m, akzent, sprache):
     """Kleiner Hinweis unten rechts: es geht weiter (Karussell)."""
-    font = schrift("inter500", 21 * m)
+    font = schrift("inter600", 25 * m)
     text = WISCHEN.get(sprache, WISCHEN["en"]).upper()
     x1, y = (W - 70) * m, (H - 112) * m
     breite = sum(font.getlength(ch) for ch in text) + 2.5 * m * (len(text) - 1)
@@ -943,7 +1019,7 @@ def _wisch_hinweis(d, W, H, m, akzent, sprache):
 
 def _seitenzahl(d, W, m, akzent, nr, gesamt):
     """Punkte oben (wie bei Instagram), aktuelle Seite gold."""
-    abstand, r = 22, 5
+    abstand, r = 26, 6
     x0 = W / 2 - (gesamt - 1) * abstand / 2
     for i in range(gesamt):
         cx, cy = (x0 + i * abstand) * m, 60 * m
@@ -980,7 +1056,7 @@ def folie(post: dict, nr: int) -> Image.Image:
         y += zh + 70
         zeichne_text(d, t, W / 2, y, "#F6E3B4", m)
         zeichne_text(d, u, W / 2, y + t["hoehe"] + 30, "#C3B7DA", m)
-        marke(leinwand, W, H, False, sprache, m)
+        marke(leinwand, W, H, False, sprache, m, "voll")
         return leinwand.resize((W, H), Image.LANCZOS)
     f = folien[nr - 2]
     titel, text = (f.get("titel") or "").strip(), (f.get("text") or "").strip()
