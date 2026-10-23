@@ -111,7 +111,9 @@ def init_db():
         # Zielgruppe im Tagesplan verwenden, Land der Recherche (seit Version 0.9)
         cur.execute("alter table soraya_zielgruppen add column if not exists im_tagesplan boolean not null default false;")
         cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
-        for spalte in ("reaktionen int", "kommentare int", "geteilt int", "zahlen_am timestamptz", "reichweite int"):
+        # gespeichert (Instagram "Speichern") und aufrufe (Instagram/TikTok "Aufrufe") seit Version 0.13
+        for spalte in ("reaktionen int", "kommentare int", "geteilt int", "zahlen_am timestamptz", "reichweite int",
+                       "gespeichert int", "aufrufe int"):
             cur.execute(f"alter table soraya_veroeffentlichungen add column if not exists {spalte};")
         cur.execute(
             """
@@ -276,14 +278,30 @@ def lade_gepostete(plattform: str, seit, limit: int = 30) -> list[dict]:
 
 
 def speichere_zahlen(post_id: int, plattform: str, reaktionen: int, kommentare: int, geteilt: int,
-                     reichweite: int | None = None) -> None:
+                     reichweite: int | None = None, gespeichert: int | None = None,
+                     aufrufe: int | None = None) -> None:
     """Reaktionen eines geposteten Beitrags merken (fuer das Lernen ohne staendige API-Aufrufe).
-    reichweite None = nicht gemessen (der alte Wert bleibt stehen)."""
+    reichweite/gespeichert/aufrufe None = nicht gemessen (der alte Wert bleibt stehen)."""
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute("update soraya_veroeffentlichungen set reaktionen = %s, kommentare = %s, geteilt = %s, "
-                    "reichweite = coalesce(%s, reichweite), zahlen_am = now() where post_id = %s and plattform = %s;",
-                    (reaktionen, kommentare, geteilt, reichweite, post_id, plattform))
+                    "reichweite = coalesce(%s, reichweite), gespeichert = coalesce(%s, gespeichert), "
+                    "aufrufe = coalesce(%s, aufrufe), zahlen_am = now() where post_id = %s and plattform = %s;",
+                    (reaktionen, kommentare, geteilt, reichweite, gespeichert, aufrufe, post_id, plattform))
         conn.commit()
+
+
+def lade_gemerkte_zahlen(plattform: str, seit, limit: int = 30) -> list[dict]:
+    """Gepostete Beitraege einer Plattform mit den zuletzt gemerkten Zahlen (ohne API-Aufruf)."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select v.post_id, v.extern_id, v.url, v.aktualisiert as gepostet, v.reaktionen, v.kommentare, v.geteilt, "
+            "v.reichweite, v.gespeichert, v.aufrufe, v.zahlen_am, p.titel, p.art, p.sprache "
+            "from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "
+            "where v.plattform = %s and v.status = 'fertig' and v.aktualisiert >= %s "
+            "order by v.aktualisiert desc limit %s;",
+            (plattform, seit, limit),
+        )
+        return cur.fetchall()
 
 
 def lade_lern_posts(seit) -> list[dict]:
@@ -292,7 +310,8 @@ def lade_lern_posts(seit) -> list[dict]:
         cur.execute(
             "select p.id, p.titel, p.art, p.sprache, p.meta, min(v.aktualisiert) as gepostet, "
             "coalesce(sum(v.reaktionen), 0) as reaktionen, coalesce(sum(v.kommentare), 0) as kommentare, "
-            "coalesce(sum(v.geteilt), 0) as geteilt, coalesce(sum(v.reichweite), 0) as reichweite, bool_or(v.zahlen_am is not null) as gemessen "
+            "coalesce(sum(v.geteilt), 0) as geteilt, coalesce(sum(v.reichweite), 0) as reichweite, "
+            "coalesce(sum(v.gespeichert), 0) as gespeichert, bool_or(v.zahlen_am is not null) as gemessen "
             "from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "
             "where v.status = 'fertig' and v.aktualisiert >= %s group by p.id order by gepostet desc limit 200;",
             (seit,),

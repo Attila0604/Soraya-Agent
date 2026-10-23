@@ -214,7 +214,7 @@ check("Wirkung: Tabelle vorhanden", (await page.$$eval(".panel > details table.t
 const herkunft = await page.$$eval("table.herkunft tbody tr", (r) => r.map((z) => [...z.cells].map((c) => c.innerText.replace(/\s+/g, " ").trim()).join("|")));
 // Post 1 wurde oben im Plan-Test geloescht -> wird als "(gelöscht)" gefuehrt
 check("Wirkung: Herkunft – Post vorne (mehr Konten), Bio-Link danach", herkunft.length === 2 && /^Post 1 \(gelöscht\)\|34\|0\|9\|3\|2$/.test(herkunft[0]) && herkunft[1] === "Bio-Link Instagram|51|12|0|0|1", JSON.stringify(herkunft));
-check("Wirkung: Bio-Links zum Kopieren", (await page.$$eval(".linkzeile code", (c) => c.map((x) => x.textContent))).join() === "https://www.sorayaluxuryastroguide.com/?q=bio-ig,https://www.sorayaluxuryastroguide.com/?q=bio-tt,https://www.sorayaluxuryastroguide.com/?q=bio-fb", "");
+check("Wirkung: Bio-Links zum Kopieren", (await page.$$eval(".linkzeile code", (c) => c.map((x) => x.textContent))).join() === "https://www.sorayaluxuryastroguide.com/?q=bio-ig,https://www.sorayaluxuryastroguide.com/?q=bio-tt,https://www.sorayaluxuryastroguide.com/?q=bio-fb,https://www.sorayaluxuryastroguide.com/?q=bio-li", "");
 await page.selectOption("#wKennzahl", "link_besuche"); await wait(300);
 const linkBalken = await page.$$eval("#verlauf path", (p) => p.length);
 check("Wirkung: Kennzahl 'Besuche über deine Links' (3 Tage mit Besuchen)", linkBalken === 3, linkBalken);
@@ -251,6 +251,15 @@ await page.click('.tab[data-tab="posten"]'); await wait(900);
 check("Posten: standardmäßig aus", !(await page.isChecked("#postAuto")) && (await page.textContent("#postInfo")).startsWith("Aus:"), await page.textContent("#postInfo"));
 check("Posten: ohne Meta-App Hinweis auf Railway-Variablen", (await page.textContent("#verbindungen")).includes("META_APP_ID") && (await page.$$("#verbindungen a.knopf:not(.hide)")).length === 0, "");
 check("Posten: Rückruf-Adresse angezeigt", (await page.textContent("#verbindungen")).includes("/meta/rueckruf/facebook"), "");
+check("Posten: vier Verbindungen (Facebook, Instagram, TikTok, LinkedIn)", (await page.$$eval("#verbindungen .verbindung", (x) => x.length)) === 4, "");
+{ const t = await page.textContent("#verbindungen");
+  check("Posten: TikTok-Einrichtung mit Produkten, Rechten und Rückruf", ["Login Kit", "Content Posting API", "user.info.basic", "video.upload", "video.publish", "video.list", "Sandbox", "/tiktok/rueckruf", "TIKTOK_CLIENT_KEY"].every((w) => t.includes(w)), "");
+  check("Posten: LinkedIn-Einrichtung mit Seite, Produkten und Rückruf", ["Unternehmensseite", "Share on LinkedIn", "OpenID Connect", "/linkedin/rueckruf", "LINKEDIN_CLIENT_ID"].every((w) => t.includes(w)), "");
+  check("Posten: Einrichtung zugeklappt", !(await page.$$eval("#verbindungen details.einricht", (d) => d.some((x) => x.open))), ""); }
+check("Posten: LinkedIn-Häkchen standardmäßig aus", !(await page.isChecked("#plLinkedin")), "");
+await page.$$eval("#verbindungen details.einricht", (d) => d.forEach((x) => { x.open = true; }));
+if (OUT) await (await page.$("#verbindungen")).screenshot({ path: OUT + "/posten-einrichtung-tiktok-linkedin.png" });
+await page.$$eval("#verbindungen details.einricht", (d) => d.forEach((x) => { x.open = false; }));
 check("Posten: Einrichtung zeigt Schritt 1 mit Kopier-Adressen", await page.isVisible("#einrichtungPanel") && (await page.$$eval("#einrichtungSchritte li", (l) => l.length)) === 5
   && (await page.$eval("#einrichtungSchritte li.jetzt", (l) => l.textContent)).includes("datenschutz.html") && (await page.$$("#einrichtungSchritte [data-kopie]")).length === 3, "");
 check("Posten: Testpost-Knöpfe ohne Verbindung gesperrt", (await page.$$("#testposts button[data-jetzt]")).length > 0

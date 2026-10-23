@@ -38,6 +38,7 @@ from db import (
 )
 import db
 import himmel
+import linkedin
 import meta
 import paket
 import posten
@@ -467,6 +468,34 @@ def tiktok_trennen():
     return {"getrennt": "tiktok"}
 
 
+@app.get("/linkedin/verbinden")
+def linkedin_verbinden():
+    try:
+        return RedirectResponse(linkedin.anmelde_url(), status_code=302)
+    except linkedin.LinkedInFehler as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+@app.get("/linkedin/rueckruf")
+def linkedin_rueckruf(code: Optional[str] = None, state: Optional[str] = None,
+                      error_description: Optional[str] = None, error: Optional[str] = None):
+    try:
+        if not code:
+            raise linkedin.LinkedInFehler(error_description or error or "Verbindung abgebrochen.")
+        meta.pruefe_state("linkedin", state or "")
+        linkedin.verbinde(code)
+        return RedirectResponse("/?verbunden=linkedin#posten", status_code=302)
+    except Exception as e:
+        from urllib.parse import quote
+        return RedirectResponse(f"/?verbindungsfehler={quote(str(e)[:300])}#posten", status_code=302)
+
+
+@app.post("/linkedin/trennen")
+def linkedin_trennen():
+    linkedin.trennen()
+    return {"getrennt": "linkedin"}
+
+
 @app.get("/oeffentlich/medien/{name}")
 def oeffentliche_medien(name: str):
     try:
@@ -588,6 +617,37 @@ def wirkung_facebook(tage: int = 30):
                                     z.get("reichweite"))
         return {"verbunden": True, "beitraege": beitraege}
     except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/wirkung/instagram")
+def wirkung_instagram(tage: int = 30):
+    """Instagram: Follower und Zahlen der zuletzt geposteten Beitraege (holt frisch und merkt sie)."""
+    if not meta.verbindungen()["instagram"]["verbunden"]:
+        return {"verbunden": False, "beitraege": []}
+    seit = datetime.now(himmel.WIEN) - timedelta(days=max(1, min(tage, 90)))
+    try:
+        r = posten.zahlen_instagram(seit)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"verbunden": True, "recht_fehlt": r["recht_fehlt"], "konto": posten.follower_stand(),
+            "beitraege": r["beitraege"]}
+
+
+@app.get("/wirkung/tiktok")
+def wirkung_tiktok(tage: int = 30):
+    """TikTok: Aufrufe, Gefaellt mir, Kommentare, Teilen der Reels (video.list, ohne Audit)."""
+    v = tiktok.verbindung()
+    if not v["verbunden"]:
+        return {"verbunden": False, "beitraege": []}
+    if not v.get("zahlen"):
+        return {"verbunden": True, "recht_fehlt": True, "beitraege": []}
+    seit = datetime.now(himmel.WIEN) - timedelta(days=max(1, min(tage, 90)))
+    try:
+        return {"verbunden": True, "recht_fehlt": False, "beitraege": posten.zahlen_tiktok(seit)}
+    except Exception as e:
+        if not tiktok.verbindung().get("zahlen"):
+            return {"verbunden": True, "recht_fehlt": True, "beitraege": []}
         raise HTTPException(status_code=502, detail=str(e))
 
 

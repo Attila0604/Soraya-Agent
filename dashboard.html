@@ -202,6 +202,15 @@
   .verbindung .klein{font-size:12.5px;color:var(--mist-dim)}
   .verbindung>div{min-width:0}
   .verbindung code{word-break:break-all;font-size:12px}
+  .verbindung>div:first-child{flex:1 1 280px}
+  .verbindung .warnzeile{color:var(--champagne)}
+  .verbindung details.einricht{margin-top:8px}
+  .verbindung details.einricht>summary{font-size:13px}
+  ol.klein-schritte{margin-top:8px;font-size:13px}
+  ol.klein-schritte .wie{display:block;color:var(--mist-dim);margin-top:2px}
+  .igkopf{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;margin-bottom:10px}
+  .igkopf b{font-size:22px;color:#F4EEDD;font-variant-numeric:tabular-nums}
+  .igkopf .plus{color:var(--gruen);font-size:13px}
   .punkt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--mist-dim)}
   .punkt.ok{background:var(--ok)} .punkt.aus{background:var(--bad)}
   .zeiten{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -214,7 +223,7 @@
   .kpis.klein3.vier{grid-template-columns:repeat(4,minmax(0,1fr))}
   @media (max-width:520px){.kpis.klein3.vier{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .kpis.klein3 .l{font-size:10.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .termine a,.testpost a.fertig,#fbPanel a.fertig{color:var(--champagne);text-decoration:none;border-bottom:1px solid rgba(201,168,106,.5)}
+  .termine a,.testpost a.fertig,#fbPanel a.fertig,#igPanel a.fertig,#ttPanel a.fertig{color:var(--champagne);text-decoration:none;border-bottom:1px solid rgba(201,168,106,.5)}
   .testpost a.fertig{font-size:13px;padding:6px 4px}
   .termine td,.termine th{padding:8px 6px;border-top:1px solid var(--line-soft);text-align:left;vertical-align:top}
   .termine th{font-weight:500;color:var(--mist-dim);font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-top:0}
@@ -920,6 +929,7 @@
         <label class="imtp"><input type="checkbox" id="plFacebook"> Facebook-Seite</label>
         <label class="imtp"><input type="checkbox" id="plInstagram"> Instagram</label>
         <label class="imtp"><input type="checkbox" id="plTiktok"> TikTok (nur Reels)</label>
+        <label class="imtp"><input type="checkbox" id="plLinkedin"> LinkedIn (dein Profil, ohne Storys)</label>
       </div>
       <div class="row" id="tiktokZeile" style="margin-top:10px">
         <div><label for="tiktokModus">So kommt das Reel zu TikTok</label>
@@ -959,7 +969,11 @@ const SVG = (d) => `<span class="ikon" aria-hidden="true"><svg viewBox="0 0 24 2
 const IKON = {
   facebook: SVG('<path d="M13.5 21v-7.2h2.4l.4-2.8h-2.8V9.2c0-.8.2-1.4 1.4-1.4h1.5V5.3c-.3 0-1.1-.1-2.2-.1-2.2 0-3.6 1.3-3.6 3.7V11H8.2v2.8h2.4V21h2.9z"/>'),
   instagram: SVG('<path d="M12 7.3a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm4.9-8.9a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM12 3.6c2.3 0 2.5 0 3.4.1 2.3.1 3.4 1.2 3.5 3.5.1.9.1 1.1.1 3.4v2.8c0 2.3 0 2.5-.1 3.4-.1 2.3-1.2 3.4-3.5 3.5-.9.1-1.1.1-3.4.1H9.2c-2.3 0-2.5 0-3.4-.1-2.3-.1-3.4-1.2-3.5-3.5-.1-.9-.1-1.1-.1-3.4V10.6c0-2.3 0-2.5.1-3.4.1-2.3 1.2-3.4 3.5-3.5.9-.1 1.1-.1 3.4-.1H12zm0-1.6H9.1c-2.4 0-2.7 0-3.6.1C2.4 2.2 2.2 4.4 2.1 5.5 2 6.4 2 6.7 2 9.1v5.8c0 2.4 0 2.7.1 3.6.1 3.1 2.3 3.3 3.4 3.4.9.1 1.2.1 3.6.1h5.8c2.4 0 2.7 0 3.6-.1 3.1-.1 3.3-2.3 3.4-3.4.1-.9.1-1.2.1-3.6V9.1c0-2.4 0-2.7-.1-3.6-.1-3.1-2.3-3.3-3.4-3.4-.9-.1-1.2-.1-3.6-.1H12z"/>'),
-  tiktok: SVG('<path d="M16.6 2h-3.2v13.4a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .8.1V9.3a6.1 6.1 0 1 0 5.3 6.1V8.6a7.6 7.6 0 0 0 4.4 1.4V6.8a4.4 4.4 0 0 1-4.4-4.4z"/>')};
+  tiktok: SVG('<path d="M16.6 2h-3.2v13.4a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .8.1V9.3a6.1 6.1 0 1 0 5.3 6.1V8.6a7.6 7.6 0 0 0 4.4 1.4V6.8a4.4 4.4 0 0 1-4.4-4.4z"/>'),
+  linkedin: SVG('<path d="M6.9 8.6H3.6V20h3.3V8.6zM5.2 3.5a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8zM20.4 13.5c0-3-1.6-5.1-4.6-5.1-1.5 0-2.6.8-3 1.6V8.6H9.6V20h3.3v-5.9c0-1.6.6-2.8 2.1-2.8s1.9 1.3 1.9 2.9V20h3.3v-6.5z"/>')};
+// Welche Art geht wohin (wie posten.passt): TikTok nur Reels, LinkedIn ohne Storys
+const PLATTFORMEN = ['facebook', 'instagram', 'tiktok', 'linkedin'];
+const passtPl = (pl, art) => pl === 'tiktok' ? art === 'reel' : pl === 'linkedin' ? art !== 'story' : true;
 const plIkon = (pl, cls = '', zusatz = '') => `<span class="plk ${cls}" title="${esc((PL_NAME[pl] || pl) + (zusatz ? ': ' + zusatz : ''))}">${IKON[pl] || ''}${esc(PL_NAME[pl] || pl)}</span>`;
 function busy(btn, on, text){
   btn.disabled = on;
@@ -1525,7 +1539,7 @@ function zeigeRaus(d, ps, morgen){
     const tt = p ? termineHeute.filter(t => t.post_id === p.id) : [];
     const zeit = tt[0] ? uhr(tt[0].geplant_um) : e.zeiten[art];
     const wo = tt.length ? tt.map(t => ({pl: t.plattform, st: t.status, url: t.url}))
-      : ['facebook', 'instagram', 'tiktok'].filter(pl => e.plattformen[pl] && (pl !== 'tiktok' || art === 'reel'))
+      : PLATTFORMEN.filter(pl => e.plattformen[pl] && passtPl(pl, art))
           .map(pl => ({pl, st: v[pl] && v[pl].verbunden ? 'geplant' : 'nicht'}));
     return {art, sprache, p, tt, zeit, wo, z: rausZustand(p, tt, wo, e, art, zeit)};
   });
@@ -1588,7 +1602,7 @@ function zeigeCockpit(d, ps){
   pruefeStatistik().then(() => { if(statistikVerbunden === false && !$('cockpit').textContent.includes('Statistik')) zeigeCockpit(d, ps); });
   const fertig = d.sprachen.filter(s => (d.laeufe || []).some(l => l.sprache === s && l.status === 'fertig')).length;
   const e = ps && ps.einstellungen, v = ps && ps.verbindungen;
-  const verbunden = v ? ['facebook', 'instagram'].filter(p => v[p].verbunden).map(p => PL_NAME[p]) : [];
+  const verbunden = v ? PLATTFORMEN.filter(p => v[p] && v[p].verbunden).map(p => PL_NAME[p]) : [];
   const jetzt = Date.now();
   const naechster = ((ps && ps.termine) || []).filter(t => t.status === 'geplant' && t.post_status !== 'gestoppt'
     && new Date(t.geplant_um).getTime() > jetzt).sort((a, b) => new Date(a.geplant_um) - new Date(b.geplant_um))[0];
@@ -1972,14 +1986,20 @@ function einrichtung(hinweis, stand){
         <span class="wie">2 Minuten warten, dann diese Seite neu laden. Hier erscheinen dann Besucher, neue Konten und die Herkunft je Post.</span></li>
     </ol>
     <p class="note">Die Statistik enthält nur Summen pro Tag – keine Namen, keine E-Mail-Adressen, keine Geburtsdaten.</p></div>
+    <div id="igPanel"></div>
     <div id="lernPanel"></div>
     <div id="fbPanel"></div>
+    <div id="ttPanel"></div>
     ${linksPanel()}`;
   const neu = () => { $('tokenWert').textContent = tokenErzeugen(); };
   neu();
   $('tokenNeu').onclick = neu;
   $('tokenKopie').onclick = (e) => { const t = $('tokenWert').textContent; if(t.length > 20) kopiere(e.target, t); };
-  ladeFacebookWirkung().then(ladeLernen);
+  ladePlattformWirkung();
+}
+// Zahlen der Plattformen nachladen, danach "Was Soraya daraus lernt" (nutzt die frisch gemerkten Zahlen)
+function ladePlattformWirkung(){
+  return Promise.all([ladeFacebookWirkung(), ladeInstagramWirkung(), ladeTikTokWirkung()]).then(ladeLernen);
 }
 async function ladeWirkung(){
   const tage = $('wTage').value;
@@ -2031,9 +2051,11 @@ function zeigeWirkung(){
       <div class="viz" id="verlauf"></div>
       <details><summary>Als Tabelle</summary><div class="tabwrap">${tabelle(tage)}</div></details>
     </div>
+    <div id="igPanel"></div>
     <details class="wmehr"><summary>Mehr Zahlen: Herkunft, Trichter, Lernen, Links</summary>
     ${herkunftPanel()}
     <div id="fbPanel"></div>
+    <div id="ttPanel"></div>
     <div class="panel trichter"><h2>Vom Schnellstart zum Profil${hilfe('Wie viele Menschen von Stufe zu Stufe weiterkommen. Wird der Balken zwischen zwei Stufen plötzlich viel kürzer, springen dort viele ab – dort lohnt sich eine Verbesserung in der App.', 'Trichter')}</h2>
       ${stufen.map(([n, v]) => `<div class="stufe"><span class="name">${n}</span><div class="spur">
         <div class="balken" style="width:${(v / maxStufe * 82).toFixed(1)}%"></div>
@@ -2049,7 +2071,7 @@ function zeigeWirkung(){
         : '<p class="meta">Noch keine Daten.</p>'}
     </div></details>`;
   zeichneVerlauf();
-  ladeFacebookWirkung().then(ladeLernen);
+  ladePlattformWirkung();
 }
 // Was der Tagesplan aus der Wirkung lernt (Punkte aus Besuchen, neuen Konten, Reaktionen)
 const HOOK_STIL = {frage: 'Direkte Frage', aussage: 'Mutige Aussage', geheimnis: 'Neugier-Lücke', szene: 'Alltags-Szene',
@@ -2064,8 +2086,8 @@ async function ladeLernen(){
       <div class="balken" style="width:${(x.schnitt / max * 82).toFixed(1)}%"></div>
       <span class="wert" style="left:calc(${(x.schnitt / max * 82).toFixed(1)}% + 8px)">Ø ${zahl(x.schnitt)}<small>${mehrzahl(x.posts, 'Post', 'Posts')}</small></span></div></div>`).join(''); };
   box.innerHTML = `<div class="panel trichter"><h2>Was Soraya daraus lernt</h2>
-    <p class="hint">${kurzMehr('Die besten Posts und Formate fließen in jeden neuen Tagesplan ein.', `Jeder Post bekommt Punkte: neues Konto 15, geteilt 4, Kommentar 3, Besuch über den Link 2, Gefällt mir 1,
-      je 100 erreichte Menschen 1. <b>Selbst-Tests:</b> Jeder Tagesplan probiert einen anderen Anfang (z. B. Frage, Alltags-Szene, Neugier-Lücke) und eine
+    <p class="hint">${kurzMehr('Die besten Posts und Formate fließen in jeden neuen Tagesplan ein.', `Jeder Post bekommt Punkte: neues Konto 15, geteilt 4, Kommentar 3, gespeichert 3, Besuch über den Link 2, Gefällt mir 1,
+      je 100 erreichte Menschen 1 – zusammengezählt über Facebook, Instagram und TikTok. <b>Selbst-Tests:</b> Jeder Tagesplan probiert einen anderen Anfang (z. B. Frage, Alltags-Szene, Neugier-Lücke) und eine
       andere Einladung in die App. Sobald je Variante 3 Posts gemessen sind, nimmt Soraya meistens die beste – und probiert ab und zu weiter Neues.`)}</p>
     ${d.beste && d.beste.length ? `<h3 class="unter">Am besten angekommen</h3><ol class="beste">${d.beste.map(b => `<li><b>${esc(b.titel || 'Post ' + b.id)}</b>
         <span class="meta">${esc(ART[b.art] || 'Post')} · ${esc((b.sprache || '').toUpperCase())}${b.format ? ' · ' + esc(b.format) : ''} · ${zahl(b.punkte)} Punkte (${esc(b.details)})</span></li>`).join('')}</ol>`
@@ -2099,7 +2121,55 @@ async function ladeFacebookWirkung(){
         <td>${x.url ? `<a class="fertig" href="${esc(x.url)}" target="_blank" rel="noopener">ansehen</a>` : ''}</td></tr>`).join('')}</tbody></table></div>`
       : '<p class="meta">Noch nichts auf Facebook gepostet.</p>'}</div>`;
 }
-const BIO_NAMEN = {'bio-ig': 'Bio-Link Instagram', 'bio-tt': 'Bio-Link TikTok', 'bio-fb': 'Bio-Link Facebook'};
+// Instagram: Follower und Zahlen der letzten Beiträge (Aufrufe, Gefällt mir, Kommentare, Gespeichert)
+async function ladeInstagramWirkung(){
+  const box = $('igPanel'); if(!box) return;
+  let r; try{ r = await api('/wirkung/instagram?tage=' + $('wTage').value); }catch(e){ box.innerHTML = ''; return; }
+  if(!r.verbunden){ box.innerHTML = ''; return; }
+  const b = (r.beitraege || []).filter(x => !x.fehler), k = r.konto || {};
+  const summe = (f) => b.reduce((n, x) => n + (x[f] || 0), 0);
+  const mitInsights = !r.recht_fehlt && b.some(x => x.aufrufe != null || x.gespeichert != null);
+  const zelle = (v) => `<td>${v != null ? zahl(v) : '–'}</td>`;
+  box.innerHTML = `<div class="panel"><h2>${IKON.instagram} Instagram</h2>
+    ${k.follower != null ? `<div class="igkopf"><b>${zahl(k.follower)}</b><span>Follower</span>${k.zuwachs_7 ? `<span class="plus">${k.zuwachs_7 > 0 ? '+' : ''}${zahl(k.zuwachs_7)} in 7 Tagen</span>` : ''}</div>` : ''}
+    ${r.recht_fehlt ? `<p class="lernhinweis">✦ ${kurzMehr('Instagram neu verbinden, um Zahlen zu sehen (Aufrufe, Reichweite, Gespeichert, Geteilt).', IG_RECHT_SCHRITTE)}</p>
+      <p>${knopfLink('/meta/verbinden/instagram', 'Instagram neu verbinden', true)}</p>` : ''}
+    ${b.length ? `<div class="kpis klein3${mitInsights ? ' vier' : ''}">
+        ${mitInsights ? `<div class="kpi"><div class="l">Aufrufe</div><div class="v">${zahl(summe('aufrufe'))}</div></div>` : ''}
+        <div class="kpi"><div class="l">Gefällt mir</div><div class="v">${zahl(summe('reaktionen'))}</div></div>
+        <div class="kpi"><div class="l">Kommentare</div><div class="v">${zahl(summe('kommentare'))}</div></div>
+        ${mitInsights ? `<div class="kpi"><div class="l">Gespeichert</div><div class="v">${zahl(summe('gespeichert'))}</div></div>` : ''}</div>
+      <details><summary>Letzte Beiträge</summary><div class="tabwrap"><table class="tabelle herkunft"><thead><tr><th scope="col">Beitrag</th>
+        ${mitInsights ? '<th scope="col" title="Aufrufe">👁</th>' : ''}<th scope="col" title="Gefällt mir">♥</th><th scope="col" title="Kommentare">💬</th>
+        ${mitInsights ? '<th scope="col" title="Gespeichert">🔖</th><th scope="col" title="Geteilt">↗</th><th scope="col" title="Erreicht">Erreicht</th>' : ''}<th scope="col"></th></tr></thead><tbody>
+        ${b.map(x => `<tr><td style="white-space:normal"><b>${esc(x.titel || 'Post ' + x.post_id)}</b><br><span class="meta">${esc(ART[x.art] || 'Post')}${x.gepostet ? ' · ' + esc(kurzIso(String(x.gepostet).slice(0, 10))) : ''}</span></td>
+          ${mitInsights ? zelle(x.aufrufe) : ''}${zelle(x.art === 'story' ? null : x.reaktionen)}${zelle(x.art === 'story' ? null : x.kommentare)}
+          ${mitInsights ? zelle(x.gespeichert) + zelle(x.geteilt) + zelle(x.reichweite) : ''}
+          <td>${x.url ? `<a class="fertig" href="${esc(x.url)}" target="_blank" rel="noopener">ansehen</a>` : ''}</td></tr>`).join('')}</tbody></table></div></details>`
+      : '<p class="meta">Noch nichts auf Instagram gepostet (oder die Zahlen kommen gleich).</p>'}</div>`;
+}
+// TikTok: Aufrufe, Gefällt mir, Kommentare, Teilen der Reels (Recht video.list)
+async function ladeTikTokWirkung(){
+  const box = $('ttPanel'); if(!box) return;
+  let r; try{ r = await api('/wirkung/tiktok?tage=' + $('wTage').value); }catch(e){ box.innerHTML = ''; return; }
+  if(!r.verbunden){ box.innerHTML = ''; return; }
+  const b = r.beitraege || [];
+  const summe = (f) => b.reduce((n, x) => n + (x[f] || 0), 0);
+  box.innerHTML = `<div class="panel"><h2>${IKON.tiktok} Auf TikTok</h2>
+    ${r.recht_fehlt ? `<p class="lernhinweis">✦ ${kurzMehr('TikTok neu verbinden, um Zahlen zu sehen.', 'In der TikTok-App (developers.tiktok.com) das Recht <code>video.list</code> anhaken, dann unter „Posten“ → Verbindungen TikTok neu verbinden.')}</p>`
+    : b.length ? `<div class="kpis klein3 vier">
+        <div class="kpi"><div class="l">Aufrufe</div><div class="v">${zahl(summe('aufrufe'))}</div></div>
+        <div class="kpi"><div class="l">Gefällt mir</div><div class="v">${zahl(summe('reaktionen'))}</div></div>
+        <div class="kpi"><div class="l">Kommentare</div><div class="v">${zahl(summe('kommentare'))}</div></div>
+        <div class="kpi"><div class="l">Geteilt</div><div class="v">${zahl(summe('geteilt'))}</div></div></div>
+      <details><summary>Letzte Reels</summary><div class="tabwrap"><table class="tabelle herkunft"><thead><tr><th scope="col">Reel</th><th scope="col">👁</th><th scope="col">♥</th><th scope="col">💬</th><th scope="col">↗</th><th scope="col"></th></tr></thead><tbody>
+        ${b.map(x => `<tr><td style="white-space:normal"><b>${esc(x.titel || 'Post ' + x.post_id)}</b>${x.gepostet ? `<br><span class="meta">${esc(kurzIso(String(x.gepostet).slice(0, 10)))}</span>` : ''}</td>
+          <td>${zahl(x.aufrufe)}</td><td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>
+          <td>${x.url ? `<a class="fertig" href="${esc(x.url)}" target="_blank" rel="noopener">ansehen</a>` : ''}</td></tr>`).join('')}</tbody></table></div></details>
+      <p class="meta">${kurzMehr('Zuordnung über die Zeit.', 'Entwürfe postest du selbst in der TikTok-App – Soraya ordnet dann das erste Video innerhalb von 3 Tagen nach dem Hochladen dem Reel zu.')}</p>`
+    : '<p class="meta">Noch keine Reels auf TikTok gefunden.</p>'}</div>`;
+}
+const BIO_NAMEN = {'bio-ig': 'Bio-Link Instagram', 'bio-tt': 'Bio-Link TikTok', 'bio-fb': 'Bio-Link Facebook', 'bio-li': 'Profil-Link LinkedIn'};
 function quellenName(code){
   if(BIO_NAMEN[code]) return `<b>${BIO_NAMEN[code]}</b>`;
   const m = /^p(\d+)$/.exec(code), p = m && postsNachId[m[1]];
@@ -2118,7 +2188,7 @@ function herkunftPanel(){
     <p class="hint">${kurzMehr('Besuche und neue Konten über deine Links.', 'Neue Konten zählen, wenn sich jemand innerhalb von 7 Tagen nach dem Klick registriert.')}</p>${inhalt}</div>`;
 }
 function linksPanel(){
-  const bio = LINKS.bio || {}, namen = {instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook'};
+  const bio = LINKS.bio || {}, namen = {instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', linkedin: 'LinkedIn'};
   return `<div class="panel"><h2>Deine Links</h2>
     <p class="hint">${kurzMehr('Jeden Bio-Link einmal ins passende Profil eintragen.', 'Für einzelne Posts (Story-Link-Sticker, Facebook) nimm „Link kopieren“ auf der Post-Karte – dann siehst du genau, was dieser Post bringt.')}</p>
     ${Object.entries(bio).map(([k, url]) => `<div class="linkzeile"><span class="name">${namen[k] || esc(k)}</span><code>${esc(url)}</code>
@@ -2189,7 +2259,7 @@ window.addEventListener('resize', () => { if(aktiv === 'wirkung') zeichneVerlauf
 LADER.wirkung = ladeWirkung;
 
 /* ---------- POSTEN ---------- */
-const PL_NAME = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok'};
+const PL_NAME = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn'};
 const VS_NAME = {geplant: 'geplant', laeuft: 'wird gepostet', fertig: 'gepostet', fehler: 'Fehler', abgebrochen: 'gestoppt', verpasst: 'verpasst'};
 let postDaten = null, postTimer = null;
 const uhr = (iso) => new Date(iso).toLocaleTimeString('de-AT', {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna'});
@@ -2232,25 +2302,13 @@ async function ladePosten(){
   if(e.an && !d.tagesplan_auto) warn.push('Der Tagesplan erstellt nicht automatisch (Reiter „Heute“). Ohne neue Posts gibt es nichts zu posten.');
   const fehlen = (d.benoetigt || []).filter(s => !d.tagesplan_sprachen.includes(s));
   if(e.an && fehlen.length) warn.push(`Der Tagesplan erstellt keine Posts auf ${fehlen.map(s => s.toUpperCase()).join(', ')} – im Reiter „Heute“ bei „Sprachen“ anhaken.`);
+  const li = v.linkedin || {};
+  if(e.plattformen.linkedin && li.abgelaufen) warn.push('Der LinkedIn-Zugang ist abgelaufen (60 Tage) – bei „Verbindungen“ auf „LinkedIn neu verbinden“ tippen.');
+  else if(e.plattformen.linkedin && li.bald_ablaufend) warn.push(`Der LinkedIn-Zugang läuft am ${new Date(li.laeuft_ab * 1000).toLocaleDateString('de-AT')} ab – bei „Verbindungen“ auf „LinkedIn neu verbinden“ tippen.`);
   $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => `<div class="eintrag">${esc(w)}</div>`).join('');
   zeigeZeitTipp();
 
-  $('verbindungen').innerHTML = ['facebook', 'instagram', 'tiktok'].map(p => {
-    const x = v[p] || {};
-    const titel = IKON[p] + ' ' + (p === 'facebook' ? 'Facebook-Seite' : p === 'instagram' ? 'Instagram (Business-Konto)' : 'TikTok (nur Reels)');
-    const abl = x.laeuft_ab ? ` · Zugang bis ${new Date(x.laeuft_ab * 1000).toLocaleDateString('de-AT')} (verlängert sich selbst)` : '';
-    const stand = x.verbunden ? `<span class="punkt ok"></span>Verbunden: ${esc(x.name || '')}${abl}`
-      : x.eingerichtet ? '<span class="punkt"></span>Noch nicht verbunden'
-      : `<span class="punkt aus"></span>${p === 'tiktok' ? 'TikTok-App' : 'Meta-App'} fehlt in Railway (${p === 'facebook' ? 'META_APP_ID / META_APP_SECRET' : p === 'instagram' ? 'INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET' : 'TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET'})`;
-    const ziel = p === 'tiktok' ? '/tiktok/verbinden' : `/meta/verbinden/${p}`;
-    const knopf = x.verbunden ? `<button class="ghost klein" data-trennen="${p}">Trennen</button>`
-      : `<a class="knopf${x.eingerichtet ? '' : ' hide'}" href="${ziel}" style="padding:7px 14px;font-size:13px">Verbinden</a>`;
-    const tt = p === 'tiktok' && x.verbunden ? `<div class="klein">${e.plattformen.tiktok
-      ? `Ein · ${e.tiktok_modus === 'direkt' ? 'veröffentlicht direkt' : 'Reels kommen als Entwurf in deine TikTok-App'}` : 'Aus – es geht nichts auf TikTok (unten bei Einstellungen einschalten)'}</div>` : '';
-    return `<div class="verbindung"><div><div class="name">${titel}</div><div class="klein">${stand}</div>${tt}
-      ${x.eingerichtet || x.verbunden ? '' : `<div class="klein">${kurzMehr('Rückruf-Adresse', `für die ${p === 'tiktok' ? 'TikTok' : 'Meta'}-App: <code>${esc(x.rueckruf_url || '')}</code>`)}</div>`}</div>${knopf}</div>`;
-  }).join('');
-
+  $('verbindungen').innerHTML = PLATTFORMEN.map(p => verbindungsZeile(p, v[p] || {}, e)).join('');
   zeigeEinrichtung(d);
   zeigeTestposts(d);
 
@@ -2275,12 +2333,77 @@ async function ladePosten(){
   $('zStory').value = e.zeiten.story; $('zPost').value = e.zeiten.post; $('zReel').value = e.zeiten.reel;
   $('plFacebook').checked = !!e.plattformen.facebook; $('plInstagram').checked = !!e.plattformen.instagram;
   $('plTiktok').checked = !!e.plattformen.tiktok; $('tiktokModus').value = e.tiktok_modus || 'entwurf';
+  $('plLinkedin').checked = !!e.plattformen.linkedin;
   $('tiktokZeile').hidden = !$('plTiktok').checked; $('postUngespeichert').hidden = true;
   if(e.an && aktiv === 'posten') postTimer = setTimeout(() => aktiv === 'posten' && ladePosten(), 30000);
 }
 const DATENSCHUTZ_URL = 'https://app.sorayaluxuryastroguide.com/datenschutz.html';
 function kopierZeile(text){
   return `<div class="linkzeile"><code>${esc(text)}</code><button class="ghost klein" data-kopie="${esc(text)}">Kopieren</button></div>`;
+}
+const NUTZUNG_URL = 'https://app.sorayaluxuryastroguide.com/nutzungsbedingungen-en.html';
+const VB_TITEL = {facebook: 'Facebook-Seite', instagram: 'Instagram (Business-Konto)', tiktok: 'TikTok (nur Reels)', linkedin: 'LinkedIn (dein Profil)'};
+const VB_ZIEL = {facebook: '/meta/verbinden/facebook', instagram: '/meta/verbinden/instagram', tiktok: '/tiktok/verbinden', linkedin: '/linkedin/verbinden'};
+const VB_VARIABLEN = {facebook: 'META_APP_ID / META_APP_SECRET', instagram: 'INSTAGRAM_APP_ID / INSTAGRAM_APP_SECRET',
+  tiktok: 'TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET', linkedin: 'LINKEDIN_CLIENT_ID / LINKEDIN_CLIENT_SECRET'};
+const datum = (sek) => new Date(sek * 1000).toLocaleDateString('de-AT');
+const knopfLink = (href, text, ghost) => `<a class="knopf${ghost ? ' ghost' : ''}" href="${href}" style="padding:7px 14px;font-size:13px">${text}</a>`;
+const schritteListe = (liste) => `<ol class="schritte klein-schritte">${liste.map(([was, wie]) => `<li><span class="was">${was}</span>${wie ? `<span class="wie">${wie}</span>` : ''}</li>`).join('')}</ol>`;
+// Einrichtung der TikTok- und LinkedIn-App (nur sichtbar, solange die Schlüssel in Railway fehlen)
+function einrichtungTikTok(x){
+  return schritteListe([
+    ['App anlegen', 'Auf <b>developers.tiktok.com</b> mit deinem TikTok-Konto anmelden → „Manage apps“ → „Connect an app“. Name: Soraya Agent.'],
+    ['Angaben zur App', `Kategorie z. B. „Lifestyle“, Plattform <b>Web</b>, Website: ${kopierZeile('https://www.sorayaluxuryastroguide.com')}
+      Nutzungsbedingungen: ${kopierZeile(NUTZUNG_URL)} Datenschutz: ${kopierZeile(DATENSCHUTZ_URL)}`],
+    ['Produkte hinzufügen', '„Add products“: <b>Login Kit</b> und <b>Content Posting API</b>. Bei Content Posting API „Direct Post“ nur einschalten, wenn du direkt veröffentlichen willst.'],
+    ['Rückruf-Adresse (Login Kit → Redirect URI, Web)', kopierZeile(x.rueckruf_url || '')],
+    ['Rechte (Scopes)', '<code>user.info.basic</code>, <code>video.upload</code>, <code>video.publish</code>, <code>video.list</code> (für die Zahlen unter „Wirkung“).'],
+    ['Sandbox', 'Oben auf „Sandbox“ umschalten → „Target users“ → dein eigenes TikTok-Konto hinzufügen. Bis TikTok die App geprüft hat, geht es nur damit – für Entwürfe in deine TikTok-App reicht das.'],
+    ['Schlüssel in Railway', `<b>Client key</b> und <b>Client secret</b> (die der Sandbox) beim Soraya-Agent als <b>TIKTOK_CLIENT_KEY</b> und <b>TIKTOK_CLIENT_SECRET</b> eintragen → „Deploy“. Danach hier „Verbinden“.`]]);
+}
+function einrichtungLinkedIn(x){
+  return schritteListe([
+    ['LinkedIn-Seite (nur falls du keine hast)', 'LinkedIn verlangt für jede App eine Seite als „Besitzer“. Auf linkedin.com oben „Für Unternehmen“ → „Unternehmensseite erstellen“ → eine einfache Seite <b>Soraya</b> reicht. Gepostet wird trotzdem auf <b>dein persönliches Profil</b>.'],
+    ['App anlegen', `Auf <b>linkedin.com/developers</b> → „Create app“: Name Soraya Agent, LinkedIn Page: Soraya, Datenschutz: ${kopierZeile(DATENSCHUTZ_URL)} Logo hochladen → anlegen.`],
+    ['Seite bestätigen (falls LinkedIn fragt)', 'Reiter „Settings“ → „Verify“ → Link erzeugen und selbst öffnen (du bist Admin der Seite) → „Verify“.'],
+    ['Zwei Produkte hinzufügen', 'Reiter „Products“: <b>Sign In with LinkedIn using OpenID Connect</b> und <b>Share on LinkedIn</b> → jeweils „Request access“ (beide sind sofort freigeschaltet, ohne Prüfung).'],
+    ['Rückruf-Adresse', `Reiter „Auth“ → „Authorized redirect URLs for your app“ → ${kopierZeile(x.rueckruf_url || '')}`],
+    ['Schlüssel in Railway', 'Im Reiter „Auth“: <b>Client ID</b> und <b>Primary Client Secret</b> beim Soraya-Agent als <b>LINKEDIN_CLIENT_ID</b> und <b>LINKEDIN_CLIENT_SECRET</b> eintragen → „Deploy“. Danach hier „Verbinden“ und unten bei „Wohin posten“ LinkedIn anhaken.']]);
+}
+// Hinweis für Instagram: Zahlen brauchen das Recht instagram_business_manage_insights
+const IG_RECHT_SCHRITTE = `In <b>developers.facebook.com</b> → deine App „Soraya Agent“ → „Anwendungsfälle“ → Instagram („Nachrichten und Inhalte auf Instagram verwalten“) → „Anpassen“ → „Berechtigungen und Funktionen“ → bei <code>instagram_business_manage_insights</code> auf „Hinzufügen“ (Status „Bereit zum Testen“). Dann hier „Instagram neu verbinden“ und die neue Freigabe erlauben. Keine App-Prüfung nötig.`;
+function verbindungsZeile(p, x, e){
+  const titel = IKON[p] + ' ' + VB_TITEL[p];
+  let abl = '';
+  if(x.laeuft_ab && p === 'instagram') abl = ` · Zugang bis ${datum(x.laeuft_ab)} (verlängert sich selbst)`;
+  if(x.laeuft_ab && p === 'linkedin') abl = ` · Zugang bis ${datum(x.laeuft_ab)}${x.selbst_verlaengert ? ' (verlängert sich selbst)' : ' (danach einmal neu verbinden)'}`;
+  const stand = x.verbunden ? `<span class="punkt ok"></span>Verbunden: ${esc(x.name || '')}${abl}`
+    : x.abgelaufen ? '<span class="punkt aus"></span>Zugang abgelaufen – bitte neu verbinden'
+    : x.eingerichtet ? '<span class="punkt"></span>Noch nicht verbunden'
+    : `<span class="punkt aus"></span>${p === 'tiktok' ? 'TikTok-App' : p === 'linkedin' ? 'LinkedIn-App' : 'Meta-App'} fehlt in Railway (${VB_VARIABLEN[p]})`;
+  const zusatz = [];
+  if(p === 'tiktok' && x.verbunden) zusatz.push(e.plattformen.tiktok
+    ? `Ein · ${e.tiktok_modus === 'direkt' ? 'veröffentlicht direkt' : 'Reels kommen als Entwurf in deine TikTok-App'}` : 'Aus – es geht nichts auf TikTok (unten bei Einstellungen einschalten)');
+  if(p === 'linkedin' && x.verbunden) zusatz.push(e.plattformen.linkedin ? 'Ein · Feed-Posts und Reels (keine Storys), sachlicher Text mit Link'
+    : 'Aus – es geht nichts auf LinkedIn (unten bei Einstellungen einschalten)');
+  const neu = (p === 'instagram' && x.verbunden && x.zahlen === false) || (p === 'tiktok' && x.verbunden && x.zahlen === false)
+    || (p === 'linkedin' && (x.bald_ablaufend || x.abgelaufen));
+  if(p === 'instagram' && x.verbunden && x.zahlen === false)
+    zusatz.push(`<span class="warnzeile">Instagram neu verbinden, um Zahlen zu sehen.</span><span class="rest" hidden> ${IG_RECHT_SCHRITTE}</span>`);
+  if(p === 'tiktok' && x.verbunden && x.zahlen === false)
+    zusatz.push(`<span class="warnzeile">TikTok neu verbinden, um Zahlen zu sehen.</span><span class="rest" hidden> In deiner TikTok-App auf developers.tiktok.com muss das Recht <code>video.list</code> angehakt sein, dann hier neu verbinden.</span>`);
+  if(p === 'linkedin' && x.bald_ablaufend) zusatz.push(`<span class="warnzeile">Läuft in wenigen Tagen ab – LinkedIn neu verbinden.</span>`);
+  const knopf = x.verbunden || x.abgelaufen
+    ? `<div class="row">${neu ? knopfLink(VB_ZIEL[p], p === 'linkedin' ? 'LinkedIn neu verbinden' : 'Neu verbinden') : ''}<button class="ghost klein" data-trennen="${p}">Trennen</button></div>`
+    : `<a class="knopf${x.eingerichtet ? '' : ' hide'}" href="${VB_ZIEL[p]}" style="padding:7px 14px;font-size:13px">Verbinden</a>`;
+  let hilfeText = '';
+  if(!x.eingerichtet && !x.verbunden){
+    hilfeText = p === 'tiktok' ? `<details class="einricht"><summary>So richtest du TikTok ein</summary>${einrichtungTikTok(x)}</details>`
+      : p === 'linkedin' ? `<details class="einricht"><summary>So richtest du LinkedIn ein</summary>${einrichtungLinkedIn(x)}</details>`
+      : `<div class="klein">${kurzMehr('Rückruf-Adresse', `für die Meta-App: <code>${esc(x.rueckruf_url || '')}</code>`)}</div>`;
+  }
+  return `<div class="verbindung"><div><div class="name">${titel}</div><div class="klein">${stand}</div>
+    ${zusatz.map(z => `<div class="klein">${z}</div>`).join('')}${hilfeText}</div>${knopf}</div>`;
 }
 // Checkliste fuer die Meta-Einrichtung: zeigt, was erledigt ist und was als Naechstes kommt
 function zeigeEinrichtung(d){
@@ -2312,7 +2435,7 @@ function sprachText(d){
 // Testpost: Posts von heute in der Posting-Sprache sofort posten (auch bei ausgeschaltetem Hauptschalter)
 async function zeigeTestposts(d){
   const e = d.einstellungen, v = d.verbindungen;
-  const verbunden = ['facebook', 'instagram', 'tiktok'].filter(p => v[p] && v[p].verbunden);
+  const verbunden = PLATTFORMEN.filter(p => v[p] && v[p].verbunden);
   const fertig = (id, pl) => (d.termine || []).find(t => t.post_id === id && t.plattform === pl && t.status === 'fertig');
   let posts = [];
   const passt = (p) => e.sprache === 'alle' ? (d.sprachen_heute || {})[p.art] === p.sprache : p.sprache === e.sprache;
@@ -2322,7 +2445,7 @@ async function zeigeTestposts(d){
     : kurzMehr('Geht, sobald Facebook oder Instagram verbunden ist.', 'Dann kannst du hier einen Post von heute sofort posten – auch wenn „Automatisch posten“ aus ist.');
   $('testposts').innerHTML = posts.length ? posts.map(p => `<div class="testpost"><div><span class="tag">${esc(ART[p.art] || 'Post')}</span>
       <p class="titel">${esc(p.titel || p.text.slice(0, 60))}</p></div>
-      <div class="row">${['facebook', 'instagram', 'tiktok'].filter(pl => pl !== 'tiktok' || (p.art === 'reel' && v.tiktok && v.tiktok.verbunden)).map(pl => { const f = fertig(p.id, pl);
+      <div class="row">${PLATTFORMEN.filter(pl => passtPl(pl, p.art) && (['facebook', 'instagram'].includes(pl) || (v[pl] && v[pl].verbunden))).map(pl => { const f = fertig(p.id, pl);
         if(f && pl === 'tiktok') return `<span class="fertig">✓ an TikTok geschickt</span>`;
         return f ? `<a class="fertig" href="${esc(f.url || '#')}" target="_blank" rel="noopener">✓ auf ${PL_NAME[pl]} ansehen</a>` : `<button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}"${v[pl].verbunden ? '' : ' disabled title="Noch nicht verbunden"'}>Jetzt auf ${PL_NAME[pl]}</button>`; }).join('')}</div></div>`).join('')
     : `<div class="empty">Heute gibt es noch keine Posts (${esc(sprachText(d))}).<span>${(d.benoetigt || [e.sprache]).every(s => d.tagesplan_sprachen.includes(s))
@@ -2331,7 +2454,7 @@ async function zeigeTestposts(d){
 }
 $('postAuto').onchange = async () => {
   const an = $('postAuto').checked;
-  if(an && !confirm('Ab jetzt automatisch auf Facebook und Instagram posten?\n\nDu kannst jeden Post vorher stoppen, und der Schalter hier stoppt alles.')){
+  if(an && !confirm('Ab jetzt automatisch auf den angehakten Plattformen posten?\n\nDu kannst jeden Post vorher stoppen, und der Schalter hier stoppt alles.')){
     $('postAuto').checked = false; return; }
   try{ await api('/posten/einstellungen', {method: 'PUT', body: JSON.stringify({an})});
        melde(an ? 'Automatisch posten ist an ✓' : 'Automatisch posten ist aus – es geht nichts mehr raus.'); }
@@ -2345,12 +2468,13 @@ $('postSpeichern').onclick = async () => {
   const zeiten = [$('zStory'), $('zPost'), $('zReel')];
   const leer = zeiten.find(z => !/^\d{2}:\d{2}/.test(z.value));
   if(leer){ melde('Bitte bei jeder Uhrzeit eine Zeit eintragen.'); leer.focus(); return; }
-  if(!$('plFacebook').checked && !$('plInstagram').checked && !$('plTiktok').checked && !confirm('Keine Plattform angehakt – dann geht nichts raus. Trotzdem speichern?')) return;
+  if(!PLATTFORMEN.some(pl => $('pl' + pl[0].toUpperCase() + pl.slice(1)).checked) && !confirm('Keine Plattform angehakt – dann geht nichts raus. Trotzdem speichern?')) return;
   try{
     await api('/posten/einstellungen', {method: 'PUT', body: JSON.stringify({sprache: $('postSprache').value, modus: $('postModus').value,
       zeiten: {story: $('zStory').value, post: $('zPost').value, reel: $('zReel').value},
       tiktok_modus: $('tiktokModus').value,
-      plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked, tiktok: $('plTiktok').checked}})});
+      plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked, tiktok: $('plTiktok').checked,
+                    linkedin: $('plLinkedin').checked}})});
     melde('Gespeichert ✓ (gilt für neue Termine)'); ladePosten();
   }catch(e){ melde('Fehler: ' + e.message); }
 };
@@ -2370,7 +2494,7 @@ $('view-posten').addEventListener('click', async (ev) => {
     }
     if(b.dataset.trennen){
       if(!confirm(`${PL_NAME[b.dataset.trennen]} wirklich trennen?`)) return;
-      await api(b.dataset.trennen === 'tiktok' ? '/tiktok/trennen' : '/meta/trennen/' + b.dataset.trennen, {method: 'POST'}); melde('Getrennt.');
+      await api(['tiktok', 'linkedin'].includes(b.dataset.trennen) ? `/${b.dataset.trennen}/trennen` : '/meta/trennen/' + b.dataset.trennen, {method: 'POST'}); melde('Getrennt.');
     } else if(b.dataset.stopp){
       await aendere(b.dataset.stopp, {status: 'gestoppt'}); melde('Gestoppt – dieser Post geht nicht raus.');
     } else if(b.dataset.weiter){

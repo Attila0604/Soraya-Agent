@@ -1,5 +1,5 @@
 """
-Automatisch posten (Facebook-Seite, Instagram)
+Automatisch posten (Facebook-Seite, Instagram, TikTok, LinkedIn)
 
 Ablauf jede Minute, wenn der Hauptschalter an ist:
 1. Planen: Posts von heute und morgen in der Posting-Sprache bekommen pro Plattform
@@ -15,6 +15,7 @@ Nach mehr als 12 Stunden Verspaetung wird ein Termin nicht mehr nachgeholt.
 
 from __future__ import annotations
 
+import os
 import re
 import threading
 import time
@@ -22,18 +23,31 @@ from datetime import date, datetime, timedelta
 
 import db
 import himmel
+import linkedin
 import meta
 import paket
 import redaktion
 import tiktok
+from claude import frage_json
 from wirkung import link_basis
 
 STANDARD = {"an": False, "sprache": "en", "modus": "auto", "tiktok_modus": "entwurf",
             "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00"},
-            "plattformen": {"facebook": True, "instagram": True, "tiktok": False}}
-PLATTFORMEN = ("facebook", "instagram", "tiktok")
+            "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False}}
+PLATTFORMEN = ("facebook", "instagram", "tiktok", "linkedin")
 # TikTok nimmt nur Videos: dort gehen nur die Reels hin
 NUR_REELS = {"tiktok"}
+# Storys gibt es auf LinkedIn nicht
+OHNE_STORYS = {"linkedin"}
+
+
+def passt(plattform: str, art: str) -> bool:
+    """Geht diese Art von Post auf diese Plattform?"""
+    if plattform in NUR_REELS:
+        return art == "reel"
+    if plattform in OHNE_STORYS:
+        return art != "story"
+    return True
 # "alle": jeder der drei Posts eines Tages in einer anderen Sprache, die Reihenfolge rotiert taeglich --
 # so kommt jede Sprache gleich oft dran (in 4 Tagen je dreimal) und jede Art in jeder Sprache.
 ROTATION = ("en", "de", "hu", "it")
@@ -93,8 +107,8 @@ def termin(tag: date, zeit: str) -> datetime:
 
 
 def verbindungen() -> dict:
-    """Facebook, Instagram und TikTok zusammen (fuers Dashboard und den Zeitplan)."""
-    return {**meta.verbindungen(), "tiktok": tiktok.verbindung()}
+    """Facebook, Instagram, TikTok und LinkedIn zusammen (fuers Dashboard und den Zeitplan)."""
+    return {**meta.verbindungen(), "tiktok": tiktok.verbindung(), "linkedin": linkedin.verbindung()}
 
 
 def _aktive_plattformen(e: dict) -> list[str]:
@@ -117,7 +131,7 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
         if post.get("sprache") != sprache_fuer(post["geplant_fuer"], post.get("art") or "post", e):
             continue
         for p in plattformen:
-            if p in NUR_REELS and post.get("art") != "reel":
+            if not passt(p, post.get("art") or "post"):
                 continue
             neu += db.plane_veroeffentlichung(post["id"], p, termin(post["geplant_fuer"], zeit))
     return neu
@@ -236,7 +250,66 @@ def _mit_bio_hinweis(text: str, sprache: str) -> str:
     return f"{text}\n\n" + "\n".join(zeilen) if zeilen else text
 
 
+# ---------------------------------------------------------------------------
+# LinkedIn: dein persoenliches Profil -- sachlicher Ton, klickbarer Link, hoechstens 3 Hashtags
+# ---------------------------------------------------------------------------
+LI_LINK = {"de": "Dein persönliches Horoskop, kostenlos", "en": "Your personal horoscope, free",
+           "hu": "A személyes horoszkópod, ingyen", "it": "Il tuo oroscopo personale, gratis"}
+_EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200D]")
+_SPRACHE_NAME = {"de": "Deutsch", "en": "Englisch", "hu": "Ungarisch", "it": "Italienisch"}
+LI_SCHEMA = {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"],
+             "additionalProperties": False}
+LI_SYSTEM = ("Du bist Redakteurin für das persönliche LinkedIn-Profil des Gründers der Astrologie-App Soraya. "
+             "Du schreibst Social-Media-Texte für LinkedIn um: ruhig, sachlich, professionell, nahbar – "
+             "wie ein kurzer Gedanke eines Gründers, nicht wie Werbung.")
+
+
+def _li_regelbasiert(text: str, sprache: str) -> str:
+    """Ohne KI: Emojis und "Link in Bio" raus, Absaetze bleiben."""
+    text = _EMOJI.sub("", _ohne_bio(text, sprache))
+    zeilen = [z for z in text.split("\n") if not _BIO.search(z)]
+    text = re.sub(r"[ \t]+", " ", "\n".join(zeilen))
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(z.strip() for z in text.split("\n"))).strip()
+
+
+def linkedin_text(post: dict) -> str:
+    """Sachliche Fassung des Post-Textes fuer LinkedIn (einmal erzeugt, im Post gemerkt -- Wiederholungen
+    kosten nichts). Railway-Variable LINKEDIN_KI=0: ohne KI, nur aufgeraeumt."""
+    gemerkt = (post.get("meta") or {}).get("linkedin_text")
+    if gemerkt:
+        return gemerkt
+    sprache = post.get("sprache") or "en"
+    roh = _luftig(post.get("text") or "")
+    text = ""
+    if (os.environ.get("LINKEDIN_KI") or "1").strip() != "0" and roh:
+        try:
+            text = (frage_json(LI_SYSTEM, (
+                f"Schreib diesen Text für LinkedIn um. Sprache: {_SPRACHE_NAME.get(sprache, 'Englisch')} (dieselbe "
+                "wie das Original, muttersprachlich). Gleicher Inhalt und Anlass, aber sachlicher, professioneller Ton; "
+                "erste Zeile ein klarer Gedanke (kein Clickbait); kurze Absätze mit Leerzeile; höchstens ein Emoji; "
+                "keine Hashtags, keine Links, kein „Link in Bio“, keine Heils- oder Glücksversprechen; "
+                "400 bis 1000 Zeichen.\n\nOriginal:\n" + roh), LI_SCHEMA, effort="low", max_tokens=1500)
+                    .get("text") or "").strip()
+        except Exception as ex:  # noqa: BLE001 -- dann eben die aufgeraeumte Fassung
+            print(f"[LinkedIn] Umschreiben ging nicht: {ex}", flush=True)
+            text = ""
+        if text and (len(text) < 120 or "http" in text or _BIO.search(text)):
+            text = ""           # unbrauchbar -> aufgeraeumte Fassung
+    text = text or _li_regelbasiert(roh, sprache)
+    try:
+        db.setze_meta(post["id"], "linkedin_text", text)
+    except Exception:  # noqa: BLE001
+        pass
+    return text
+
+
 def text_fuer(post: dict, plattform: str) -> str:
+    if plattform == "linkedin":
+        sprache = post.get("sprache") or "en"
+        teile = [linkedin_text(post), f"{LI_LINK.get(sprache, LI_LINK['en'])}: {link_basis()}?q=p{post['id']}&lang={sprache}"]
+        if post.get("hashtags"):
+            teile.append(" ".join(post["hashtags"].split()[:3]))
+        return "\n\n".join(t for t in teile if t)
     teile = [_luftig(post.get("text") or "")]
     if plattform == "facebook" and post.get("art") != "story":
         teile[0] = _ohne_bio(teile[0], post.get("sprache") or "de")
@@ -299,11 +372,18 @@ def _freigegeben(post: dict, e: dict) -> tuple[bool, str]:
 
 def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
     p, art = zeile["plattform"], post.get("art") or "post"
+    if not passt(p, art):
+        raise ValueError("Auf TikTok gehen nur Reels (Videos)." if p == "tiktok" else "Storys gibt es auf LinkedIn nicht.")
     text = text_fuer(post, p)
     if p == "tiktok":
-        if art != "reel":
-            raise ValueError("Auf TikTok gehen nur Reels (Videos).")
         return tiktok.poste_video(paket._rendere_video(post), text, (e or einstellungen()).get("tiktok_modus", "entwurf"))
+    if p == "linkedin":
+        alt = post.get("titel") or "Soraya"
+        if art == "reel":
+            return linkedin.poste("reel", text, video=paket._rendere_video(post), bild=paket.hole_bild(post), alt=alt)
+        if paket.medien.anzahl_bilder(post) > 1:
+            return linkedin.poste("post", text, bilder=paket.hole_karussell(post), alt=alt)
+        return linkedin.poste("post", text, bild=paket.hole_bild(post), alt=alt)
     if p == "facebook":
         if art == "reel":
             return meta.poste_facebook("reel", text, video=paket._rendere_video(post))
@@ -356,21 +436,91 @@ _ZAHLEN = {"zuletzt": 0.0}
 ZAHLEN_ALLE_S = 6 * 3600
 
 
+def _merke(plattform: str, zeilen: list[dict]) -> int:
+    n = 0
+    for z in zeilen:
+        if "fehler" not in z:
+            db.speichere_zahlen(z["post_id"], plattform, z.get("reaktionen", 0), z.get("kommentare", 0),
+                                z.get("geteilt", 0), z.get("reichweite"), z.get("gespeichert"), z.get("aufrufe"))
+            n += 1
+    return n
+
+
+def merke_follower(anzahl: int | None, heute: date | None = None) -> None:
+    """Instagram-Follower je Tag (90 Tage), damit Wirkung den Zuwachs zeigen kann."""
+    if anzahl is None:
+        return
+    d = db.lade_einstellung("instagram_follower", {}) or {}
+    verlauf = d.get("verlauf") or {}
+    verlauf[(heute or datetime.now(himmel.WIEN).date()).isoformat()] = int(anzahl)
+    verlauf = dict(sorted(verlauf.items())[-90:])
+    db.setze_einstellung("instagram_follower", {"verlauf": verlauf})
+
+
+def follower_stand() -> dict:
+    """Aktuelle Follower und Zuwachs gegen vor 7 Tagen (aus dem gemerkten Verlauf)."""
+    verlauf = (db.lade_einstellung("instagram_follower", {}) or {}).get("verlauf") or {}
+    if not verlauf:
+        return {}
+    tage = sorted(verlauf)
+    jetzt = verlauf[tage[-1]]
+    grenze = (date.fromisoformat(tage[-1]) - timedelta(days=7)).isoformat()
+    frueher = [t for t in tage if t <= grenze]
+    return {"follower": jetzt, "am": tage[-1], "zuwachs_7": jetzt - verlauf[frueher[-1]] if frueher else None}
+
+
+def zahlen_instagram(seit: datetime, limit: int = 60) -> dict:
+    """Instagram-Zahlen holen und merken. Rueckgabe wie meta.instagram_zahlen."""
+    r = meta.instagram_zahlen(db.lade_gepostete("instagram", seit, limit=limit))
+    _merke("instagram", r["beitraege"])
+    try:
+        merke_follower(meta.instagram_konto().get("follower"))
+    except Exception as ex:  # noqa: BLE001
+        print(f"[Posten] Instagram-Follower nicht geholt: {ex}", flush=True)
+    return r
+
+
+def zahlen_tiktok(seit: datetime) -> list[dict]:
+    """TikTok-Videos (video.list) unseren Reels zuordnen und die Zahlen merken."""
+    z = tiktok.zugang() or {}
+    if not tiktok.zahlen_erlaubt(z):
+        return []
+    try:
+        liste = tiktok.videos(40)
+    except tiktok.TikTokFehler as ex:
+        if "Recht" in str(ex) or "scope" in str(ex).lower():
+            z["zahlen_fehlt"] = True
+            db.setze_einstellung(tiktok.SCHLUESSEL, z)
+        raise
+    zeilen = tiktok.zuordnen(db.lade_gepostete("tiktok", seit, limit=60), liste)
+    _merke("tiktok", zeilen)
+    return zeilen
+
+
 def aktualisiere_zahlen(erzwingen: bool = False) -> int:
-    """Reaktionen der Facebook-Beitraege der letzten 14 Tage holen und merken (fuers Lernen).
-    Laeuft hoechstens alle 6 Stunden; ohne Facebook-Verbindung passiert nichts."""
+    """Reaktionen der Beitraege der letzten 14 Tage holen und merken (fuers Lernen): Facebook, Instagram
+    (mit Insights-Recht auch Reichweite, Aufrufe, Speichern, Teilen) und TikTok (video.list).
+    Laeuft hoechstens alle 6 Stunden; ohne Verbindung passiert auf der Plattform nichts."""
     if not erzwingen and time.time() - _ZAHLEN["zuletzt"] < ZAHLEN_ALLE_S:
         return 0
     _ZAHLEN["zuletzt"] = time.time()
-    if not meta.verbindungen()["facebook"]["verbunden"]:
-        return 0
-    eintraege = db.lade_gepostete("facebook", datetime.now(himmel.WIEN) - timedelta(days=14), limit=60)
+    seit = datetime.now(himmel.WIEN) - timedelta(days=14)
+    v = meta.verbindungen()
     n = 0
-    for z in meta.facebook_reaktionen(eintraege):
-        if "fehler" not in z:
-            db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"],
-                                z.get("reichweite"))
-            n += 1
+    if v["facebook"]["verbunden"]:
+        try:
+            n += _merke("facebook", meta.facebook_reaktionen(db.lade_gepostete("facebook", seit, limit=60)))
+        except Exception as ex:  # noqa: BLE001 -- die anderen Plattformen trotzdem holen
+            print(f"[Posten] Facebook-Zahlen nicht geholt: {ex}", flush=True)
+    if v["instagram"]["verbunden"]:
+        try:
+            n += sum("fehler" not in z for z in zahlen_instagram(seit)["beitraege"])
+        except Exception as ex:  # noqa: BLE001
+            print(f"[Posten] Instagram-Zahlen nicht geholt: {ex}", flush=True)
+    try:
+        n += len(zahlen_tiktok(seit))
+    except Exception as ex:  # noqa: BLE001
+        print(f"[Posten] TikTok-Zahlen nicht geholt: {ex}", flush=True)
     return n
 
 
@@ -384,6 +534,10 @@ def durchlauf(jetzt: datetime | None = None) -> dict:
             meta.instagram_verlaengern()
         except Exception as ex:  # noqa: BLE001
             print(f"[Posten] Instagram-Zugang nicht verlängert: {ex}", flush=True)
+        try:
+            tiktok.erneuern_wenn_noetig()
+        except Exception as ex:  # noqa: BLE001
+            print(f"[Posten] TikTok-Zugang nicht erneuert: {ex}", flush=True)
         try:
             aktualisiere_zahlen()
         except Exception as ex:  # noqa: BLE001
@@ -402,8 +556,9 @@ def jetzt_posten(post_id: int, plattform: str) -> dict:
         raise ValueError("Post nicht gefunden.")
     if plattform not in PLATTFORMEN:
         raise ValueError("Unbekannte Plattform.")
-    if plattform in NUR_REELS and post.get("art") != "reel":
-        raise ValueError("Auf TikTok gehen nur Reels (Videos).")
+    if not passt(plattform, post.get("art") or "post"):
+        raise ValueError("Auf TikTok gehen nur Reels (Videos)." if plattform == "tiktok"
+                         else "Storys gibt es auf LinkedIn nicht.")
     zid = db.plane_veroeffentlichung(post_id, plattform, datetime.now(himmel.WIEN), zurueckgeben=True)
     db.setze_veroeffentlichung(zid, "laeuft", versuch=True)
     try:
