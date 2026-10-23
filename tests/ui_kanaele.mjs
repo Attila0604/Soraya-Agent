@@ -24,7 +24,7 @@ for (const breite of [900, 390]) {
     await page.$eval("#einstellungenPanel", (d) => { d.open = true; });
     check("Posten: LinkedIn angehakt", await page.isChecked("#plLinkedin"), "");
     check("Testpost: LinkedIn-Knopf für Feed-Post, nicht für Story", (await page.$$eval("#testposts .testpost", (l) => l.map((x) => x.textContent))).some((x) => x.includes("Story") && !x.includes("LinkedIn"))
-      && (await page.$$("#testposts button[data-pl='linkedin']")).length === 2, await page.textContent("#testposts"));
+      && (await page.$$("#testposts button[data-pl='linkedin']")).length === 3, await page.textContent("#testposts"));
     if (OUT) await (await page.$("#verbindungen")).screenshot({ path: OUT + "/posten-verbindungen.png" });
     if (OUT) await (await page.$("#einstellungenPanel")).screenshot({ path: OUT + "/posten-wohin.png" });
   }
@@ -35,7 +35,7 @@ for (const breite of [900, 390]) {
   check(`Wirkung (${breite}): Beiträge zugeklappt hinter 'Letzte Beiträge'`, !(await page.$eval("#igPanel details", (d) => d.open)), "");
   if (breite === 900) {
     await page.$eval("#igPanel details", (d) => { d.open = true; }); await wait(200);
-    check("Wirkung: Tabelle mit 3 Beiträgen", (await page.$$eval("#igPanel tbody tr", (r) => r.length)) === 3, "");
+    check("Wirkung: Tabelle mit 4 Beiträgen", (await page.$$eval("#igPanel tbody tr", (r) => r.length)) === 4, "");
     if (OUT) await (await page.$("#igPanel")).screenshot({ path: OUT + "/wirkung-instagram.png" });
     await page.$eval("details.wmehr", (d) => { d.open = true; }); await wait(300);
     check("Wirkung: TikTok-Hinweis neu verbinden", (await page.textContent("#ttPanel")).includes("TikTok neu verbinden, um Zahlen zu sehen"), await page.textContent("#ttPanel"));

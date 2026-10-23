@@ -3,7 +3,7 @@ Automatisch posten (Facebook-Seite, Instagram, TikTok, LinkedIn)
 
 Ablauf jede Minute, wenn der Hauptschalter an ist:
 1. Planen: Posts von heute und morgen in der Posting-Sprache bekommen pro Plattform
-   einen Termin (Story, Feed-Post, Reel zu festen Uhrzeiten, Wiener Zeit).
+   einen Termin (Story, Feed-Post, Reel und zweites Reel zu festen Uhrzeiten, Wiener Zeit).
 2. Faellige Termine ausfuehren: Bild/Video erzeugen, posten, Ergebnis merken.
    Fehler werden bis zu 3x wiederholt (alle 15 Minuten), danach bleibt der Fehler stehen.
 
@@ -32,13 +32,23 @@ from claude import frage_json
 from wirkung import link_basis
 
 STANDARD = {"an": False, "sprache": "en", "modus": "auto", "tiktok_modus": "entwurf",
-            "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00"},
+            "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"},
             "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False}}
 PLATTFORMEN = ("facebook", "instagram", "tiktok", "linkedin")
 # TikTok nimmt nur Videos: dort gehen nur die Reels hin
 NUR_REELS = {"tiktok"}
 # Storys gibt es auf LinkedIn nicht
 OHNE_STORYS = {"linkedin"}
+# Auf dem persoenlichen LinkedIn-Profil waeren zwei Reels am Tag zu viel: automatisch nur das erste
+NUR_ERSTES_REEL = {"linkedin"}
+
+
+def platz(post: dict) -> str:
+    """Termin-Platz eines Posts: story, post, reel oder reel2 (= zweites Reel des Tages, eigene Uhrzeit)."""
+    art = post.get("art") or "post"
+    if art == "reel" and (post.get("meta") or {}).get("reel_nr") == 2:
+        return "reel2"
+    return art
 
 
 def passt(plattform: str, art: str) -> bool:
@@ -50,11 +60,14 @@ def passt(plattform: str, art: str) -> bool:
     return True
 # "alle": jeder der drei Posts eines Tages in einer anderen Sprache, die Reihenfolge rotiert taeglich --
 # so kommt jede Sprache gleich oft dran (in 4 Tagen je dreimal) und jede Art in jeder Sprache.
+# Das zweite Reel ("reel2") bekommt die vierte Sprache des Tages -- so kommt jeden Tag jede Sprache einmal dran,
+# und Story/Feed-Post/Reel behalten ihre bisherige Rotation.
 ROTATION = ("en", "de", "hu", "it")
-ARTEN = ("story", "post", "reel")
+ARTEN = ("story", "post", "reel", "reel2")
 
 
 def sprache_fuer(tag: date, art: str, e: dict) -> str:
+    """art: Termin-Platz (story, post, reel, reel2). Das Dashboard rechnet das in spracheFuer() nach."""
     if e.get("sprache") != "alle":
         return e["sprache"]
     return ROTATION[(tag.toordinal() * 3 + ARTEN.index(art if art in ARTEN else "post")) % len(ROTATION)]
@@ -125,13 +138,14 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
     plattformen = _aktive_plattformen(e)
     tage = [heute, heute + timedelta(days=1)]
     for post in db.lade_posts_zeitraum(heute, heute + timedelta(days=1), sprachen=benoetigte_sprachen(e, tage)):
-        zeit = e["zeiten"].get(post.get("art") or "post")
+        wo = platz(post)
+        zeit = e["zeiten"].get(wo)
         if not zeit or post.get("status") == "gestoppt":
             continue
-        if post.get("sprache") != sprache_fuer(post["geplant_fuer"], post.get("art") or "post", e):
+        if post.get("sprache") != sprache_fuer(post["geplant_fuer"], wo, e):
             continue
         for p in plattformen:
-            if not passt(p, post.get("art") or "post"):
+            if not passt(p, post.get("art") or "post") or (wo == "reel2" and p in NUR_ERSTES_REEL):
                 continue
             neu += db.plane_veroeffentlichung(post["id"], p, termin(post["geplant_fuer"], zeit))
     return neu
@@ -310,7 +324,13 @@ def text_fuer(post: dict, plattform: str) -> str:
         if post.get("hashtags"):
             teile.append(" ".join(post["hashtags"].split()[:3]))
         return "\n\n".join(t for t in teile if t)
-    teile = [_luftig(post.get("text") or "")]
+    text = post.get("text") or ""
+    if post.get("art") in ("post", "reel"):
+        # genau eine leichte Frage zum Kommentieren (steht meist schon da -- dann bleibt alles, wie es ist)
+        m = post.get("meta") or {}
+        antworten = len(m.get("bild_punkte") or []) if post.get("art") == "post" and m.get("thema") == "Mitmachen" else 0
+        text = redaktion.mit_kommentar_frage(text, post.get("sprache") or "en", f"p{post.get('id')}", antworten)
+    teile = [_luftig(text)]
     if plattform == "facebook" and post.get("art") != "story":
         teile[0] = _ohne_bio(teile[0], post.get("sprache") or "de")
     if plattform == "facebook" and post.get("art") != "story":
@@ -471,7 +491,11 @@ def follower_stand() -> dict:
 
 def zahlen_instagram(seit: datetime, limit: int = 60) -> dict:
     """Instagram-Zahlen holen und merken. Rueckgabe wie meta.instagram_zahlen."""
-    r = meta.instagram_zahlen(db.lade_gepostete("instagram", seit, limit=limit))
+    jetzt = datetime.now(himmel.WIEN)
+    # abgelaufene Storys (> 24 h) liefert Instagram nicht mehr -- die gemerkten Zahlen bleiben stehen
+    eintraege = [x for x in db.lade_gepostete("instagram", seit, limit=limit)
+                 if x.get("art") != "story" or not x.get("aktualisiert") or jetzt - x["aktualisiert"] < STORY_LEBEN]
+    r = meta.instagram_zahlen(eintraege)
     _merke("instagram", r["beitraege"])
     try:
         merke_follower(meta.instagram_konto().get("follower"))
@@ -495,6 +519,37 @@ def zahlen_tiktok(seit: datetime) -> list[dict]:
     zeilen = tiktok.zuordnen(db.lade_gepostete("tiktok", seit, limit=60), liste)
     _merke("tiktok", zeilen)
     return zeilen
+
+
+# Instagram-Storys verschwinden nach 24 Stunden -- und mit ihnen die Zahlen. Darum werden sie eigens
+# gemessen, solange sie noch zu sehen sind: rund 2 und rund 20 Stunden nach dem Posten.
+STORY_MESSUNG_H = (2, 20)
+STORY_LEBEN = timedelta(hours=24)
+
+
+def _story_faellig(s: dict, jetzt: datetime) -> bool:
+    gepostet = s.get("gepostet")
+    if not gepostet or not s.get("extern_id"):
+        return False
+    alter = jetzt - gepostet
+    if alter >= STORY_LEBEN:
+        return False
+    for h in sorted(STORY_MESSUNG_H, reverse=True):
+        if alter >= timedelta(hours=h):
+            return not s.get("zahlen_am") or s["zahlen_am"] < gepostet + timedelta(hours=h)
+    return False
+
+
+def miss_storys(jetzt: datetime | None = None) -> int:
+    """Zahlen (Reichweite, Aufrufe, Antworten, Teilen) der Instagram-Storys holen, solange sie noch leben.
+    Laeuft in jedem Durchlauf mit, fragt Instagram aber nur, wenn eine Story faellig ist."""
+    jetzt = jetzt or datetime.now(himmel.WIEN)
+    storys = [s for s in db.lade_gemerkte_zahlen("instagram", jetzt - STORY_LEBEN, limit=20)
+              if s.get("art") == "story" and _story_faellig(s, jetzt)]
+    if not storys or not meta.instagram_zahlen_erlaubt(meta.zugang("instagram")):
+        return 0
+    r = meta.instagram_zahlen([{**s, "aktualisiert": s["gepostet"]} for s in storys])
+    return _merke("instagram", r["beitraege"])
 
 
 def aktualisiere_zahlen(erzwingen: bool = False) -> int:
@@ -542,6 +597,10 @@ def durchlauf(jetzt: datetime | None = None) -> dict:
             aktualisiere_zahlen()
         except Exception as ex:  # noqa: BLE001
             print(f"[Posten] Reaktionen nicht geholt: {ex}", flush=True)
+        try:
+            miss_storys(jetzt)
+        except Exception as ex:  # noqa: BLE001
+            print(f"[Posten] Story-Zahlen nicht geholt: {ex}", flush=True)
         if not e["an"]:
             return {"an": False}
         return {"an": True, "geplant": planen(e, jetzt), "ausgefuehrt": fuehre_aus(jetzt, e)}

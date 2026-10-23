@@ -176,6 +176,7 @@ Pro Tag ein Ordner, darin pro Sprache:
   2 Reel       -> Video (.mp4, mit ruhiger Klangfläche) + Text (.txt); in Instagram/TikTok
                   kannst du einen Trend-Sound darüberlegen
   3 Story      -> Bild (.jpg) + Text (.txt), z. B. mit Umfrage-Sticker
+  4 Reel-2     -> zweites, kürzeres Reel des Tages (anderer Blickwinkel, geht abends raus)
 
 So planst du die Woche in der Meta Business Suite (business.facebook.com):
   Planer -> Beitrag erstellen -> Bild/Video hochladen -> Text aus der .txt einfügen
@@ -199,7 +200,9 @@ def _paket_bauen(job: dict, posts: list[dict], von: date, bis: date) -> None:
             tag = p["geplant_fuer"]
             ordner = f"{wurzel}/{tag.isoformat()}_{WOCHENTAGE[tag.weekday()]}"
             nr = {"post": 1, "reel": 2, "story": 3}.get(p.get("art"), 4)
-            name = f"{(p.get('sprache') or 'de').upper()}_{nr}_{ART_NAME.get(p.get('art'), 'Post')}"
+            zweites = p.get("art") == "reel" and (p.get("meta") or {}).get("reel_nr") == 2
+            name = (f"{(p.get('sprache') or 'de').upper()}_{'4' if zweites else nr}_"
+                    f"{'Reel-2' if zweites else ART_NAME.get(p.get('art'), 'Post')}")
             job["schritt"] = f"{tag.strftime('%d.%m.')} {(p.get('sprache') or 'de').upper()} {ART_NAME.get(p.get('art'), 'Post')}"
             if p.get("art") == "reel" and job["mit_videos"]:
                 datei = f"{ordner}/{name}.mp4"

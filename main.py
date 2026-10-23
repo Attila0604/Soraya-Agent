@@ -259,7 +259,7 @@ def _post_oder_404(post_id: int) -> dict:
 
 def _dateiname(post: dict, endung: str, format: str = "") -> str:
     tag = str(post.get("geplant_fuer") or post.get("created_at") or "")[:10]
-    teile = ["soraya", tag, post.get("art") or "post", post.get("sprache") or "de"] + ([format] if format else [])
+    teile = ["soraya", tag, posten.platz(post), post.get("sprache") or "de"] + ([format] if format else [])
     return "-".join(t for t in teile if t) + "." + endung
 
 
@@ -662,7 +662,8 @@ def wirkung_lernen():
                   "sprache": e["post"].get("sprache"), "format": (e["post"].get("meta") or {}).get("thema"),
                   "punkte": e["punkte"], "details": redaktion._details(e)} for e in bewertet[:5] if e["punkte"] > 0]
         return {"beste": beste, "erkenntnisse": erk, "hinweis": redaktion.erkenntnis_text(erk),
-                "gemessen": len(bewertet), "zeiten": redaktion.zeit_vorschlaege(erk)}
+                "gemessen": len(redaktion.gemessen(bewertet)), "nicht_gemessen": redaktion.nicht_gemessen(bewertet),
+                "zeiten": redaktion.zeit_vorschlaege(erk)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
