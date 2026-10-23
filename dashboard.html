@@ -2133,6 +2133,7 @@ async function ladeInstagramWirkung(){
   box.innerHTML = `<div class="panel"><h2>${IKON.instagram} Instagram</h2>
     ${k.follower != null ? `<div class="igkopf"><b>${zahl(k.follower)}</b><span>Follower</span>${k.zuwachs_7 ? `<span class="plus">${k.zuwachs_7 > 0 ? '+' : ''}${zahl(k.zuwachs_7)} in 7 Tagen</span>` : ''}</div>` : ''}
     ${r.recht_fehlt ? `<p class="lernhinweis">✦ ${kurzMehr('Instagram neu verbinden, um Zahlen zu sehen (Aufrufe, Reichweite, Gespeichert, Geteilt).', IG_RECHT_SCHRITTE)}</p>
+      ${r.meldung ? `<p class="meta">Meldung von Instagram: <code>${esc(r.meldung)}</code></p>` : ''}
       <p>${knopfLink('/meta/verbinden/instagram', 'Instagram neu verbinden', true)}</p>` : ''}
     ${b.length ? `<div class="kpis klein3${mitInsights ? ' vier' : ''}">
         ${mitInsights ? `<div class="kpi"><div class="l">Aufrufe</div><div class="v">${zahl(summe('aufrufe'))}</div></div>` : ''}

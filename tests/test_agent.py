@@ -1431,7 +1431,7 @@ def test_instagram_ohne_insights_recht(fake_meta, frische_db):
     # Die mitgeschickte Freigaben-Liste ist nicht verlaesslich: angefragt reicht, Meta entscheidet beim Abruf
     assert meta.instagram_zahlen_erlaubt({"token": "x", "rechte": ["instagram_business_basic"], "angefragt": meta.IG_SCOPES}) is True
     assert meta.instagram_zahlen_erlaubt({"token": "x", "rechte": ["instagram_business_basic"], "angefragt": meta.IG_SCOPES,
-                                          "insights_fehlt": True}) is False
+                                          "insights_fehlt": True, "insights_meldung": "(#10) x"}) is False
     # unbekannte Kennzahl -> kurze Liste
     fake_meta.ig_insights_fehler = False
     assert meta.instagram_insights("M_ALT", "post", "T") == {"reach": 840, "saved": 7}
