@@ -213,7 +213,7 @@
   .igkopf .plus{color:var(--gruen);font-size:13px}
   .punkt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--mist-dim)}
   .punkt.ok{background:var(--ok)} .punkt.aus{background:var(--bad)}
-  .zeiten{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .zeiten{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
   .termine{width:100%;border-collapse:collapse;font-size:13.5px}
   h3.unter{font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--champagne);margin:18px 0 8px;font-weight:600}
   ol.beste{margin:0 0 6px;padding-left:20px} ol.beste li{margin:0 0 8px} ol.beste .meta{display:block}
@@ -243,7 +243,7 @@
   .pruefhinweis.leicht b{color:var(--champagne)}
   .pruefhinweis span{display:block;color:var(--mist-dim);font-size:12px;margin-top:3px}
   .st.gestoppt{color:#f0c4bc;background:rgba(208,59,59,.12)}
-  @media (max-width:560px){ .zeiten{grid-template-columns:1fr} .termine .pl{display:none} }
+  @media (max-width:560px){ .zeiten{grid-template-columns:repeat(2,minmax(0,1fr))} .termine .pl{display:none} }
   .ladebalken{height:6px;border-radius:99px;background:rgba(201,162,75,.15);overflow:hidden;margin:10px 0 6px}
   .ladebalken i{display:block;height:100%;width:0;background:var(--gold);transition:width .4s}
   .paket-optionen{display:grid;gap:12px;margin:6px 0 14px}
@@ -922,6 +922,7 @@
         <div><label for="zStory">Story</label><input type="time" id="zStory"></div>
         <div><label for="zPost">Feed-Post</label><input type="time" id="zPost"></div>
         <div><label for="zReel">Reel</label><input type="time" id="zReel"></div>
+        <div><label for="zReel2">2. Reel</label><input type="time" id="zReel2"></div>
       </div>
       <p class="lernhinweis" id="zeitTipp" hidden></p>
       <label style="margin-top:16px">Wohin posten</label>
@@ -973,7 +974,10 @@ const IKON = {
   linkedin: SVG('<path d="M6.9 8.6H3.6V20h3.3V8.6zM5.2 3.5a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8zM20.4 13.5c0-3-1.6-5.1-4.6-5.1-1.5 0-2.6.8-3 1.6V8.6H9.6V20h3.3v-5.9c0-1.6.6-2.8 2.1-2.8s1.9 1.3 1.9 2.9V20h3.3v-6.5z"/>')};
 // Welche Art geht wohin (wie posten.passt): TikTok nur Reels, LinkedIn ohne Storys
 const PLATTFORMEN = ['facebook', 'instagram', 'tiktok', 'linkedin'];
-const passtPl = (pl, art) => pl === 'tiktok' ? art === 'reel' : pl === 'linkedin' ? art !== 'story' : true;
+// art darf auch der Termin-Platz sein ('reel2' = zweites Reel): automatisch geht auf LinkedIn nur das erste Reel
+const passtPl = (pl, art) => pl === 'tiktok' ? (art === 'reel' || art === 'reel2') : pl === 'linkedin' ? (art !== 'story' && art !== 'reel2') : true;
+// wie posten.platz(): story, post, reel oder reel2 (zweites Reel des Tages mit eigener Uhrzeit)
+const platzVon = (p) => p && p.art === 'reel' && (((p.meta || {}).reel_nr === 2) || p.reel_nr === 2) ? 'reel2' : (p && p.art) || 'post';
 const plIkon = (pl, cls = '', zusatz = '') => `<span class="plk ${cls}" title="${esc((PL_NAME[pl] || pl) + (zusatz ? ': ' + zusatz : ''))}">${IKON[pl] || ''}${esc(PL_NAME[pl] || pl)}</span>`;
 function busy(btn, on, text){
   btn.disabled = on;
@@ -1000,18 +1004,18 @@ document.addEventListener('click', (ev) => {
 }, true);
 document.addEventListener('keydown', (ev) => { if(ev.key === 'Escape') schliesseHilfen(); });
 const HILFE = {
-  raus: ['Heute geht raus', 'Die drei Posts, die heute zu deinen Uhrzeiten automatisch gepostet werden – mit Plattform und Stand. <b>Gelb</b> heißt: hier musst du etwas tun (z. B. freigeben).'],
+  raus: ['Heute geht raus', 'Die vier Posts (Story, Feed-Post, zwei Reels), die heute zu deinen Uhrzeiten automatisch gepostet werden – mit Plattform und Stand. <b>Gelb</b> heißt: hier musst du etwas tun (z. B. freigeben).'],
   karten: ['Posts von heute', 'Alle Posts, die der Tagesplan für heute geschrieben hat, je Sprache. <b>Entwurf</b> = fertig geschrieben, geht im Modus „Automatisch“ trotzdem raus. <b>Freigegeben</b> = von dir geprüft. <b>Nicht posten</b> = geht nirgends raus.'],
-  tagesplan: ['Tagesplan', 'Soraya liest jeden Tag die echten Himmelsdaten und schreibt daraus pro Sprache einen Feed-Post, ein Reel und eine Story. Jeder Wochentag hat ein eigenes Format (z. B. Montag „Deine Woche“).'],
+  tagesplan: ['Tagesplan', 'Soraya liest jeden Tag die echten Himmelsdaten und schreibt daraus pro Sprache einen Feed-Post, zwei Reels und eine Story. Jeder Wochentag hat ein eigenes Format: Mo Deine Woche · Di Mitmachen (Sternzeichen-Check) · Mi Ritual (Herz-Ritual) · Do Astro-Wissen · Fr Ritual · Sa Mitmachen · So Rückblick &amp; Vorschau. Neu-/Vollmond und besondere Tage gehen vor.'],
   vorplanen: ['Vorplanen', 'Schreibt die Posts für die nächsten 7 Tage schon jetzt. Tage, die es schon gibt, werden übersprungen und kosten nichts.'],
   paket: ['Wochenpaket', 'Eine ZIP-Datei mit allen Bildern, Reel-Videos und Texten dieser 7 Tage, pro Tag ein Ordner – zum Posten von Hand, z. B. in der Meta Business Suite.'],
   studio: ['Studio', 'Posts zu einem eigenen Thema, außerhalb des Tagesplans. Sie gehen nicht von selbst raus, bis du ihnen ein Datum gibst.'],
   zielgruppen: ['Zielgruppen', 'Soraya sucht im Netz, was eine Zielgruppe beschäftigt und wie sie spricht. Daraus entsteht ein Profil, das der Tagesplan beim Schreiben nutzt.'],
   profile: ['Im Tagesplan verwenden', 'Hakst du ein Profil an, schreibt der nächste Tagesplan für diese Menschen. Ohne Häkchen nimmt er je Sprache das Profil aus dem passenden Land.'],
-  posten: ['Automatisch posten', 'Ist der Schalter an, postet Soraya jeden Tag Story, Feed-Post und Reel zu den Uhrzeiten unten auf die verbundenen Plattformen. Ausschalten stoppt sofort alles.'],
+  posten: ['Automatisch posten', 'Ist der Schalter an, postet Soraya jeden Tag Story, Feed-Post und zwei Reels zu den Uhrzeiten unten auf die verbundenen Plattformen. Ausschalten stoppt sofort alles.'],
   termine: ['Termine', 'Jeder Post bekommt pro Plattform einen Termin. Gibt es einen Fehler, versucht Soraya es bis zu 3-mal. Was mehr als 12 Stunden zu spät wäre, gilt als verpasst.'],
   modus: ['Freigabe', '<b>Automatisch, außer ich stoppe:</b> alles geht raus, außer du stoppst es (Posts mit ernstem Hinweis warten trotzdem auf dich). <b>Nur freigegebene:</b> nur Posts, die du freigegeben hast.'],
-  sprache: ['Sprache der Posts', '<b>Alle 4 Sprachen im Wechsel:</b> Story, Feed-Post und Reel kommen jeden Tag in einer anderen Sprache. Dafür muss der Tagesplan alle 4 Sprachen schreiben.'],
+  sprache: ['Sprache der Posts', '<b>Alle 4 Sprachen im Wechsel:</b> Story, Feed-Post, Reel und 2. Reel kommen jeden Tag in einer anderen Sprache. Dafür muss der Tagesplan alle 4 Sprachen schreiben.'],
   kennzahl: ['Kennzahl', 'Welche Zahl das Balken-Diagramm pro Tag zeigt. Lila Punkte unter den Balken = an diesem Tag wurde etwas gepostet.'],
 };
 function fuelleHilfen(root = document){
@@ -1054,7 +1058,7 @@ async function api(pfad, opts = {}){
 
 const SPRACHEN = [['de','Deutsch'],['en','English'],['hu','Magyar'],['it','Italiano']];
 const LINK_IN_BIO = {de:'Link in Bio', en:'Link in bio', hu:'Link a bióban', it:'Link in bio'};
-const ART = {post:'Feed-Post', reel:'Reel', story:'Story'};
+const ART = {post:'Feed-Post', reel:'Reel', reel2:'2. Reel', story:'Story'};
 const STATUS = {entwurf:'Entwurf', freigegeben:'Freigegeben', gepostet:'Gepostet', gestoppt:'Nicht posten'};
 const REIHE_ART = ['post','reel','story'], REIHE_SPRACHE = ['de','en','hu','it'];
 const ordne = (a, b) => (REIHE_SPRACHE.indexOf(a.sprache) - REIHE_SPRACHE.indexOf(b.sprache))
@@ -1127,7 +1131,7 @@ function karte(p, {datum = true} = {}){
   const kmetaRest = [m.zielgruppe ? `<span title="Zielgruppe, für die geschrieben wurde">Für: ${esc(m.zielgruppe)}</span>` : '',
     HOOK_STIL[m.hook_stil] && p.art !== 'story' ? `<span title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Anfang im Test: ${esc(HOOK_STIL[m.hook_stil])}</span>` : '']
     .filter(Boolean).join(' · ');
-  const kmetaKurz = m.thema ? `<span title="Format des Tages">${esc(m.thema)}${m.folge ? ' · Folge ' + esc(m.folge) : ''}</span>` : '';
+  const kmetaKurz = m.thema ? `<span title="Format des Tages">${esc(m.thema)}${m.variante ? ' (' + esc(m.variante) + ')' : ''}${m.folge ? ' · Folge ' + esc(m.folge) : ''}</span>` : '';
   const kmeta = kmetaKurz ? kurzMehr(kmetaKurz, kmetaRest ? '· ' + kmetaRest : '') : kmetaRest;
   const n = folienAnzahl(p);
   const v = esc(p.aktualisiert || p.created_at || '');
@@ -1140,7 +1144,7 @@ function karte(p, {datum = true} = {}){
       <img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${fmt}&klein=1&v=${v}">${p.art === 'reel' ? '<span class="play" aria-hidden="true"></span>' : ''}</button>
     <div class="inhalt">
     <div class="kopf">
-      <span class="tag art">${esc(ART[p.art] || 'Post')}</span>
+      <span class="tag art">${esc(ART[platzVon(p)] || 'Post')}</span>
       <span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
       <span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span>
       <span class="kmeta">${kmeta}</span>
@@ -1494,7 +1498,8 @@ document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-
 
 /* ---------- Heute geht raus: Zeitplan von heute mit Plattformen, Bildern und Stand ---------- */
 // wie posten.sprache_fuer(): bei "alle 4 Sprachen" rotiert die Sprache je Tag und Art
-const ROTATION = ['en', 'de', 'hu', 'it'], ARTEN_POSTEN = ['story', 'post', 'reel'];
+// (das zweite Reel bekommt die vierte Sprache des Tages)
+const ROTATION = ['en', 'de', 'hu', 'it'], ARTEN_POSTEN = ['story', 'post', 'reel', 'reel2'];
 const ordinal = (isoTag) => { const [y, m, t] = String(isoTag).slice(0, 10).split('-').map(Number); return Date.UTC(y, m - 1, t) / 864e5 + 719163; };
 const spracheFuer = (isoTag, art, e) => e.sprache !== 'alle' ? e.sprache : ROTATION[(ordinal(isoTag) * 3 + ARTEN_POSTEN.indexOf(art)) % 4];
 function daumen(p, klein = true){
@@ -1534,14 +1539,18 @@ function zeigeRaus(d, ps, morgen){
   const termineHeute = (ps.termine || []).filter(t => String(t.geplant_fuer || '').slice(0, 10) === tag);
   const zeilen = ARTEN_POSTEN.slice().sort((a, b) => String(e.zeiten[a]).localeCompare(String(e.zeiten[b]))).map(art => {
     const sprache = e.sprache === 'alle' ? ((ps.sprachen_heute || {})[art] || spracheFuer(tag, art, e)) : e.sprache;
-    const p = (d.posts || []).find(x => x.art === art && x.sprache === sprache);
+    const p = (d.posts || []).find(x => platzVon(x) === art && x.sprache === sprache);
     if(p) POSTS.set(String(p.id), p);
     const tt = p ? termineHeute.filter(t => t.post_id === p.id) : [];
     const zeit = tt[0] ? uhr(tt[0].geplant_um) : e.zeiten[art];
     const wo = tt.length ? tt.map(t => ({pl: t.plattform, st: t.status, url: t.url}))
       : PLATTFORMEN.filter(pl => e.plattformen[pl] && passtPl(pl, art))
           .map(pl => ({pl, st: v[pl] && v[pl].verbunden ? 'geplant' : 'nicht'}));
-    return {art, sprache, p, tt, zeit, wo, z: rausZustand(p, tt, wo, e, art, zeit)};
+    // Tagesplan von vor der Umstellung: es gibt ein Reel, aber noch kein zweites -> kein Grund zur Sorge
+    const alt = !p && art === 'reel2' && (d.posts || []).some(x => x.art === 'reel' && x.sprache === sprache);
+    const z = alt ? {cls: 'aus', text: 'Kommt ab dem nächsten Tagesplan', sub: 'Dieser Tagesplan wurde noch mit einem Reel geschrieben.'}
+      : rausZustand(p, tt, wo, e, art, zeit);
+    return {art, sprache, p, tt, zeit, wo, z, alt};
   });
   box.innerHTML = zeilen.map(({art, sprache, p, zeit, wo, z}) => `<li${p ? ` data-id="${esc(p.id)}"` : ''}>
     <div class="wann">${esc(zeit)}<small>${esc(ART[art])}</small></div>
@@ -1555,7 +1564,7 @@ function zeigeRaus(d, ps, morgen){
     </div>
     <div class="bilder">${p ? daumen(p) : ''}</div></li>`).join('')
     // fehlt etwas, gibt es EINEN Knopf statt drei gleicher
-    + (zeilen.some(x => !x.p) ? `<li class="raus-leer raus-aktion"><span>${zeilen.every(x => !x.p) ? 'Für heute gibt es noch keine Posts' : 'Ein Teil der Posts für heute fehlt noch'} – das Erstellen dauert etwa 1–2 Minuten.</span>
+    + (zeilen.some(x => !x.p && !x.alt) ? `<li class="raus-leer raus-aktion"><span>${zeilen.every(x => !x.p) ? 'Für heute gibt es noch keine Posts' : 'Ein Teil der Posts für heute fehlt noch'} – das Erstellen dauert etwa 1–2 Minuten.</span>
         <button class="klein" data-raus-plan="1">Tagesplan jetzt erstellen</button></li>` : '');
   // Zusammenfassung + was braucht dich (heute und morgen)
   const warten = zeilen.filter(x => x.z.freigeben).length, raus = zeilen.filter(x => x.z.cls === 'plan').length,
@@ -1571,7 +1580,7 @@ function zeigeRaus(d, ps, morgen){
   if(e.an && morgen && morgen.posts){
     const mTag = String(morgen.datum).slice(0, 10);
     ARTEN_POSTEN.forEach(art => {
-      const p = morgen.posts.find(x => x.art === art && x.sprache === spracheFuer(mTag, art, e));
+      const p = morgen.posts.find(x => platzVon(x) === art && x.sprache === spracheFuer(mTag, art, e));
       if(!p) return; POSTS.set(String(p.id), p);
       const z = rausZustand(p, [], [{st: 'geplant'}], e, art, e.zeiten[art]);
       if(z.freigeben) offen.push({tag: 'Morgen', p, z});
@@ -1582,7 +1591,7 @@ function zeigeRaus(d, ps, morgen){
   $('achtung').innerHTML = !e.an ? '' : offen.length ? `<div class="achtung-box" role="alert"><h3>${offen.every(o => o.p) ? (offen.length === 1 ? '1 Post braucht dich' : offen.length + ' Posts brauchen dich') : 'Hier braucht es dich'}</h3>
       ${offen.map(o => !o.p ? `<div class="eintrag"><div><b>${esc(o.z.text)}</b><span class="warum">${esc(o.z.sub)}</span></div>
         <div class="gruppe"><button class="ghost klein" data-ziel-tab="posten">${esc(o.ziel)}</button></div></div>`
-        : `<div class="eintrag" data-id="${esc(o.p.id)}"><div><b>${o.tag} · ${esc(ART[o.p.art])} ${esc((o.p.sprache || '').toUpperCase())}:</b> ${esc(o.p.titel || '')}
+        : `<div class="eintrag" data-id="${esc(o.p.id)}"><div><b>${o.tag} · ${esc(ART[platzVon(o.p)])} ${esc((o.p.sprache || '').toUpperCase())}:</b> ${esc(o.p.titel || '')}
         <span class="warum">${esc(o.z.text)}${o.z.sub ? ' – ' + esc(o.z.sub) : ''}</span></div>
         <div class="gruppe">${o.z.freigeben ? '<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Ansehen &amp; bearbeiten</button>'
           : '<button class="ghost klein" data-ziel-tab="posten">Zu den Terminen</button>'}</div></div>`).join('')}</div>`
@@ -1616,7 +1625,7 @@ function zeigeCockpit(d, ps){
       ${v.facebook.eingerichtet ? 'Facebook &amp; Instagram verbinden' : 'Meta-App einrichten'} – Anleitung unter „Posten“</button>`
     : statistikVerbunden === false ? `<button class="kachel" data-ziel="wirkung"><b>Nächster Schritt</b>
       Statistik verbinden, damit Soraya aus Besuchen lernt – Anleitung unter „Wirkung“</button>` : `<button class="kachel" data-ziel="posten"><b>Nächster Post</b>
-      ${naechster ? `${esc(ART[naechster.art] || naechster.art)} · ${tagName(naechster.geplant_um)} ${uhr(naechster.geplant_um)} · ${esc(PL_NAME[naechster.plattform])}`
+      ${naechster ? `${esc(ART[platzVon(naechster)] || naechster.art)} · ${tagName(naechster.geplant_um)} ${uhr(naechster.geplant_um)} · ${esc(PL_NAME[naechster.plattform])}`
         : (e && e.an ? 'Nichts geplant' : 'Automatisches Posten ist aus')}</button>`}`;
 }
 $('cockpit').addEventListener('click', (ev) => {
@@ -1649,7 +1658,7 @@ async function ladeHeute(){
     `<label class="imtp${d.sprachen.includes(c) ? ' on' : ''}"><input type="checkbox" data-plansprache="${c}"${d.sprachen.includes(c) ? ' checked' : ''}> ${c.toUpperCase()}</label>`).join('');
   if(!heuteGewaehlt && !d.sprachen.includes(heuteSprache)) heuteSprache = d.sprachen[0];
   $('planInfo').innerHTML = d.automatisch
-    ? kurzMehr(`An: ab ${d.ab_stunde} Uhr für heute und morgen.`, `Wiener Zeit, Sprachen ${esc(d.sprachen.map(s => s.toUpperCase()).join(', '))}. Pro Sprache: Feed-Post, Reel, Story – jeden Tag ein anderes Format.`)
+    ? kurzMehr(`An: ab ${d.ab_stunde} Uhr für heute und morgen.`, `Wiener Zeit, Sprachen ${esc(d.sprachen.map(s => s.toUpperCase()).join(', '))}. Pro Sprache: Feed-Post, zwei Reels, Story – jeden Tag ein anderes Format.`)
     : d.automatik_gesperrt ? kurzMehr('Automatik ist in Railway gesperrt.', '(TAGESPLAN_AUTO=0) Erstelle den Plan hier per Knopf.')
     : kurzMehr('Automatik ist aus: Es wird nichts von selbst erstellt.', 'Per Knopf geht es trotzdem.');
   $('laeufe').innerHTML = d.sprachen.map(s => {
@@ -1716,7 +1725,7 @@ function zeile(p){
     <summary><img class="mini" loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${p.art === 'post' ? 'feed' : 'story'}&klein=1&v=${esc(p.aktualisiert || p.created_at || '')}">
       ${(TERMINE.get(String(p.id)) || [])[0] ? `<span class="zeit">${uhr(TERMINE.get(String(p.id))[0].geplant_um)}</span><span class="wo" aria-label="Plattformen">${TERMINE.get(String(p.id)).map(t =>
         (IKON[t.plattform] || '').replace('class="ikon" aria-hidden="true"', `class="ikon${t.status === 'fertig' ? ' fertig' : ''}" title="${esc(PL_NAME[t.plattform] + ': ' + (VS_NAME[t.status] || t.status))}"`)).join('')}</span>` : ''}
-      <span class="tag">${esc(ART[p.art] || 'Post')}</span><span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
+      <span class="tag">${esc(ART[platzVon(p)] || 'Post')}</span><span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
       <span class="pt">${esc(p.titel || (p.text || '').slice(0, 60))}</span><span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span></summary>
     ${karte(p)}</details>`;
 }
@@ -2095,6 +2104,8 @@ async function ladeLernen(){
     ${f.length >= 2 ? `<h3 class="unter">Formate im Vergleich</h3>${balken(f, n => n)}` : ''}
     ${s.length >= 2 ? `<h3 class="unter">Sprachen im Vergleich</h3>${balken(s, n => n.toUpperCase())}` : ''}
     ${a.length >= 2 ? `<h3 class="unter">Story, Feed-Post, Reel</h3>${balken(a, n => ART[n] || n)}` : ''}
+    ${Object.keys(d.nicht_gemessen || {}).length ? `<p class="meta">Noch nicht gemessen (zählt nicht als 0): ${Object.entries(d.nicht_gemessen).map(([k, n]) => `${n} × ${esc(ART[k] || k)}`).join(', ')}.
+      Storys misst Soraya 2 und 20 Stunden nach dem Posten, solange sie noch zu sehen sind.</p>` : ''}
     ${st.length >= 2 ? `<h3 class="unter">Anfänge im Test (Punkte)</h3>${balken(st, n => n)}` : ''}
     ${au.length >= 2 ? `<h3 class="unter">Einladungen in die App (Besuche &amp; Konten)</h3>${balken(au, n => n)}` : ''}
     ${d.hinweis ? `<p class="lernhinweis">✦ ${esc(d.hinweis)}</p>` : f.length < 2 && d.beste && d.beste.length ? '<p class="meta">Für den Vergleich der Formate braucht es mindestens je 2 gemessene Posts in zwei Formaten.</p>' : ''}
@@ -2295,7 +2306,7 @@ async function ladePosten(){
   const verbunden = ['facebook', 'instagram', 'tiktok'].filter(p => e.plattformen[p] && v[p] && v[p].verbunden);
   $('postAuto').checked = e.an; $('postAutoSchalter').classList.toggle('on', e.an);
   $('postInfo').innerHTML = e.an
-    ? kurzMehr(`An: ${esc(sprachText(d))} · Story ${esc(e.zeiten.story)}, Feed-Post ${esc(e.zeiten.post)}, Reel ${esc(e.zeiten.reel)}`,
+    ? kurzMehr(`An: ${esc(sprachText(d))} · Story ${esc(e.zeiten.story)}, Feed-Post ${esc(e.zeiten.post)}, Reel ${esc(e.zeiten.reel)}, 2. Reel ${esc(e.zeiten.reel2)}`,
         `(Wiener Zeit) · ${esc(verbunden.map(p => PL_NAME[p]).join(' + ') || 'keine Plattform verbunden')} · ${e.modus === 'auto' ? 'automatisch, außer du stoppst' : 'nur freigegebene'}`)
     : kurzMehr('Aus: Es wird nichts automatisch gepostet.', 'Zum Testen gibt es unten den Kasten „Testpost“.');
   const warn = [];
@@ -2323,7 +2334,7 @@ async function ladePosten(){
         : offen ? `<button class="ghost klein" data-stopp="${t.post_id}">Stoppen</button> <button class="ghost klein" data-jetzt="${t.post_id}" data-pl="${t.plattform}">Jetzt posten</button>` : '';
       const st = gestoppt && offen ? 'abgebrochen' : t.status;
       return `<tr><td class="t">${tagName(t.geplant_um)} ${uhr(t.geplant_um)}</td>
-        <td>${esc(ART[t.art] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>
+        <td>${esc(ART[platzVon(t)] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>
           ${t.fehler && t.status !== 'fertig' ? `<div class="fehl">${esc(t.fehler)}${t.status === 'fehler' ? ` (Versuch ${t.versuche} von 3)` : ''}</div>` : ''}</td>
         <td class="pl">${plIkon(t.plattform)}</td>
         <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}</td></tr>`;
@@ -2332,6 +2343,7 @@ async function ladePosten(){
 
   $('postSprache').value = e.sprache; $('postModus').value = e.modus;
   $('zStory').value = e.zeiten.story; $('zPost').value = e.zeiten.post; $('zReel').value = e.zeiten.reel;
+  $('zReel2').value = e.zeiten.reel2 || '19:30';
   $('plFacebook').checked = !!e.plattformen.facebook; $('plInstagram').checked = !!e.plattformen.instagram;
   $('plTiktok').checked = !!e.plattformen.tiktok; $('tiktokModus').value = e.tiktok_modus || 'entwurf';
   $('plLinkedin').checked = !!e.plattformen.linkedin;
@@ -2431,7 +2443,7 @@ function sprachText(d){
   const e = d.einstellungen;
   if(e.sprache !== 'alle') return e.sprache.toUpperCase();
   const h = d.sprachen_heute || {};
-  return 'alle 4 im Wechsel, heute: ' + ['story', 'post', 'reel'].map(a => `${ART[a]} ${(h[a] || '').toUpperCase()}`).join(', ');
+  return 'alle 4 im Wechsel, heute: ' + ARTEN_POSTEN.map(a => `${ART[a]} ${(h[a] || '').toUpperCase()}`).join(', ');
 }
 // Testpost: Posts von heute in der Posting-Sprache sofort posten (auch bei ausgeschaltetem Hauptschalter)
 async function zeigeTestposts(d){
@@ -2439,12 +2451,12 @@ async function zeigeTestposts(d){
   const verbunden = PLATTFORMEN.filter(p => v[p] && v[p].verbunden);
   const fertig = (id, pl) => (d.termine || []).find(t => t.post_id === id && t.plattform === pl && t.status === 'fertig');
   let posts = [];
-  const passt = (p) => e.sprache === 'alle' ? (d.sprachen_heute || {})[p.art] === p.sprache : p.sprache === e.sprache;
+  const passt = (p) => e.sprache === 'alle' ? (d.sprachen_heute || {})[platzVon(p)] === p.sprache : p.sprache === e.sprache;
   try{ posts = ((await api('/tagesplan')).posts || []).filter(p => passt(p) && p.status !== 'gestoppt').sort(ordne); }catch(err){}
   $('testpostInfo').innerHTML = verbunden.length
     ? kurzMehr(`Ein Post von heute sofort posten (${esc(sprachText(d))}).`, 'Geht auch, wenn „Automatisch posten“ aus ist.')
     : kurzMehr('Geht, sobald Facebook oder Instagram verbunden ist.', 'Dann kannst du hier einen Post von heute sofort posten – auch wenn „Automatisch posten“ aus ist.');
-  $('testposts').innerHTML = posts.length ? posts.map(p => `<div class="testpost"><div><span class="tag">${esc(ART[p.art] || 'Post')}</span>
+  $('testposts').innerHTML = posts.length ? posts.map(p => `<div class="testpost"><div><span class="tag">${esc(ART[platzVon(p)] || 'Post')}</span>
       <p class="titel">${esc(p.titel || p.text.slice(0, 60))}</p></div>
       <div class="row">${PLATTFORMEN.filter(pl => passtPl(pl, p.art) && (['facebook', 'instagram'].includes(pl) || (v[pl] && v[pl].verbunden))).map(pl => { const f = fertig(p.id, pl);
         if(f && pl === 'tiktok') return `<span class="fertig">✓ an TikTok geschickt</span>`;
@@ -2466,13 +2478,13 @@ $('postAuto').onchange = async () => {
 $('postSpeichern').closest('.panel').addEventListener('input', () => { $('postUngespeichert').hidden = false; });
 $('postSpeichern').closest('.panel').addEventListener('change', () => { $('postUngespeichert').hidden = false; $('tiktokZeile').hidden = !$('plTiktok').checked; });
 $('postSpeichern').onclick = async () => {
-  const zeiten = [$('zStory'), $('zPost'), $('zReel')];
+  const zeiten = [$('zStory'), $('zPost'), $('zReel'), $('zReel2')];
   const leer = zeiten.find(z => !/^\d{2}:\d{2}/.test(z.value));
   if(leer){ melde('Bitte bei jeder Uhrzeit eine Zeit eintragen.'); leer.focus(); return; }
   if(!PLATTFORMEN.some(pl => $('pl' + pl[0].toUpperCase() + pl.slice(1)).checked) && !confirm('Keine Plattform angehakt – dann geht nichts raus. Trotzdem speichern?')) return;
   try{
     await api('/posten/einstellungen', {method: 'PUT', body: JSON.stringify({sprache: $('postSprache').value, modus: $('postModus').value,
-      zeiten: {story: $('zStory').value, post: $('zPost').value, reel: $('zReel').value},
+      zeiten: {story: $('zStory').value, post: $('zPost').value, reel: $('zReel').value, reel2: $('zReel2').value},
       tiktok_modus: $('tiktokModus').value,
       plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked, tiktok: $('plTiktok').checked,
                     linkedin: $('plLinkedin').checked}})});

@@ -419,7 +419,8 @@ def instagram_zahlen(eintraege: list[dict]) -> dict:
                     db.setze_einstellung("meta_instagram", z)
                     w = {}
                 zeile.setdefault("reaktionen", w.get("likes", 0))
-                zeile.setdefault("kommentare", w.get("comments", 0))
+                # Storys: Antworten per Nachricht zaehlen wie Kommentare
+                zeile.setdefault("kommentare", w.get("replies", 0) if e.get("art") == "story" else w.get("comments", 0))
                 if w:
                     zeile.update(reichweite=w.get("reach"), aufrufe=w.get("views"), gespeichert=w.get("saved"),
                                  geteilt=w.get("shares", 0))

@@ -256,7 +256,8 @@ def lade_veroeffentlichungen(von, bis, limit: int = 200) -> list[dict]:
     """Termine im Zeitraum (fuers Dashboard), mit den wichtigsten Post-Feldern."""
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
-            "select v.*, p.titel, p.art, p.sprache, p.status as post_status, p.geplant_fuer "
+            "select v.*, p.titel, p.art, p.sprache, p.status as post_status, p.geplant_fuer, "
+            "(p.meta->>'reel_nr')::int as reel_nr "
             "from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "
             "where v.geplant_um between %s and %s order by v.geplant_um, v.plattform limit %s;",
             (von, bis, limit),
@@ -311,7 +312,11 @@ def lade_lern_posts(seit) -> list[dict]:
             "select p.id, p.titel, p.art, p.sprache, p.meta, min(v.aktualisiert) as gepostet, "
             "coalesce(sum(v.reaktionen), 0) as reaktionen, coalesce(sum(v.kommentare), 0) as kommentare, "
             "coalesce(sum(v.geteilt), 0) as geteilt, coalesce(sum(v.reichweite), 0) as reichweite, "
-            "coalesce(sum(v.gespeichert), 0) as gespeichert, bool_or(v.zahlen_am is not null) as gemessen "
+            "coalesce(sum(v.gespeichert), 0) as gespeichert, "
+            # gemessen: Zahlen geholt -- bei Storys nur, wenn es Reichweite/Aufrufe gab (eine abgelaufene Story
+            # ohne Insights ist nicht "0 Punkte", sondern nie gemessen)
+            "bool_or(v.zahlen_am is not null and (p.art <> 'story' or v.reichweite is not null "
+            "or v.aufrufe is not null)) as gemessen "
             "from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "
             "where v.status = 'fertig' and v.aktualisiert >= %s group by p.id order by gepostet desc limit 200;",
             (seit,),

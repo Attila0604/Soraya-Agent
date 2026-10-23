@@ -8,5 +8,7 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   `paket.py` (Bilder, Reels, Wochenpaket), `posten.py` + `meta.py` / `tiktok.py` / `linkedin.py` (automatisch posten;
   LinkedIn = persönliches Profil, Zugang 60 Tage ohne Verlängerung), `wirkung.py`,
   `research_agent.py` (Zielgruppen), `db.py` (Tabellen werden in `init_db()` angelegt/erweitert).
+- Tagesplan je Sprache: Feed-Post, 2 Reels (zweites = `meta.reel_nr = 2`, Platz `reel2`, eigene Uhrzeit), Story –
+  aus einem Claude-Aufruf. `posten.platz()`/`sprache_fuer()` und `platzVon()`/`spracheFuer()` im Dashboard gleich halten.
 - **Tagesplan-Automatik und automatisches Posten stehen AUS** – nur Attila schaltet sie ein.
 - Tests: siehe `tests/README.md` (nie gegen die echte Datenbank laufen lassen).

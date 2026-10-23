@@ -27,13 +27,19 @@ WOCHENTHEMEN = [
     {"name": "Deine Woche",
      "auftrag": "Ausblick auf die neue Woche: welche Stimmung die Mondphase und die kommenden Ereignisse "
                 "(Neu-/Vollmond, Rückläufigkeiten aus den Daten) bringen, mit einem konkreten Tipp für die Woche."},
-    {"name": "Sternzeichen im Fokus",
-     "auftrag": "Drei Sternzeichen, die der heutige Himmel besonders betrifft – astrologisch begründet: das Zeichen, "
-                "in dem der Mond steht, und zwei passende (gleiches Element oder Gegenzeichen). Jedes Zeichen mit einem "
-                "konkreten Satz. Schließe mit einer Kommentar-Aufforderung (z. B. „Schreib dein Zeichen in die Kommentare“)."},
-    {"name": "Liebe & Beziehung",
-     "auftrag": "Was der heutige Himmel für Liebe, Freundschaft und Nähe bedeutet: ein ehrlicher, alltagsnaher Impuls "
-                "für Paare und Singles."},
+    # Dienstag: frueher "Sternzeichen im Fokus" (kam schwach an) -- jetzt Mitmachen rund um die Sternzeichen,
+    # so bleiben die Zeichen im Plan, aber der Post laedt zum Antworten ein
+    {"name": "Mitmachen", "variante": "Sternzeichen-Check",
+     "auftrag": "Ein Mitmach-Post rund um die Sternzeichen: das Zeichen, in dem der Mond heute steht, und zwei passende "
+                "(gleiches Element oder Gegenzeichen) – je ein konkreter Satz, in dem man sich sofort wiedererkennt. "
+                "Dann eine leichte Frage, auf die jedes Zeichen antworten kann (z. B. „Welches Zeichen bist du – trifft "
+                "es?“). Ziel sind Kommentare und Antworten."},
+    # Mittwoch: frueher "Liebe & Beziehung" (kam schwach an) -- jetzt ein Ritual fuer Naehe (Rituale bringen die
+    # meisten Besuche); die Einladung bleibt der Partner-Vergleich
+    {"name": "Ritual", "variante": "Herz-Ritual",
+     "auftrag": "Ein kleines Ritual für Liebe, Freundschaft und Nähe passend zum heutigen Himmel (höchstens 3 einfache "
+                "Schritte, für Paare und Singles – z. B. eine Nachricht, ein ehrliches Gespräch, eine Journaling-Frage "
+                "über Nähe). Alltagsnah und warm. Lädt zum Speichern ein."},
     {"name": "Astro-Wissen",
      "auftrag": "Erkläre einen Begriff, den der heutige Himmel zeigt (z. B. Mondzeichen, Mondphase, Rückläufigkeit, "
                 "Sonnenzeichen vs. Mondzeichen) – einfach, überraschend, mit einem Aha-Moment. Lädt zum Speichern ein."},
@@ -47,6 +53,8 @@ WOCHENTHEMEN = [
      "auftrag": "Ruhige Sonntags-Reflexion: was die vergangene Woche bewegt hat (nur allgemein, nichts erfinden) und "
                 "worauf man sich laut den Daten in der nächsten Woche freuen kann."},
 ]
+# Formate, die es im Wochenplan gibt (aeltere wie "Sternzeichen im Fokus" stehen nur noch in alten Posts)
+AKTUELLE_FORMATE = {t["name"] for t in WOCHENTHEMEN}
 
 # Handlungsaufforderungen -- nur echte Funktionen der App
 AUFFORDERUNGEN = [
@@ -98,7 +106,8 @@ def wochenthema(tag: date, info: dict) -> dict:
 
 
 def thema_text(thema: dict, link_in_bio: str) -> str:
-    text = (f"Heutiges Format: {thema['name']}\n{thema['auftrag']}\n"
+    name = thema["name"] + (f" ({thema['variante']})" if thema.get("variante") else "")
+    text = (f"Heutiges Format: {name}\n{thema['auftrag']}\n"
             f"Handlungsaufforderung heute (sinngemäß, in der Sprache des Posts, mit „{link_in_bio}“): "
             f"{thema['aufforderung']['auftrag']}")
     if thema.get("hook_stil"):
@@ -121,6 +130,95 @@ FOLIE_WOERTER = 14       # Text je Karussell-Folie (steht gross im Bild)
 HOOK_ZEICHEN = 100        # Hook steht sicher vor "… mehr" (Instagram zeigt ~125 Zeichen)
 HASHTAGS_MAX = 5          # Instagram nimmt hoechstens 5 Hashtags je Beitrag
 _EMOJI = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
+
+
+# ---------------------------------------------------------------------------
+# 2b. Eine leichte Frage zum Kommentieren unter jedem Feed-Post und Reel
+#     (ein Wort, ein Emoji oder das eigene Zeichen -- so kommentieren mehr Menschen)
+# ---------------------------------------------------------------------------
+KOMMENTAR_FRAGEN = {
+    "de": ["Welches Zeichen bist du? Schreib dein Emoji in die Kommentare 👇",
+           "Tipp ein 🌙, wenn du das heute spürst.",
+           "Ja oder nein? Ein Wort reicht – unten in die Kommentare.",
+           "Erkennst du dich wieder? Schick ein ✨",
+           "Welches Zeichen muss das heute hören? Schreib es unten 👇",
+           "Trifft es bei dir zu? Antworte mit 🔥 oder 🌙"],
+    "en": ["Which sign are you? Drop your emoji below 👇",
+           "Type 🌙 if you felt this today.",
+           "Yes or no? One word in the comments.",
+           "Does this sound like you? Drop a ✨",
+           "Which sign needs to hear this today? Tell me below 👇",
+           "Is this you right now? Answer with 🔥 or 🌙"],
+    "hu": ["Te melyik csillagjegy vagy? Írd meg egy emojival kommentben 👇",
+           "Írj egy 🌙-t, ha te is érzed ma.",
+           "Igen vagy nem? Egy szó is elég kommentben.",
+           "Magadra ismertél? Küldj egy ✨-t",
+           "Melyik jegynek kell ezt ma hallania? Írd meg lent 👇",
+           "Rád is igaz? Válaszolj 🔥-val vagy 🌙-val"],
+    "it": ["Di che segno sei? Lascia la tua emoji nei commenti 👇",
+           "Scrivi 🌙 se lo senti anche tu oggi.",
+           "Sì o no? Basta una parola nei commenti.",
+           "Ti ci ritrovi? Lascia un ✨",
+           "Quale segno ha bisogno di sentirlo oggi? Scrivilo qui sotto 👇",
+           "Ti somiglia? Rispondi con 🔥 o 🌙"],
+}
+# beim Format "Mitmachen" mit Antwortmoeglichkeiten im Bild (Umfrage A/B/C)
+KOMMENTAR_UMFRAGE = {"de": ("{abc}? Schreib deinen Buchstaben in die Kommentare 👇", "oder"),
+                     "en": ("{abc}? Tell me your letter below 👇", "or"),
+                     "hu": ("{abc}? Írd meg a betűdet kommentben 👇", "vagy"),
+                     "it": ("{abc}? Scrivi la tua lettera nei commenti 👇", "o")}
+BIO = re.compile(r"\bbio\b|bióban", re.IGNORECASE)
+# Woran man eine Aufforderung zum Kommentieren erkennt (in allen vier Sprachen)
+_KOMMENTAR = re.compile(
+    r"(komment|comment|👇|\bbelow\b|\bunten\b|\blent\b|alább|qui sotto|tell me|dimmi|írd meg|\bírj\b|"
+    r"\bschreib\w*|\bscrivi\w*|\blascia\b|\bdrop\b|\btype\b|\btipp\b|antworte|\banswer\b|\breply\b|"
+    r"válaszolj|rispondi|küldj|\bschick\b)", re.IGNORECASE)
+_SATZENDE = re.compile(r"(?<=[.!?…])\s+")
+
+
+def _absaetze(text: str) -> list[str]:
+    return [a.strip() for a in re.split(r"\n\s*\n", (text or "").strip()) if a.strip()]
+
+
+def hat_kommentar_frage(text: str) -> bool:
+    """Steht am Ende (vor der Handlungsaufforderung mit Link in Bio) schon eine Frage oder Aufforderung
+    zum Kommentieren? Der Hook (erster Satz) zaehlt nicht."""
+    saetze = []
+    for a in _absaetze(text):
+        saetze += [s for s in _SATZENDE.split(a.replace("\n", " ")) if s.strip()]
+    saetze = [s for s in saetze[1:] if not BIO.search(s)]
+    return any(_KOMMENTAR.search(s) or s.rstrip(" 👇✨🌙🔥").endswith("?") for s in saetze[-3:])
+
+
+def kommentar_frage(sprache: str, saat: str = "", antworten: int = 0) -> str:
+    """Eine leichte Frage zum Kommentieren, abwechselnd (gleiche Saat -> gleiche Frage)."""
+    import zlib
+    sprache = sprache if sprache in KOMMENTAR_FRAGEN else "en"
+    if antworten >= 2:
+        vorlage, oder = KOMMENTAR_UMFRAGE[sprache]
+        buchstaben = "ABC"[:min(antworten, 3)]
+        abc = ", ".join(buchstaben[:-1]) + f" {oder} {buchstaben[-1]}"
+        return vorlage.format(abc=abc)
+    liste = KOMMENTAR_FRAGEN[sprache]
+    return liste[zlib.crc32(saat.encode()) % len(liste)]
+
+
+def mit_kommentar_frage(text: str, sprache: str, saat: str = "", antworten: int = 0) -> str:
+    """Haengt GENAU EINE leichte Frage zum Kommentieren an -- vor der Handlungsaufforderung mit „Link in Bio“
+    (Hashtags und Link fuegt der Agent ohnehin danach an). Steht schon eine da, bleibt der Text, wie er ist."""
+    if not (text or "").strip() or hat_kommentar_frage(text):
+        return text
+    frage = kommentar_frage(sprache, saat, antworten)
+    absaetze = _absaetze(text)
+    i = next((k for k in range(len(absaetze) - 1, -1, -1) if BIO.search(absaetze[k])), None)
+    if i is None:
+        return "\n\n".join(absaetze + [frage])
+    saetze = [s for s in _SATZENDE.split(absaetze[i]) if s.strip()]
+    j = next(k for k in range(len(saetze) - 1, -1, -1) if BIO.search(saetze[k]))
+    if j and len(saetze[j].split()) <= 4:
+        j -= 1                             # "… gratis, ohne Konto. Link in Bio ✨" bleibt zusammen
+    davor, cta = " ".join(saetze[:j]), " ".join(saetze[j:])
+    return "\n\n".join(absaetze[:i] + ([davor] if davor else []) + [frage, cta] + absaetze[i + 1:])
 
 
 def _woerter(text: str) -> int:
@@ -160,6 +258,8 @@ def pruefe_post(post: dict, sprache: str) -> list[str]:
     folien = post.get("_folien") or post.get("folien") or (post.get("meta") or {}).get("folien") or []
     if any(_woerter(f.get("text")) > FOLIE_WOERTER for f in folien if isinstance(f, dict)):
         befunde.append(f"Folien-Text zu lang (max. {FOLIE_WOERTER} Wörter)")
+    if art in ("post", "reel") and (post.get("text") or "").strip() and not hat_kommentar_frage(post.get("text")):
+        befunde.append("Frage zum Kommentieren fehlt (z. B. „Welches Zeichen bist du? 👇“)")
     if any(not t.startswith("#") or len(t) < 3 for t in tags):
         befunde.append("Hashtag ohne # oder zu kurz")
     if art == "reel":
@@ -232,7 +332,9 @@ def bewerte(lade_post, statistik=None, lern_posts=None) -> list[dict]:
     for p in lern_posts or []:
         posts[p["id"]] = {"post": p, "besuche": 0, "konten": 0, "reaktionen": int(p.get("reaktionen") or 0),
                           "kommentare": int(p.get("kommentare") or 0), "geteilt": int(p.get("geteilt") or 0),
-                          "reichweite": int(p.get("reichweite") or 0), "gespeichert": int(p.get("gespeichert") or 0)}
+                          "reichweite": int(p.get("reichweite") or 0), "gespeichert": int(p.get("gespeichert") or 0),
+                          # False: noch keine Zahlen (z. B. Story abgelaufen, bevor Instagram sie lieferte)
+                          "gemessen": p.get("gemessen") is not False}
     for code, q in ((statistik or {}).get("quellen") or {}).items():
         if not re.fullmatch(r"p\d+", code or ""):
             continue
@@ -245,9 +347,11 @@ def bewerte(lade_post, statistik=None, lern_posts=None) -> list[dict]:
             if not post:
                 continue
             posts[pid] = {"post": post, "besuche": 0, "konten": 0, "reaktionen": 0, "kommentare": 0, "geteilt": 0,
-                          "reichweite": 0, "gespeichert": 0}
+                          "reichweite": 0, "gespeichert": 0, "gemessen": True}
         posts[pid]["besuche"] = int((q.get("schritte") or {}).get("besuch") or 0)
         posts[pid]["konten"] = int(q.get("konten") or 0)
+        if posts[pid]["besuche"] or posts[pid]["konten"]:
+            posts[pid]["gemessen"] = True          # Besuche ueber den Post-Link sind eine Messung
     out = []
     for e in posts.values():
         e["punkte"] = punkte(e["besuche"], e["konten"], e["reaktionen"], e["kommentare"], e["geteilt"],
@@ -317,8 +421,27 @@ def zeit_vorschlaege(erk: dict, min_posts: int = 3) -> list[dict]:
     return out
 
 
+def gemessen(bewertet: list[dict]) -> list[dict]:
+    """Nur Posts mit echten Zahlen: ein nie gemessener Post (z. B. eine Story, die nach 24 Stunden weg war,
+    bevor Instagram Zahlen lieferte) zaehlt nicht als 0 in den Durchschnitten."""
+    return [e for e in bewertet or [] if e.get("gemessen", True)]
+
+
+def nicht_gemessen(bewertet: list[dict]) -> dict:
+    """{art: Anzahl} der geposteten, aber (noch) nicht gemessenen Posts -- fuers Dashboard."""
+    out = {}
+    for e in bewertet or []:
+        if not e.get("gemessen", True):
+            art = e["post"].get("art") or "post"
+            out[art] = out.get(art, 0) + 1
+    return out
+
+
 def erkenntnisse(bewertet: list[dict], min_posts: int = 2) -> dict:
-    """Durchschnittliche Punkte je Format und je Art (Post/Reel/Story) -- was kommt an, was weniger?"""
+    """Durchschnittliche Punkte je Format und je Art (Post/Reel/Story) -- was kommt an, was weniger?
+    Nicht gemessene Posts zaehlen nicht mit."""
+    bewertet = gemessen(bewertet)
+
     def gruppen(schluessel):
         g = {}
         for e in bewertet:
@@ -335,15 +458,22 @@ def erkenntnisse(bewertet: list[dict], min_posts: int = 2) -> dict:
             "aufforderungen": gruppen(lambda p: AUFFORDERUNG_NAMEN.get((p.get("meta") or {}).get("aufforderung")))}
 
 
-def erkenntnis_text(erk: dict) -> str:
-    """Kurzer Hinweis fuer den Prompt (leer, solange es zu wenige Daten gibt)."""
+def erkenntnis_text(erk: dict, heute: str | None = None) -> str:
+    """Kurzer Hinweis fuer den Prompt (leer, solange es zu wenige Daten gibt). heute = Format des Tages:
+    ist es eines der staerksten, soll der Tagesplan dabei bleiben; ist es schwach, besonders zum Mitmachen
+    schreiben. Als "schwaecher" wird nur ein Format genannt, das es im Wochenplan noch gibt."""
     f = erk.get("formate") or []
     if len(f) < 2:
         return ""
     gut = ", ".join(f"{x['name']} (Ø {x['schnitt']:g} Punkte)" for x in f[:2])
     text = f"Bisher kamen diese Formate am besten an: {gut}."
-    if f[-1]["schnitt"] < f[0]["schnitt"] / 2:
-        text += (f" Schwächer: {f[-1]['name']} (Ø {f[-1]['schnitt']:g}) – ist heute dieses Format dran, "
+    if heute and heute in [x["name"] for x in f[:2]]:
+        return text + (f" Heute ist {heute} dran – bleib bei dem, was dort funktioniert hat (Ton, Aufbau, "
+                       "Art der Frage), aber mit neuem Inhalt.")
+    aktuell = [x for x in f if x["name"] in AKTUELLE_FORMATE]
+    schwach = next((x for x in aktuell if x["name"] == heute), None) or (aktuell[-1] if aktuell else None)
+    if schwach and schwach["schnitt"] < f[0]["schnitt"] / 2:
+        text += (f" Schwächer: {schwach['name']} (Ø {schwach['schnitt']:g}) – ist heute dieses Format dran, "
                  "mach es besonders konkret, persönlich und zum Mitmachen.")
     return text + " Übertrage, was dort funktioniert (Ton, Aufbau, Art der Frage), auf das heutige Format."
 
@@ -387,7 +517,7 @@ def waehle_variante(namen: list[str], bewertet: list[dict], schluessel: str, *, 
     Antwort: {"wahl", "grund"} -- grund: "standard", "test" oder "beste"."""
     rnd = rnd or random.Random()
     wert = wert or (lambda e: e["punkte"])
-    werte = _werte_je(bewertet, schluessel, wert)
+    werte = _werte_je(gemessen(bewertet), schluessel, wert)
     if not any(werte.values()) and standard in namen:
         return {"wahl": standard, "grund": "standard"}     # noch nichts gemessen: der gewohnte Wechsel
     wenig = [n for n in namen if len(werte.get(n, [])) < mindest]

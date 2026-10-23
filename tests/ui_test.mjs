@@ -46,8 +46,10 @@ check("Fehler: Kasten wieder weg", !(await page.isVisible("#planFehler")), "");
 check("Heute: Knopf zeigt 'Alles erstellt ✓' und ist gesperrt", (await page.textContent("#btnPlanJetzt")).includes("Alles erstellt") && await page.$eval("#btnPlanJetzt", (b) => b.disabled), await page.textContent("#btnPlanJetzt"));
 check("Heute: Fortschrittsbox sichtbar (nicht vom Ladebalken-Stil verdeckt)", (await page.$eval("#fortschritt", (e) => e.offsetHeight)) > 30, await page.$eval("#fortschritt", (e) => e.offsetHeight));
 check("Karte: Status 'Nicht posten' wählbar", (await page.$$eval('#heuteListe .card:first-child [data-aktion="status"] option', (o) => o.map((x) => x.textContent))).includes("Nicht posten"), "");
-check("Heute: Fortschritt 0 von 12", /Heute: 0 von 12 gepostet · 0 freigegeben/.test(await page.textContent("#fortschritt")), await page.textContent("#fortschritt"));
-check("Heute: 3 Karten auf Deutsch (Post, Reel, Story)", JSON.stringify(await page.$$eval("#heuteListe .card .kopf .tag:first-child", (x) => x.map((e) => e.textContent))) === JSON.stringify(["Feed-Post", "Reel", "Story"]), "");
+check("Heute: Fortschritt 0 von 16", /Heute: 0 von 16 gepostet · 0 freigegeben/.test(await page.textContent("#fortschritt")), await page.textContent("#fortschritt"));
+check("Heute: 4 Karten auf Deutsch (Post, Reel, 2. Reel, Story)", JSON.stringify(await page.$$eval("#heuteListe .card .kopf .tag:first-child", (x) => x.map((e) => e.textContent))) === JSON.stringify(["Feed-Post", "Reel", "2. Reel", "Story"]), JSON.stringify(await page.$$eval("#heuteListe .card .kopf .tag:first-child", (x) => x.map((e) => e.textContent))));
+check("Heute: Kommentar-Frage vor der Handlungsaufforderung ergänzt", /👇|🌙|✨|\?/.test((await page.textContent("#heuteListe .card:first-child")).split("Link in Bio")[0].slice(-120)), "");
+check("Heute geht raus: vier Zeilen mit 2. Reel", (await page.$$eval("#raus > li[data-id]", (l) => l.length)) === 4 && (await page.textContent("#raus")).includes("2. Reel"), await page.textContent("#raus"));
 for (let i = 0; i < 20 && !(await page.textContent("#heuteListe .card:first-child .wirk")); i++) await wait(250);
 check("Karte: Zahlen über den Post-Link", /34 Besuche.*9 Schnellstarts.*3 × Registrieren.*2 neue Konten/.test(await page.textContent("#heuteListe .card:first-child .wirk")), await page.textContent("#heuteListe .card:first-child .wirk"));
 check("Karte ohne Link-Daten: keine leere Zeile", !(await page.isVisible("#heuteListe .card:nth-child(2) .wirk")), "");
@@ -95,7 +97,7 @@ check("Bild: Herunterladen liefert JPG", /^soraya-\d{4}-\d\d-\d\d-post-de-story\
 await page.click("#bZu");
 
 // Video zum Reel
-check("Video: Knopf nur beim Reel", (await page.$$("#heuteListe [data-aktion=video]")).length === 1, "");
+check("Video: Knopf nur beim Reel", (await page.$$("#heuteListe [data-aktion=video]")).length === 2, "");
 await page.click('#heuteListe [data-aktion="video"]'); await wait(800);
 check("Video: Fortschritt sichtbar", (await page.textContent("#vBox")).includes("Video wird erstellt"), await page.$eval("#vBox", (e) => e.innerHTML.slice(0, 300)));
 await page.waitForSelector("#vVideo", { timeout: 120000 });
@@ -119,10 +121,10 @@ check("Freigabe zurücknehmen", (await page.textContent("#heuteListe .card:nth-c
 // Status, Bearbeiten
 await page.selectOption('#heuteListe .card:nth-child(2) [data-aktion="status"]', "freigegeben"); await wait(700);
 check("Status: freigegeben gespeichert", (await page.textContent("#heuteListe .card:nth-child(2) .st")) === "Freigegeben", "");
-check("Heute: Fortschritt zählt Freigabe", /0 von 12 gepostet · 1 freigegeben/.test(await page.textContent("#fortschritt")), await page.textContent("#fortschritt"));
+check("Heute: Fortschritt zählt Freigabe", /0 von 16 gepostet · 1 freigegeben/.test(await page.textContent("#fortschritt")), await page.textContent("#fortschritt"));
 check("Karte: kein Löschen-Knopf mehr direkt auf der Karte", (await page.$$("#heuteListe [data-aktion=loeschen]")).length === 0, "");
 // Story-Bild: Frage steht im Bild (helle Schrift im unteren Mittelteil)
-await page.click('#heuteListe .card:nth-child(3) [data-aktion="bild"]');
+await page.click('#heuteListe .card:nth-child(4) [data-aktion="bild"]');
 await page.waitForFunction(() => document.querySelector("#bild")?.complete && document.querySelector("#bild").naturalWidth > 0, null, { timeout: 15000 });
 const frageHell = await pixel("#bild", 160, 1150, 760, 420, "r > 210 && b > 210");
 check("Bild: Story-Frage steht im Bild", frageHell > 1500, frageHell);
@@ -135,11 +137,11 @@ check("Bearbeiten: Titel gespeichert", (await page.textContent("#heuteListe .car
 // Plan
 await page.click('.tab[data-tab="plan"]'); await wait(900);
 check("Plan: heutiger Tag markiert", (await page.$$eval(".tag-kopf.heute", (x) => x.length)) === 1, "");
-check("Plan: 12 Posts geplant", /12\s*geplant/.test(await page.textContent("#planZaehler")), await page.textContent("#planZaehler"));
-check("Plan: kompakte Zeilen, zugeklappt", (await page.$$eval("#planListe > details.pz", (x) => x.length)) === 12 && (await page.$$eval("#planListe > details.pz[open]", (x) => x.length)) === 0, "");
+check("Plan: 16 Posts geplant", /16\s*geplant/.test(await page.textContent("#planZaehler")), await page.textContent("#planZaehler"));
+check("Plan: kompakte Zeilen, zugeklappt", (await page.$$eval("#planListe > details.pz", (x) => x.length)) === 16 && (await page.$$eval("#planListe > details.pz[open]", (x) => x.length)) === 0, "");
 check("Plan: Tagesstand je Sprache am heutigen Tag", (await page.$$eval(".tag-kopf.heute .tagstand .fertig", (x) => x.length)) === 4, "");
 await page.click("#btnAufklappen"); await wait(200);
-check("Plan: Alle aufklappen", (await page.$$eval("#planListe > details.pz[open]", (x) => x.length)) === 12, "");
+check("Plan: Alle aufklappen", (await page.$$eval("#planListe > details.pz[open]", (x) => x.length)) === 16, "");
 await page.click("#btnAufklappen"); await wait(200);
 // Wochenpaket
 await page.click("#btnPaket"); await wait(300);
@@ -158,7 +160,7 @@ await page.click("#pZu");
 await page.locator("#planListe > details.pz summary").first().click(); await wait(200);
 check("Plan: eine Zeile aufklappen zeigt die Karte", await page.locator("#planListe > details.pz").first().locator(".card .txt").isVisible(), "");
 await page.selectOption("#planSprache", "it"); await wait(700);
-check("Plan: Filter Italienisch", (await page.$$eval("#planListe .card", (x) => x.length)) === 3, "");
+check("Plan: Filter Italienisch", (await page.$$eval("#planListe .card", (x) => x.length)) === 4, "");
 await page.selectOption("#planSprache", ""); await page.selectOption("#planStatus", "freigegeben"); await wait(700);
 check("Plan: Filter Freigegeben", (await page.$$eval("#planListe .card", (x) => x.length)) === 1, "");
 await page.selectOption("#planStatus", ""); await wait(500);
@@ -264,13 +266,13 @@ check("Posten: Einrichtung zeigt Schritt 1 mit Kopier-Adressen", await page.isVi
   && (await page.$eval("#einrichtungSchritte li.jetzt", (l) => l.textContent)).includes("datenschutz.html") && (await page.$$("#einrichtungSchritte [data-kopie]")).length === 3, "");
 check("Posten: Testpost-Knöpfe ohne Verbindung gesperrt", (await page.$$("#testposts button[data-jetzt]")).length > 0
   && (await page.$$eval("#testposts button[data-jetzt]", (b) => b.every((x) => x.disabled))), await page.textContent("#testposts"));
-check("Posten: Standard EN, Zeiten", (await page.inputValue("#postSprache")) === "en" && (await page.inputValue("#zReel")) === "19:00", "");
+check("Posten: Standard EN, Zeiten (mit 2. Reel)", (await page.inputValue("#postSprache")) === "en" && (await page.inputValue("#zReel")) === "19:00" && (await page.inputValue("#zReel2")) === "19:30", "");
 await page.check("#postAuto"); await wait(900);
 check("Posten: einschalten mit Rückfrage", await page.isChecked("#postAuto") && (await page.textContent("#postInfo")).startsWith("An: EN"), await page.textContent("#postInfo"));
 check("Posten: Warnung ohne Verbindung und ohne Tagesplan-Automatik", (await page.textContent("#postWarnung")).includes("keine Plattform") && (await page.textContent("#postWarnung")).includes("Tagesplan"), await page.textContent("#postWarnung"));
 await page.$eval("#einstellungenPanel", (d) => { d.open = true; });   // Einstellungen sind zugeklappt
-await page.fill("#zReel", "20:15"); await page.click("#postSpeichern"); await wait(800);
-check("Posten: Zeiten speichern", (await page.textContent("#postInfo")).includes("Reel 20:15"), await page.textContent("#postInfo"));
+await page.fill("#zReel", "20:15"); await page.fill("#zReel2", "21:05"); await page.click("#postSpeichern"); await wait(800);
+check("Posten: Zeiten speichern", (await page.textContent("#postInfo")).includes("Reel 20:15") && (await page.textContent("#postInfo")).includes("2. Reel 21:05"), await page.textContent("#postInfo"));
 check("Posten: keine Termine ohne Verbindung", (await page.textContent("#termine")).includes("Keine Termine"), "");
 if (OUT) await page.screenshot({ path: OUT + "/posten.png", fullPage: true });
 await page.uncheck("#postAuto"); await wait(700);

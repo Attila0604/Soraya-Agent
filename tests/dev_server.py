@@ -17,7 +17,7 @@ SKY = {"moon": {"phase_index": int(os.environ.get("PHASE", "1")), "illumination"
        "retrograde_soon": [], "next_new_moon": (H + timedelta(days=27)).isoformat() + "T07:02+00:00",
        "next_full_moon": (H + timedelta(days=2)).isoformat() + "T04:11+00:00"}
 himmel.hole_himmel = lambda tag=None: SKY
-TXT = {"de": ("Der Mond sammelt Kraft", "Zwei Tage bis zum Vollmond im Widder", "Der Mond wächst durch den Skorpion und macht Gefühle tiefer als sonst. Nimm dir heute Zeit für ein ehrliches Gespräch – zwei Tage vor dem Vollmond zeigt sich, was wirklich zählt.\n\nDein persönliches Horoskop: Link in Bio ✨"),
+TXT = {"de": ("Der Mond sammelt Kraft", "Zwei Tage bis zum Vollmond im Widder", "Der Mond wächst durch den Skorpion und macht Gefühle tiefer als sonst. Nimm dir heute Zeit für ein ehrliches Gespräch.\n\nDein persönliches Horoskop: Link in Bio ✨"),
        "en": ("The Moon gathers strength", "Two days until the Full Moon", "The waxing Moon in Scorpio deepens every feeling. Make time for an honest talk today.\n\nYour personal horoscope: link in bio ✨"),
        "hu": ("A Hold erőt gyűjt", "Két nap a teliholdig", "A növő Hold a Skorpióban mindent elmélyít. Szánj ma időt egy őszinte beszélgetésre.\n\nA személyes horoszkópod: link a bióban ✨"),
        "it": ("La Luna raccoglie forza", "Due giorni alla Luna piena", "La Luna crescente in Scorpione rende tutto più profondo. Oggi concediti una conversazione sincera.\n\nIl tuo oroscopo personale: link in bio ✨")}
@@ -38,7 +38,10 @@ def fake_plan(system, frage, schema, **kw):
          "skript": {"hook": "Spürst du es auch?", "szenen": ["Mond über der Stadt", "Text: Mond im Skorpion", "Tagebuch, Kerze"],
                     "einblendungen": ["Der Mond wächst durch den Skorpion", "Gefühle werden tiefer als sonst", "Nimm dir Zeit für ein ehrliches Gespräch"],
                     "schluss": "Dein Horoskop: Link in Bio"}},
-        {"art": "story", "platform": "instagram", "titel": "Wie fühlst du dich?", "untertitel": "Vollmond in 2 Tagen", "text": "Umfrage: Schläfst du vor dem Vollmond schlechter? Ja / Nein", "hashtags": ["#mond"], "skript": {"hook": "", "szenen": [], "schluss": ""}}]}
+        {"art": "story", "platform": "instagram", "titel": "Wie fühlst du dich?", "untertitel": "Vollmond in 2 Tagen", "text": "Umfrage: Schläfst du vor dem Vollmond schlechter? Ja / Nein", "hashtags": ["#mond"], "skript": {"hook": "", "szenen": [], "schluss": ""}},
+        {"art": "reel", "platform": "tiktok", "titel": "Drei Zeichen spüren es", "untertitel": u, "text": "Skorpion, Krebs, Fische: heute zuerst.", "hashtags": ["#astrotok", "#sternzeichen"],
+         "skript": {"hook": "Drei Zeichen spüren es zuerst", "szenen": ["Mond", "Kerze"],
+                    "einblendungen": ["Skorpion: sagt es endlich laut", "Fische: darf heute ruhen"], "schluss": "Welches bist du?"}}]}
 tagesplan.frage_json = fake_plan
 content_agent.frage_json = lambda s, f, sc, **k: {"posts": [{"platform": "instagram", "titel": "Venus rückläufig", "untertitel": "Alte Gefühle klopfen an", "text": "Studio-Post zum Thema.", "hashtags": ["#venus", "#astrologie"]}] * 3}
 random.seed(4)

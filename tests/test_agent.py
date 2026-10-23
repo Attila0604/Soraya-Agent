@@ -41,12 +41,13 @@ SKY = {
 FEED_TEXT = ("Spürst du heute alles ein bisschen lauter? Der Mond wandert durch den Skorpion und macht kleine Dinge "
              "groß. Ein Satz in der Gruppe, eine Nachricht ohne Antwort – alles trifft tiefer als sonst. Das ist kein "
              "Drama, das ist Ehrlichkeit. Nutze den Tag für ein Gespräch, das du schon lange führen willst. Sag es "
-             "ruhig, aber sag es. Speichere dir den Post für den Vollmond in zwei Tagen.")
+             "ruhig, aber sag es. Speichere dir den Post für den Vollmond in zwei Tagen.\n\n"
+             "Welches Zeichen bist du? Schreib dein Emoji in die Kommentare 👇")
 TAGS = ["#astrologie", "#mondphase", "#horoskop", "#skorpion", "#soraya"]
 EN_TEXT = ("Feeling everything a little louder today? The Moon moves through Scorpio and turns small moments into big "
            "ones. A message left on read, one sentence in the group chat – it all lands deeper. That is not drama, it "
            "is honesty. Use the day for the conversation you have been putting off. Say it softly, but say it. Save "
-           "this post for the Full Moon in two days.")
+           "this post for the Full Moon in two days.\n\nWhich sign are you? Drop your emoji below 👇")
 
 
 def tagesplan_antwort(sprache="de"):
@@ -55,7 +56,7 @@ def tagesplan_antwort(sprache="de"):
          "text": EN_TEXT if sprache == "en" else FEED_TEXT,
          "hashtags": TAGS, "bild_punkte": ["Skorpion: ehrlich sein", "Stier: langsam", "Krebs: Bauchgefühl"],
          "skript": {"hook": "", "szenen": [], "einblendungen": [], "schluss": ""}},
-        {"art": "reel", "platform": "tiktok", "titel": "Reel", "untertitel": "U", "text": "Two nights to go. Can you feel it?" if sprache == "en" else "Caption mit Hook. Zwei Nächte noch.",
+        {"art": "reel", "platform": "tiktok", "titel": "Reel", "untertitel": "U", "text": "Two nights to go. Can you feel it?" if sprache == "en" else "Caption mit Hook. Zwei Nächte noch. Spürst du es?",
          "hashtags": TAGS[:4], "bild_punkte": [],
          "skript": {"hook": "Hook!", "szenen": ["S1", "S2", "S3"], "einblendungen": ["Eins zwei", "Drei vier", "Fünf"],
                     "schluss": "Link in Bio"}},
@@ -648,7 +649,7 @@ def test_posten_einstellungen_und_ohne_app(monkeypatch):
         monkeypatch.delenv(k, raising=False)
     d = client.get("/posten", headers=AUTH).json()
     assert d["einstellungen"]["an"] is False and d["einstellungen"]["sprache"] == "en"
-    assert d["einstellungen"]["zeiten"] == {"story": "09:00", "post": "12:30", "reel": "19:00"}
+    assert d["einstellungen"]["zeiten"] == {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"}
     assert d["verbindungen"]["facebook"] == {"eingerichtet": False, "verbunden": False, "name": None, "laeuft_ab": None,
                                              "rueckruf_url": d["verbindungen"]["facebook"]["rueckruf_url"]}
     assert client.get("/meta/verbinden/facebook", headers=AUTH, follow_redirects=False).status_code == 409
@@ -780,9 +781,14 @@ def test_wochenthemen_und_ereignisse():
     info = himmel.aufbereiten(SKY, HEUTE, "de")          # Vollmond in 2 Tagen: noch kein Ereignis-Tag
     montag = date(2026, 11, 2)                          # eine Woche ohne Saisonbeginn und Feiertag
     namen = [redaktion.wochenthema(montag + timedelta(days=i), info)["name"] for i in range(7)]
-    assert namen == ["Deine Woche", "Sternzeichen im Fokus", "Liebe & Beziehung", "Astro-Wissen", "Ritual",
-                     "Mitmachen", "Rückblick & Vorschau"]
+    assert namen == ["Deine Woche", "Mitmachen", "Ritual", "Astro-Wissen", "Ritual", "Mitmachen", "Rückblick & Vorschau"]
     assert redaktion.wochenthema(montag + timedelta(days=2), info)["aufforderung"]["schluessel"] == "partner"
+    # die Sternzeichen und die Liebe bleiben als Variante erhalten
+    di, mi = redaktion.wochenthema(montag + timedelta(days=1), info), redaktion.wochenthema(montag + timedelta(days=2), info)
+    assert di["variante"] == "Sternzeichen-Check" and "Sternzeichen" in di["auftrag"]
+    assert mi["variante"] == "Herz-Ritual" and "Liebe" in mi["auftrag"]
+    assert "Heutiges Format: Mitmachen (Sternzeichen-Check)" in redaktion.thema_text(redaktion.selbsttest(di, []), "Link in Bio")
+    assert redaktion.wochenthema(montag + timedelta(days=4), info).get("variante") is None
     morgen_voll = dict(info, vollmond={"datum": "x", "datum_text": "x", "in_tagen": 1})
     t = redaktion.wochenthema(montag, morgen_voll)
     assert t["name"] == "Großes Ereignis: Vollmond morgen" and t["anlass"] == "Vollmond morgen"
@@ -1054,10 +1060,13 @@ def test_wirkung_facebook_reaktionen(monkeypatch, frische_db):
 def test_sprachen_rotation_alle_vier():
     e = {**posten.STANDARD, "sprache": "alle"}
     tage = [HEUTE + timedelta(days=i) for i in range(4)]
-    je_tag = [[posten.sprache_fuer(t, a, e) for a in posten.ARTEN] for t in tage]
-    assert all(len(set(t)) == 3 for t in je_tag)                      # jeden Tag drei verschiedene Sprachen
+    je_tag = [[posten.sprache_fuer(t, a, e) for a in ("story", "post", "reel")] for t in tage]
+    assert all(len(set(t)) == 3 for t in je_tag)                      # Story/Feed/Reel: drei verschiedene Sprachen
     alle = [s for t in je_tag for s in t]
     assert {s: alle.count(s) for s in "de en hu it".split()} == {"de": 3, "en": 3, "hu": 3, "it": 3}
+    # das zweite Reel bekommt die vierte Sprache: jeden Tag jede Sprache genau einmal
+    assert all(sorted(t + [posten.sprache_fuer(d, "reel2", e)]) == ["de", "en", "hu", "it"] for t, d in zip(je_tag, tage))
+    assert posten.sprache_fuer(HEUTE, "reel2", {**e, "sprache": "hu"}) == "hu"
     assert posten.benoetigte_sprachen({**e, "sprache": "en"}, tage) == ["en"]
     assert len(posten.benoetigte_sprachen(e, tage[:2])) == 4 or len(posten.benoetigte_sprachen(e, tage[:2])) == 3
 
@@ -1072,7 +1081,8 @@ def test_planen_mit_rotation(monkeypatch, frische_db):
     assert posten.planen(e, jetzt) == 3
     termine = client.get("/posten", headers=AUTH).json()
     heute = {t["art"]: t["sprache"] for t in termine["termine"]}
-    assert heute == termine["sprachen_heute"] and len(set(heute.values())) == 3
+    assert heute == {k: v for k, v in termine["sprachen_heute"].items() if k != "reel2"} and len(set(heute.values())) == 3
+    assert set(termine["sprachen_heute"]) == {"story", "post", "reel", "reel2"}
     posten.speichere_einstellungen({"sprache": "en"})
 
 
@@ -1717,3 +1727,128 @@ def test_linkedin_text_und_versionen():
     assert posten.text_fuer(p, "linkedin") == ("Sachlich.\n\nDein persönliches Horoskop, kostenlos: "
                                               "https://www.sorayaluxuryastroguide.com/?q=p5&lang=de\n\n#a #b #c")
     assert posten._li_regelbasiert("Der Mond ✨ wächst.\n\nDein Horoskop: Link in Bio 🔮", "de") == "Der Mond wächst.\n\nDein Horoskop: Link unten"
+
+
+# ---------------------------------------------------------------- Mehr Wirkung: zweites Reel, Kommentar-Frage, Storys
+def _vier_eintraege(sprache="en"):
+    d = tagesplan_antwort(sprache)
+    d["posts"].append({"art": "reel", "platform": "tiktok", "titel": "Quick sign check", "untertitel": "U",
+                       "text": "Scorpio, Cancer, Pisces: today hits different.", "hashtags": TAGS[:4], "bild_punkte": [],
+                       "folien": [],
+                       "skript": {"hook": "Three signs feel it first", "szenen": ["S1", "S2"],
+                                  "einblendungen": ["Scorpio: says it out loud", "Pisces: finally rests"],
+                                  "schluss": "Which one are you?"}})
+    return d
+
+
+def test_zweites_reel_tagesplan_und_posten(monkeypatch, frische_db):
+    aufrufe = []
+    monkeypatch.setattr(tagesplan, "frage_json", lambda s, f, sch, **k: aufrufe.append(1) or _vier_eintraege("en"))
+    assert tagesplan.erstelle("en")["posts"] == 4 and len(aufrufe) == 1        # beide Reels aus EINEM Aufruf
+    assert "genau vier Einträge" in tagesplan.SYSTEM_PROMPT and "ZWEITES Reel" in tagesplan.SYSTEM_PROMPT
+    posts = [p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en"]
+    reels = sorted((p for p in posts if p["art"] == "reel"), key=lambda p: p["id"])
+    assert len(reels) == 2 and "reel_nr" not in reels[0]["meta"] and reels[1]["meta"]["reel_nr"] == 2
+    assert [posten.platz(p) for p in reels] == ["reel", "reel2"]
+    # das Model hat beim zweiten Reel die Kommentar-Frage vergessen -> der Agent ergaenzt genau eine
+    assert reels[1]["text"].count("\n\n") == 1 and redaktion.hat_kommentar_frage(reels[1]["text"])
+    assert reels[1]["meta"]["pruefung"] == []
+    # Posten: eigene Uhrzeit fuers zweite Reel, LinkedIn nur das erste, TikTok beide
+    monkeypatch.setattr(posten, "_aktive_plattformen", lambda e: ["facebook", "tiktok", "linkedin"])
+    e = posten.speichere_einstellungen({"sprache": "en", "zeiten": {"story": "06:00", "post": "18:00", "reel": "09:00"}})
+    assert e["zeiten"] == {"story": "06:00", "post": "18:00", "reel": "09:00", "reel2": "19:30"}
+    posten.planen(e, _um(5))
+    t = [x for x in db.lade_veroeffentlichungen(_um(0), _um(23, 59)) if x["post_id"] in (reels[0]["id"], reels[1]["id"])]
+    erstes = {(x["plattform"], x["geplant_um"].astimezone(himmel.WIEN).strftime("%H:%M")) for x in t if x["post_id"] == reels[0]["id"]}
+    zweites = {(x["plattform"], x["geplant_um"].astimezone(himmel.WIEN).strftime("%H:%M")) for x in t if x["post_id"] == reels[1]["id"]}
+    assert erstes == {("facebook", "09:00"), ("tiktok", "09:00"), ("linkedin", "09:00")}
+    assert zweites == {("facebook", "19:30"), ("tiktok", "19:30")}
+    assert {x["reel_nr"] for x in t if x["post_id"] == reels[1]["id"]} == {2}
+    assert posten.speichere_einstellungen({"zeiten": {"reel2": "20:45"}})["zeiten"]["reel2"] == "20:45"
+    # Wochenpaket: zwei Reels, zwei verschiedene Dateinamen
+    assert main._dateiname(reels[1], "mp4").startswith(f"soraya-{HEUTE}-reel2-en")
+    posten.speichere_einstellungen({"zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"}})
+
+
+def test_kommentar_frage_vier_sprachen():
+    for s in ("de", "en", "hu", "it"):
+        assert len(redaktion.KOMMENTAR_FRAGEN[s]) >= 5
+        for f in redaktion.KOMMENTAR_FRAGEN[s]:
+            assert redaktion.hat_kommentar_frage("Hook zuerst. " + f), f          # jede Frage wird wiedererkannt
+            if s != "de":
+                assert not redaktion._DEUTSCH_IN_FREMD.search(f), f
+    text = "Your Moon is loud today.\n\nSay the thing softly.\n\nFind your Moon sign free – link in bio ✨"
+    neu = redaktion.mit_kommentar_frage(text, "en", "x")
+    absaetze = neu.split("\n\n")
+    assert len(absaetze) == 4 and absaetze[-1].startswith("Find your Moon sign") and absaetze[2] in redaktion.KOMMENTAR_FRAGEN["en"]
+    assert redaktion.mit_kommentar_frage(neu, "en", "y") == neu                    # nie doppelt
+    # Aufforderung im selben Absatz wie der Text
+    neu = redaktion.mit_kommentar_frage("Mond im Skorpion. Sag es ruhig. Dein Mondzeichen gratis: Link in Bio", "de", "a")
+    assert neu.split("\n\n")[-1] == "Dein Mondzeichen gratis: Link in Bio" and neu.count("\n\n") == 2
+    # schon eine Frage am Ende -> nichts anhaengen; Hook-Frage allein zaehlt nicht
+    assert redaktion.mit_kommentar_frage("Hook. Welches Zeichen bist du?", "de") == "Hook. Welches Zeichen bist du?"
+    assert redaktion.mit_kommentar_frage("Bist du müde?", "de", "z") != "Bist du müde?"
+    # Mitmachen mit A/B/C im Bild: nach dem Buchstaben fragen
+    assert redaktion.kommentar_frage("hu", antworten=3) == "A, B vagy C? Írd meg a betűdet kommentben 👇"
+    assert redaktion.kommentar_frage("it", antworten=2).startswith("A o B?")
+    # Qualitaetspruefung: Hinweis, kein schwerer Befund
+    b = redaktion.pruefe_post({"art": "reel", "titel": "T", "text": "Only one line here.", "hashtags": TAGS,
+                               "skript": {"hook": "H", "einblendungen": ["a", "b"]}}, "en")
+    assert any(x.startswith("Frage zum Kommentieren fehlt") for x in b) and not redaktion.schwer(b)
+    assert not any("Kommentieren" in x for x in redaktion.pruefe_post({"art": "story", "titel": "T", "text": "Kurz und gut, oder?"}, "de"))
+
+
+def test_kommentar_frage_beim_posten(monkeypatch):
+    monkeypatch.setattr(posten, "_instagram_name", lambda: "soraya.astroguide")
+    p = {"id": 7, "art": "post", "sprache": "it", "hashtags": "#astrologia #luna #oroscopo",
+         "text": "La Luna è in Scorpione.\n\nDi' la verità con calma.\n\nIl tuo oroscopo gratis: link in bio",
+         "meta": {"thema": "Mitmachen", "bild_punkte": ["Sì", "No", "Forse"]}}
+    ig = posten.text_fuer(p, "instagram")
+    teile = ig.split("\n\n")
+    assert teile[2] == "A, B o C? Scrivi la tua lettera nei commenti 👇"
+    assert teile[3].startswith("Il tuo oroscopo gratis: link in bio 👉 @soraya.astroguide") and teile[-1] == "#astrologia #luna #oroscopo"
+    fb = posten.text_fuer(p, "facebook")
+    assert fb.count("Scrivi la tua lettera") == 1 and fb.index("Scrivi la tua") < fb.index("?q=p7")
+    story = {**p, "art": "story", "text": "Come dormi? Rispondi con 🌙", "meta": {}}
+    assert "commenti" not in posten.text_fuer(story, "instagram")
+    reel = {"id": 8, "art": "reel", "sprache": "de", "text": "Zwei Nächte bis Vollmond.", "hashtags": "#a #b #c"}
+    t = posten.text_fuer(reel, "tiktok")
+    assert t.split("\n\n")[1] in redaktion.KOMMENTAR_FRAGEN["de"] and t.endswith("#a #b #c")
+
+
+def test_storys_messen_solange_sie_leben(fake_meta, frische_db):
+    _verbinde("instagram")
+    tagesplan.erstelle("en")
+    story = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en" and p["art"] == "story")
+    assert client.post("/posten/jetzt", json={"post_id": story["id"], "plattform": "instagram"}, headers=AUTH).status_code == 200
+    jetzt = datetime.now(himmel.WIEN)
+    # vor 2 Stunden: noch nicht faellig; nicht gemessen -> zaehlt nicht als 0
+    assert posten.miss_storys(jetzt + timedelta(minutes=30)) == 0
+    lern = {x["id"]: x for x in db.lade_lern_posts(jetzt - timedelta(days=1))}
+    assert lern[story["id"]]["gemessen"] is False
+    b = redaktion.bewerte(lambda i: None, statistik={})
+    assert redaktion.nicht_gemessen(b) == {"story": 1} and redaktion.erkenntnisse(b, min_posts=1)["arten"] == []
+    # nach gut 2 Stunden: gemessen (Reichweite 840 -> 8 Punkte, 1 Antwort -> 3, 3x geteilt -> 12)
+    vorher = len(fake_meta.aufrufe)
+    assert posten.miss_storys(jetzt + timedelta(hours=2, minutes=5)) == 1
+    assert any(a[1].endswith("/insights") for a in fake_meta.aufrufe[vorher:])
+    with psycopg.connect(os.environ["DATABASE_URL"]) as c:     # so tun, als waere die Messung um 2 h gewesen
+        c.execute("update soraya_veroeffentlichungen set zahlen_am = aktualisiert + interval '2 hours 5 minutes' "
+                  "where post_id = %s", (story["id"],))
+    assert posten.miss_storys(jetzt + timedelta(hours=3)) == 0                    # zweimal nicht
+    assert posten.miss_storys(jetzt + timedelta(hours=20, minutes=5)) == 1          # zweite Messung kurz vor Ablauf
+    assert posten.miss_storys(jetzt + timedelta(hours=25)) == 0                     # abgelaufen: nicht mehr fragen
+    lern = {x["id"]: x for x in db.lade_lern_posts(jetzt - timedelta(days=1))}
+    assert lern[story["id"]]["gemessen"] is True and lern[story["id"]]["kommentare"] == 1
+    e = {x["post"]["id"]: x for x in redaktion.bewerte(lambda i: None, statistik={})}[story["id"]]
+    assert e["punkte"] == 840 // 100 + 1 * 3 + 3 * 4 and redaktion.erkenntnisse([e], min_posts=1)["arten"][0]["name"] == "story"
+
+
+def test_erkenntnis_text_mit_heutigem_format():
+    erk = {"formate": [{"name": "Mitmachen", "posts": 3, "schnitt": 5.0}, {"name": "Ritual", "posts": 3, "schnitt": 4.0},
+                       {"name": "Astro-Wissen", "posts": 2, "schnitt": 3.0},
+                       {"name": "Sternzeichen im Fokus", "posts": 3, "schnitt": 2.0}]}
+    t = redaktion.erkenntnis_text(erk, "Mitmachen")
+    assert "Heute ist Mitmachen dran" in t and "Schwächer" not in t
+    t = redaktion.erkenntnis_text(erk, "Deine Woche")
+    assert "Sternzeichen im Fokus" not in t                   # altes Format steht nicht mehr im Wochenplan

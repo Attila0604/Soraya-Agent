@@ -2,7 +2,8 @@
 Tagesplan aus dem Himmel
 Jeden Morgen erstellt der Agent aus den echten Himmelsdaten (Mondphase,
 Mondzeichen, Neu-/Vollmond, rueckläufige Planeten) die Posts des Tages,
-pro Sprache: 1 Feed-Post, 1 Reel mit Skript, 1 Story.
+pro Sprache: 1 Feed-Post, 2 Reels mit Skript (verschiedene Blickwinkel), 1 Story --
+alles aus EINEM Claude-Aufruf je Sprache.
 
 Ob er jeden Morgen automatisch laeuft, schaltest du im Dashboard (Standard: aus).
 
@@ -51,14 +52,17 @@ Was gute Posts ausmacht:
 - Aufbau des Textes: Die erste Zeile (Hook) steht allein, dann eine Leerzeile („\n\n“). Danach kurze
   Absätze mit 1–2 Sätzen (höchstens ~200 Zeichen), jeweils durch eine Leerzeile getrennt – gut lesbar
   am Handy. Die Frage zum Kommentieren und die Handlungsaufforderung stehen je als eigener Absatz am
-  Ende. Höchstens 2 Emojis pro Text, gezielt gesetzt (nicht am Satzanfang, keine Emoji-Ketten).
+  Ende (zuerst die Frage, dann die Handlungsaufforderung). Höchstens 2 Emojis pro Text, gezielt gesetzt (nicht am Satzanfang, keine Emoji-Ketten).
 - Weniger ist mehr: ein konkreter Gedanke, gut erzählt, statt drei angerissener. Keine Füllsätze
   (keine Einleitungen wie „Heute schauen wir uns … an“, keine Zusammenfassung am Ende, keine
   Wiederholung dessen, was schon im Bild steht). Jeder Satz muss etwas Neues bringen.
 - Nicht ähnlich beginnen wie an den letzten Tagen (Liste der letzten Anfänge unten), keine
   Lieblingswörter wiederholen.
-- Die Frage am Ende ist leicht zu beantworten (ein Wort, ein Emoji oder das eigene Sternzeichen) –
-  so kommentieren mehr Menschen.
+- Jeder Feed-Post und jede Reel-Bildunterschrift endet mit GENAU EINER leichten Frage zum Kommentieren,
+  die man ohne Nachdenken beantwortet: ein Wort, ein Emoji, ein Buchstabe oder das eigene Sternzeichen
+  (z. B. „Welches Zeichen bist du? Schreib dein Emoji in die Kommentare 👇“, „A oder B? Sag's mir unten“,
+  „Tipp ein 🌙, wenn du das gespürt hast“). In der Sprache des Posts, natürlich formuliert, jeden Tag und
+  in jedem Eintrag anders. Keine zweite Frage daneben, keine offenen Fragen, die einen Absatz verlangen.
 - Ein Post – eine Botschaft. Halte dich an das heutige Format und den heutigen Hook-Stil.
 - Keine Links und keine @-Erwähnungen im Text (der Agent fügt den Link selbst an).
 - Wiederhole keine Überschriften der letzten Tage (Liste unten).
@@ -66,13 +70,14 @@ Was gute Posts ausmacht:
   sprechen. Sinngemäß in der Sprache des Posts, nicht wörtlich zitieren, nichts dazuerfinden.
 - Kommen Beispiele mit, die gut angekommen sind: Lerne aus Thema und Ton, kopiere sie nicht.
 
-Liefere genau drei Einträge, in dieser Reihenfolge:
+Liefere genau vier Einträge, in dieser Reihenfolge:
 1. art "post", platform "instagram": Feed-Post. "text": Hook, dann 2 bis 3 kurze Absätze
-   (insgesamt 40-90 Wörter, sehr kurze Absätze mit 1-2 Sätzen), dann eine Aufforderung zum Kommentieren oder Speichern, zum Schluss
-   die heutige Handlungsaufforderung mit „{link_in_bio}“. "bild_punkte": wenn der Post eine Liste
+   (insgesamt 40-90 Wörter, sehr kurze Absätze mit 1-2 Sätzen), dann die eine leichte Frage zum Kommentieren
+   als eigener Absatz, zum Schluss die heutige Handlungsaufforderung mit „{link_in_bio}“. "bild_punkte": wenn der Post eine Liste
    ist (z. B. drei Sternzeichen, drei Schritte), bis zu 3 sehr kurze Punkte fürs Bild (je höchstens
-   5 Wörter); beim Format „Mitmachen“ 2 bis 3 Antwortmöglichkeiten (je höchstens 5 Wörter) – sie
-   stehen im Bild wie eine Umfrage A/B/C; sonst [].
+   5 Wörter); beim Format „Mitmachen“ 2 bis 3 Antwortmöglichkeiten (je höchstens 5 Wörter, beim
+   Sternzeichen-Check die drei Zeichen, z. B. „Skorpion: alles fühlen“) – sie stehen im Bild wie eine
+   Umfrage A/B/C, und die Frage zum Kommentieren fragt dann nach dem Buchstaben; sonst [].
    "folien": das Karussell zum Durchwischen (nach dem Titelbild): genau 3 Folien, die den Post in
    Schritten erzählen – je "titel" (höchstens 6 Wörter; bei Sternzeichen der Name des Zeichens) und
    "text" (höchstens 14 Wörter, ein konkreter Gedanke – es steht groß im Bild). Jede Folie muss allein verständlich und
@@ -84,12 +89,19 @@ Liefere genau drei Einträge, in dieser Reihenfolge:
    mit dem Namen des Zeichens und einem Doppelpunkt), "szenen" (3 kurze Bild-Ideen, falls jemand selbst filmt),
    "schluss" (kurzer Schlusssatz, der neugierig auf das persönliche Horoskop macht, OHNE
    „{link_in_bio}“ oder andere Link-Hinweise – das Video zeigt darunter schon den Knopf, und es
-   läuft auch auf Facebook). "text": Bildunterschrift, 1-3 Sätze,
-   erster Satz wieder ein Hook. "bild_punkte": [].
+   läuft auch auf Facebook). "text": Bildunterschrift, 1-3 Sätze, erster Satz wieder ein Hook, danach
+   als eigener Absatz die eine leichte Frage zum Kommentieren (anders als beim Feed-Post). "bild_punkte": [].
 3. art "story", platform "instagram": ein kurzer Satz zur Tagesenergie plus eine Frage, auf die
    man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 20 Wörter.
    "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
    einem passenden Emoji (z. B. „🔥 Ja, total“, „🌙 Eher nicht“) – sie stehen als Knöpfe im Bild.
+4. art "reel", platform "tiktok": ZWEITES Reel des Tages (geht abends raus) – ein anderer Blickwinkel als
+   das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook: z. B. ein schneller Sternzeichen-Check
+   („Skorpion, Krebs, Fische – so fühlt sich heute an“), ein „POV“-Moment aus dem Alltag oder eine Frage mit
+   Auflösung. Kurz: 8-12 Sekunden. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
+   höchstens 8 Wörter, der letzte ist die Pointe), "szenen" (2 bis 3 kurze Bild-Ideen), "schluss" (kurz, ohne
+   „{link_in_bio}“). "text": Bildunterschrift, 1-2 Sätze mit Hook, danach als eigener Absatz die eine leichte
+   Frage zum Kommentieren (anders als bei Feed-Post und erstem Reel). "bild_punkte": [], "folien": [].
 
 Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
@@ -261,9 +273,9 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
     )
 
 
-def _aufbereiten(daten: dict, sprache: str) -> list[dict]:
-    posts = []
-    for p in daten.get("posts", [])[:3]:
+def _aufbereiten(daten: dict, sprache: str, thema_name: str = "") -> list[dict]:
+    posts, reels = [], 0
+    for i, p in enumerate(daten.get("posts", [])[:4]):
         skript = p.get("skript") or {}
         punkte = [x.strip() for x in (p.get("bild_punkte") or []) if x and x.strip()][:3]
         folien = [{"titel": str(f.get("titel") or "").strip()[:80], "text": str(f.get("text") or "").strip()[:260]}
@@ -275,25 +287,37 @@ def _aufbereiten(daten: dict, sprache: str) -> list[dict]:
             "_bild_punkte": punkte if p.get("art") == "post" else (punkte[:2] if p.get("art") == "story" and len(punkte) >= 2 else []),
             "_folien": folien if p.get("art") == "post" and len(folien) >= 2 else [],
         })
+        if p.get("art") == "reel":
+            reels += 1
+            if reels > 2:                       # hoechstens zwei Reels am Tag
+                posts.pop()
+                continue
+            if reels == 2:
+                posts[-1]["_reel_nr"] = 2
+        if p.get("art") in ("post", "reel"):
+            # genau eine leichte Frage zum Kommentieren -- falls Claude sie vergessen hat
+            umfrage = len(punkte) if p.get("art") == "post" and thema_name == "Mitmachen" else 0
+            posts[-1]["text"] = redaktion.mit_kommentar_frage(
+                posts[-1].get("text") or "", sprache, f"{sprache}-{thema_name}-{i}-{p.get('titel') or ''}", umfrage)
     return posts
 
 
 def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None = None,
                    thema: dict | None = None, vorbilder: list[str] | None = None, erkenntnis: str = "",
                    anfaenge: list[str] | None = None) -> list[dict]:
-    """Ein Claude-Aufruf: die drei Eintraege des Tages in einer Sprache. Bei schweren Befunden
+    """Ein Claude-Aufruf: die vier Eintraege des Tages in einer Sprache. Bei schweren Befunden
     der Qualitaetspruefung (z. B. falsche Sprache, heikle Versprechen) genau ein Korrekturdurchgang."""
     tag = date.fromisoformat(info["datum"]) if info.get("datum") else himmel.heute()
     thema = thema or redaktion.wochenthema(tag, info)
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge)
-    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache)
+    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
         hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
         korrigiert = _aufbereiten(frage_json(
             system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,
-            SCHEMA, effort="medium"), sprache)
+            SCHEMA, effort="medium"), sprache, thema["name"])
         if korrigiert:
             posts = korrigiert
             befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
@@ -335,7 +359,7 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
         # gleicher Tag und gleiche Sprache -> gleiche Wahl (auch beim Neu-Erstellen nachvollziehbar)
         redaktion.selbsttest(thema, bewertet, random.Random(f"{tag.isoformat()}-{sprache}"))
         vorbilder = redaktion.gut_angekommen(db.lade_post, sprache, bewertet=bewertet)
-        erkenntnis = redaktion.erkenntnis_text(redaktion.erkenntnisse(bewertet))
+        erkenntnis = redaktion.erkenntnis_text(redaktion.erkenntnisse(bewertet), thema["name"])
         try:
             anfaenge = db.letzte_anfaenge(sprache)
         except Exception:
@@ -359,6 +383,10 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
                 meta["folien"] = folien
             if folge:
                 meta["folge"] = folge
+            if p.pop("_reel_nr", None) == 2:
+                meta["reel_nr"] = 2               # zweites Reel des Tages (eigene Uhrzeit beim Posten)
+            if thema.get("variante"):
+                meta["variante"] = thema["variante"]
             if zielgruppe:
                 meta["zielgruppe"] = zielgruppe["bereich"]
             gespeichert += db.speichere_posts([p], quelle="himmel", geplant_fuer=tag, meta=meta)
