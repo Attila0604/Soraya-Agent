@@ -30,7 +30,7 @@ import medien
 import reel
 from wirkung import link_basis
 
-BILD_VERSION = "bild-7"
+BILD_VERSION = "bild-8"
 _RENDER = threading.Lock()          # hoechstens ein schwerer Auftrag (Video) gleichzeitig
 _VIDEOS: dict[int, dict] = {}
 _PAKETE: dict[str, dict] = {}

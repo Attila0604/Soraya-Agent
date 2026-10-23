@@ -197,99 +197,374 @@ def portal(hoehe: int) -> Image.Image:
     return bild.resize((max(1, gr // k), max(1, gr // k)), Image.LANCZOS)
 
 
-# Die grossen dunklen "Meere" der sichtbaren Mondseite (x, y, Breite, Hoehe relativ zum Radius, Tiefe)
-MARIA = [(-0.36, -0.36, 0.30, 0.25, 1.0), (0.13, -0.31, 0.18, 0.17, 0.9), (0.27, -0.04, 0.22, 0.18, 0.9),
-         (0.63, -0.22, 0.11, 0.10, 0.9), (0.47, 0.22, 0.13, 0.18, 0.7), (-0.15, 0.43, 0.18, 0.13, 0.6),
-         (-0.62, 0.02, 0.24, 0.44, 0.8), (0.30, 0.37, 0.09, 0.09, 0.6), (-0.05, -0.64, 0.42, 0.07, 0.6),
-         (-0.30, 0.18, 0.16, 0.12, 0.5)]
+# ---------------------------------------------------------------------------
+# Mond: echte Oberflaeche (Meere, Hochland, Strahlenkrater), Licht nach Phase, Erdschein, Lichthof
+# ---------------------------------------------------------------------------
+# Alles in selenografischen Koordinaten (Breite, Laenge in Grad; Osten = rechts, Norden = oben, Blick von der
+# Nordhalbkugel). Die Oberflaeche wird einmal berechnet (Albedo + Relief, lru_cache) und danach nur noch
+# beleuchtet -- das geht schnell, und der Mond ist in jedem Bild derselbe.
+
+# Meere: (Breite, Laenge, Radius in Grad, Gewicht, Streckung Ost-West, Ton: >1 dunkler, <1 heller)
+MARIA = [
+    (34, -17, 17.0, 1.0, 1.1, 1.00),   # Mare Imbrium
+    (40, -2, 7.0, 0.8, 1.2, 1.00),
+    (28, 18, 9.5, 1.0, 1.0, 0.86),     # Mare Serenitatis (etwas heller)
+    (8, 30, 10.0, 1.0, 1.3, 1.08),     # Mare Tranquillitatis (dunkel)
+    (2, 22, 5.0, 0.9, 1.0, 1.05),
+    (17, 59, 7.5, 1.1, 1.25, 1.05),    # Mare Crisium
+    (-5, 51, 7.0, 0.9, 0.7, 0.95),     # Mare Fecunditatis
+    (-14, 54, 5.0, 0.8, 0.8, 0.95),
+    (-15, 34, 4.8, 0.9, 1.0, 0.95),    # Mare Nectaris
+    (-20, -15, 9.5, 0.9, 1.2, 0.80),   # Mare Nubium
+    (-10, -22, 5.5, 0.9, 1.0, 0.92),   # Mare Cognitum
+    (-24, -39, 6.0, 1.0, 1.0, 1.00),   # Mare Humorum
+    (8, -30, 8.0, 0.8, 1.3, 0.80),     # Mare Insularum
+    (13, 4, 3.6, 0.75, 1.4, 0.85),     # Mare Vaporum
+    (2, 1, 2.6, 0.65, 1.3, 0.80),      # Sinus Medii
+    (45, -31, 4.0, 0.8, 1.6, 1.00),    # Sinus Iridum
+    (38, 30, 4.5, 0.7, 1.0, 0.85),     # Lacus Somniorum
+    (56, -35, 4.0, 0.8, 2.6, 0.85),    # Mare Frigoris (langes, schmales Band)
+    (57, -8, 3.6, 0.8, 2.8, 0.85),
+    (58, 18, 3.2, 0.7, 2.6, 0.82),
+    (42, -50, 11.0, 0.9, 0.9, 1.00),   # Oceanus Procellarum (aus mehreren Teilen)
+    (24, -55, 13.0, 1.0, 0.85, 1.02),
+    (8, -52, 12.0, 1.0, 0.8, 1.00),
+    (-6, -45, 8.0, 0.9, 1.0, 0.95),
+    (14, -68, 8.0, 0.85, 0.7, 0.98),
+    (-5, -68, 2.6, 1.1, 1.0, 1.15),    # Grimaldi (sehr dunkler Boden)
+    (51.6, -9.3, 1.6, 1.2, 1.0, 1.05), # Plato (dunkler Kraterboden)
+    (13, 86, 3.5, 0.7, 0.6, 0.85),     # Mare Marginis
+    (-1, 87, 4.0, 0.7, 0.6, 0.85),     # Mare Smythii
+    (-46, 86, 5.0, 0.55, 0.6, 0.75),   # Mare Australe
+    (57, 82, 3.0, 0.6, 0.7, 0.80),     # Mare Humboldtianum
+]
+# Grosse Krater: (Breite, Laenge, Radius in Grad, Tiefe)
+KRATER = [
+    (-43.3, -11.2, 1.45, 1.2), (9.6, -20.1, 1.55, 1.2), (8.1, -38.0, 0.55, 1.1), (23.7, -47.4, 0.65, 1.1),
+    (51.6, -9.3, 1.7, 0.35), (-58.4, -14.4, 3.8, 0.6), (-9.3, -1.9, 2.5, 0.35), (-13.4, -3.2, 1.9, 0.55),
+    (-18.2, -1.9, 1.6, 0.65), (-11.4, 26.4, 1.65, 1.0), (-13.2, 24.0, 1.6, 0.7), (-18.0, 23.6, 1.7, 0.6),
+    (-8.9, 61.0, 2.2, 0.9), (-25.1, 60.4, 2.9, 0.8), (29.7, -4.0, 1.35, 0.45), (14.5, -11.3, 0.95, 1.0),
+    (-49.6, -21.7, 2.5, 0.6), (-41.1, 5.8, 2.2, 0.55), (-44.9, 40.3, 3.3, 0.45), (31.8, 29.9, 1.6, 0.4),
+    (16.1, 46.8, 0.45, 1.0), (-50.5, -6.2, 3.0, 0.5), (-29.7, -1.0, 1.9, 0.6), (46.7, 39.1, 1.4, 0.7),
+    (49.0, 44.4, 1.5, 0.7), (-34.0, -31.0, 2.0, 0.55), (-26.0, 8.0, 1.8, 0.5), (-60.0, 30.0, 2.6, 0.55),
+]
+# Strahlenkrater: (Breite, Laenge, Zahl der Strahlen, Laenge der Strahlen in Grad, Helligkeit, Hof in Grad)
+STRAHLEN = [
+    (-43.3, -11.2, 16, 48, 0.42, 1.8),   # Tycho: lange Strahlen ueber den halben Mond
+    (9.6, -20.1, 18, 16, 0.32, 2.6),     # Copernicus
+    (8.1, -38.0, 12, 9, 0.22, 2.2),      # Kepler
+    (23.7, -47.4, 7, 5, 0.18, 1.2),      # Aristarchus (hellster Fleck)
+    (16.1, 46.8, 6, 8, 0.16, 1.2),       # Proclus
+]
+MOND_RASTER = 1024
+
+
+def _vektor(breite, laenge):
+    b, l = math.radians(breite), math.radians(laenge)
+    return np.array([math.cos(b) * math.sin(l), math.sin(b), math.cos(b) * math.cos(l)], np.float32)
+
+
+def _ost_nord(breite, laenge):
+    """Ost- und Nordrichtung an einem Punkt der Kugel."""
+    c = _vektor(breite, laenge)
+    e = np.array([math.cos(math.radians(laenge)), 0, -math.sin(math.radians(laenge))], np.float32)
+    return c, e, np.cross(c, e)
+
+
+def _wertrauschen(u: np.ndarray, v: np.ndarray, zellen: int, seed: int) -> np.ndarray:
+    """Glattes Wertrauschen (0..1) an den Stellen u, v (0..1)."""
+    g = np.random.default_rng(seed).random((zellen + 2, zellen + 2)).astype(np.float32)
+    x, y = u * zellen, v * zellen
+    i, j = np.floor(x).astype(np.int32), np.floor(y).astype(np.int32)
+    fx, fy = x - i, y - j
+    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+    i, j = np.clip(i, 0, zellen), np.clip(j, 0, zellen)
+    a = g[j, i] + (g[j, i + 1] - g[j, i]) * fx
+    b = g[j + 1, i] + (g[j + 1, i + 1] - g[j + 1, i]) * fx
+    return a + (b - a) * fy
+
+
+def _fbm(u, v, start: int, oktaven: int, seed: int) -> np.ndarray:
+    summe, gewicht, w = np.zeros_like(u), 0.0, 1.0
+    for o in range(oktaven):
+        summe += w * _wertrauschen(u, v, start * 2 ** o, seed + o * 17)
+        gewicht += w
+        w *= 0.55
+    return summe / gewicht - 0.5          # etwa -0.5..0.5
+
+
+def _kugel(n: int):
+    ys, xs = np.mgrid[0:n, 0:n].astype(np.float32)
+    x = (xs + 0.5) / n * 2 - 1
+    y = 1 - (ys + 0.5) / n * 2                       # Norden oben
+    z = np.sqrt(np.clip(1 - x * x - y * y, 0, 1))
+    breite = np.arcsin(np.clip(y, -1, 1))
+    laenge = np.arctan2(x, np.maximum(z, 1e-4))
+    return x, y, z, (laenge / math.pi + 1) / 2, breite / math.pi + 0.5
+
+
+def _gross(feld: np.ndarray, n: int) -> np.ndarray:
+    return np.asarray(Image.fromarray(feld.astype(np.float32), "F").resize((n, n), Image.BICUBIC), np.float32)
+
+
+def _klein(feld: np.ndarray, n: int) -> np.ndarray:
+    return np.asarray(Image.fromarray(feld.astype(np.float32), "F").resize((n, n), Image.LANCZOS), np.float32)
+
+
+@lru_cache(maxsize=1)
+def _mond_flaechen() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Grosse, weiche Strukturen in 384er-Aufloesung: Meer-Feld, Kuestenschaerfe, Ton der Meere, Strahlen."""
+    n = 384
+    x, y, z, u, v = _kugel(n)
+    P = np.stack([x, y, z])
+    grad = math.pi / 180
+    # Meere: die Einzelflecken werden weich vereinigt und mit verrauschter Schwelle geschnitten -> zusammen-
+    # haengende, natuerlich ausgefranste Flaechen wie auf dem echten Mond (keine runden Kleckse)
+    feld = np.zeros_like(x)
+    summe = np.zeros_like(x)
+    ton = np.zeros_like(x)
+    for br, la, rad, gew, streck, t in MARIA:
+        c, e, nn = _ost_nord(br, la)
+        winkel = np.arctan2(np.hypot(np.tensordot(e, P, 1) / streck, np.tensordot(nn, P, 1)),
+                            np.tensordot(c, P, 1)) / grad
+        f = gew * np.exp(-(winkel / rad) ** 2 * 0.8)
+        feld += f ** 3
+        summe += f
+        ton += f * t
+    ton = ton / np.maximum(summe, 1e-4)
+    feld = feld ** (1 / 3) * 0.9 + summe * 0.1
+    rand = _fbm(u, v, 5, 6, 3) * 0.6 + _fbm(u, v, 40, 3, 31) * 0.25 + _fbm(u, v, 110, 2, 37) * 0.15
+    feld = feld + rand * 0.85
+    weich = 0.12 + 0.30 * np.clip(_fbm(u, v, 4, 2, 41) + 0.5, 0, 1)      # mal scharfe, mal weiche Kuesten
+    ton = (0.84 + 0.6 * _fbm(u, v, 6, 4, 9) + 0.3 * _fbm(u, v, 30, 3, 19)) * ton
+    # Strahlen: breite, ausfransende helle Streifen, die nach aussen verblassen
+    strahlen = np.zeros_like(x)
+    for br, la, zahl, lang, staerke, hof in STRAHLEN:
+        c, e, nn = _ost_nord(br, la)
+        d = np.arccos(np.clip(np.tensordot(c, P, 1), -1, 1)) / grad
+        richtung = np.arctan2(np.tensordot(e, P, 1), np.tensordot(nn, P, 1))
+        rng = np.random.default_rng(int(abs(br * 100 + la)))
+        s_max = np.zeros_like(x)
+        for _ in range(zahl):
+            th = rng.uniform(-math.pi, math.pi)
+            l_i = lang * rng.uniform(0.3, 1.0)
+            breit = rng.uniform(0.8, 2.2)                         # Breite in Grad
+            dth = np.angle(np.exp(1j * (richtung - th)))
+            quer = np.abs(dth) * np.maximum(d, 1.0) / (1 + d / (l_i * 1.5))   # wird nach aussen etwas breiter
+            s = np.exp(-(quer / breit) ** 2) * np.exp(-d / l_i) * np.clip(d / 2.0, 0, 1)
+            s_max = np.maximum(s_max, s * rng.uniform(0.5, 1.0))
+        flecken = np.clip(0.55 + 1.6 * _fbm(u * 1.0, v, 30, 3, int(abs(la)) + 400), 0, 1.2)
+        strahlen += staerke * s_max * flecken + staerke * 1.1 * np.exp(-(d / hof) ** 2)
+    return feld.astype(np.float32), weich.astype(np.float32), ton.astype(np.float32), strahlen.astype(np.float32)
+
+
+@lru_cache(maxsize=4)
+def _mond_karte(n: int) -> tuple:
+    """Oberflaeche auf einem n x n Raster (der Mond fuellt das Raster): (Albedo, Meer, z, Normale, Kante, Hoehe).
+    Fester Zufall: der Mond ist in jedem Bild derselbe."""
+    if n != MOND_RASTER:      # kleinere Raster aus dem grossen verkleinern (gleicher Mond in jeder Groesse)
+        albedo, meer, _, _, _, hoehe = _mond_karte(MOND_RASTER)
+        albedo, meer, hoehe = _klein(albedo, n), _klein(meer, n), _klein(hoehe, n)
+    else:
+        x, y, z, u, v = _kugel(n)
+        feld, weich, ton, strahlen = (_gross(f, n) for f in _mond_flaechen())
+        # Kuesten der Meere erst hier schneiden (mit feinem Rauschen): scharf ausgefranst statt verschwommen
+        feld = feld + 0.07 * _fbm(u, v, 160, 3, 43)
+        meer = np.clip((feld - 0.47) / np.maximum(weich, 0.05) + 0.5, 0, 1)
+        meer = np.clip(meer * meer * (3 - 2 * meer) * ton, 0, 1.2)
+        # Hochland hell und fein gesprenkelt, Meere dunkel (echte Albedo etwa 0.12 zu 0.07)
+        fein = _fbm(u, v, 60, 4, 7)
+        hochland = 0.16 * _fbm(u, v, 9, 4, 5) + 0.07 * fein
+        meer_fein = 0.05 * _fbm(u, v, 90, 3, 23) * np.clip(meer, 0, 1)
+        albedo = 1.0 + hochland * (1 - 0.6 * np.clip(meer, 0, 1)) - 0.42 * meer + meer_fein + strahlen * (1 - 0.3 * meer)
+        # Relief: Hochland huegelig (macht die Schattengrenze unruhig wie in echt), Meere tiefer und glatt
+        hoehe = (0.011 * _fbm(u, v, 16, 5, 13) + 0.0012 * fein) * (1 - np.clip(meer, 0, 1) * 0.85) \
+            - 0.003 * np.clip(meer, 0, 1)
+        P = np.stack([x, y, z])
+        innen = (x * x + y * y) < 1
+        grad = math.pi / 180
+        # Krater: Schuessel + Wall, im Hochland viel dichter als in den Meeren
+        rng = np.random.default_rng(21)
+        liste = [k + (False,) for k in KRATER]
+        while len(liste) < 2200:
+            br = math.degrees(math.asin(rng.uniform(-1, 1)))
+            la = rng.uniform(-90, 90)
+            rad = 0.18 * (1 - rng.random()) ** (-1 / 1.9)            # viele kleine, wenige grosse
+            if rad > 2.4:
+                continue
+            cv = _vektor(br, la)
+            if cv[2] < 0.05:
+                continue
+            ix, iy = int((cv[0] + 1) / 2 * (n - 1)), int((1 - cv[1]) / 2 * (n - 1))
+            if rng.random() < min(1.0, meer[iy, ix]) * 0.9:
+                continue
+            liste.append((br, la, rad, rng.uniform(0.5, 1.0), rng.random() < 0.06 and rad < 0.7))
+        for br, la, rad, tiefe, frisch in liste:
+            cv = _vektor(br, la)
+            rp = rad * grad * n / 2                                  # Radius in Rasterpunkten
+            if rp < 0.8:
+                continue
+            cx, cy = (cv[0] + 1) / 2 * n, (1 - cv[1]) / 2 * n
+            w = rp * 2.2 + 2
+            x0, x1 = max(0, int(cx - w)), min(n, int(cx + w) + 1)
+            y0, y1 = max(0, int(cy - w)), min(n, int(cy + w) + 1)
+            if x0 >= x1 or y0 >= y1:
+                continue
+            d = np.arccos(np.clip(np.tensordot(cv, P[:, y0:y1, x0:x1], 1), -1, 1)) / (rad * grad)  # in Kraterradien
+            tief = 0.06 * rad * grad * tiefe * (1.4 if rad < 0.8 else 1.0)
+            schuessel = np.where(d < 1, d * d - 1, 0) * tief
+            if rad > 1.2:   # grosse Krater: flacher Boden mit Zentralberg
+                schuessel = np.where(d < 1, np.maximum(d * d - 1, -0.6), 0) * tief \
+                    + 0.25 * tief * np.exp(-(d / 0.15) ** 2)
+            wall = 0.3 * tief * np.exp(-((d - 1) / 0.35) ** 2) * np.where(d < 1, 1, np.exp(-(d - 1) * 0.8))
+            hoehe[y0:y1, x0:x1] += np.where(innen[y0:y1, x0:x1], schuessel + wall, 0)
+            albedo[y0:y1, x0:x1] += 0.015 * tiefe * np.exp(-((d - 0.95) / 0.25) ** 2)  # kaum hellerer Wall
+            if frisch:   # junge Krater: kleiner heller Fleck mit Hof (bei Vollmond gut sichtbar)
+                albedo[y0:y1, x0:x1] += 0.14 * np.exp(-(d / 1.4) ** 2)
+        albedo = np.clip(albedo, 0.3, 1.6).astype(np.float32)
+        hoehe = hoehe.astype(np.float32)
+    x, y, z, _, _ = _kugel(n)
+    # Normale aus dem Relief: Gefaelle auf der Kugeloberflaeche (nicht im Bild), sonst wirken Krater am Rand
+    # durch die Verkuerzung viel zu steil
+    zeile, spalte = np.gradient(hoehe * n / 2)
+    hx, hy = spalte, -zeile
+    vh = x * hx + y * hy
+    cx_, cy_ = hx - x * vh, hy - y * vh
+    rand_aus = np.clip((z - 0.06) / 0.25, 0, 1)                 # am Rand Relief ausblenden (keine Kerben)
+    cx_, cy_ = cx_ * rand_aus, cy_ * rand_aus
+    zs = np.maximum(z, 0.05)
+    nx, ny, nz = x - cx_, y - cy_, z + (cx_ * x + cy_ * y) / zs
+    laenge_n = np.sqrt(nx * nx + ny * ny + nz * nz) + 1e-6
+    normale = np.stack([nx / laenge_n, ny / laenge_n, nz / laenge_n]).astype(np.float32)
+    kante = np.clip((1 - np.sqrt(x * x + y * y)) * n / 2 + 0.5, 0, 1).astype(np.float32)   # glatte Kante
+    return albedo, meer, z, normale, kante, hoehe
+
+
+def _sonne(phase_index, beleuchtung):
+    """(Richtung zur Sonne, beleuchteter Anteil) -- Blick entlang +z, x rechts, y oben; None = Neumond."""
+    if phase_index is None:
+        return None
+    phase_index = int(phase_index) % 8
+    try:
+        k = min(1.0, max(0.0, float(beleuchtung) / 100))
+    except (TypeError, ValueError):
+        k = (1 - math.cos(math.radians(phase_index * 45))) / 2
+    if phase_index == 0:                                        # Neumond: nur Erdschein
+        return None
+    if phase_index == 4:
+        k = max(k, 0.985)
+    e = math.acos(max(-1.0, min(1.0, 1 - 2 * k)))               # Elongation 0..pi
+    seite = 1 if phase_index <= 4 else -1                         # zunehmend: Licht von rechts
+    return np.array([seite * math.sin(e), 0.0, -math.cos(e)], np.float32), k
 
 
 @lru_cache(maxsize=24)
-def _mond_textur(gr: int, r: float) -> np.ndarray:
-    """Helligkeit der Mondoberflaeche (etwa 0.6..1.05): Meere, feine Koernung, Krater, Randabdunklung.
-    Immer gleich (fester Zufall), damit der Mond in jedem Bild derselbe ist."""
-    c = gr / 2
-    ys, xs = np.mgrid[0:gr, 0:gr].astype(np.float32)
-    x, y = (xs + 0.5 - c) / r, (ys + 0.5 - c) / r
-    rr = np.sqrt(x * x + y * y)
-    meer = np.zeros_like(x)
-    for mx, my, bx, by, tiefe in MARIA:
-        d = ((x - mx) / bx) ** 2 + ((y - my) / by) ** 2
-        meer = np.maximum(meer, tiefe * np.clip(1 - d, 0, 1) ** 0.45)
-    rng = np.random.default_rng(11)
-    grob = Image.fromarray((rng.random((12, 12)) * 255).astype(np.uint8), "L").resize((gr, gr), Image.BICUBIC)
-    fein = Image.fromarray((rng.random((48, 48)) * 255).astype(np.uint8), "L").resize((gr, gr), Image.BICUBIC)
-    rauschen = (np.asarray(grob, np.float32) / 255 - 0.5) * 0.7 + (np.asarray(fein, np.float32) / 255 - 0.5) * 0.3
-    meer = np.clip(meer * (0.75 + rauschen * 1.4), 0, 1)
-    weich = Image.fromarray((meer * 255).astype(np.uint8), "L").filter(ImageFilter.GaussianBlur(r * 0.035))
-    meer = np.asarray(weich, np.float32) / 255
-    tex = 1 - 0.42 * meer + 0.07 * rauschen
-    for _ in range(22):                                      # Krater: flache Mulde, zarter heller Rand
-        kx, ky = rng.uniform(-0.85, 0.85, 2)
-        if kx * kx + ky * ky > 0.8:
-            continue
-        kr = rng.uniform(0.015, 0.05)
-        d = np.sqrt((x - kx) ** 2 + (y - ky) ** 2) / kr
-        tex -= 0.035 * np.clip(1 - d, 0, 1)
-        tex += 0.025 * np.clip(1 - np.abs(d - 1.05) * 5, 0, 1)
-    d = np.sqrt((x + 0.12) ** 2 + (y - 0.72) ** 2) / 0.035  # Tycho: heller Fleck unten
-    tex += 0.18 * np.clip(1 - d, 0, 1)
-    tex *= 1 - 0.22 * np.clip(rr, 0, 1) ** 4               # Randabdunklung (wirkt wie eine Kugel)
-    return np.clip(tex, 0.45, 1.1)
+def _mond_gerendert(n: int, phase_index, beleuchtung, einfach: bool) -> np.ndarray:
+    """RGBA (uint8) des beleuchteten Mondes auf dem n-Raster."""
+    albedo, meer, z, normale, kante, _ = _mond_karte(n)
+    x, y, _, _, _ = _kugel(n)
+    if einfach:   # kleine Monde: ohne feines Relief und Sprenkel, damit es klar und ruhig bleibt
+        albedo = _gross(_klein(albedo, n * 2 // 3), n)
+        normale = np.stack([x, y, z])
+    sonne = _sonne(phase_index, beleuchtung)
+    hoch = np.array([1.00, 0.93, 0.80], np.float32)[:, None, None]     # warmes Elfenbein / Champagner
+    tief = np.array([0.72, 0.70, 0.72], np.float32)[:, None, None]     # Meere: kuehles Grau mit Hauch Violett
+    t = np.clip(meer, 0, 1)[None]
+    grundfarbe = (hoch * (1 - t) + tief * t) * albedo[None]
+    mu = np.maximum(z, 1e-3)
+    k = 0.0
+    licht = np.zeros_like(z)
+    if sonne is not None:
+        s, k = sonne
+        mu0 = np.tensordot(s, normale, 1)
+        glatt0 = s[0] * x + s[1] * y + s[2] * z
+        m0 = np.maximum(mu0, 0)
+        # Mond-Lambert: fast flache Vollmondscheibe, leicht dunkler zum Rand, heller Saum an der Sichel
+        L = 0.62
+        licht = 2 * L * m0 / (m0 + mu) + (1 - L) * m0
+        # Schattengrenze: klar, aber nicht hart; Krater werfen nahe der Grenze Schatten
+        licht *= np.clip((glatt0 + 0.03) / 0.06, 0, 1)
+        licht *= np.clip(mu0 / 0.03 + 0.1, 0, 1) ** 1.3
+    rgb = grundfarbe * licht[None] * 0.88
+    # Erdschein: sehr leise, blaeulich-violett, am staerksten bei schmaler Sichel
+    erd = (0.022 + 0.05 * (1 - k) ** 3) * (1.8 if einfach else 1.0)
+    dunkel = np.clip(1 - licht * 4, 0, 1)[None]
+    erdfarbe = np.array([0.60, 0.62, 0.95], np.float32)[:, None, None]
+    rgb += dunkel * erd * albedo[None] * (0.6 + 0.4 * mu[None]) * erdfarbe
+    rgb += dunkel * np.array([0.028, 0.022, 0.052], np.float32)[:, None, None]    # Grundton der Nachtseite
+    # zarter silberner Rand auf der Nachtseite, damit auch der Neumond als Scheibe lesbar bleibt
+    saum = np.exp(-np.clip(1 - np.sqrt(x * x + y * y), 0, 1) / 0.012) * 0.07 * (1 - k) ** 2
+    rgb += dunkel * saum[None] * np.array([0.85, 0.82, 0.95], np.float32)[:, None, None]
+    rgb = np.clip((1 - np.exp(-rgb * 1.6)) / (1 - math.exp(-1.6 * 1.25)), 0, 1)     # weiche Lichter, nichts brennt aus
+    rgba = np.concatenate([rgb, kante[None]]).transpose(1, 2, 0)
+    return np.clip(rgba * 255 + 0.5, 0, 255).astype(np.uint8)
 
 
-def _mit_textur(ebene: Image.Image, tex: np.ndarray) -> Image.Image:
-    a = np.asarray(ebene, dtype=np.float32)
-    a[..., :3] = np.clip(a[..., :3] * tex[..., None], 0, 255)
-    return Image.fromarray((a + 0.5).astype(np.uint8), "RGBA")
+def _beleuchtung_rund(beleuchtung):
+    try:
+        return round(float(beleuchtung), 0)
+    except (TypeError, ValueError):
+        return None
 
 
 def mond(r: float, phase_index, beleuchtung) -> Image.Image:
-    """Mondscheibe (Licht rechts = zunehmend; Breite nach echter Beleuchtung in %). Mittelpunkt = Bildmitte.
-    Mit Oberflaeche (Meere, Krater) und schwachem Erdschein auf der dunklen Seite."""
-    rand = max(1.0, r / 40)
-    gr = int(math.ceil(2 * r + 2 * rand + 4))
-    c = gr / 2
-    tex = _mond_textur(gr, round(r, 1))
+    """Mondscheibe mit Radius r (Mittelpunkt = Bildmitte), Licht nach echter Beleuchtung in %:
+    zunehmend rechts, abnehmend links (Blick von der Nordhalbkugel). Neumond (Index 0): nur Erdschein.
+    Kleine Monde (Wochenleiste, Karten) kommen in einer ruhigeren Fassung mit zartem Goldrand."""
+    gr = math.ceil(2 * r + 4)
+    d = max(1, round(2 * r))
+    einfach = d < 150
+    n = 256 if einfach else (512 if d <= 440 else MOND_RASTER)
+    roh = _mond_gerendert(n, None if phase_index is None else int(phase_index), _beleuchtung_rund(beleuchtung), einfach)
+    ebene = Image.fromarray(roh, "RGBA")
+    # mit vormultipliziertem Alpha verkleinern, sonst bekommt der Rand einen hellen Saum
+    ebene = ebene.convert("RGBa").resize((d, d), Image.LANCZOS).convert("RGBA")
     bild = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
-    scheibe = Image.new("L", (gr, gr), 0)
-    ImageDraw.Draw(scheibe).ellipse([c - r, c - r, c + r, c + r], fill=255)
-    dunkel = radial(gr, gr, c - r * 0.2, c - r * 0.3, r * 0.1, c, c, r, [(0, "#3a3354", 1), (1, "#1a1430", 1)])
-    bild.alpha_composite(_durch_maske(_mit_textur(dunkel, tex), scheibe))
-    ring = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
-    ImageDraw.Draw(ring).ellipse([c - r, c - r, c + r, c + r], outline=(201, 168, 106, 115), width=max(1, int(round(rand))))
-    bild.alpha_composite(ring)
-    if phase_index is None or phase_index == 0:
-        return bild
-    phase_index = int(phase_index)
-    zunehmend = phase_index < 4
-    try:
-        b = float(beleuchtung)
-        k = min(0.97, max(0.03, b / 100))
-        rx, ist_sichel = abs(1 - 2 * k) * r, k < 0.5
-    except (TypeError, ValueError):
-        e = (phase_index * 45 + 22.5) % 360
-        rx = abs(math.cos(math.radians(e))) * r
-        ist_sichel = e < 90 if zunehmend else e > 270
-
-    def ellipse(von, bis):
-        return [(c + rx * math.cos(math.radians(von + (bis - von) * i / 64)),
-                 c + r * math.sin(math.radians(von + (bis - von) * i / 64))) for i in range(65)]
-    if phase_index == 4:
-        form = _bogen(c, c, r, 0, 360, 128)
-    elif zunehmend:   # rechte Haelfte, zurueck ueber die Ellipse (Sichel: rechts herum, sonst links herum)
-        form = _bogen(c, c, r, -90, 90, 96) + (ellipse(90, -90) if ist_sichel else ellipse(90, 270))
-    else:             # linke Haelfte
-        form = _bogen(c, c, r, 270, 90, 96) + (ellipse(90, 270) if ist_sichel else ellipse(90, -90))
-    licht = Image.new("L", (gr, gr), 0)
-    ImageDraw.Draw(licht).polygon(form, fill=255)
-    # weiche Schattengrenze, aussen aber scharf an der Scheibe
-    licht = licht.filter(ImageFilter.GaussianBlur(max(0.8, r * 0.07)))
-    licht = Image.fromarray(np.minimum(np.asarray(licht), np.asarray(scheibe)), "L")
-    hell = radial(gr, gr, c - r * 0.3, c - r * 0.35, r * 0.1, c, c, r * 1.05,
-                  [(0, "#fffbe8", 1), (0.45, "#ffe9b0", 1), (1, "#c9a86a", 1)])
-    bild.alpha_composite(_durch_maske(_mit_textur(hell, tex), licht))
+    bild.paste(ebene, (round(gr / 2 - d / 2), round(gr / 2 - d / 2)))
+    if einfach:
+        ring = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
+        c = gr / 2
+        ImageDraw.Draw(ring).ellipse([c - r - 0.5, c - r - 0.5, c + r + 0.5, c + r + 0.5],
+                                     outline=(201, 168, 106, 90), width=max(1, round(r / 30)))
+        bild.alpha_composite(ring)
     return bild
+
+
+def mond_schein(r: float, phase_index, beleuchtung, linie: bool = True, staerke: float = 1.0) -> Image.Image:
+    """Lichthof um den Mond (Groesse 4r, Mittelpunkt = Bildmitte): weicher Schein, der vom beleuchteten Teil
+    ausgeht (innen silbrig, aussen warmes Gold), dazu auf Wunsch eine feine goldene Kreislinie hinter dem Mond."""
+    gr = max(8, round(4 * r))
+    q = 160                                          # in kleiner Aufloesung rechnen, dann vergroessern
+    roh = _mond_gerendert(256, None if phase_index is None else int(phase_index), _beleuchtung_rund(beleuchtung), True)
+    hell = roh[..., :3].mean(axis=2) / 255 * (roh[..., 3] / 255)
+    lum = Image.fromarray(np.clip(hell * 255, 0, 255).astype(np.uint8), "L").resize((q // 2, q // 2), Image.BILINEAR)
+    feld = Image.new("L", (q, q), 0)
+    feld.paste(lum, (q // 4, q // 4))
+    nah = np.asarray(feld.filter(ImageFilter.GaussianBlur(q * 0.03)), np.float32) / 255
+    weit = np.asarray(feld.filter(ImageFilter.GaussianBlur(q * 0.15)), np.float32) / 255
+    ys, xs = np.mgrid[0:q, 0:q].astype(np.float32)
+    rr = np.hypot(xs + 0.5 - q / 2, ys + 0.5 - q / 2) / (q / 4)    # in Mondradien
+    aura = np.exp(-((rr / 1.7) ** 2)) * 0.06                       # ganz leiser Hof (auch beim Neumond)
+    a = np.clip((nah * 0.22 + weit * 0.75) * staerke + aura, 0, 1)
+    a *= np.clip((1.95 - rr) / 0.7, 0, 1) ** 2                     # zum Rand sicher auf null (kein Kasten)
+    silber = np.array([255, 247, 230], np.float32)
+    gold = np.array([232, 196, 128], np.float32)
+    mix = np.clip(nah * 1.4 / (nah + weit + 1e-3), 0, 1)[..., None]
+    rgb = gold + (silber - gold) * mix
+    rgba = np.concatenate([rgb + 0.5, (a * 255)[..., None]], axis=2)
+    schein = Image.fromarray(np.clip(rgba, 0, 255).astype(np.uint8), "RGBA").resize((gr, gr), Image.BICUBIC)
+    if linie:   # feine Goldlinie: oben kraeftiger, nach unten ausklingend
+        ys, xs = np.mgrid[0:gr, 0:gr].astype(np.float32)
+        dx, dy = xs + 0.5 - gr / 2, ys + 0.5 - gr / 2
+        dist = np.hypot(dx, dy)
+        breite = max(1.0, r / 120)
+        ring = np.clip(1 - np.abs(dist - r * 1.17) / breite, 0, 1)
+        verlauf = 0.2 + 0.8 * (0.5 - 0.5 * dy / np.maximum(dist, 1))
+        ebene = np.zeros((gr, gr, 4), np.uint8)
+        ebene[..., 0], ebene[..., 1], ebene[..., 2] = 226, 192, 128
+        ebene[..., 3] = np.clip(ring * verlauf * 140, 0, 255).astype(np.uint8)
+        schein.alpha_composite(Image.fromarray(ebene, "RGBA"))
+    return schein
 
 
 # ---------------------------------------------------------------------------
@@ -947,8 +1222,8 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
         if mit_mond:
             if st["aufbau"] == "liebe":
                 _liebe_ringe(d, W / 2, y + r, r, m, akzent)
-            schein = radial(int(4 * r * m), int(4 * r * m), 2 * r * m, 2 * r * m, r * 0.5 * m, 2 * r * m, 2 * r * m, 2 * r * m,
-                            [(0, "#ffe9b0", 0.16), (1, "#ffe9b0", 0)])
+            # Lichthof vom beleuchteten Teil, dazu eine feine Goldlinie (nicht bei den Liebes-Ringen)
+            schein = mond_schein(r * m, meta.get("phase_index"), meta.get("beleuchtung"), linie=st["aufbau"] != "liebe")
             aufkleben(leinwand, schein, (W * m / 2 - schein.width / 2, (y + r) * m - schein.height / 2))
             mb = mond(r * m, meta.get("phase_index"), meta.get("beleuchtung"))
             aufkleben(leinwand, mb, (W * m / 2 - mb.width / 2, (y + r) * m - mb.height / 2))
