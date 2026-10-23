@@ -1,6 +1,6 @@
 """Startet den Agenten lokal mit Attrappen (kein Claude, kein Railway)."""
 import os, sys, time, random
-from datetime import timedelta
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "postgresql://agent@127.0.0.1:55432/agenttest")
 os.environ.setdefault("AGENT_PASSWORT", "geheim-test")
@@ -9,7 +9,7 @@ os.environ.setdefault("ANTHROPIC_API_KEY", "sk-test")
 sys.path.insert(0, os.environ.get("AGENT_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import psycopg
 with psycopg.connect(os.environ["DATABASE_URL"]) as c:
-    c.execute("drop table if exists soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
+    c.execute("drop table if exists soraya_veroeffentlichungen, soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
 import himmel, tagesplan, content_agent, research_agent, wirkung, main, uvicorn
 H = himmel.heute()
 SKY = {"moon": {"phase_index": int(os.environ.get("PHASE", "1")), "illumination": 12, "sign": "Sco"}, "sun": {"sign": "Lib"},
@@ -60,10 +60,44 @@ def fake_get(url, params=None, headers=None, timeout=None):
                         "bio-ig": {"schritte": {"besuch": 51, "store_klick": 12}, "konten": 1,
                                    "tage": {(H - timedelta(days=2)).isoformat(): 51}}}, "gesamt": {"konten": 11, "profile": 8, "einladungslinks": 3, "einladungs_nutzungen": 4}}
     return SimpleNamespace(status_code=200, json=lambda: {"ok": True, "data": data}, text="")
-wirkung.requests.get = fake_get
+# Instagram (DEMO_KANAELE=1): Follower und Zahlen je Beitrag
+def fake_instagram(url, params):
+    if url.endswith("/me"):
+        return {"username": "soraya.astroguide", "followers_count": 1243, "media_count": 58}
+    mid = url.split("/")[-2] if url.endswith("/insights") else url.rsplit("/", 1)[-1]
+    n = int("".join(ch for ch in mid if ch.isdigit()) or 1)
+    if url.endswith("/insights"):
+        werte = {"reach": 420 * n, "views": 610 * n, "saved": 6 * n, "shares": 2 * n, "likes": 18 * n, "comments": 3 * n, "replies": 1}
+        return {"data": [{"name": k, "values": [{"value": werte[k]}]} for k in params["metric"].split(",")]}
+    return {"like_count": 18 * n, "comments_count": 3 * n}
+def router_get(url, params=None, headers=None, timeout=None):
+    if "graph.instagram.com" in url:
+        d = fake_instagram(url, params or {})
+        return SimpleNamespace(status_code=200, json=lambda: d, text="")
+    return fake_get(url, params=params, headers=headers, timeout=timeout)
+wirkung.requests.get = router_get
 os.environ.setdefault("AGENT_STATS_TOKEN", "x" * 32)
 import db
 db.init_db()
+if os.environ.get("DEMO_KANAELE"):
+    import meta, posten
+    for k in ("INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET", "TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET",
+              "LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"):
+        os.environ[k] = "demo"
+    jetzt = int(time.time())
+    db.setze_einstellung("meta_instagram", {"konto_id": "1789", "name": "soraya.astroguide", "token": "demo", "verbunden": jetzt,
+                                            "laeuft_ab": jetzt + 50 * 86400, "angefragt": meta.IG_SCOPES})
+    db.setze_einstellung("tiktok_zugang", {"token": "demo", "laeuft_ab": jetzt + 86400, "refresh": "r", "refresh_ab": jetzt + 300 * 86400,
+                                           "name": "soraya.astroguide", "rechte": ["user.info.basic", "video.upload", "video.publish"]})
+    db.setze_einstellung("linkedin_zugang", {"token": "demo", "laeuft_ab": jetzt + 5 * 86400, "autor": "urn:li:person:x", "name": "Attila Kovacs"})
+    posten.speichere_einstellungen({"plattformen": {"facebook": False, "linkedin": True, "tiktok": True}})
+    posten.merke_follower(1180, H - timedelta(days=8))
+    tagesplan.erstelle("en")
+    for i, p in enumerate(db.lade_posts(von=H, bis=H)):
+        if p["sprache"] != "en":
+            continue
+        zid = db.plane_veroeffentlichung(p["id"], "instagram", datetime.now(himmel.WIEN), zurueckgeben=True)
+        db.setze_veroeffentlichung(zid, "fertig", extern_id=f"IG{i + 1}", url="https://www.instagram.com/p/demo/")
 for bereich, land, wer in (("Liebe & Beziehung", "at", "Frauen 28-45 in Österreich, oft nach einer Trennung, suchen Halt und Klarheit."),
                            ("Szerelem és kapcsolat", "hu", "Magyar nők 25-40, akik a párkapcsolatukban keresnek irányt.")):
     db.speichere_zielgruppe(bereich, {"wer_sind_sie": wer, "beschaeftigt_sie": ["Trennung", "Neuanfang"], "wuensche": ["Klarheit"],

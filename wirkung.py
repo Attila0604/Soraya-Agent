@@ -19,7 +19,7 @@ def link_basis() -> str:
     return basis if basis.endswith("/") else basis + "/"
 
 
-BIO_LINKS = {"instagram": "bio-ig", "tiktok": "bio-tt", "facebook": "bio-fb"}
+BIO_LINKS = {"instagram": "bio-ig", "tiktok": "bio-tt", "facebook": "bio-fb", "linkedin": "bio-li"}
 
 
 def links() -> dict:
