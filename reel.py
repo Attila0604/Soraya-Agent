@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw, ImageFilter
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-8"
+VERSION = "reel-9"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -280,8 +280,7 @@ def erstelle(post: dict, ziel: str) -> dict:
     mond = medien.mond(r * 2, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
     if mond is not None:
         mond = mond.resize((mond.width // 2, mond.height // 2), Image.LANCZOS)
-    schein = medien.radial(2 * r + 300, 2 * r + 300, r + 150, r + 150, r * 0.6, r + 150, r + 150, r + 150,
-                           [(0, "#ffe9b0", 0.22), (1, "#ffe9b0", 0)])
+    schein = medien.mond_schein(r, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
     mond_y = 760
     karten = [_textkarte(z_, breite=W - 160, groesse=92 if i == 0 else 78, name="cormorant", farbe="#F6E3B4",
                          max_zeilen=4, akzent=akzent) for i, z_ in enumerate(zeilen)]
