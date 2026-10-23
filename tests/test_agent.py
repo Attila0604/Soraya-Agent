@@ -1855,3 +1855,25 @@ def test_erkenntnis_text_mit_heutigem_format():
     assert "Heute ist Mitmachen dran" in t and "Schwächer" not in t
     t = redaktion.erkenntnis_text(erk, "Deine Woche")
     assert "Sternzeichen im Fokus" not in t                   # altes Format steht nicht mehr im Wochenplan
+
+
+def test_tiktok_selbst_hochgeladen_ueber_titel():
+    import tiktok
+    reels = [{"post_id": 7, "titel": "Scorpio Season: 3 Changes"}, {"post_id": 8, "titel": "Kurz"}]
+    liste = [{"id": "v1", "title": "Scorpio Season: 3 Changes Scorpio season just started, and i…", "create_time": 1792780000,
+              "share_url": "https://tiktok/v1", "view_count": 90, "like_count": 1, "comment_count": 0, "share_count": 0},
+             {"id": "v2", "title": "", "create_time": 1792700000, "view_count": 247}]
+    z = tiktok.zuordnen_nach_titel(reels, liste)
+    assert len(z) == 1 and z[0]["post_id"] == 7 and z[0]["aufrufe"] == 90 and z[0]["reaktionen"] == 1
+    # zu kurze Titel werden nicht geraten
+    assert tiktok.zuordnen_nach_titel([{"post_id": 8, "titel": "Kurz"}], [{"id": "x", "title": "Kurz und gut"}]) == []
+
+
+def test_tiktok_konto_nur_mit_stats_recht(monkeypatch):
+    import tiktok
+    monkeypatch.setattr(tiktok, "zugang", lambda: {"token": "t", "rechte": ["user.info.basic"]})
+    assert tiktok.konto() is None
+    monkeypatch.setattr(tiktok, "zugang", lambda: {"token": "t", "rechte": ["user.info.basic", "user.info.stats"]})
+    monkeypatch.setattr(tiktok, "gueltiger_token", lambda: "t")
+    monkeypatch.setattr(tiktok, "_get_mit", lambda tok, pfad, **kw: {"data": {"user": {"follower_count": 12, "likes_count": 3, "video_count": 2}}})
+    assert tiktok.konto() == {"follower": 12, "likes": 3, "videos": 2}
