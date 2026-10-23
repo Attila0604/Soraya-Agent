@@ -593,6 +593,8 @@ class FakeMeta:
             return self._r({"like_count": 29, "comments_count": 4, "id": url.rsplit("/", 1)[-1]})
         if "fields" in (params or {}) and params["fields"].startswith("status_code"):
             return self._r({"status_code": "FINISHED"})
+        if (params or {}).get("fields") == "followers_count,fan_count":
+            return self._r({"followers_count": 77, "fan_count": 70})
         if (params or {}).get("fields", "").startswith("reactions"):
             if "/V9" in url:
                 return self._r({"error": {"message": "nicht gefunden"}}, 400)
@@ -1055,6 +1057,7 @@ def test_wirkung_facebook_reaktionen(monkeypatch, frische_db):
     assert d["verbunden"] and len(d["beitraege"]) == 1
     b = d["beitraege"][0]
     assert (b["reaktionen"], b["kommentare"], b["geteilt"]) == (5, 2, 1) and b["post_id"] == post["id"]
+    assert d["konto"]["follower"] == 77                                 # Follower der Seite gemerkt (fuers Cockpit)
 
 
 def test_sprachen_rotation_alle_vier():
@@ -1877,3 +1880,147 @@ def test_tiktok_konto_nur_mit_stats_recht(monkeypatch):
     monkeypatch.setattr(tiktok, "gueltiger_token", lambda: "t")
     monkeypatch.setattr(tiktok, "_get_mit", lambda tok, pfad, **kw: {"data": {"user": {"follower_count": 12, "likes_count": 3, "video_count": 2}}})
     assert tiktok.konto() == {"follower": 12, "likes": 3, "videos": 2}
+
+
+# ---------------------------------------------------------------- Zahlen-Cockpit (Wirkung)
+import cockpit
+
+
+def _gepostet(titel, art, tag, zahlen, thema="Ritual", stil="frage"):
+    """Post mit Veroeffentlichungen (je Plattform gemerkte Zahlen) am Tag `tag` um 12 Uhr."""
+    p = db.speichere_posts([{"art": art, "titel": titel, "text": "x"}], quelle="tagesplan", geplant_fuer=tag,
+                           meta={"thema": thema, "hook_stil": stil})[0]
+    um = datetime.combine(tag, _time(12), tzinfo=himmel.WIEN)
+    for pl, z in zahlen.items():
+        zid = db.plane_veroeffentlichung(p["id"], pl, um, zurueckgeben=True)
+        db.setze_veroeffentlichung(zid, "fertig", extern_id=f"{pl}{p['id']}", url=f"https://x/{pl}")
+        if z is not None:
+            db.speichere_zahlen(p["id"], pl, z.get("r", 0), z.get("k", 0), z.get("g", 0), reichweite=z.get("reach"),
+                                gespeichert=z.get("s"), aufrufe=z.get("views"))
+        with psycopg.connect(os.environ["DATABASE_URL"]) as c:
+            c.execute("update soraya_veroeffentlichungen set aktualisiert = %s where id = %s", (um, zid))
+    return p["id"]
+
+
+def _stat_fake(monkeypatch, tage_werte, quellen=None):
+    monkeypatch.setenv("AGENT_STATS_TOKEN", "z" * 32)
+    gefragt = []
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        gefragt.append(params["tage"])
+        tage = [{"datum": (HEUTE - timedelta(days=i)).isoformat(), **tage_werte(i)} for i in range(params["tage"])][::-1]
+        return SimpleNamespace(status_code=200, json=lambda: {"ok": True, "data": {"tage": tage, "quellen": quellen or {}}}, text="")
+    monkeypatch.setattr(wirkung.requests, "get", fake_get)
+    return gefragt
+
+
+def test_cockpit_kennzahlen_vergleich_top_und_tabelle(monkeypatch, frische_db):
+    cockpit.leeren()
+    # dieser Zeitraum (7 Tage): 2 Posts, davor: 1 Post
+    a = _gepostet("Ritual-Reel", "reel", HEUTE - timedelta(days=1),
+                  {"instagram": {"r": 40, "k": 5, "g": 3, "s": 10, "reach": 900, "views": 1500},
+                   "tiktok": {"r": 100, "k": 8, "g": 2, "views": 2000}})
+    b = _gepostet("Feed", "post", HEUTE - timedelta(days=3), {"facebook": {"r": 10, "k": 1, "g": 0},       # ohne Reichweite
+                                                               "instagram": None})                       # noch nicht gemessen
+    _gepostet("Alt", "post", HEUTE - timedelta(days=9), {"instagram": {"r": 20, "reach": 1000}})
+    _gepostet("Zu alt", "post", HEUTE - timedelta(days=20), {"instagram": {"r": 99, "reach": 9999}})
+    gefragt = _stat_fake(monkeypatch, lambda i: {"schnellstart_berechnet": 2, "gratis_tests": 3 if i < 7 else 0,
+                                                   "neue_konten": 1 if i < 7 else 0},
+                         {f"p{b}": {"schritte": {"besuch": 6}, "konten": 1,
+                                    "tage": {(HEUTE - timedelta(days=2)).isoformat(): 5, (HEUTE - timedelta(days=8)).isoformat(): 4}}})
+    d = client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()
+    assert gefragt == [14] and d["statistik"] == "ok" and d["von"] == (HEUTE - timedelta(days=6)).isoformat()
+    k = {x["schluessel"]: x for x in d["kpis"]}
+    # Erreicht: Reichweite, sonst Aufrufe (TikTok 2000); Facebook ohne Reichweite = 0
+    assert k["erreicht"]["wert"] == 900 + 2000 and k["erreicht"]["vorher"] == 1000 and k["erreicht"]["aenderung"] == 190
+    assert k["reaktionen"]["wert"] == (40 + 5 + 3 + 10) + (100 + 8 + 2) + (10 + 1) and k["reaktionen"]["vorher"] == 20
+    assert k["besuche"]["wert"] == 5 and k["besuche"]["vorher"] == 4 and k["besuche"]["aenderung"] == 25
+    assert k["konten"]["wert"] == 7 and k["konten"]["vorher"] == 0 and k["konten"]["aenderung"] is None   # neutral
+    # Tabelle: eine Zeile je Post, Spalten je Plattform; "noch nicht gemessen" bleibt leer statt 0
+    zeilen = {z["id"]: z for z in d["beitraege"]}
+    assert set(zeilen) == {a, b}
+    assert zeilen[a]["plattformen"]["tiktok"] == {"erreicht": 2000, "reaktionen": 110, "url": "https://x/tiktok"}
+    assert zeilen[b]["plattformen"]["instagram"]["erreicht"] is None and zeilen[b]["plattformen"]["facebook"]["erreicht"] == 0
+    assert zeilen[b]["besuche"] == 6 and zeilen[b]["konten"] == 1 and zeilen[b]["punkte"] == 6 * 2 + 15 + 10 + 3
+    assert [t["id"] for t in d["top"]] == sorted([a, b], key=lambda i: -zeilen[i]["punkte"])
+    # Trichter: Erreicht -> Besuche ist der schwaechste Schritt
+    t = d["trichter"]
+    assert [s["wert"] for s in t["stufen"]] == [2900, 5, 21, 7] and t["schwach"] == "besuche" and "klicken" in t["hinweis"]
+    assert t["stufen"][2]["quote"] == 420.0 and not t["stufen"][2].get("schwach")    # ueber 100 % nie "schwach"
+    # Verlauf: Erreicht am Posting-Tag, Besuche je Tag
+    v = {x["datum"]: x for x in d["verlauf"]}
+    assert len(v) == 7 and v[(HEUTE - timedelta(days=1)).isoformat()]["erreicht"] == 2900
+    assert v[(HEUTE - timedelta(days=2)).isoformat()]["besuche"] == 5 and v[(HEUTE - timedelta(days=3)).isoformat()]["posts"] == 1
+    # nichts verbunden -> keine Follower-Zeile
+    assert d["follower"] == [] and len(d["lernen"]["saetze"]) == 3
+    # zwischengespeichert: kein zweiter Engine-Aufruf
+    client.get("/wirkung/cockpit?tage=7", headers=AUTH)
+    assert gefragt == [14]
+    cockpit.leeren()
+    client.get("/wirkung/cockpit?tage=30", headers=AUTH)
+    assert gefragt[-1] == 60
+
+
+def test_cockpit_ohne_statistik_und_ohne_posts(monkeypatch, frische_db):
+    cockpit.leeren()
+    monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)
+    d = client.get("/wirkung/cockpit?tage=90", headers=AUTH).json()
+    assert d["tage"] == 90 and d["statistik"] == "nicht_verbunden"
+    k = {x["schluessel"]: x for x in d["kpis"]}
+    assert k["erreicht"]["wert"] == 0 and k["erreicht"]["aenderung"] is None and k["besuche"]["wert"] is None
+    assert d["top"] == [] and d["beitraege"] == [] and d["trichter"]["schwach"] is None
+    assert "zu wenig Daten" in d["trichter"]["hinweis"] and d["lernen"]["duenn"]
+    assert d["lernen"]["saetze"][0]["text"].startswith("Noch zu wenig Daten")
+    assert client.get("/wirkung/cockpit?tage=5", headers=AUTH).json()["tage"] == 7       # nur 7/30/90
+
+
+def test_cockpit_follower_nur_verbundene(monkeypatch, frische_db):
+    cockpit.leeren()
+    monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)
+    db.setze_einstellung("meta_instagram", {"token": "t", "konto_id": "1"})
+    posten.merke_follower(100, HEUTE - timedelta(days=7))
+    posten.merke_follower(112, HEUTE)
+    posten.merke_follower(50, HEUTE, "tiktok_follower")                  # TikTok nicht verbunden -> ausgeblendet
+    d = cockpit.cockpit(7)
+    assert d["follower"] == [{"plattform": "instagram", "follower": 112, "zuwachs_7": 12, "am": HEUTE.isoformat()}]
+    db.setze_einstellung("meta_facebook", {"token": "t", "seite_id": "5"})
+    cockpit.leeren()
+    assert [f["plattform"] for f in cockpit.cockpit(7)["follower"]] == ["facebook", "instagram"]
+    assert cockpit.cockpit(7)["follower"][0]["follower"] is None          # verbunden, noch nie gemessen
+
+
+def test_lern_saetze_mehr_weniger_test():
+    def e(i, thema, punkte, stil="frage"):
+        return {"post": {"id": i, "art": "post", "meta": {"thema": thema, "hook_stil": stil}}, "punkte": punkte, "gemessen": True}
+    b = [e(1, "Ritual", 40), e(2, "Ritual", 30), e(3, "Rückblick", 5), e(4, "Rückblick", 7)]
+    s = {x["art"]: x["text"] for x in cockpit.lern_saetze(b)["saetze"]}
+    assert "„Ritual“" in s["mehr"] and "Ø 35 Punkte" in s["mehr"] and "„Rückblick“" in s["weniger"] and "Ø 6 Punkte" in s["weniger"]
+    assert s["test"].startswith("Anfang „") and "bisher 0 von 3" in s["test"]
+    nah = [e(1, "Ritual", 10), e(2, "Ritual", 10), e(3, "Mitmachen", 9), e(4, "Mitmachen", 9.5)]
+    assert "Nichts fällt deutlich ab" in cockpit.lern_saetze(nah)["saetze"][1]["text"]
+    assert cockpit._komma(4.25) == "4,2" or cockpit._komma(4.25) == "4,3"
+    alle = [e(i * 10 + k, "Ritual", 5 + i, st) for i, st in enumerate(redaktion.HOOK_NAMEN) for k in range(3)]
+    alle += [{"post": {"id": 900 + i, "art": "post", "meta": {"aufforderung": a}}, "punkte": 1, "gemessen": True}
+             for i, a in enumerate(list(redaktion.AUFFORDERUNG_NAMEN) * 3)]
+    r = cockpit.lern_saetze(alle)
+    assert r["saetze"][2]["text"].startswith("Soraya bleibt meist beim Anfang") and r["test_kurz"].startswith("weiter den Anfang")
+
+
+def test_wochenbericht_ab_montag_bis_weggeklickt(monkeypatch, frische_db):
+    cockpit.leeren()
+    montag = HEUTE - timedelta(days=HEUTE.weekday())
+    _gepostet("Bester der Woche", "reel", montag - timedelta(days=3), {"instagram": {"r": 50, "reach": 1200}})
+    _gepostet("Davor", "post", montag - timedelta(days=10), {"instagram": {"r": 5, "reach": 1000}})
+    _stat_fake(monkeypatch, lambda i: {"neue_konten": 1})
+    w = client.get("/wirkung/wochenbericht", headers=AUTH).json()
+    assert w["zeigen"] and w["von"] == (montag - timedelta(days=7)).isoformat() and w["bis"] == (montag - timedelta(days=1)).isoformat()
+    assert w["zahlen"].startswith("1.200 erreicht (+20 %)") and "7 neue Konten" in w["zahlen"]
+    assert w["bester"]["titel"] == "Bester der Woche" and w["test"]
+    assert client.post("/wirkung/wochenbericht/gesehen", json={"woche": "kaputt"}, headers=AUTH).status_code == 400
+    assert client.post("/wirkung/wochenbericht/gesehen", json={"woche": w["woche"]}, headers=AUTH).status_code == 200
+    assert client.get("/wirkung/wochenbericht", headers=AUTH).json()["zeigen"] is False
+    # naechste Woche: neuer Bericht erscheint wieder (auch wenn es nicht Montag ist)
+    w2 = cockpit.wochenbericht(heute=montag + timedelta(days=9))
+    assert w2["woche"] != w["woche"]
+    monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)                 # ohne Daten: keine Karte
+    assert cockpit.wochenbericht(heute=montag + timedelta(days=70))["zeigen"] is False

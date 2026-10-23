@@ -289,6 +289,17 @@ def facebook_reichweite(extern_id: str, token: str) -> int | None:
     return None
 
 
+def facebook_konto() -> dict:
+    """Follower der Facebook-Seite (followers_count, sonst fan_count = "Gefaellt mir" der Seite).
+    Geht mit dem Seiten-Zugang (pages_read_engagement), ein einziger Aufruf."""
+    z = zugang("facebook")
+    if not z or not z.get("token") or not z.get("seite_id"):
+        raise MetaFehler("Facebook-Seite ist nicht verbunden.")
+    d = _get(f"{graph_fb()}/{z['seite_id']}", fields="followers_count,fan_count", access_token=z["token"])
+    anzahl = d.get("followers_count")
+    return {"follower": anzahl if anzahl is not None else d.get("fan_count")}
+
+
 def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
     """Gefaellt-mir, Kommentare und Teilen je Facebook-Beitrag (braucht pages_read_engagement),
     dazu die Reichweite, wenn Meta sie herausgibt."""

@@ -56,6 +56,13 @@ check("Karte ohne Link-Daten: keine leere Zeile", !(await page.isVisible("#heute
 await page.click('#heuteListe .card:first-child [data-aktion="link"]'); await wait(300);
 check("Karte: Link kopieren", (await page.evaluate(() => navigator.clipboard.readText())) === "https://www.sorayaluxuryastroguide.com/?q=p1&lang=de", await page.evaluate(() => navigator.clipboard.readText()));
 check("Cockpit: drei Kacheln mit Stand", (await page.$$("#cockpit .kachel")).length === 3 && (await page.textContent("#cockpit")).includes("Posten aus"), await page.textContent("#cockpit"));
+for (let i = 0; i < 20 && !(await page.$("#wochenbericht .wochen-karte")); i++) await wait(250);
+check("Wochenbericht: Karte 'Letzte Woche' auf Heute", (await page.textContent("#wochenbericht")).includes("Letzte Woche") && (await page.textContent("#wochenbericht")).includes("Soraya testet diese Woche"), await page.textContent("#wochenbericht"));
+if (OUT) await (await page.$("#wochenbericht")).screenshot({ path: OUT + "/ui-wochenbericht.png" });
+await page.click("#wochenbericht [data-woche-zu]"); await wait(400);
+check("Wochenbericht: wegklicken", !(await page.$("#wochenbericht .wochen-karte")), "");
+{ const r = await page.evaluate(() => fetch("/wirkung/wochenbericht").then((x) => x.json()));
+  check("Wochenbericht: bleibt weg (gemerkt)", r.zeigen === false, JSON.stringify(r)); }
 await page.waitForFunction(() => { const i = document.querySelector("#heuteListe .vorschau img"); return i && i.complete && i.naturalWidth === 300; }, null, { timeout: 30000 }).catch(() => {});
 check("Karte: Vorschaubild vom Server (300 px)", await page.$eval("#heuteListe .vorschau img", (i) => i.naturalWidth) === 300, "");
 check("Heute: Karte zeigt das Format des Tages", /Deine Woche|Sternzeichen im Fokus|Liebe & Beziehung|Astro-Wissen|Ritual|Mitmachen|Rückblick|Großes Ereignis/.test(await page.textContent("#heuteListe .card .kopf")), await page.textContent("#heuteListe .card .kopf"));
@@ -203,16 +210,25 @@ check("Studio: Himmel-Posts erscheinen hier nicht", !(await page.textContent("#s
 await page.click('.tab[data-tab="plan"]'); await wait(800);
 check("Plan: Ideen ohne Datum eingeklappt unten", /Ideen ohne Datum \(3\)/.test(await page.textContent("details.ideen summary")) && !(await page.$eval("details.ideen", (d) => d.open)), "");
 
-// Wirkung
-await page.click('.tab[data-tab="wirkung"]'); await wait(1200);
+// Wirkung: Zahlen-Cockpit oben, alles andere unter "Details"
+await page.click('.tab[data-tab="wirkung"]'); await wait(1500);
+check("Cockpit: 4 Kacheln (Erreicht, Reaktionen, Besuche, Neue Konten)", JSON.stringify(await page.$$eval(".wz-kpi .l", (x) => x.map((e) => e.firstChild.textContent.trim()))) === JSON.stringify(["Erreicht", "Reaktionen", "Besuche", "Neue Konten"]), await page.textContent(".wz-kpis"));
+check("Cockpit: Standard 7 Tage", (await page.getAttribute('#wZeitraum [data-tage="7"]', "aria-pressed")) === "true" && (await page.$$eval("#wzTage .hit", (x) => x.length)) === 7, "");
+check("Cockpit: Vergleich neutral ohne Vordaten", (await page.textContent(".wz-kpi:first-child .trend")).includes("kein Vergleich"), await page.textContent(".wz-kpi:first-child .trend"));
+check("Cockpit: Weg vom Post zum Konto in 4 Stufen", (await page.$$eval(".weg .stufe", (x) => x.length)) === 4, "");
+check("Cockpit: Soraya lernt in 3 Sätzen", JSON.stringify(await page.$$eval("dl.lernt dt", (x) => x.map((e) => e.textContent))) === JSON.stringify(["Mehr davon", "Weniger davon", "Nächster Test"]), "");
+check("Cockpit: ehrlich bei wenig Daten", (await page.textContent("dl.lernt")).includes("Noch zu wenig Daten"), await page.textContent("dl.lernt"));
+check("Cockpit: Details zugeklappt", !(await page.$eval("#wDetails", (d) => d.open)), "");
+await page.click('#wZeitraum [data-tage="30"]'); await wait(1200);
+check("Cockpit: Zeitraum 30 Tage", (await page.$$eval("#wzTage .hit", (x) => x.length)) === 30 && /\d+\. [A-ZÄÖÜ][a-zä]+ – \d+\. [A-ZÄÖÜ][a-zä]+/.test(await page.textContent("#wZeitraumText")), await page.textContent("#wZeitraumText"));
+await page.click("#wDetails > summary"); await wait(1500);
 check("Wirkung: Zeitraum mit deutschem Datum", /\d+\. [A-ZÄÖÜ][a-zä]+ – \d+\. [A-ZÄÖÜ][a-zä]+/.test(await page.textContent("#wirkungInhalt .panel .hint")), await page.textContent("#wirkungInhalt .panel .hint"));
-check("Wirkung: 5 Kennzahl-Kacheln", (await page.$$eval(".kpi", (x) => x.length)) === 5, "");
+check("Wirkung: 5 Kennzahl-Kacheln (App)", (await page.$$eval("#wirkungInhalt .kpi", (x) => x.length)) === 5, "");
 check("Wirkung: 30 Tagesbalken-Trefferflächen", (await page.$$eval("#verlauf .hit", (x) => x.length)) === 30, "");
 await page.hover("#verlauf .hit >> nth=29"); await wait(200);
 check("Wirkung: Tooltip beim Zeigen", !(await page.$eval("#tip", (t) => t.classList.contains("hide"))), "");
-check("Wirkung: Trichter mit 5 Stufen", (await page.$$eval(".trichter:nth-of-type(2) .stufe", (x) => x.length)) >= 5 || (await page.$$eval(".stufe", (x) => x.length)) >= 8, "");
-await page.$eval("details.wmehr", (d) => { d.open = true; });   // Herkunft, Trichter usw. sind zugeklappt
-check("Wirkung: Tabelle vorhanden", (await page.$$eval(".panel > details table.tabelle tbody tr", (x) => x.length)) === 30, "");
+check("Wirkung: Trichter mit 5 Stufen", (await page.$$eval("#wirkungInhalt .trichter .stufe", (x) => x.length)) >= 5, "");
+check("Wirkung: Tabelle vorhanden", (await page.$$eval("#wirkungInhalt .panel > details table.tabelle tbody tr", (x) => x.length)) === 30, "");
 const herkunft = await page.$$eval("table.herkunft tbody tr", (r) => r.map((z) => [...z.cells].map((c) => c.innerText.replace(/\s+/g, " ").trim()).join("|")));
 // Post 1 wurde oben im Plan-Test geloescht -> wird als "(gelöscht)" gefuehrt
 check("Wirkung: Herkunft – Post vorne (mehr Konten), Bio-Link danach", herkunft.length === 2 && /^Post 1 \(gelöscht\)\|34\|0\|9\|3\|2$/.test(herkunft[0]) && herkunft[1] === "Bio-Link Instagram|51|12|0|0|1", JSON.stringify(herkunft));
@@ -220,12 +236,13 @@ check("Wirkung: Bio-Links zum Kopieren", (await page.$$eval(".linkzeile code", (
 await page.selectOption("#wKennzahl", "link_besuche"); await wait(300);
 const linkBalken = await page.$$eval("#verlauf path", (p) => p.length);
 check("Wirkung: Kennzahl 'Besuche über deine Links' (3 Tage mit Besuchen)", linkBalken === 3, linkBalken);
+check("Cockpit: Besuche pro Tag aus den Links", (await page.$$eval("#wzTage path", (p) => p.length)) === 3, await page.$$eval("#wzTage path", (p) => p.length));
 await page.selectOption("#wKennzahl", "aktive_nutzer"); await wait(200);
 if (OUT) await page.screenshot({ path: OUT + "/ui-wirkung.png", fullPage: true });
-await page.selectOption("#wTage", "7"); await wait(900);
-check("Wirkung: Zeitraum 7 Tage", (await page.$$eval("#verlauf .hit", (x) => x.length)) === 7, "");
+await page.click('#wZeitraum [data-tage="7"]'); await wait(1500);
+check("Wirkung: Zeitraum 7 Tage (auch in den Details)", (await page.$$eval("#verlauf .hit", (x) => x.length)) === 7, "");
 await page.selectOption("#wKennzahl", "neue_konten"); await wait(400);
-check("Wirkung: Kennzahl wechseln", (await page.textContent(".legende")).includes("Neue Konten"), "");
+check("Wirkung: Kennzahl wechseln", (await page.textContent("#wirkungInhalt .legende")).includes("Neue Konten"), "");
 
 // Zielgruppen-Tab laedt
 await page.click('.tab[data-tab="who"]'); await wait(700);

@@ -29,15 +29,40 @@ for (const breite of [900, 390]) {
     if (OUT) await (await page.$("#einstellungenPanel")).screenshot({ path: OUT + "/posten-wohin.png" });
   }
   await page.click('.tab[data-tab="wirkung"]'); await wait(1800);
+  // Zahlen-Cockpit mit reichen Demo-Daten (3 Plattformen, 30 Tage)
+  const kpis = await page.$$eval(".wz-kpi", (k) => k.map((x) => x.querySelector(".v").textContent + "|" + x.querySelector(".trend").className));
+  check(`Cockpit (${breite}): 4 Kacheln mit Zahl und Pfeil`, kpis.length === 4 && kpis.every((k) => /^[\d\s.\u202f\u00a0]+\|trend (auf|ab|neutral)$/.test(k)) && kpis.some((k) => /auf|ab/.test(k)), JSON.stringify(kpis));
+  const fol = await page.textContent(".wz-follower");
+  check(`Cockpit (${breite}): Follower Facebook · Instagram · TikTok mit Zuwachs`, (await page.$$(".wz-follower .f")).length === 3 && (fol.match(/diese Woche/g) || []).length === 3, fol);
+  check(`Cockpit (${breite}): Top 3 mit Bild und Punkten`, (await page.$$("ol.top3 li")).length === 3 && (await page.$$("ol.top3 li .wz-daumen img")).length === 3 && (await page.textContent("ol.top3")).includes("Punkte"), "");
+  const pkt = await page.$$eval("ol.top3 .pkt b", (b) => b.map((x) => +x.textContent.replace(/\D/g, "")));
+  check(`Cockpit (${breite}): Top 3 absteigend`, pkt[0] >= pkt[1] && pkt[1] >= pkt[2], JSON.stringify(pkt));
+  check(`Cockpit (${breite}): schwächster Schritt markiert mit Tipp`, (await page.$$(".weg .stufe.schwach")).length === 1 && !(await page.$eval(".weg-tipp", (e) => e.classList.contains("leise"))), await page.textContent(".wz-weg"));
+  check(`Cockpit (${breite}): Soraya lernt nennt das beste Format`, (await page.textContent("dl.lernt .mehr dd")).includes("Ritual") && (await page.textContent("dl.lernt .weniger dd")).includes("Rückblick"), await page.textContent("dl.lernt"));
+  const zeilen = await page.$$eval("table.wz-posts tbody tr", (r) => r.length);
+  await page.click('[data-wz-pl="tiktok"]'); await wait(200);
+  const tt = await page.$$eval("table.wz-posts tbody tr .post .meta", (r) => r.map((x) => x.textContent));
+  check(`Cockpit (${breite}): Filter TikTok zeigt nur Reels`, tt.length > 0 && tt.every((x) => x.includes("Reel")), JSON.stringify(tt));
+  await page.click('[data-wz-pl="alle"]'); await page.selectOption("#wzSort", "datum"); await wait(200);
+  const daten = await page.$$eval("table.wz-posts tbody tr .post .meta", (r) => r.map((x) => x.textContent.split(" · ")[0]));
+  check(`Cockpit (${breite}): sortiert nach Datum`, daten.length === zeilen && daten[0] !== daten[daten.length - 1], JSON.stringify(daten));
+  await page.selectOption("#wzSort", "punkte");
+  check(`Cockpit (${breite}): Pro Tag mit Markern an Post-Tagen`, (await page.$$("#wzTage circle")).length >= 5, "");
+  if (breite === 900) {
+    await page.click('#wZeitraum [data-tage="30"]'); await wait(1500);
+    check("Cockpit: 30 Tage, mehr Posts in der Tabelle", (await page.textContent("#wzAnzahl")).match(/\d+/) && +(await page.textContent("#wzAnzahl")).match(/\d+/)[0] > 30, await page.textContent("#wzAnzahl"));
+    if (OUT) await page.screenshot({ path: OUT + "/cockpit-30.png", fullPage: true });
+    await page.click('#wZeitraum [data-tage="7"]'); await wait(1200);
+  }
+  await page.click("#wDetails > summary"); await wait(2500);
   const ig = await page.textContent("#igPanel");
   check(`Wirkung (${breite}): Instagram-Block mit Follower und Zuwachs`, /1[\s.\u202f\u00a0]?243\s*Follower/.test(ig) && ig.includes("+63 in 7 Tagen"), ig);
   check(`Wirkung (${breite}): Aufrufe, Gefällt mir, Kommentare, Gespeichert`, ["Aufrufe", "Gefällt mir", "Kommentare", "Gespeichert"].every((w) => ig.includes(w)), ig);
   check(`Wirkung (${breite}): Beiträge zugeklappt hinter 'Letzte Beiträge'`, !(await page.$eval("#igPanel details", (d) => d.open)), "");
   if (breite === 900) {
     await page.$eval("#igPanel details", (d) => { d.open = true; }); await wait(200);
-    check("Wirkung: Tabelle mit 4 Beiträgen", (await page.$$eval("#igPanel tbody tr", (r) => r.length)) === 4, "");
+    check("Wirkung: Tabelle mit den Beiträgen", (await page.$$eval("#igPanel tbody tr", (r) => r.length)) >= 4, "");
     if (OUT) await (await page.$("#igPanel")).screenshot({ path: OUT + "/wirkung-instagram.png" });
-    await page.$eval("details.wmehr", (d) => { d.open = true; }); await wait(300);
     check("Wirkung: TikTok-Hinweis aufs TikTok Studio", (await page.textContent("#ttPanel")).includes("TikTok Studio"), await page.textContent("#ttPanel"));
     const lern = await page.textContent("#lernPanel");
     check("Wirkung: Lernen nutzt Instagram-Zahlen", lern.includes("mal gespeichert") && lern.includes("Punkte"), lern);

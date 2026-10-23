@@ -36,6 +36,7 @@ from db import (
     init_db, speichere_posts, lade_posts, aendere_post, loesche_post,
     lade_post, lade_veroeffentlichungen, setze_meta, speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
 )
+import cockpit
 import db
 import himmel
 import linkedin
@@ -615,7 +616,8 @@ def wirkung_facebook(tage: int = 30):
             if "fehler" not in z:
                 db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"],
                                     z.get("reichweite"))
-        return {"verbunden": True, "beitraege": beitraege}
+        posten.facebook_follower_merken()
+        return {"verbunden": True, "beitraege": beitraege, "konto": posten.follower_stand("facebook_follower")}
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -652,6 +654,37 @@ def wirkung_tiktok(tage: int = 30):
         if not tiktok.verbindung().get("zahlen"):
             return {"verbunden": True, "recht_fehlt": True, "beitraege": []}
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/wirkung/cockpit")
+def wirkung_cockpit(tage: int = 7):
+    """Zahlen-Cockpit: Kennzahlen mit Vergleich, Follower, beste Posts, Trichter, Lernen, Tabelle, Verlauf."""
+    try:
+        return cockpit.cockpit(tage)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/wirkung/wochenbericht")
+def wirkung_wochenbericht():
+    """Kurzer Bericht ueber die letzte Woche fuer „Heute“ (ohne Claude)."""
+    try:
+        return cockpit.wochenbericht()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class WochenberichtGesehen(BaseModel):
+    woche: str
+
+
+@app.post("/wirkung/wochenbericht/gesehen")
+def wirkung_wochenbericht_gesehen(anfrage: WochenberichtGesehen):
+    try:
+        cockpit.wochenbericht_gesehen(anfrage.woche)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"ok": True}
 
 
 @app.get("/wirkung/lernen")

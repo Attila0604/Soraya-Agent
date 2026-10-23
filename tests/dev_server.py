@@ -62,7 +62,16 @@ def fake_get(url, params=None, headers=None, timeout=None):
                                "tage": {H.isoformat(): 20, (H - timedelta(days=1)).isoformat(): 14}},
                         "bio-ig": {"schritte": {"besuch": 51, "store_klick": 12}, "konten": 1,
                                    "tage": {(H - timedelta(days=2)).isoformat(): 51}}}, "gesamt": {"konten": 11, "profile": 8, "einladungslinks": 3, "einladungs_nutzungen": 4}}
+    grenze = H - timedelta(days=int(params["tage"]) - 1)
+    for code, q in DEMO_QUELLEN.items():
+        t = {d: n for d, n in q["tage"].items() if d >= grenze.isoformat()}
+        if t:
+            data["quellen"][code] = {**q, "tage": t, "schritte": {**q["schritte"], "besuch": sum(t.values())}}
     return SimpleNamespace(status_code=200, json=lambda: {"ok": True, "data": data}, text="")
+DEMO_QUELLEN = {}   # p<id> -> Besuche je Tag (DEMO_KANAELE=1: Posts der letzten 30 Tage)
+def wert(n, lo, hi):
+    """Feste, plausible Zufallszahl je Beitrag (gleich bei jedem Abruf)."""
+    return lo + (n * 7919 + 13) % (hi - lo + 1)
 # Instagram (DEMO_KANAELE=1): Follower und Zahlen je Beitrag
 def fake_instagram(url, params):
     if url.endswith("/me"):
@@ -70,10 +79,25 @@ def fake_instagram(url, params):
     mid = url.split("/")[-2] if url.endswith("/insights") else url.rsplit("/", 1)[-1]
     n = int("".join(ch for ch in mid if ch.isdigit()) or 1)
     if url.endswith("/insights"):
-        werte = {"reach": 420 * n, "views": 610 * n, "saved": 6 * n, "shares": 2 * n, "likes": 18 * n, "comments": 3 * n, "replies": 1}
+        r = wert(n, 180, 1400)
+        werte = {"reach": r, "views": r * 3 // 2, "saved": wert(n, 1, 24), "shares": wert(n, 0, 9), "likes": wert(n, 8, 70),
+                 "comments": wert(n, 0, 12), "replies": 1}
         return {"data": [{"name": k, "values": [{"value": werte[k]}]} for k in params["metric"].split(",")]}
-    return {"like_count": 18 * n, "comments_count": 3 * n}
+    return {"like_count": wert(n, 8, 70), "comments_count": wert(n, 0, 12)}
+# Facebook-Seite (DEMO_KANAELE=1): Follower, Reaktionen, Reichweite
+def fake_facebook(url, params):
+    if params.get("fields") == "followers_count,fan_count":
+        return {"followers_count": 412, "fan_count": 398}
+    mid = url.split("/")[-2] if url.endswith("/insights") else url.rsplit("/", 1)[-1]
+    n = int("".join(ch for ch in mid if ch.isdigit()) or 1)
+    if url.endswith("/insights"):
+        return {"data": [{"name": params.get("metric"), "values": [{"value": wert(n, 60, 520)}]}]}
+    return {"reactions": {"summary": {"total_count": wert(n, 2, 30)}}, "comments": {"summary": {"total_count": wert(n, 0, 6)}},
+            "shares": {"count": wert(n, 0, 4)}}
 def router_get(url, params=None, headers=None, timeout=None):
+    if "graph.facebook.com" in url:
+        d = fake_facebook(url, params or {})
+        return SimpleNamespace(status_code=200, json=lambda: d, text="")
     if "graph.instagram.com" in url:
         d = fake_instagram(url, params or {})
         return SimpleNamespace(status_code=200, json=lambda: d, text="")
@@ -85,7 +109,7 @@ db.init_db()
 if os.environ.get("DEMO_KANAELE"):
     import meta, posten
     for k in ("INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET", "TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET",
-              "LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"):
+              "LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET", "META_APP_ID", "META_APP_SECRET"):
         os.environ[k] = "demo"
     jetzt = int(time.time())
     db.setze_einstellung("meta_instagram", {"konto_id": "1789", "name": "soraya.astroguide", "token": "demo", "verbunden": jetzt,
@@ -94,7 +118,59 @@ if os.environ.get("DEMO_KANAELE"):
                                            "name": "soraya.astroguide", "rechte": ["user.info.basic", "video.upload", "video.publish"]})
     db.setze_einstellung("linkedin_zugang", {"token": "demo", "laeuft_ab": jetzt + 5 * 86400, "autor": "urn:li:person:x", "name": "Attila Kovacs"})
     posten.speichere_einstellungen({"plattformen": {"facebook": False, "linkedin": True, "tiktok": True}})
-    posten.merke_follower(1180, H - timedelta(days=8))
+    db.setze_einstellung("meta_facebook", {"seite_id": "555", "name": "Soraya Luxury Astrology", "token": "demo", "verbunden": jetzt})
+    # Follower-Verlauf (Instagram: der Wert von vor 8 Tagen bleibt der Vergleich fuer "+63 in 7 Tagen")
+    for i in range(30, 7, -1):
+        posten.merke_follower(1180 - (i - 8) * 4, H - timedelta(days=i))
+    for i in range(30, 0, -1):
+        posten.merke_follower(412 - i * 2 + (i % 3), H - timedelta(days=i), "facebook_follower")
+        posten.merke_follower(318 - i * 3, H - timedelta(days=i), "tiktok_follower")
+    posten.merke_follower(318, H, "tiktok_follower")
+    # Posts der letzten 30 Tage auf Facebook, Instagram und TikTok mit gemerkten Zahlen
+    FORMATE = ["Deine Woche", "Mitmachen", "Ritual", "Astro-Wissen", "Ritual", "Mitmachen", "Rückblick"]
+    STILE, AUFF = ["frage", "szene", "geheimnis", "zeichen", "aussage", "zahl"], ["mondzeichen", "partner", "horoskop", "chat"]
+    TITEL = {"post": ["Dein Mondzeichen verrät mehr", "3 Zeichen, die heute loslassen", "Das Herz-Ritual zum Neumond", "Warum Venus rückwärts geht",
+                      "Welches Zeichen bist du?", "Deine Woche in den Sternen", "Was der Vollmond zeigt", "Skorpion-Saison beginnt"],
+             "reel": ["Noch 2 Nächte bis Vollmond", "Drei Zeichen spüren es zuerst", "Das sagt dein Aszendent", "Fische: heute ruhen",
+                      "Ein Satz für deine Woche", "Wenn der Mond im Krebs steht"],
+             "story": ["Wie schläfst du gerade?", "A, B oder C?", "Dein Gefühl heute"]}
+    con = psycopg.connect(os.environ["DATABASE_URL"])
+    k = 0
+    for tag in range(29, 0, -1):
+        d = H - timedelta(days=tag)
+        arten = ["post", "reel", "story"] if tag % 2 else ["post", "reel"]
+        for art in arten:
+            k += 1
+            fm = FORMATE[d.weekday()]
+            stil = STILE[k % (len(STILE) if tag > 12 else 3)]
+            p = db.speichere_posts([{"art": art, "titel": TITEL[art][k % len(TITEL[art])], "sprache": "en" if k % 3 else "de",
+                                     "text": "Demo-Post.", "hashtags": ["#astro"]}], quelle="tagesplan", geplant_fuer=d,
+                                   meta={"thema": fm, "hook_stil": stil, "aufforderung": AUFF[k % 4]})[0]
+            db.aendere_post(p["id"], {"status": "gepostet"})
+            wo = {"post": ["facebook", "instagram"], "reel": ["instagram", "tiktok", "facebook"], "story": ["instagram"]}[art]
+            stunde = {"post": 12, "reel": 19, "story": 9}[art]
+            # Rituale und Reels kommen besser an, Rueckblick schwaecher -> "Soraya lernt" hat etwas zu sagen
+            faktor = (1.8 if fm == "Ritual" else 0.5 if fm == "Rückblick" else 1.0) * (1.5 if art == "reel" else 1)
+            for pl in wo:
+                zid = db.plane_veroeffentlichung(p["id"], pl, datetime.combine(d, datetime.min.time()).replace(hour=stunde, tzinfo=himmel.WIEN), zurueckgeben=True)
+                n = 100 + k * 10 + len(pl)
+                ext = {"facebook": f"FB{n}", "instagram": f"IG{n}", "tiktok": f"TT{n}"}[pl]
+                db.setze_veroeffentlichung(zid, "fertig", extern_id=ext, url=f"https://example.com/{ext}")
+                r = int(wert(n, 150, 1300) * faktor)
+                if pl == "facebook":
+                    db.speichere_zahlen(p["id"], pl, int(wert(n, 2, 30) * faktor), wert(n, 0, 6), wert(n, 0, 4), reichweite=wert(n, 60, 520))
+                elif pl == "instagram":
+                    db.speichere_zahlen(p["id"], pl, int(wert(n, 8, 70) * faktor), wert(n, 0, 12), wert(n, 0, 9), reichweite=r,
+                                        gespeichert=int(wert(n, 1, 24) * faktor), aufrufe=r * 3 // 2)
+                else:
+                    db.speichere_zahlen(p["id"], pl, int(wert(n, 20, 160) * faktor), wert(n, 0, 15), wert(n, 0, 10), aufrufe=int(wert(n, 300, 2600) * faktor))
+                um = datetime.combine(d, datetime.min.time()).replace(hour=stunde, minute=k % 50, tzinfo=himmel.WIEN)
+                con.execute("update soraya_veroeffentlichungen set aktualisiert = %s, geplant_um = %s where id = %s", (um, um, zid))
+            if art != "story":
+                DEMO_QUELLEN[f"p{p['id']}"] = {"schritte": {"schnellstart": int(faktor * 2), "register_click": 1},
+                                              "konten": 1 if faktor > 1.5 and k % 2 else 0,
+                                              "tage": {d.isoformat(): int(wert(k, 1, 9) * faktor), (d + timedelta(days=1)).isoformat(): wert(k, 0, 4)}}
+    con.commit(); con.close()
     tagesplan.erstelle("en")
     for i, p in enumerate(db.lade_posts(von=H, bis=H)):
         if p["sprache"] != "en":

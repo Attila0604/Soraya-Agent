@@ -690,6 +690,130 @@
     .aktionen .nebenbei{margin-left:-8px}
     .tab{padding:0 11px}
   }
+  /* ================= Zahlen-Cockpit (Wirkung) ================= */
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .wz-kopf{display:flex;align-items:center;justify-content:space-between;gap:var(--s2) var(--s3);flex-wrap:wrap;margin:0 0 var(--s4)}
+  .segment{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+  .segment button{all:unset;box-sizing:border-box;cursor:pointer;font-size:13px;font-weight:500;color:var(--mist-dim);padding:0 14px;min-height:34px;
+                  display:inline-flex;align-items:center;border-radius:999px;font-variant-numeric:tabular-nums}
+  .segment button[aria-pressed="true"]{background:rgba(201,162,75,.14);color:var(--champagne)}
+  .segment button:focus-visible{outline:2px solid var(--champagne);outline-offset:1px}
+  @media (hover:hover){.segment button:hover{color:var(--champagne)}}
+  .wz-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3);margin:0 0 var(--s3)}
+  .wz-kpi{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:var(--s3) var(--s4) var(--s3)}
+  .wz-kpi .l{font-size:12.5px;color:var(--mist-dim);display:flex;align-items:center;gap:2px}
+  .wz-kpi .v{font-size:28px;font-weight:600;color:#F4EEDD;line-height:1.25;margin:2px 0 2px;font-variant-numeric:tabular-nums}
+  .trend{font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .trend.auf{color:var(--gruen)} .trend.ab{color:#e88a7a} .trend.neutral{color:var(--mist-dim);font-weight:400}
+  .trend .vgl{color:var(--mist-dim);font-weight:400}
+  .wz-hinweis{font-size:13px;color:var(--mist-dim);margin:0 0 var(--s3);display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center}
+  .wz-follower{display:flex;align-items:center;gap:var(--s2) var(--s5);flex-wrap:wrap;margin:0 0 var(--s5);padding:var(--s3) var(--s4);
+               border:1px solid var(--line-soft);border-radius:14px;font-variant-numeric:tabular-nums}
+  .wz-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mist-dim)}
+  .wz-follower .f{display:inline-flex;align-items:baseline;gap:6px;color:var(--mist)}
+  .wz-follower .f .ikon{align-self:center;color:var(--champagne)}
+  .wz-follower b{font-size:17px;color:#F4EEDD;font-weight:600}
+  .wz-follower small{font-size:12px;color:var(--mist-dim)} .wz-follower small.plus{color:var(--gruen)} .wz-follower small.minus{color:#e88a7a}
+  .wz-top h2,.wz-weg h2,.wz-lernt h2,.wz-tabelle h2,.wz-tage h2{font-size:21px;margin:0 0 var(--s3)}
+  .wz-tabelle .panel-kopf h2{margin:0}
+  ol.top3{list-style:none;margin:0;padding:0}
+  ol.top3 li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:var(--s3);align-items:center;padding:var(--s2) 0;border-top:1px solid var(--line-soft)}
+  ol.top3 li:first-child{border-top:0;padding-top:0}
+  .wz-daumen{display:block;width:44px;border-radius:6px;overflow:hidden;border:1px solid var(--line-soft);background:#07040f}
+  .wz-daumen img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
+  .wz-daumen.story img{aspect-ratio:9/16;max-height:62px}
+  ol.top3 .was{min-width:0;display:flex;flex-direction:column;gap:1px}
+  ol.top3 .was b{color:#F4EEDD;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wz-pls{display:inline-flex;gap:6px;color:var(--mist-dim);margin-top:2px}
+  .wz-pls .ikon{width:13px;height:13px}
+  .pkt{text-align:right;font-variant-numeric:tabular-nums}
+  ol.top3 .pkt b{display:block;font-size:18px;color:var(--champagne);font-weight:600;line-height:1.1}
+  ol.top3 .pkt small{font-size:11px;color:var(--mist-dim)}
+  .weg{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;align-items:center;gap:var(--s1);text-align:center}
+  .weg .stufe{display:flex;flex-direction:column;align-items:center;padding:var(--s2) var(--s1);border-radius:10px;border:1px solid transparent;min-width:0}
+  .weg .stufe b{font-size:19px;color:#F4EEDD;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+  .weg .stufe small{font-size:12px;color:var(--mist-dim)}
+  .weg .pfeil{display:flex;flex-direction:column;align-items:center;color:var(--mist-dim);font-size:12px;line-height:1.2;font-variant-numeric:tabular-nums}
+  .weg .pfeil span{color:var(--line);font-size:15px;color:rgba(201,162,75,.55)}
+  .weg .pfeil.schwach small{color:#FFD58A;font-weight:600}
+  .weg .stufe.schwach{border-color:var(--gelb-rand);background:var(--gelb-bg)}
+  .weg .stufe em.wq{display:none}
+  .weg-tipp{margin:var(--s3) 0 0;font-size:13.5px;color:var(--mist);padding-left:var(--s3);border-left:2px solid var(--gelb-rand)}
+  .weg-tipp.leise{border-left-color:var(--line-soft);color:var(--mist-dim)}
+  dl.lernt{margin:0;display:grid;gap:var(--s2)}
+  dl.lernt>div{display:grid;grid-template-columns:136px minmax(0,1fr);gap:var(--s3);padding:var(--s2) 0;border-top:1px solid var(--line-soft)}
+  dl.lernt>div:first-child{border-top:0;padding-top:0}
+  dl.lernt dt{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);padding-top:2px}
+  dl.lernt .weniger dt{color:var(--mist-dim)}
+  dl.lernt dd{margin:0;color:#E4E6EF;font-size:14.5px}
+  .wz-lernt .meta{margin:var(--s2) 0 0}
+  .wz-filter{display:flex;justify-content:space-between;gap:var(--s2) var(--s3);flex-wrap:wrap;align-items:center;margin:0 0 var(--s3)}
+  .wz-filter .chip{min-height:34px;padding:0 12px}
+  .wz-filter .chip .ikon,.wz-filter .chip svg{width:13px;height:13px}
+  .wz-wahl{display:flex;gap:var(--s2);min-width:0;max-width:100%}
+  .wz-wahl select{width:auto;min-width:0;max-width:220px;font-size:13px;padding:7px 10px;min-height:36px}
+  table.wz-posts{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  table.wz-posts th{font-weight:500;color:var(--mist-dim);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line-soft)}
+  table.wz-posts th:first-child{text-align:left}
+  table.wz-posts th .ikon{width:14px;height:14px;vertical-align:-2px}
+  table.wz-posts td{padding:9px 8px;border-bottom:1px solid var(--line-soft);text-align:right;vertical-align:top}
+  table.wz-posts td.post{text-align:left;min-width:0}
+  table.wz-posts td.post b{display:block;color:#F4EEDD;font-weight:600;font-size:14px}
+  table.wz-posts td.post .meta{display:block}
+  table.wz-posts td.pl b{display:block;color:#F4EEDD;font-weight:500}
+  table.wz-posts td.pl small{display:block;color:var(--mist-dim);font-size:11.5px}
+  table.wz-posts td.leer{color:var(--mist-dim)}
+  table.wz-posts td.pkt b{color:var(--champagne);font-size:15px}
+  .wz-tabelle .textlink{margin-top:var(--s2)}
+  .legende .sq.viol{background:var(--viz-violet)}
+  .legende .dot{background:var(--champagne)}
+  .wz-tage .meta{margin:var(--s2) 0 0}
+  /* Wochenbericht auf "Heute" */
+  .wochen-karte{position:relative;border:1px solid var(--line);border-radius:14px;padding:var(--s4) var(--s5);margin:0 0 var(--s4);
+                background:linear-gradient(180deg,rgba(201,162,75,.07),rgba(201,162,75,.02))}
+  .wochen-karte p{margin:var(--s1) 0;font-size:14px;color:var(--mist)}
+  .wochen-karte p b{color:#F4EEDD;font-weight:600}
+  .wk-kopf{display:flex;justify-content:space-between;align-items:center;gap:var(--s2)}
+  .wk-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  .wk-zahlen{font-family:'Cormorant Garamond',serif;font-size:22px!important;color:#F4EEDD!important;font-weight:600;line-height:1.3}
+  .wk-zahlen .trend{font-family:'Inter',sans-serif;font-size:14px}
+  button.wk-zu{all:unset;box-sizing:border-box;cursor:pointer;width:36px;height:36px;margin:-8px -10px -8px 0;display:grid;place-items:center;
+               font-size:20px;color:var(--mist-dim);border-radius:50%}
+  button.wk-zu:focus-visible{outline:2px solid var(--champagne)}
+  @media (hover:hover){button.wk-zu:hover{color:var(--champagne)}}
+  .wochen-karte .textlink{margin-top:var(--s1)}
+  @media (max-width:560px){
+    .wz-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2)}
+    .wz-kpi{padding:var(--s3)}
+    .wz-kpi .v{font-size:24px}
+    .trend .vgl{display:none}
+    .wz-follower{gap:var(--s2) var(--s4);padding:var(--s3)}
+    .wz-follower .wz-label{flex-basis:100%}
+    .wz-follower .f{flex-direction:column;gap:0;align-items:flex-start}
+    .wz-follower .f .ikon{align-self:flex-start;margin-bottom:2px}
+    .weg{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s1)}
+    .weg .pfeil{display:none}
+    .weg .stufe{padding:var(--s2) 2px}
+    .weg .stufe b{font-size:16px}
+    .weg .stufe small{font-size:11.5px}
+    .weg .stufe em.wq{display:block;font-style:normal;font-size:11px;color:var(--mist-dim);margin-top:2px;font-variant-numeric:tabular-nums}
+    .weg .stufe.schwach em.wq{color:#FFD58A;font-weight:600}
+    .wk-zahlen{font-size:20px!important}
+    dl.lernt>div{grid-template-columns:1fr;gap:2px}
+    table.wz-posts thead{display:none}
+    table.wz-posts,table.wz-posts tbody{display:block}
+    table.wz-posts tr{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:var(--s2) var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--line-soft)}
+    table.wz-posts td{border:0;padding:0;text-align:left}
+    table.wz-posts td.post{grid-column:1/-2}
+    table.wz-posts td.pkt{grid-column:-2/-1;text-align:right;grid-row:1}
+    table.wz-posts td.pl::before{content:attr(data-l);display:block;font-size:11px;color:var(--mist-dim)}
+    table.wz-posts td.pl.leer span{display:block}
+    .wochen-karte{padding:var(--s4)}
+    .wz-wahl{flex:1 1 100%}
+    .trichter .stufe{grid-template-columns:minmax(96px,120px) 1fr}
+    .trichter .spur{margin-right:96px}
+    .wz-wahl select{flex:1 1 0;max-width:none}
+  }
 </style>
 </head>
 <body>
@@ -710,6 +834,7 @@
   <!-- ============ HEUTE ============ -->
   <section id="view-heute">
     <div class="cockpit" id="cockpit" aria-label="Überblick"></div>
+    <div id="wochenbericht"></div>
 
     <div class="panel raus-panel" id="rausPanel">
       <div class="panel-kopf"><h2>Heute geht raus<span data-hilfe="raus"></span></h2><span class="meta" id="rausZusammen"></span></div>
@@ -942,13 +1067,22 @@
   </section>
 
   <section id="view-wirkung" class="hide">
-    <div class="werkzeug">
-      <div><label for="wTage">Zeitraum</label>
-        <select id="wTage"><option value="7">Letzte 7 Tage</option><option value="30" selected>Letzte 30 Tage</option><option value="90">Letzte 90 Tage</option></select></div>
-      <div><label for="wKennzahl">Kennzahl im Verlauf<span data-hilfe="kennzahl"></span></label>
-        <select id="wKennzahl"></select></div>
+    <div class="wz-kopf">
+      <span class="meta" id="wZeitraumText"></span>
+      <div class="segment" id="wZeitraum" role="group" aria-label="Zeitraum">
+        <button type="button" data-tage="7" aria-pressed="true">7 Tage</button>
+        <button type="button" data-tage="30" aria-pressed="false">30 Tage</button>
+        <button type="button" data-tage="90" aria-pressed="false">90 Tage</button>
+      </div>
     </div>
-    <div id="wirkungInhalt"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
+    <div id="wCockpit"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
+    <details class="wmehr" id="wDetails"><summary>Details</summary>
+      <div class="werkzeug">
+        <div><label for="wKennzahl">Kennzahl im Verlauf<span data-hilfe="kennzahl"></span></label>
+          <select id="wKennzahl"></select></div>
+      </div>
+      <div id="wirkungInhalt"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
+    </details>
   </section>
 
   <div id="status" class="leer" role="status" aria-live="polite"></div>
@@ -1608,6 +1742,7 @@ document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-
 // wie redaktion.schwer(): nur diese Befunde halten das automatische Posten an
 const befundSchwer = (liste) => (liste || []).some(b => /^(Heikle|Deutsche Wörter|Enthält einen Link|Reel ohne Hook|Überschrift fehlt)/.test(b));
 function zeigeCockpit(d, ps){
+  ladeWochenbericht();
   pruefeStatistik().then(() => { if(statistikVerbunden === false && !$('cockpit').textContent.includes('Statistik')) zeigeCockpit(d, ps); });
   const fertig = d.sprachen.filter(s => (d.laeufe || []).some(l => l.sprache === s && l.status === 'fertig')).length;
   const e = ps && ps.einstellungen, v = ps && ps.verbindungen;
@@ -2011,7 +2146,7 @@ function ladePlattformWirkung(){
   return Promise.all([ladeFacebookWirkung(), ladeInstagramWirkung(), ladeTikTokWirkung()]).then(ladeLernen);
 }
 async function ladeWirkung(){
-  const tage = $('wTage').value;
+  const tage = W_TAGE;
   const box = $('wirkungInhalt');
   box.style.opacity = wirkungDaten ? .55 : 1;  // beim Nachladen den alten Stand halten
   try{
@@ -2061,7 +2196,6 @@ function zeigeWirkung(){
       <details><summary>Als Tabelle</summary><div class="tabwrap">${tabelle(tage)}</div></details>
     </div>
     <div id="igPanel"></div>
-    <details class="wmehr"><summary>Mehr Zahlen: Herkunft, Trichter, Lernen, Links</summary>
     ${herkunftPanel()}
     <div id="fbPanel"></div>
     <div id="ttPanel"></div>
@@ -2078,7 +2212,7 @@ function zeigeWirkung(){
         <div class="balken" style="width:${(v / maxSprache * 82).toFixed(1)}%"></div>
         <span class="wert" style="left:calc(${(v / maxSprache * 82).toFixed(1)}% + 8px)">${zahl(v)}</span></div></div>`).join('')
         : '<p class="meta">Noch keine Daten.</p>'}
-    </div></details>`;
+    </div>`;
   zeichneVerlauf();
   ladePlattformWirkung();
 }
@@ -2114,7 +2248,7 @@ async function ladeLernen(){
 // Reaktionen auf Facebook (Gefaellt mir, Kommentare, Teilen) je geposteten Beitrag
 async function ladeFacebookWirkung(){
   const box = $('fbPanel'); if(!box) return;
-  let r; try{ r = await api('/wirkung/facebook?tage=' + $('wTage').value); }catch(e){ box.innerHTML = ''; return; }
+  let r; try{ r = await api('/wirkung/facebook?tage=' + W_TAGE); }catch(e){ box.innerHTML = ''; return; }
   if(!r.verbunden){ box.innerHTML = ''; return; }
   const b = r.beitraege || [];
   const summe = (k) => b.reduce((n, x) => n + (x[k] || 0), 0);
@@ -2135,7 +2269,7 @@ async function ladeFacebookWirkung(){
 // Instagram: Follower und Zahlen der letzten Beiträge (Aufrufe, Gefällt mir, Kommentare, Gespeichert)
 async function ladeInstagramWirkung(){
   const box = $('igPanel'); if(!box) return;
-  let r; try{ r = await api('/wirkung/instagram?tage=' + $('wTage').value); }catch(e){ box.innerHTML = ''; return; }
+  let r; try{ r = await api('/wirkung/instagram?tage=' + W_TAGE); }catch(e){ box.innerHTML = ''; return; }
   if(!r.verbunden){ box.innerHTML = ''; return; }
   const b = (r.beitraege || []).filter(x => !x.fehler), k = r.konto || {};
   const summe = (f) => b.reduce((n, x) => n + (x[f] || 0), 0);
@@ -2163,7 +2297,7 @@ async function ladeInstagramWirkung(){
 // TikTok: Aufrufe, Gefällt mir, Kommentare, Teilen der Reels (Recht video.list)
 async function ladeTikTokWirkung(){
   const box = $('ttPanel'); if(!box) return;
-  let r; try{ r = await api('/wirkung/tiktok?tage=' + $('wTage').value); }catch(e){ box.innerHTML = ''; return; }
+  let r; try{ r = await api('/wirkung/tiktok?tage=' + W_TAGE); }catch(e){ box.innerHTML = ''; return; }
   if(!r.verbunden){ box.innerHTML = ''; return; }
   const b = r.beitraege || [];
   const summe = (f) => b.reduce((n, x) => n + (x[f] || 0), 0);
@@ -2267,10 +2401,180 @@ function zeichneVerlauf(){
   });
   box.addEventListener('pointerleave', () => { tip.classList.add('hide'); box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); });
 }
-$('wTage').onchange = ladeWirkung;
 $('wKennzahl').onchange = () => wirkungDaten && zeigeWirkung();
-window.addEventListener('resize', () => { if(aktiv === 'wirkung') zeichneVerlauf(); });
-LADER.wirkung = ladeWirkung;
+window.addEventListener('resize', () => { if(aktiv === 'wirkung'){ zeichneVerlauf(); zeichneTage(); } });
+LADER.wirkung = ladeCockpit;
+/* ---------- Zahlen-Cockpit (oben in "Wirkung"): ein Aufruf /wirkung/cockpit ---------- */
+let W_TAGE = 7, cockpitDaten = null, wDetailsTage = null, cockpitNr = 0;
+const wFilter = {pl: 'alle', format: '', sort: 'punkte', alle: false};
+const PL_KURZ = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok'};
+const COCKPIT_PL = ['facebook', 'instagram', 'tiktok'];
+const prozent = (q) => q == null ? '–' : (q >= 10 || Number.isInteger(q) ? Math.round(q) : String(q).replace('.', ',')) + ' %';
+function trend(k){
+  if(k.wert == null) return '<span class="trend neutral">ohne Statistik</span>';
+  if(k.aenderung == null) return `<span class="trend neutral">– <span class="vgl">kein Vergleich</span></span>`;
+  const r = k.aenderung > 0 ? 'auf' : k.aenderung < 0 ? 'ab' : 'neutral';
+  return `<span class="trend ${r}"><span aria-hidden="true">${k.aenderung > 0 ? '↑' : k.aenderung < 0 ? '↓' : '→'}</span> ${zahl(Math.abs(k.aenderung))} %<span class="sr"> ${k.aenderung >= 0 ? 'mehr' : 'weniger'}</span> <span class="vgl">als davor</span></span>`;
+}
+function daumenKlein(p){
+  const fmt = p.art === 'post' ? 'feed' : 'story';
+  return `<span class="wz-daumen ${fmt}"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${fmt}&klein=1&v=${esc(p.stand || '')}"></span>`;
+}
+const artName = (p) => ART[platzVon(p)] || ART[p.art] || 'Post';
+const plIkons = (p) => `<span class="wz-pls">${COCKPIT_PL.filter(pl => p.plattformen[pl]).map(pl => `<span class="ikon" title="${PL_KURZ[pl]}">${IKON[pl]}</span>`).join('')}</span>`;
+function zeigeCockpitW(){
+  const d = cockpitDaten, box = $('wCockpit');
+  $('wZeitraumText').textContent = `${kurzIso(d.von)} – ${kurzIso(d.bis)}`;
+  const kp = Object.fromEntries(d.kpis.map(k => [k.schluessel, k]));
+  const hilfeK = {erreicht: 'Wie viele Menschen deine Posts aus diesem Zeitraum gesehen haben – Reichweite, wenn die Plattform sie liefert, sonst Aufrufe. Zusammengezählt über Facebook, Instagram und TikTok.',
+    reaktionen: 'Gefällt mir, Kommentare, Gespeichert und Geteilt – für die Posts aus diesem Zeitraum.',
+    besuche: 'Besuche über deine Post- und Bio-Links (Landingpage und App).', konten: 'Neu angelegte Konten in der App.'};
+  const kacheln = d.kpis.map(k => `<div class="wz-kpi"><div class="l">${esc(k.name)}${k.schluessel === 'erreicht' ? hilfe(hilfeK.erreicht + ' Reaktionen: Gefällt mir, Kommentare, Gespeichert, Geteilt. Besuche: über deine Post- und Bio-Links.', 'Was zählt hier?') : ''}</div>
+    <div class="v">${k.wert == null ? '–' : zahl(k.wert)}</div><div class="d">${trend(k)}</div></div>`).join('');
+  const fol = (d.follower || []).map(f => `<span class="f"><span class="ikon" aria-hidden="true">${IKON[f.plattform]}</span><span class="sr">${PL_KURZ[f.plattform]}</span>
+      <b>${f.follower == null ? '–' : zahl(f.follower)}</b>${f.zuwachs_7 ? `<small class="${f.zuwachs_7 > 0 ? 'plus' : 'minus'}">${f.zuwachs_7 > 0 ? '+' : '−'}${zahl(Math.abs(f.zuwachs_7))} diese Woche</small>`
+      : f.follower == null ? '<small>noch nicht gemessen</small>' : ''}</span>`).join('');
+  const top = d.top.length ? `<ol class="top3">${d.top.map((p, i) => `<li>${daumenKlein(p)}<div class="was"><b>${esc(p.titel || 'Post ' + p.id)}</b>
+      <span class="meta">${esc(artName(p))}${p.format ? ' · ' + esc(p.format) : ''} · ${esc(kurzIso(p.tag))}</span>${plIkons(p)}</div>
+      <span class="pkt"><b>${zahl(p.punkte)}</b><small>Punkte</small></span></li>`).join('')}</ol>`
+    : `<p class="meta">${d.beitraege.length ? 'Für diese Posts gibt es noch keine Zahlen.' : 'In diesem Zeitraum wurde nichts gepostet.'}</p>`;
+  const t = d.trichter, weg = t.stufen.map((s, i) => `${i ? `<span class="pfeil${s.schwach ? ' schwach' : ''}"><span aria-hidden="true">→</span><small>${prozent(s.quote)}</small></span>` : ''}
+      <span class="stufe${s.schwach ? ' schwach' : ''}" role="listitem"><b>${s.wert == null ? '–' : zahl(s.wert)}</b><small>${esc(s.name)}</small>${i ? `<em class="wq"><span aria-hidden="true">→ </span>${prozent(s.quote)}</em>` : ''}</span>`).join('');
+  const lernt = d.lernen.saetze.map(x => `<div class="${x.art}"><dt>${esc(x.titel)}</dt><dd>${esc(x.text)}</dd></div>`).join('');
+  box.innerHTML = `
+    <div class="wz-kpis">${kacheln}</div>
+    ${d.statistik !== 'ok' ? `<p class="wz-hinweis">${d.statistik === 'nicht_verbunden' ? 'Besuche und neue Konten fehlen: Die Statistik ist noch nicht verbunden.' : 'Die App-Statistik ist gerade nicht erreichbar.'}
+      <button class="textlink" data-oeffne-details="1">Anleitung ›</button></p>` : ''}
+    ${fol ? `<div class="wz-follower"><span class="wz-label">Follower</span>${fol}</div>` : ''}
+    <div class="panel wz-top"><h2>Beste Posts</h2>${top}</div>
+    <div class="panel wz-weg"><h2>Vom Post zum Konto</h2>
+      <div class="weg" role="list">${weg}</div>
+      <p class="weg-tipp${t.schwach ? '' : ' leise'}">${esc(t.hinweis)}</p></div>
+    <div class="panel wz-lernt"><h2>Soraya lernt</h2><dl class="lernt">${lernt}</dl>
+      ${d.lernen.duenn ? '' : `<p class="meta">Aus ${mehrzahl(d.lernen.gemessen, 'gemessenen Post', 'gemessenen Posts')} der letzten 30 Tage.</p>`}</div>
+    <div class="panel wz-tabelle"><div class="panel-kopf"><h2>Alle Posts</h2><span class="meta" id="wzAnzahl"></span></div>
+      <div class="wz-filter" id="wzFilter"></div><div id="wzPosts"></div></div>
+    <div class="panel wz-tage"><h2>Pro Tag</h2>
+      <div class="legende"><span><i class="sq"></i>Erreicht</span><span><i class="sq viol"></i>Besuche</span><span><i class="dot"></i>Tag mit Post</span></div>
+      <div class="viz" id="wzTage"></div>
+      ${d.zahlen_stand ? `<p class="meta">Zahlen der Plattformen: Stand ${esc(tagName(d.zahlen_stand))} ${esc(uhr(d.zahlen_stand))} · werden alle 6 Stunden geholt.</p>` : ''}</div>`;
+  zeigePostTabelle(); zeichneTage();
+}
+function zeigePostTabelle(){
+  const d = cockpitDaten; if(!d || !$('wzPosts')) return;
+  const pls = COCKPIT_PL.filter(pl => d.beitraege.some(p => p.plattformen[pl]));
+  const formate = [...new Set(d.beitraege.map(p => p.format).filter(Boolean))].sort();
+  if(wFilter.pl !== 'alle' && !pls.includes(wFilter.pl)) wFilter.pl = 'alle';
+  if(wFilter.format && !formate.includes(wFilter.format)) wFilter.format = '';
+  $('wzFilter').innerHTML = `<div class="chips" role="group" aria-label="Plattform">${['alle', ...pls].map(pl => `<button type="button" class="chip${wFilter.pl === pl ? ' on' : ''}" data-wz-pl="${pl}" aria-pressed="${wFilter.pl === pl}">${pl === 'alle' ? 'Alle' : IKON[pl] + PL_KURZ[pl]}</button>`).join('')}</div>
+    <div class="wz-wahl">${formate.length > 1 ? `<label class="sr" for="wzFormat">Format</label><select id="wzFormat"><option value="">Alle Formate</option>${formate.map(f => `<option${f === wFilter.format ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select>` : ''}
+      <label class="sr" for="wzSort">Sortieren</label><select id="wzSort">${[['punkte', 'Nach Punkten'], ['erreicht', 'Nach Erreicht'], ['datum', 'Neueste zuerst']].map(([k, n]) => `<option value="${k}"${k === wFilter.sort ? ' selected' : ''}>${n}</option>`).join('')}</select></div>`;
+  let liste = d.beitraege.filter(p => (wFilter.pl === 'alle' || p.plattformen[wFilter.pl]) && (!wFilter.format || p.format === wFilter.format));
+  const s = wFilter.sort;
+  liste.sort((a, b) => s === 'datum' ? String(b.gepostet).localeCompare(String(a.gepostet)) : s === 'erreicht' ? b.erreicht - a.erreicht : b.punkte - a.punkte);
+  $('wzAnzahl').textContent = mehrzahl(liste.length, 'Post', 'Posts');
+  if(!liste.length){ $('wzPosts').innerHTML = `<p class="meta">${d.beitraege.length ? 'Keine Posts für diese Auswahl.' : 'In diesem Zeitraum wurde nichts gepostet.'}</p>`; return; }
+  const zeigen = wFilter.alle ? liste : liste.slice(0, matchMedia('(max-width:560px)').matches ? 6 : 12);
+  const zelle = (p, pl) => { const x = p.plattformen[pl];
+    if(!x) return `<td class="pl leer" data-l="${PL_KURZ[pl]}"><span title="nicht gepostet">–</span><span class="sr">nicht gepostet</span></td>`;
+    if(x.erreicht == null) return `<td class="pl" data-l="${PL_KURZ[pl]}"><span class="meta">noch keine Zahlen</span></td>`;
+    return `<td class="pl" data-l="${PL_KURZ[pl]}"><b>${zahl(x.erreicht)}</b><small>${zahl(x.reaktionen)} Reakt.</small></td>`; };
+  $('wzPosts').innerHTML = `<table class="wz-posts" style="--n:${Math.max(2, pls.length)}"><thead><tr><th scope="col">Post</th>${pls.map(pl => `<th scope="col" class="pl" title="${PL_KURZ[pl]}: erreicht · Reaktionen"><span class="ikon">${IKON[pl]}</span><span class="sr">${PL_KURZ[pl]}</span></th>`).join('')}<th scope="col" class="pkt">Punkte</th></tr></thead><tbody>
+    ${zeigen.map(p => `<tr><td class="post"><b>${esc(p.titel || 'Post ' + p.id)}</b><span class="meta">${esc(kurzIso(p.tag))} · ${esc(artName(p))}${p.format ? ' · ' + esc(p.format) : ''}${p.besuche ? ` · ${mehrzahl(p.besuche, 'Besuch', 'Besuche')}` : ''}</span></td>
+      ${pls.map(pl => zelle(p, pl)).join('')}<td class="pkt" data-l="Punkte"><b>${zahl(p.punkte)}</b></td></tr>`).join('')}</tbody></table>
+    ${liste.length > zeigen.length ? `<button class="textlink" data-wz-alle="1">Alle ${liste.length} zeigen ⌄</button>` : ''}
+    <p class="meta">Je Plattform: erreicht (Reichweite, sonst Aufrufe) und Reaktionen.</p>`;
+}
+document.addEventListener('click', (ev) => {
+  const pl = ev.target.closest('[data-wz-pl]'); if(pl){ wFilter.pl = pl.dataset.wzPl; wFilter.alle = false; return zeigePostTabelle(); }
+  if(ev.target.closest('[data-wz-alle]')){ wFilter.alle = true; return zeigePostTabelle(); }
+  if(ev.target.closest('[data-oeffne-details]')){ $('wDetails').open = true; $('wDetails').scrollIntoView({behavior: 'smooth', block: 'start'}); }
+});
+document.addEventListener('change', (ev) => {
+  if(ev.target.id === 'wzFormat'){ wFilter.format = ev.target.value; zeigePostTabelle(); }
+  if(ev.target.id === 'wzSort'){ wFilter.sort = ev.target.value; zeigePostTabelle(); }
+});
+// Pro Tag: oben Erreicht, darunter Besuche (eigene Skala), Punkte = Tag mit Post
+function zeichneTage(){
+  const box = $('wzTage'); if(!box || !cockpitDaten) return;
+  const tage = cockpitDaten.verlauf, mitBesuch = tage.some(t => t.besuche != null);
+  const W = Math.max(300, box.clientWidth), L = 40, R = 8, T = 8;
+  const h1 = 120, gap = 22, h2 = mitBesuch ? 60 : 0, unten = 40, H = T + h1 + (mitBesuch ? gap + h2 : 0) + unten;
+  const pw = W - L - R, band = pw / Math.max(1, tage.length), bw = Math.min(22, Math.max(2, band - 2));
+  const rund = (m) => { if(m <= 4) return Math.max(1, m); const p = Math.pow(10, Math.floor(Math.log10(m))); return Math.ceil(m / p) * p; };
+  const max1 = rund(Math.max(...tage.map(t => t.erreicht || 0), 0)), max2 = rund(Math.max(...tage.map(t => t.besuche || 0), 0));
+  const y1 = T + h1, y2 = T + h1 + gap + h2;
+  const balken = (cx, v, max, basis, hoehe, farbe) => { if(!v) return ''; const top = basis - v / max * hoehe, r = Math.min(3, basis - top, bw / 2), x0 = cx - bw / 2, x1 = cx + bw / 2;
+    return `<path d="M${x0},${basis} V${top + r} Q${x0},${top} ${x0 + r},${top} H${x1 - r} Q${x1},${top} ${x1},${top + r} V${basis} Z" fill="${farbe}"/>`; };
+  const achse = (basis, hoehe, max, name) => `<line x1="${L}" x2="${W - R}" y1="${basis}" y2="${basis}" stroke="var(--viz-axis)"/><line x1="${L}" x2="${W - R}" y1="${basis - hoehe}" y2="${basis - hoehe}" stroke="var(--viz-grid)"/>
+    <text x="${L - 6}" y="${basis - hoehe + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(max)}</text><text x="${L - 6}" y="${basis + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">0</text>`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Erreicht und Besuche pro Tag">` + achse(y1, h1, max1) + (mitBesuch ? achse(y2, h2, max2) : '');
+  const jeder = Math.ceil(tage.length / Math.max(1, Math.floor(pw / 46))), basisPunkte = (mitBesuch ? y2 : y1) + 11;
+  tage.forEach((t, i) => {
+    const cx = L + band * i + band / 2;
+    s += balken(cx, t.erreicht, max1, y1, h1, 'var(--viz-gold)');
+    if(mitBesuch) s += balken(cx, t.besuche, max2, y2, h2, 'var(--viz-violet)');
+    if(t.posts) s += `<circle cx="${cx}" cy="${basisPunkte}" r="3.5" fill="var(--champagne)" stroke="#12162A" stroke-width="1.5"/>`;
+    if((tage.length - 1 - i) % jeder === 0){ const [, m, dd] = t.datum.split('-'); s += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#8A8FA6">${+dd}.${+m}.</text>`; }
+    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${basisPunkte - T + 6}" fill="transparent" tabindex="0" aria-label="${esc(kurzIso(t.datum))}: ${t.erreicht} erreicht${mitBesuch ? ', ' + t.besuche + ' Besuche' : ''}"/>`;
+  });
+  box.innerHTML = s + '</svg><div class="tip hide" id="wzTip"></div>';
+  const tip = $('wzTip');
+  const zeig = (el) => { const t = tage[+el.dataset.i];
+    tip.innerHTML = `<strong>${esc(kurzIso(t.datum))}</strong><span class="key" style="background:var(--viz-gold)"></span>${zahl(t.erreicht)} erreicht
+      ${mitBesuch ? `<br><span class="key" style="background:var(--viz-violet)"></span>${mehrzahl(t.besuche, 'Besuch', 'Besuche')}` : ''}${t.posts ? `<br>${mehrzahl(t.posts, 'Post', 'Posts')} gepostet` : ''}`;
+    const x = +el.getAttribute('x') + band / 2; tip.style.left = Math.min(Math.max(x, 80), W - 80) + 'px'; tip.style.top = (T + 40) + 'px';
+    tip.classList.remove('hide'); box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); el.setAttribute('fill', 'rgba(231,211,161,.06)'); };
+  box.querySelectorAll('.hit').forEach(el => { el.addEventListener('pointermove', () => zeig(el)); el.addEventListener('focus', () => zeig(el)); });
+  box.addEventListener('pointerleave', () => { tip.classList.add('hide'); box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); });
+}
+async function ladeCockpit(){
+  const box = $('wCockpit'), nr = ++cockpitNr;
+  box.style.opacity = cockpitDaten ? .55 : 1;
+  try{ const d = await api('/wirkung/cockpit?tage=' + W_TAGE); if(nr !== cockpitNr) return; cockpitDaten = d; box.style.opacity = 1; zeigeCockpitW(); }
+  catch(e){ if(nr !== cockpitNr) return; box.style.opacity = 1; cockpitDaten = null; box.innerHTML = ladeFehler('Die Zahlen', e); }
+  if($('wDetails').open && wDetailsTage !== W_TAGE){ wDetailsTage = W_TAGE; ladeWirkung(); }
+}
+// Details (App-Zahlen, Herkunft, Plattformen, Lernen, Links) erst beim Aufklappen laden: holt frische Plattform-Zahlen
+$('wDetails').addEventListener('toggle', () => { if($('wDetails').open && wDetailsTage !== W_TAGE){ wDetailsTage = W_TAGE; ladeWirkung(); } });
+$('wZeitraum').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-tage]'); if(!b || +b.dataset.tage === W_TAGE) return;
+  W_TAGE = +b.dataset.tage;
+  $('wZeitraum').querySelectorAll('[data-tage]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  ladeCockpit();
+});
+
+/* ---------- Wochenbericht auf "Heute" (ab Montag, bis weggeklickt) ---------- */
+let wochenStand = 0;
+const spanne = (von, bis) => { const a = ausIso(von), b = ausIso(bis);
+  return a.getMonth() === b.getMonth() ? `${a.getDate()}.–${kurz(b)}` : `${kurz(a)} – ${kurz(b)}`; };
+function wochenZahlen(w){
+  const k = Object.fromEntries((w.kpis || []).map(x => [x.schluessel, x])), teile = [];
+  const e = k.erreicht || {};
+  if(e.wert) teile.push(`${zahl(e.wert)} erreicht${e.aenderung != null ? ` <span class="trend ${e.aenderung >= 0 ? 'auf' : 'ab'}">${e.aenderung >= 0 ? '+' : '−'}${zahl(Math.abs(e.aenderung))} %</span>` : ''}`);
+  else if(k.besuche && k.besuche.wert) teile.push(mehrzahl(k.besuche.wert, 'Besuch', 'Besuche'));
+  if(k.konten && k.konten.wert) teile.push(mehrzahl(k.konten.wert, 'neues Konto', 'neue Konten'));
+  return teile.join(' · ') || 'Noch wenig gemessen';
+}
+async function ladeWochenbericht(){
+  if(Date.now() - wochenStand < 5 * 60 * 1000) return;
+  wochenStand = Date.now();
+  const box = $('wochenbericht');
+  let w; try{ w = await api('/wirkung/wochenbericht'); }catch(e){ box.innerHTML = ''; return; }
+  if(!w.zeigen){ box.innerHTML = ''; return; }
+  box.innerHTML = `<aside class="wochen-karte" aria-label="Wochenbericht">
+    <div class="wk-kopf"><span class="wk-label">Letzte Woche · ${esc(spanne(w.von, w.bis))}</span>
+      <button class="wk-zu" data-woche-zu="${esc(w.woche)}" aria-label="Wochenbericht schließen">×</button></div>
+    <p class="wk-zahlen">${wochenZahlen(w)}</p>
+    ${w.bester ? `<p>Bester Post: <b>„${esc(w.bester.titel || 'Post ' + w.bester.id)}“</b> <span class="meta">${esc(ART[w.bester.art] || 'Post')} · ${zahl(w.bester.punkte)} Punkte</span></p>` : ''}
+    <p>Soraya testet diese Woche: ${esc(w.test)}.</p>
+    <button class="textlink" data-ziel-tab="wirkung">Alle Zahlen ›</button></aside>`;
+}
+document.addEventListener('click', async (ev) => {
+  const b = ev.target.closest('[data-woche-zu]'); if(!b) return;
+  $('wochenbericht').innerHTML = '';
+  try{ await api('/wirkung/wochenbericht/gesehen', {method: 'POST', body: JSON.stringify({woche: b.dataset.wocheZu})}); }catch(e){}
+});
 
 /* ---------- POSTEN ---------- */
 const PL_NAME = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn'};
