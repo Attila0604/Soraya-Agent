@@ -192,8 +192,11 @@ def instagram_zahlen_erlaubt(z: dict | None) -> bool:
     Verbindungen von vor diesem Recht haben es nie bekommen -> Hinweis "neu verbinden"."""
     if not z or not z.get("token") or z.get("insights_fehlt"):
         return False
-    if isinstance(z.get("rechte"), list):
-        return IG_INSIGHTS_RECHT in z["rechte"]
+    # Die Liste der Freigaben, die Instagram beim Verbinden mitschickt, ist nicht immer vollstaendig.
+    # Deshalb zaehlt, ob das Recht angefragt wurde; fehlt es wirklich, meldet Meta beim ersten Abruf
+    # "keine Berechtigung" -> insights_fehlt (bis zum Neu-Verbinden).
+    if isinstance(z.get("rechte"), list) and IG_INSIGHTS_RECHT in z["rechte"]:
+        return True
     return IG_INSIGHTS_RECHT in (z.get("angefragt") or "")
 
 
