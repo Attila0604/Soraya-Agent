@@ -573,6 +573,10 @@ class FakeMeta:
                 return self._r({"username": "soraya.astro", "followers_count": self.follower, "media_count": 12})
             return self._r({"user_id": "1789", "username": "soraya.astro"})
         if url.endswith("/insights") and "graph.instagram.com" in url:
+            if self.ig_insights_fehler == "weg":
+                return self._r({"error": {"message": "Unsupported get request. Object with ID '1812' does not exist, cannot be "
+                                          "loaded due to missing permissions, or does not support this operation",
+                                          "code": 100}}, 400)
             if self.ig_insights_fehler == "wenig":
                 return self._r({"error": {"message": "(#10) Not enough viewers for the media to show insights",
                                           "code": 10}}, 400)
@@ -1442,6 +1446,11 @@ def test_instagram_ohne_insights_recht(fake_meta, frische_db):
     assert d["recht_fehlt"] is False and not meta.zugang("instagram").get("insights_fehlt")
     assert meta.instagram_zahlen_erlaubt({"token": "x", "angefragt": meta.IG_SCOPES, "insights_fehlt": True,
                                           "insights_meldung": "Meta: (#10) Not enough viewers for the media"}) is True
+    # abgelaufene Story / geloeschter Beitrag: nur dieser Beitrag ohne Zahlen, kein Rechte-Hinweis
+    _verbinde("instagram")
+    fake_meta.ig_insights_fehler = "weg"
+    d = client.get("/wirkung/instagram", headers=AUTH).json()
+    assert d["recht_fehlt"] is False and not meta.zugang("instagram").get("insights_fehlt")
     # unbekannte Kennzahl -> kurze Liste
     fake_meta.ig_insights_fehler = False
     assert meta.instagram_insights("M_ALT", "post", "T") == {"reach": 840, "saved": 7}

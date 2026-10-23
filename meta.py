@@ -192,7 +192,8 @@ def instagram_zahlen_erlaubt(z: dict | None) -> bool:
     Verbindungen von vor diesem Recht haben es nie bekommen -> Hinweis "neu verbinden"."""
     if not z or not z.get("token"):
         return False
-    if z.get("insights_fehlt") and z.get("insights_meldung") and "not enough viewers" not in z["insights_meldung"].lower():
+    if z.get("insights_fehlt") and z.get("insights_meldung") and not (
+            "not enough viewers" in z["insights_meldung"].lower() or _objekt_weg(Exception(z["insights_meldung"]))):
         return False          # (ohne gemerkte Meldung einmal neu fragen, damit sie im Dashboard steht)
     # Die Liste der Freigaben, die Instagram beim Verbinden mitschickt, ist nicht immer vollstaendig.
     # Deshalb zaehlt, ob das Recht angefragt wurde; fehlt es wirklich, meldet Meta beim ersten Abruf
@@ -335,9 +336,16 @@ def _zu_wenig_aufrufe(ex: Exception) -> bool:
     return "not enough viewers" in str(ex).lower()
 
 
+def _objekt_weg(ex: Exception) -> bool:
+    """Beitrag nicht (mehr) abrufbar, z. B. abgelaufene Story oder geloeschter Post ("Unsupported get request.
+    Object with ID ... does not exist, cannot be loaded due to missing permissions ...")."""
+    t = str(ex).lower()
+    return "unsupported get request" in t or "does not exist" in t
+
+
 def _ist_rechtefehler(ex: Exception) -> bool:
     t = str(ex).lower()
-    if _zu_wenig_aufrufe(ex):
+    if _zu_wenig_aufrufe(ex) or _objekt_weg(ex):
         return False
     return any(w in t for w in ("permission", "(#200)", "insufficient", "not authorized", "scope"))
 
