@@ -631,6 +631,7 @@ def wirkung_instagram(tage: int = 30):
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
     return {"verbunden": True, "recht_fehlt": r["recht_fehlt"], "konto": posten.follower_stand(),
+            "meldung": (meta.zugang("instagram") or {}).get("insights_meldung") if r["recht_fehlt"] else None,
             "beitraege": r["beitraege"]}
 
 

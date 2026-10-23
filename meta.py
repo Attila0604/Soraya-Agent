@@ -190,8 +190,10 @@ def zugang(dienst: str) -> dict | None:
 def instagram_zahlen_erlaubt(z: dict | None) -> bool:
     """Darf der gespeicherte Instagram-Zugang Zahlen je Beitrag lesen (instagram_business_manage_insights)?
     Verbindungen von vor diesem Recht haben es nie bekommen -> Hinweis "neu verbinden"."""
-    if not z or not z.get("token") or z.get("insights_fehlt"):
+    if not z or not z.get("token"):
         return False
+    if z.get("insights_fehlt") and z.get("insights_meldung") and "not enough viewers" not in z["insights_meldung"].lower():
+        return False          # (ohne gemerkte Meldung einmal neu fragen, damit sie im Dashboard steht)
     # Die Liste der Freigaben, die Instagram beim Verbinden mitschickt, ist nicht immer vollstaendig.
     # Deshalb zaehlt, ob das Recht angefragt wurde; fehlt es wirklich, meldet Meta beim ersten Abruf
     # "keine Berechtigung" -> insights_fehlt (bis zum Neu-Verbinden).
@@ -328,9 +330,16 @@ class KeinRecht(MetaFehler):
     """Dem Zugang fehlt das Recht fuer die Zahlen (instagram_business_manage_insights)."""
 
 
+def _zu_wenig_aufrufe(ex: Exception) -> bool:
+    """Instagram zeigt Zahlen erst ab genug Aufrufen ("(#10) Not enough viewers for the media to show insights")."""
+    return "not enough viewers" in str(ex).lower()
+
+
 def _ist_rechtefehler(ex: Exception) -> bool:
     t = str(ex).lower()
-    return any(w in t for w in ("permission", "(#10)", "(#200)", "insufficient", "not authorized", "scope"))
+    if _zu_wenig_aufrufe(ex):
+        return False
+    return any(w in t for w in ("permission", "(#200)", "insufficient", "not authorized", "scope"))
 
 
 def _werte(d: dict) -> dict:
@@ -351,11 +360,15 @@ def instagram_insights(media_id: str, art: str, token: str) -> dict:
         return _werte(_get(f"{graph_ig()}/{media_id}/insights", metric=IG_METRIKEN.get(art, IG_METRIKEN["post"]),
                            access_token=token))
     except MetaFehler as ex:
+        if _zu_wenig_aufrufe(ex):
+            return {}              # noch zu wenige Aufrufe: Instagram liefert (noch) keine Zahlen, kein Fehler
         if _ist_rechtefehler(ex):
             raise KeinRecht(str(ex)) from ex
         try:                       # z. B. eine Kennzahl, die es fuer diese Art (noch) nicht gibt
             return _werte(_get(f"{graph_ig()}/{media_id}/insights", metric=IG_METRIKEN_KURZ, access_token=token))
         except MetaFehler as ex2:
+            if _zu_wenig_aufrufe(ex2):
+                return {}
             if _ist_rechtefehler(ex2):
                 raise KeinRecht(str(ex2)) from ex2
             raise
@@ -391,9 +404,10 @@ def instagram_zahlen(eintraege: list[dict]) -> dict:
             if insights:
                 try:
                     w = instagram_insights(e["extern_id"], e.get("art") or "post", token)
-                except KeinRecht:
+                except KeinRecht as ex:
                     insights, recht_fehlt = False, True
                     z["insights_fehlt"] = True          # bis zum Neu-Verbinden nicht mehr fragen
+                    z["insights_meldung"] = str(ex)[:300]   # genaue Meldung von Instagram (fuers Dashboard)
                     db.setze_einstellung("meta_instagram", z)
                     w = {}
                 zeile.setdefault("reaktionen", w.get("likes", 0))
