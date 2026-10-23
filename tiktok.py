@@ -38,7 +38,10 @@ import meta
 
 TIMEOUT = 60
 API = "https://open.tiktokapis.com/v2"
-SCOPES = "user.info.basic,video.upload,video.publish,video.list"
+# video.list (Zahlen) gibt es nur mit der "Display API", die TikTok nicht jeder App anbietet. Ohne das Recht in der
+# App lehnt TikTok das Verbinden ab -> nur anfragen, wenn TIKTOK_ZAHLEN=1 in Railway gesetzt ist.
+SCOPES_BASIS = "user.info.basic,video.upload,video.publish"
+SCOPES = SCOPES_BASIS + (",video.list" if os.environ.get("TIKTOK_ZAHLEN") == "1" else "")
 ZAHLEN_RECHT = "video.list"
 # Klare deutsche Saetze fuer die haeufigsten Fehler der Content Posting API
 FEHLER_TEXTE = {

@@ -2168,7 +2168,7 @@ async function ladeTikTokWirkung(){
   const b = r.beitraege || [];
   const summe = (f) => b.reduce((n, x) => n + (x[f] || 0), 0);
   box.innerHTML = `<div class="panel"><h2>${IKON.tiktok} Auf TikTok</h2>
-    ${r.recht_fehlt ? `<p class="lernhinweis">✦ ${kurzMehr('TikTok neu verbinden, um Zahlen zu sehen.', 'In der TikTok-App (developers.tiktok.com) das Recht <code>video.list</code> anhaken, dann unter „Posten“ → Verbindungen TikTok neu verbinden.')}</p>`
+    ${r.recht_fehlt ? `<p class="meta">${kurzMehr('Die TikTok-Zahlen siehst du im TikTok Studio (Beiträge → Aufrufe, Likes).', 'Hier im Content Studio erscheinen sie nur, wenn deine TikTok-App das Recht <code>video.list</code> hat (Produkt „Display API“). Das bietet TikTok nicht jeder App an – fürs Posten ist es nicht nötig.')}</p>`
     : b.length ? `<div class="kpis klein3 vier">
         <div class="kpi"><div class="l">Aufrufe</div><div class="v">${zahl(summe('aufrufe'))}</div></div>
         <div class="kpi"><div class="l">Gefällt mir</div><div class="v">${zahl(summe('reaktionen'))}</div></div>
@@ -2370,7 +2370,7 @@ function einrichtungTikTok(x){
       Nutzungsbedingungen: ${kopierZeile(NUTZUNG_URL)} Datenschutz: ${kopierZeile(DATENSCHUTZ_URL)}`],
     ['Produkte hinzufügen', '„Add products“: <b>Login Kit</b> und <b>Content Posting API</b>. Bei Content Posting API „Direct Post“ nur einschalten, wenn du direkt veröffentlichen willst.'],
     ['Rückruf-Adresse (Login Kit → Redirect URI, Web)', kopierZeile(x.rueckruf_url || '')],
-    ['Rechte (Scopes)', '<code>user.info.basic</code>, <code>video.upload</code>, <code>video.publish</code>, <code>video.list</code> (für die Zahlen unter „Wirkung“).'],
+    ['Rechte (Scopes)', '<code>user.info.basic</code>, <code>video.upload</code>, <code>video.publish</code> – sind mit Login Kit und Content Posting API automatisch dabei.'],
     ['Sandbox', 'Oben auf „Sandbox“ umschalten → „Target users“ → dein eigenes TikTok-Konto hinzufügen. Bis TikTok die App geprüft hat, geht es nur damit – für Entwürfe in deine TikTok-App reicht das.'],
     ['Schlüssel in Railway', `<b>Client key</b> und <b>Client secret</b> (die der Sandbox) beim Soraya-Agent als <b>TIKTOK_CLIENT_KEY</b> und <b>TIKTOK_CLIENT_SECRET</b> eintragen → „Deploy“. Danach hier „Verbinden“.`]]);
 }
@@ -2399,12 +2399,10 @@ function verbindungsZeile(p, x, e){
     ? `Ein · ${e.tiktok_modus === 'direkt' ? 'veröffentlicht direkt' : 'Reels kommen als Entwurf in deine TikTok-App'}` : 'Aus – es geht nichts auf TikTok (unten bei Einstellungen einschalten)');
   if(p === 'linkedin' && x.verbunden) zusatz.push(e.plattformen.linkedin ? 'Ein · Feed-Posts und Reels (keine Storys), sachlicher Text mit Link'
     : 'Aus – es geht nichts auf LinkedIn (unten bei Einstellungen einschalten)');
-  const neu = (p === 'instagram' && x.verbunden && x.zahlen === false) || (p === 'tiktok' && x.verbunden && x.zahlen === false)
+  const neu = (p === 'instagram' && x.verbunden && x.zahlen === false)
     || (p === 'linkedin' && (x.bald_ablaufend || x.abgelaufen));
   if(p === 'instagram' && x.verbunden && x.zahlen === false)
     zusatz.push(`<span class="warnzeile">Instagram neu verbinden, um Zahlen zu sehen.</span><span class="rest" hidden> ${IG_RECHT_SCHRITTE}</span>`);
-  if(p === 'tiktok' && x.verbunden && x.zahlen === false)
-    zusatz.push(`<span class="warnzeile">TikTok neu verbinden, um Zahlen zu sehen.</span><span class="rest" hidden> In deiner TikTok-App auf developers.tiktok.com muss das Recht <code>video.list</code> angehakt sein, dann hier neu verbinden.</span>`);
   if(p === 'linkedin' && x.bald_ablaufend) zusatz.push(`<span class="warnzeile">Läuft in wenigen Tagen ab – LinkedIn neu verbinden.</span>`);
   const knopf = x.verbunden || x.abgelaufen
     ? `<div class="row">${neu ? knopfLink(VB_ZIEL[p], p === 'linkedin' ? 'LinkedIn neu verbinden' : 'Neu verbinden') : ''}<button class="ghost klein" data-trennen="${p}">Trennen</button></div>`
