@@ -882,15 +882,18 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     z = portal(int(zeichen_h * m))
     s = zeichen_h * m / 312
     aufkleben(leinwand, z, (W * m / 2 - 256 * s, (118 if story else 62) * m - 112 * s))
-    datum = datumszeile(meta) if mit_mond else None
+    # Kopf so knapp wie moeglich: nur das Format (gold); das Datum nur, wenn es kein Format gibt
+    datum = datumszeile(meta) if mit_mond and not st["label"] else None
     unten = H - 300 if story else H - 192
     oben = kopf(d, W, m, story, akzent, st["label"], datum)
     platz = (unten - (150 if story else 72)) - oben
 
     titel = messe_text(post.get("titel") or post.get("text") or "", breite=W - 180, groesse=108 if story else 92,
                        name="cormorant", max_zeilen=4 if story else 3, min_groesse=56)
+    # Unterzeile nur noch bei Posts ohne Format (Studio); im Tagesplan reicht die Ueberschrift
     unter = messe_text(post["untertitel"], breite=W - 220, groesse=42 if story else 36, name="inter400",
-                       zeilenhoehe=1.35, max_zeilen=3, min_groesse=28) if post.get("untertitel") else None
+                       zeilenhoehe=1.35, max_zeilen=2, min_groesse=28) \
+        if post.get("untertitel") and not st["label"] and post.get("art") != "story" else None
     frage_text = post.get("text") if post.get("art") == "story" and post.get("text") and post.get("text") != post.get("titel") else ""
     antworten = st["punkte"][:2] if story and post.get("art") == "story" and len(st["punkte"]) >= 2 else []
     if antworten and frage_text:
@@ -1069,7 +1072,7 @@ def folie(post: dict, nr: int) -> Image.Image:
         d = ImageDraw.Draw(leinwand, "RGBA")
     r = 92
     tt = messe_text(titel, breite=W - 200, groesse=88, name="cormorant", max_zeilen=2, min_groesse=56)
-    tx = messe_text(text, breite=W - 220, groesse=46, name="inter400", zeilenhoehe=1.42, max_zeilen=6, min_groesse=32)
+    tx = messe_text(text, breite=W - 240, groesse=52, name="inter400", zeilenhoehe=1.4, max_zeilen=5, min_groesse=34)
     hoehe = 2 * r + 70 + tt["hoehe"] + 46 + 44 + tx["hoehe"]
     cy = oben + max(0, (unten - oben - hoehe) / 2) + r
     _medaillon(d, W / 2, cy, r, m, akzent, glyphe=ZEICHEN_GLYPHE[idx] if idx is not None else None,

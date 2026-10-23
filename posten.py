@@ -138,7 +138,7 @@ def _ohne_bio(text: str, sprache: str) -> str:
 
 HASHTAGS_MAX = 5
 HOOK_MAX = 125           # so viel zeigt Instagram vor "… mehr"
-ABSATZ_MAX = 230          # laengere Absaetze werden an Satzgrenzen geteilt (gut lesbar am Handy)
+ABSATZ_MAX = 160          # laengere Absaetze werden an Satzgrenzen geteilt (sehr kurz, gut lesbar am Handy)
 _ABK = re.compile(r"\b(z\. ?B\.|d\. ?h\.|u\. ?a\.|bzw\.|ca\.|Nr\.|vs\.|e\. ?g\.|i\. ?e\.|pl\.|kb\.|ill\.|ecc\.)", re.IGNORECASE)
 _SATZ = re.compile(r"(?<=[.!?…])\s+(?=[^\s])|(?<=[\U0001F300-\U0001FAFF☀-➿])\s+(?=[A-ZÄÖÜÁÉÍÓŐÚŰ])")
 _BIO = re.compile(r"\bbio\b|bióban", re.IGNORECASE)
@@ -186,9 +186,9 @@ def _luftig(text: str) -> str:
     if len(absaetze) > 1 or "\n" not in letzter:
         s = _saetze(letzter)
         i = next((k for k in range(len(s) - 1, -1, -1) if _BIO.search(s[k])), None)
-        if i is not None and i > 0:
-            if len(s[i].split()) <= 4 and i > 1 and not s[i - 1].rstrip().endswith("?"):
-                i -= 1                               # "… gratis, ohne Konto. Link in Bio ✨" bleibt zusammen
+        if i and len(s[i].split()) <= 4 and not s[i - 1].rstrip().endswith("?"):
+            i -= 1                                   # "… gratis, ohne Konto. Link in Bio ✨" bleibt zusammen
+        if i:
             absaetze[-1:] = [" ".join(s[:i]), " ".join(s[i:])]
     # die Frage zum Kommentieren ("Welches Zeichen bist du? Schreib es in die Kommentare 👇") steht allein
     k = len(absaetze) - (2 if len(absaetze) > 1 and _BIO.search(absaetze[-1]) else 1)

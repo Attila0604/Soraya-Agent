@@ -209,7 +209,8 @@ check("Wirkung: 30 Tagesbalken-Trefferflächen", (await page.$$eval("#verlauf .h
 await page.hover("#verlauf .hit >> nth=29"); await wait(200);
 check("Wirkung: Tooltip beim Zeigen", !(await page.$eval("#tip", (t) => t.classList.contains("hide"))), "");
 check("Wirkung: Trichter mit 5 Stufen", (await page.$$eval(".trichter:nth-of-type(2) .stufe", (x) => x.length)) >= 5 || (await page.$$eval(".stufe", (x) => x.length)) >= 8, "");
-check("Wirkung: Tabelle vorhanden", (await page.$$eval("details table.tabelle tbody tr", (x) => x.length)) === 30, "");
+await page.$eval("details.wmehr", (d) => { d.open = true; });   // Herkunft, Trichter usw. sind zugeklappt
+check("Wirkung: Tabelle vorhanden", (await page.$$eval(".panel > details table.tabelle tbody tr", (x) => x.length)) === 30, "");
 const herkunft = await page.$$eval("table.herkunft tbody tr", (r) => r.map((z) => [...z.cells].map((c) => c.innerText.replace(/\s+/g, " ").trim()).join("|")));
 // Post 1 wurde oben im Plan-Test geloescht -> wird als "(gelöscht)" gefuehrt
 check("Wirkung: Herkunft – Post vorne (mehr Konten), Bio-Link danach", herkunft.length === 2 && /^Post 1 \(gelöscht\)\|34\|0\|9\|3\|2$/.test(herkunft[0]) && herkunft[1] === "Bio-Link Instagram|51|12|0|0|1", JSON.stringify(herkunft));
@@ -258,6 +259,7 @@ check("Posten: Standard EN, Zeiten", (await page.inputValue("#postSprache")) ===
 await page.check("#postAuto"); await wait(900);
 check("Posten: einschalten mit Rückfrage", await page.isChecked("#postAuto") && (await page.textContent("#postInfo")).startsWith("An: EN"), await page.textContent("#postInfo"));
 check("Posten: Warnung ohne Verbindung und ohne Tagesplan-Automatik", (await page.textContent("#postWarnung")).includes("keine Plattform") && (await page.textContent("#postWarnung")).includes("Tagesplan"), await page.textContent("#postWarnung"));
+await page.$eval("#einstellungenPanel", (d) => { d.open = true; });   // Einstellungen sind zugeklappt
 await page.fill("#zReel", "20:15"); await page.click("#postSpeichern"); await wait(800);
 check("Posten: Zeiten speichern", (await page.textContent("#postInfo")).includes("Reel 20:15"), await page.textContent("#postInfo"));
 check("Posten: keine Termine ohne Verbindung", (await page.textContent("#termine")).includes("Keine Termine"), "");

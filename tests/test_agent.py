@@ -1189,7 +1189,7 @@ def test_karussell_bilder_und_posten(fake_meta, monkeypatch):
     tagesplan.erstelle("en")
     feed = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post" and p["sprache"] == "en")
     assert feed["meta"]["folien"] == FOLIEN and _medien.anzahl_bilder(feed) == 5
-    assert feed["meta"]["folge"] == 1 or feed["meta"]["thema"].startswith("Großes Ereignis")
+    assert feed["meta"].get("folge") == 1 or feed["meta"]["thema"].startswith("Großes Ereignis")
     for nr in (2, 5):
         r = client.get(f"/medien/{feed['id']}/folie/{nr}", headers=AUTH)
         assert r.status_code == 200 and r.content[:2] == b"\xff\xd8"
@@ -1239,6 +1239,11 @@ def test_bildunterschrift_wie_von_der_redaktion(monkeypatch):
     assert "Link in Bio ✨ 👉 @soraya.astroguide" in ig and "#e5" in ig and "#f6" not in ig     # max. 5 Hashtags
     b = redaktion.pruefe_post({"art": "post", "titel": "T", "text": "x " * 50, "hashtags": ["#a"] * 6}, "en")
     assert "6 Hashtags (3 bis 5 sinnvoll)" in b and not redaktion.schwer(b)
+    lange_folie = {"art": "post", "titel": "T", "text": "x " * 50, "hashtags": ["#a", "#b", "#c"],
+                   "_folien": [{"titel": "F", "text": "eins " * 15}]}
+    assert "Folien-Text zu lang (max. 14 Wörter)" in redaktion.pruefe_post(lange_folie, "en")
+    assert any(x.startswith("Erste Zeile zu lang") for x in redaktion.pruefe_post(
+        {"art": "post", "titel": "T", "hashtags": ["#a", "#b", "#c"], "text": "Wort " * 21 + "Ende. " + "x " * 40}, "en"))
 
 
 def test_bild_feinschliff():

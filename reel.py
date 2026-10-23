@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw, ImageFilter
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-7"
+VERSION = "reel-8"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -270,7 +270,8 @@ def erstelle(post: dict, ziel: str) -> dict:
     gross = Image.new("RGBA", (W * 2, 640), (0, 0, 0, 0))
     gross.alpha_composite(z, (int(W - 256 * s), int(20 - 112 * s)))
     # gleicher Kopf wie auf den Bildern: Format (gold) und darunter Datum · Mondphase
-    medien.kopf(ImageDraw.Draw(gross, "RGBA"), W, 2, True, akzent, st["label"], medien.datumszeile(meta), y=172)
+    medien.kopf(ImageDraw.Draw(gross, "RGBA"), W, 2, True, akzent, st["label"],
+                None if st["label"] else medien.datumszeile(meta), y=172)
     gross = gross.resize((W, 320), Image.LANCZOS)
     oben.alpha_composite(gross, (0, 230))
     oben, oben_pos = _zuschneiden(oben)

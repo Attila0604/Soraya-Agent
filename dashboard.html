@@ -645,6 +645,35 @@
   details.profil-mehr{margin-top:var(--s2)}
   details.profil-mehr>summary{text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--champagne)}
   .tagesplan-panel .himmel{border-bottom:0;padding-bottom:0}
+  /* Runde 4: noch knapper – Nebensachen in aufklappbaren Kästen */
+  details.panel.klapp{margin-top:0;padding-top:var(--s3);padding-bottom:var(--s3)}
+  details.panel.klapp>summary{display:flex;width:100%;align-items:center;justify-content:space-between;min-height:44px}
+  details.panel.klapp>summary h2{margin:0;flex:1;text-align:left}
+  details.panel.klapp>summary::after{font-size:18px}
+  details.panel.klapp[open]{padding-bottom:var(--s5)}
+  details.panel.klapp[open]>summary{margin-bottom:var(--s3)}
+  details.mehr-optionen{margin-top:var(--s3)}
+  details.mehr-optionen>summary{color:var(--mist-dim)}
+  details.mehr-optionen[open]>summary{color:var(--champagne)}
+  details.mehr-optionen #planSprachen{margin:var(--s2) 0 0}
+  details.wmehr{margin:var(--s2) 0 var(--s4)}
+  details.wmehr>summary{font-size:14.5px;padding:0 2px}
+  details.wmehr[open]>summary{margin-bottom:var(--s3)}
+  .himmel .gross{font-size:21px}
+  .card .untertitel{display:none}
+  .langtext.zu{max-height:5em}
+  .pruefhinweis.leicht{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 4px;padding:3px 10px;border-radius:999px;font-size:12.5px;margin:0 0 var(--s2)}
+  .pruefhinweis.leicht .rest{flex-basis:100%}
+  .kurzwirkung{font-size:13px}
+  .wirk{font-size:12.5px}
+  @media (max-width:560px){
+    .kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+    .kpis>.kpi:last-child:nth-child(odd){grid-column:auto}
+    .kpi{padding:10px}
+    .kpi .l{font-size:11.5px}
+    .kpi .v{font-size:22px}
+    .kpi .d{display:none}
+  }
   .knopfzeile{gap:var(--s2)}
   @media (max-width:560px){
     .aktionen{flex-direction:column;align-items:stretch}
@@ -686,19 +715,18 @@
         <div id="himmelText"><div class="gross">Der Himmel heute</div><div class="zeile meta">wird geladen …</div></div>
       </div>
       <h2>Tagesplan<span data-hilfe="tagesplan"></span></h2>
-      <p class="hint">Pro Sprache ein Feed-Post, ein Reel und eine Story aus dem Himmel von heute.</p>
-      <label class="imtp schalter" id="autoSchalter"><input type="checkbox" id="planAuto"> Jeden Morgen automatisch erstellen (heute und morgen)</label>
+      <label class="imtp schalter" id="autoSchalter"><input type="checkbox" id="planAuto"> Jeden Morgen automatisch</label>
       <p class="hint" id="planInfo">Wird geladen …</p>
-      <div class="chips" id="planSprachen" role="group" aria-label="Sprachen des Tagesplans"></div>
       <div class="chips laeufe" id="laeufe"></div>
       <div class="fehlerbox hide" id="planFehler" role="alert"></div>
       <div class="row knopfzeile">
         <button id="btnPlanJetzt">Fehlende jetzt erstellen</button>
-        <button class="ghost" id="btnPlanNeu">Alle neu erstellen</button>
+        <button class="textlink" id="btnPlanNeu">Alle neu erstellen</button>
       </div>
       <div class="fortschritt hide" id="fortschritt"></div>
-      <p class="note">Kostet pro Sprache ein paar Cent.<span class="rest" hidden> Findet die Prüfung etwas, wird einmal nachgebessert.
-        „Alle neu erstellen“ ersetzt nur Entwürfe, die du nicht bearbeitet hast.</span></p>
+      <details class="mehr-optionen"><summary>Sprachen</summary>
+        <div class="chips" id="planSprachen" role="group" aria-label="Sprachen des Tagesplans"></div>
+      </details>
     </div>
 
     <div class="bar">
@@ -731,7 +759,7 @@
       <div class="plan-knoepfe">
         <span class="paar"><button class="klein" id="btnVorplanen">Nächste 7 Tage vorplanen</button><span data-hilfe="vorplanen"></span></span>
         <button class="textlink" id="btnAufklappen">Alle aufklappen</button>
-        <span class="paar"><button class="ghost klein" id="btnPaket">Wochenpaket herunterladen</button><span data-hilfe="paket"></span></span>
+        <span class="paar"><button class="textlink" id="btnPaket">Wochenpaket</button><span data-hilfe="paket"></span></span>
       </div>
       <div class="vorplan hide" id="vorplanStand" role="status"></div>
       <p class="plan-leer hide" id="planLeer"></p>
@@ -743,7 +771,6 @@
   <section id="view-studio" class="hide">
     <div class="panel">
       <h2>Aus einem Thema<span data-hilfe="studio"></span></h2>
-      <p class="hint">Ein Stichwort genügt.<span class="rest" hidden> Leer gelassen, sucht Soraya selbst ein Thema aus.</span></p>
       <div class="row">
         <div class="grow"><label for="thema">Thema</label>
           <input id="thema" placeholder="z. B. Vollmond in der Waage"></div>
@@ -754,9 +781,8 @@
       <div style="margin-top:16px"><button id="btnThema">Posts erzeugen</button></div>
     </div>
 
-    <div class="panel">
-      <h2>Aus einer Webseite</h2>
-      <p class="hint">Soraya liest die Seite und schreibt daraus eigene Posts.</p>
+    <details class="panel klapp">
+      <summary><h2>Aus einer Webseite</h2></summary>
       <div class="row">
         <div class="grow"><label for="url">Webseite (URL)</label>
           <input id="url" type="url" inputmode="url" placeholder="https://… (z. B. ein Artikel über den Vollmond)"></div>
@@ -765,13 +791,13 @@
           <select id="anzahl2"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
       </div>
       <div style="margin-top:16px"><button id="btnUrl">Aus Webseite erzeugen</button></div>
-    </div>
+    </details>
 
     <div class="bar">
       <h3>Studio-Posts</h3>
       <button class="ghost klein" id="btnStudioLaden">Aktualisieren</button>
     </div>
-    <p class="tpinfo">Gehen nicht von selbst raus.<span class="rest" hidden> Gib einem Post auf der Karte ein Datum – dann steht er im Plan
+    <p class="tpinfo">Gehen erst mit Datum raus.<span class="rest" hidden> Gib einem Post auf der Karte ein Datum – dann steht er im Plan
       (und wird, wenn die Sprache passt, automatisch gepostet). Oder kopiere Text und Bild und poste selbst.</span></p>
     <div id="studioListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
   </section>
@@ -780,8 +806,6 @@
   <section id="view-who" class="hide">
     <div class="panel">
       <h2>Kunden verstehen<span data-hilfe="zielgruppen"></span></h2>
-      <p class="hint">Wähle einen Bereich – Soraya erstellt daraus ein Profil.<span class="rest" hidden> Sie durchsucht das Netz:
-         wer diese Menschen sind, was sie beschäftigt, welche Worte sie benutzen.</span></p>
       <div class="row">
         <div class="grow"><label for="bereich">Bereich</label>
           <select id="bereich"></select></div>
@@ -796,7 +820,9 @@
             <option value="us">USA</option>
           </select></div>
       </div>
-      <div class="row" style="margin-top:12px">
+      <details class="mehr-optionen">
+        <summary>Weitere Optionen</summary>
+      <div class="row" style="margin-top:8px">
         <div class="grow"><label for="eigen">Oder eigener Bereich</label>
           <input id="eigen" placeholder="z. B. Astrologie und Schwangerschaft"></div>
       </div>
@@ -812,8 +838,6 @@
            KI-Zugang und kostet ein paar Cent pro Recherche.</span></p>
       </div>
 
-      <details>
-        <summary>Selbst bestimmen, wonach gesucht wird</summary>
         <div class="feld">
           <label for="eBegriffe">Eigene Suchbegriffe</label>
           <p class="why">Für Google und Reddit. Eine Suche pro Zeile, als ganze Fragen.</p>
@@ -853,13 +877,12 @@
     <div class="panel hide" id="postenFehler"></div>
     <div class="panel">
       <h2>Automatisch posten<span data-hilfe="posten"></span></h2>
-      <label class="imtp schalter" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch posten (zu den Uhrzeiten unten)</label>
+      <label class="imtp schalter" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch posten</label>
       <p class="hint" id="postInfo">Wird geladen …</p>
       <div class="achtung-box hide" id="postWarnung" role="alert"></div>
     </div>
     <div class="panel hide" id="einrichtungPanel">
-      <h2>Einrichtung – Schritt für Schritt</h2>
-      <p class="hint">Erledigtes wird abgehakt.<span class="rest" hidden> Wenn alles fertig ist, verschwindet dieser Kasten.</span></p>
+      <h2>Einrichtung</h2>
       <ol class="schritte" id="einrichtungSchritte"></ol>
     </div>
     <div class="panel">
@@ -868,16 +891,15 @@
     </div>
     <div class="panel">
       <h2>Termine<span data-hilfe="termine"></span></h2>
-      <p class="hint">Gestern bis übermorgen (Wiener Zeit).<span class="rest" hidden> Stoppen setzt den Post auf „Nicht posten“, er geht dann nirgends raus.</span></p>
       <div id="termine"></div>
     </div>
-    <div class="panel">
-      <h2>Testpost</h2>
-      <p class="hint" id="testpostInfo">Ein Post von heute sofort posten – geht auch, wenn „Automatisch posten“ aus ist.</p>
+    <details class="panel klapp" id="testpostPanel">
+      <summary><h2>Testpost</h2></summary>
+      <p class="hint" id="testpostInfo"></p>
       <div id="testposts"></div>
-    </div>
-    <div class="panel">
-      <h2>Einstellungen</h2>
+    </details>
+    <details class="panel klapp" id="einstellungenPanel">
+      <summary><h2>Einstellungen</h2></summary>
       <div class="row">
         <div><label for="postSprache">Sprache der Posts<span data-hilfe="sprache"></span></label>
           <select id="postSprache"><option value="alle">Alle 4 Sprachen im Wechsel</option><option value="en">English</option><option value="de">Deutsch</option>
@@ -905,7 +927,7 @@
             <option value="direkt">Direkt veröffentlichen (erst nach TikTok-Prüfung öffentlich)</option></select></div>
       </div>
       <div class="row" style="margin-top:14px"><button id="postSpeichern">Speichern</button><span class="ungespeichert" id="postUngespeichert" hidden>Noch nicht gespeichert</span></div>
-    </div>
+    </details>
   </section>
 
   <section id="view-wirkung" class="hide">
@@ -1114,8 +1136,8 @@ function karte(p, {datum = true} = {}){
     ${(m.pruefung || []).length && p.status !== 'gepostet' ? (befundSchwer(m.pruefung)
       ? `<div class="pruefhinweis" role="note"><b>Bitte prüfen und freigeben:</b> ${esc(m.pruefung.join(' · '))}
       <span class="rest" hidden> Geht beim automatischen Posten erst raus, wenn du ihn freigibst (oder nach dem Bearbeiten nichts mehr auffällt).</span></div>`
-      : `<div class="pruefhinweis leicht" role="note"><b>Hinweis:</b> ${esc(m.pruefung.join(' · '))}
-      <span class="rest" hidden> Nur eine Kleinigkeit – geht trotzdem automatisch raus.</span></div>`) : ''}
+      : `<div class="pruefhinweis leicht" role="note"><b>${m.pruefung.length === 1 ? '1 Hinweis' : m.pruefung.length + ' Hinweise'}</b><span class="rest" hidden>${esc(m.pruefung.join(' · '))}
+      – nur Kleinigkeiten, geht trotzdem automatisch raus.</span></div>`) : ''}
     ${streifen}
     <div class="langtext${lang ? ' zu' : ''}">
     <p class="txt">${esc(p.text)}</p>
@@ -1165,7 +1187,7 @@ function wirkText(code){
   if(s.schnellstart) teile.push(`<span>${mehrzahl(s.schnellstart, 'Schnellstart', 'Schnellstarts')}</span>`);
   if(s.register_click) teile.push(`<span>${zahl(s.register_click)} × Registrieren</span>`);
   if(q.konten) teile.push(`<span><b>${mehrzahl(q.konten, 'neues Konto', 'neue Konten')}</b></span>`);
-  return teile.length ? `<span class="leise">Über den Post-Link:</span>${teile.join('')}` : '';
+  return teile.length ? `<span class="leise">Über den Link:</span>${teile[0]}${teile.length > 1 ? `<span class="rest" hidden>${teile.slice(1).join(' ')}</span>` : ''}` : '';
 }
 async function ladeQuellen(){
   if(Date.now() - quellenStand < 5 * 60 * 1000) return;
@@ -1420,9 +1442,8 @@ async function ladeHimmel(){
     const ereignis = (n, e) => e ? `${n} ${e.datum_text} (${e.in_tagen <= 0 ? 'heute' : e.in_tagen === 1 ? 'morgen' : 'in ' + e.in_tagen + ' Tagen'})` : '';
     const rueck = (h.ruecklaeufig || []).map(r => r.planet + (r.bis ? ' bis ' + r.bis : '')).join(', ');
     $('himmelText').innerHTML = `<div class="gross">${esc(h.mond_phase)} · Mond in ${esc(h.mond_zeichen)}</div>
-      <div class="zeile">${esc(h.datum_text)} · ${esc(h.beleuchtung)} % beleuchtet · Sonne in ${esc(h.sonne_zeichen)}</div>
-      <div class="zeile meta">${esc([ereignis('Vollmond', h.vollmond), ereignis('Neumond', h.neumond)].filter(Boolean).join(' · '))}</div>
-      ${rueck ? `<div class="zeile meta">Rückläufig: ${esc(rueck)}</div>` : ''}`;
+      <div class="zeile meta">${kurzMehr(esc(ereignis('Vollmond', h.vollmond) || h.datum_text), esc([h.datum_text + ' · ' + h.beleuchtung + ' % beleuchtet · Sonne in ' + h.sonne_zeichen,
+        ereignis('Neumond', h.neumond), rueck ? 'Rückläufig: ' + rueck : ''].filter(Boolean).join(' · ')))}</div>`;
   }catch(e){ const ctx = $('mondKlein').getContext('2d'); ctx.clearRect(0, 0, 152, 152); zeichneMond(ctx, 76, 76, 66, null);
     $('himmelText').innerHTML = `<div class="gross">Der Himmel heute</div><div class="zeile meta">Himmelsdaten gerade nicht erreichbar (${esc(e.message)}). Der Tagesplan versucht es beim Erstellen selbst noch einmal.</div>`; }
 }
@@ -1449,11 +1470,10 @@ function zeigeKurzWirkung(){
   if(!d){ box.classList.add('hide'); return; }
   const tage = d.tage || [];
   const besuche = Object.values(d.quellen || {}).reduce((n, q) => n + ((q.schritte || {}).besuch || 0), 0);
-  box.innerHTML = `<div class="zahlen"><span class="meta">Letzte 7 Tage:</span>
-      <span><b>${zahl(besuche)}</b> ${besuche === 1 ? 'Besuch' : 'Besuche'} über deine Links</span>
-      <span><b>${zahl(summe(tage, 'schnellstart_berechnet'))}</b> Schnellstarts</span>
+  box.innerHTML = `<div class="zahlen"><span class="meta">7 Tage:</span>
+      <span><b>${zahl(besuche)}</b> ${besuche === 1 ? 'Besuch' : 'Besuche'}</span>
       <span><b>${zahl(summe(tage, 'neue_konten'))}</b> neue Konten</span></div>
-    <button class="textlink" data-ziel-tab="wirkung">Mehr unter „Wirkung“ ›</button>`;
+    <button class="textlink" data-ziel-tab="wirkung">Wirkung ›</button>`;
   box.classList.remove('hide');
 }
 document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-ziel-tab]'); if(b) zeige(b.dataset.zielTab); });
@@ -1998,11 +2018,11 @@ function zeigeWirkung(){
   const maxSprache = Math.max(1, ...sprachen.map(s => s[1]));
   $('wirkungInhalt').innerHTML = `
     <div class="kpis">
-      ${kpi('Schnellstarts', summe(tage, 'schnellstart_berechnet'), tage.some(t => 'gratis_tests' in t) ? `berechnet · mit Landingpage ${zahl(summe(tage, 'gratis_tests'))}` : 'berechnet in der App')}
+      ${kpi('Schnellstarts', summe(tage, 'schnellstart_berechnet'), tage.some(t => 'gratis_tests' in t) ? `mit Landingpage ${zahl(summe(tage, 'gratis_tests'))}` : '')}
       ${kpi('Neue Konten', summe(tage, 'neue_konten'), `gesamt ${zahl(d.gesamt && d.gesamt.konten)}`)}
-      ${kpi('Aktive Nutzer', d.aktive_nutzer_zeitraum, 'mindestens einmal geöffnet')}
-      ${kpi('Einladungen geöffnet', summe(tage, 'einladung_geoeffnet'), `Links gesamt ${zahl(d.gesamt && d.gesamt.einladungslinks)}`)}
-      ${kpi('Posts gepostet', posts, 'laut Plan')}
+      ${kpi('Aktive Nutzer', d.aktive_nutzer_zeitraum, '')}
+      ${kpi('Einladungen', summe(tage, 'einladung_geoeffnet'), `Links gesamt ${zahl(d.gesamt && d.gesamt.einladungslinks)}`)}
+      ${kpi('Posts gepostet', posts, '')}
     </div>
     <div class="panel"><h2>${esc(($('wKennzahl').selectedOptions[0] || {}).text || '')} pro Tag</h2>
       <p class="hint">${esc(kurzIso(d.von))} – ${esc(kurzIso(d.bis))}${d.ignoriert ? ` · ${d.ignoriert} eigene Konten ausgeblendet` : ''}</p>
@@ -2011,10 +2031,10 @@ function zeigeWirkung(){
       <div class="viz" id="verlauf"></div>
       <details><summary>Als Tabelle</summary><div class="tabwrap">${tabelle(tage)}</div></details>
     </div>
+    <details class="wmehr"><summary>Mehr Zahlen: Herkunft, Trichter, Lernen, Links</summary>
     ${herkunftPanel()}
     <div id="fbPanel"></div>
     <div class="panel trichter"><h2>Vom Schnellstart zum Profil${hilfe('Wie viele Menschen von Stufe zu Stufe weiterkommen. Wird der Balken zwischen zwei Stufen plötzlich viel kürzer, springen dort viele ab – dort lohnt sich eine Verbesserung in der App.', 'Trichter')}</h2>
-      <p class="hint">Summen im Zeitraum, Prozent bezogen auf die erste Stufe.</p>
       ${stufen.map(([n, v]) => `<div class="stufe"><span class="name">${n}</span><div class="spur">
         <div class="balken" style="width:${(v / maxStufe * 82).toFixed(1)}%"></div>
         <span class="wert" style="left:calc(${(v / maxStufe * 82).toFixed(1)}% + 8px)">${zahl(v)}<small>${stufen[0][1] ? Math.round(v / stufen[0][1] * 100) + ' %' : ''}</small></span>
@@ -2023,12 +2043,11 @@ function zeigeWirkung(){
     <div id="lernPanel"></div>
     ${linksPanel()}
     <div class="panel trichter"><h2>Sprachen der aktiven Nutzer</h2>
-      <p class="hint">Welche App-Sprache die Nutzer im Zeitraum hatten.</p>
       ${sprachen.length ? sprachen.map(([s, v]) => `<div class="stufe"><span class="name">${esc(s === 'unbekannt' ? 'unbekannt (alte Version)' : s.toUpperCase())}</span><div class="spur">
         <div class="balken" style="width:${(v / maxSprache * 82).toFixed(1)}%"></div>
         <span class="wert" style="left:calc(${(v / maxSprache * 82).toFixed(1)}% + 8px)">${zahl(v)}</span></div></div>`).join('')
         : '<p class="meta">Noch keine Daten.</p>'}
-    </div>`;
+    </div></details>`;
   zeichneVerlauf();
   ladeFacebookWirkung().then(ladeLernen);
 }
@@ -2068,7 +2087,6 @@ async function ladeFacebookWirkung(){
   const summe = (k) => b.reduce((n, x) => n + (x[k] || 0), 0);
   const mitReichweite = b.some(x => x.reichweite != null);
   box.innerHTML = `<div class="panel"><h2>Auf Facebook</h2>
-    <p class="hint">Reaktionen auf deine geposteten Beiträge im Zeitraum (live von Facebook).</p>
     ${b.length ? `<div class="kpis klein3${mitReichweite ? ' vier' : ''}">
         <div class="kpi"><div class="l">Gefällt mir</div><div class="v">${zahl(summe('reaktionen'))}</div></div>
         <div class="kpi"><div class="l">Kommentare</div><div class="v">${zahl(summe('kommentare'))}</div></div>

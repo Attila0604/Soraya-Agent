@@ -40,7 +40,7 @@ Fakten:
   Erfinde KEINE weiteren Ereignisse, Aspekte, Daten oder Zahlen. Tage-Angaben genau übernehmen.
 
 Was gute Posts ausmacht:
-- Der erste Satz ist der Hook: höchstens 12 Wörter und höchstens 110 Zeichen (Instagram zeigt nur
+- Der erste Satz ist der Hook: höchstens 12 Wörter und höchstens 100 Zeichen (Instagram zeigt nur
   die ersten ~125 Zeichen, dann „… mehr“), konkret, persönlich („du“), weckt Neugier oder spricht
   Sternzeichen direkt an. Denk dir mehrere Hooks aus und nimm den stärksten.
 - Verboten sind leere Floskeln wie „Die Sterne stehen gut“, „Das Universum hat einen Plan“,
@@ -52,8 +52,9 @@ Was gute Posts ausmacht:
   Absätze mit 1–2 Sätzen (höchstens ~200 Zeichen), jeweils durch eine Leerzeile getrennt – gut lesbar
   am Handy. Die Frage zum Kommentieren und die Handlungsaufforderung stehen je als eigener Absatz am
   Ende. Höchstens 2 Emojis pro Text, gezielt gesetzt (nicht am Satzanfang, keine Emoji-Ketten).
-- Weniger ist mehr: lieber ein konkreter Gedanke, gut erzählt, als drei angerissene. Keine
-  Wiederholung dessen, was schon im Bild steht.
+- Weniger ist mehr: ein konkreter Gedanke, gut erzählt, statt drei angerissener. Keine Füllsätze
+  (keine Einleitungen wie „Heute schauen wir uns … an“, keine Zusammenfassung am Ende, keine
+  Wiederholung dessen, was schon im Bild steht). Jeder Satz muss etwas Neues bringen.
 - Nicht ähnlich beginnen wie an den letzten Tagen (Liste der letzten Anfänge unten), keine
   Lieblingswörter wiederholen.
 - Die Frage am Ende ist leicht zu beantworten (ein Wort, ein Emoji oder das eigene Sternzeichen) –
@@ -67,14 +68,14 @@ Was gute Posts ausmacht:
 
 Liefere genau drei Einträge, in dieser Reihenfolge:
 1. art "post", platform "instagram": Feed-Post. "text": Hook, dann 2 bis 3 kurze Absätze
-   (insgesamt 50-120 Wörter), dann eine Aufforderung zum Kommentieren oder Speichern, zum Schluss
+   (insgesamt 40-90 Wörter, sehr kurze Absätze mit 1-2 Sätzen), dann eine Aufforderung zum Kommentieren oder Speichern, zum Schluss
    die heutige Handlungsaufforderung mit „{link_in_bio}“. "bild_punkte": wenn der Post eine Liste
    ist (z. B. drei Sternzeichen, drei Schritte), bis zu 3 sehr kurze Punkte fürs Bild (je höchstens
    5 Wörter); beim Format „Mitmachen“ 2 bis 3 Antwortmöglichkeiten (je höchstens 5 Wörter) – sie
    stehen im Bild wie eine Umfrage A/B/C; sonst [].
    "folien": das Karussell zum Durchwischen (nach dem Titelbild): genau 3 Folien, die den Post in
    Schritten erzählen – je "titel" (höchstens 6 Wörter; bei Sternzeichen der Name des Zeichens) und
-   "text" (höchstens 18 Wörter, ein konkreter Gedanke – es steht groß im Bild). Jede Folie muss allein verständlich und
+   "text" (höchstens 14 Wörter, ein konkreter Gedanke – es steht groß im Bild). Jede Folie muss allein verständlich und
    wertvoll sein; die letzte macht neugierig auf das persönliche Horoskop.
 2. art "reel", platform "tiktok": Kurzvideo (12-18 Sekunden, Text-Video ohne Sprecher).
    "skript": "hook" (erste Einblendung, höchstens 8 Wörter, stoppt das Scrollen),
@@ -86,13 +87,13 @@ Liefere genau drei Einträge, in dieser Reihenfolge:
    läuft auch auf Facebook). "text": Bildunterschrift, 1-3 Sätze,
    erster Satz wieder ein Hook. "bild_punkte": [].
 3. art "story", platform "instagram": ein kurzer Satz zur Tagesenergie plus eine Frage, auf die
-   man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 30 Wörter.
+   man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 20 Wörter.
    "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
    einem passenden Emoji (z. B. „🔥 Ja, total“, „🌙 Eher nicht“) – sie stehen als Knöpfe im Bild.
 
 Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
-- "untertitel": eine Zeile unter der Überschrift, höchstens 10 Wörter.
+- "untertitel": eine kurze Zeile, höchstens 8 Wörter (beim Feed-Post steht sie nicht im Bild).
 - "hashtags": 4 bis 5 Hashtags in der Sprache des Posts, mit # (Instagram nimmt höchstens 5):
   1 großer (z. B. Astrologie), 2 zum heutigen Thema bzw. Sternzeichen, 1-2 kleine Nischen-Hashtags.
   Die wichtigsten zuerst (Facebook zeigt nur die ersten 3). Story: 1-3 Hashtags.

@@ -116,8 +116,9 @@ _HEIKEL = re.compile(
     r"lotto|lottery|reich werden|get rich|gewinnspiel|giveaway)\b", re.IGNORECASE)
 _DEUTSCH_IN_FREMD = re.compile(r"\b(und|nicht|deine?n?|für|heute|Mond|Sonne|Sternzeichen|Liebe|Woche)\b")
 _URL = re.compile(r"https?://|www\.", re.IGNORECASE)
-_GRENZEN = {"post": (40, 180), "reel": (5, 70), "story": (4, 45)}
-HOOK_ZEICHEN = 125        # mehr zeigt Instagram vor "… mehr" nicht
+_GRENZEN = {"post": (40, 110), "reel": (5, 60), "story": (4, 25)}
+FOLIE_WOERTER = 14       # Text je Karussell-Folie (steht gross im Bild)
+HOOK_ZEICHEN = 100        # Hook steht sicher vor "… mehr" (Instagram zeigt ~125 Zeichen)
 HASHTAGS_MAX = 5          # Instagram nimmt hoechstens 5 Hashtags je Beitrag
 _EMOJI = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
 
@@ -156,6 +157,9 @@ def pruefe_post(post: dict, sprache: str) -> list[str]:
     emojis = len(_EMOJI.findall(post.get("text") or ""))
     if emojis > 3:
         befunde.append(f"Zu viele Emojis ({emojis}, höchstens 2–3)")
+    folien = post.get("_folien") or post.get("folien") or (post.get("meta") or {}).get("folien") or []
+    if any(_woerter(f.get("text")) > FOLIE_WOERTER for f in folien if isinstance(f, dict)):
+        befunde.append(f"Folien-Text zu lang (max. {FOLIE_WOERTER} Wörter)")
     if any(not t.startswith("#") or len(t) < 3 for t in tags):
         befunde.append("Hashtag ohne # oder zu kurz")
     if art == "reel":
