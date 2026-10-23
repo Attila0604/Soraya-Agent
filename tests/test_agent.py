@@ -1488,6 +1488,9 @@ def test_tiktok_status_zahlen_und_fehler(fake_meta, monkeypatch, frische_db):
     monkeypatch.setattr(tiktok.requests, "put", f.put)
     monkeypatch.setattr(tiktok.time, "sleep", lambda s: None)
     monkeypatch.setenv("TIKTOK_CLIENT_KEY", "ck"); monkeypatch.setenv("TIKTOK_CLIENT_SECRET", "cs")
+    # Standard: ohne video.list (Display API gibt es nicht fuer jede App, sonst scheitert das Verbinden)
+    assert "video.list" not in tiktok.SCOPES and tiktok.SCOPES == tiktok.SCOPES_BASIS
+    monkeypatch.setattr(tiktok, "SCOPES", tiktok.SCOPES_BASIS + ",video.list")   # wie mit TIKTOK_ZAHLEN=1
     r = client.get("/tiktok/verbinden", headers=AUTH, follow_redirects=False)
     assert "video.list" in _pq(_up(r.headers["location"]).query)["scope"][0]
     state = _pq(_up(r.headers["location"]).query)["state"][0]

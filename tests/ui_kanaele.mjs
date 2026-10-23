@@ -18,7 +18,7 @@ for (const breite of [900, 390]) {
   const t = await page.textContent("#verbindungen");
   if (breite === 900) {
     check("Posten: Instagram verbunden, keine Zahlen-Warnung (Recht da)", t.includes("soraya.astroguide") && !t.includes("Instagram neu verbinden"), t);
-    check("Posten: TikTok ohne video.list -> 'TikTok neu verbinden, um Zahlen zu sehen'", t.includes("TikTok neu verbinden, um Zahlen zu sehen"), t);
+    check("Posten: TikTok ohne video.list -> kein Neu-verbinden-Hinweis", !t.includes("TikTok neu verbinden, um Zahlen zu sehen"), t);
     check("Posten: LinkedIn läuft bald ab -> Knopf 'LinkedIn neu verbinden'", (await page.$$eval("#verbindungen a.knopf", (a) => a.map((x) => x.textContent))).includes("LinkedIn neu verbinden"), "");
     check("Posten: Warnung oben zum LinkedIn-Ablauf", (await page.textContent("#postWarnung")).includes("LinkedIn-Zugang läuft am"), await page.textContent("#postWarnung"));
     await page.$eval("#einstellungenPanel", (d) => { d.open = true; });
@@ -38,7 +38,7 @@ for (const breite of [900, 390]) {
     check("Wirkung: Tabelle mit 4 Beiträgen", (await page.$$eval("#igPanel tbody tr", (r) => r.length)) === 4, "");
     if (OUT) await (await page.$("#igPanel")).screenshot({ path: OUT + "/wirkung-instagram.png" });
     await page.$eval("details.wmehr", (d) => { d.open = true; }); await wait(300);
-    check("Wirkung: TikTok-Hinweis neu verbinden", (await page.textContent("#ttPanel")).includes("TikTok neu verbinden, um Zahlen zu sehen"), await page.textContent("#ttPanel"));
+    check("Wirkung: TikTok-Hinweis aufs TikTok Studio", (await page.textContent("#ttPanel")).includes("TikTok Studio"), await page.textContent("#ttPanel"));
     const lern = await page.textContent("#lernPanel");
     check("Wirkung: Lernen nutzt Instagram-Zahlen", lern.includes("mal gespeichert") && lern.includes("Punkte"), lern);
     if (OUT) await (await page.$("#lernPanel")).screenshot({ path: OUT + "/wirkung-lernen.png" });

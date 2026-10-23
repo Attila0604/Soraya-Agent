@@ -255,7 +255,7 @@ check("Posten: ohne Meta-App Hinweis auf Railway-Variablen", (await page.textCon
 check("Posten: Rückruf-Adresse angezeigt", (await page.textContent("#verbindungen")).includes("/meta/rueckruf/facebook"), "");
 check("Posten: vier Verbindungen (Facebook, Instagram, TikTok, LinkedIn)", (await page.$$eval("#verbindungen .verbindung", (x) => x.length)) === 4, "");
 { const t = await page.textContent("#verbindungen");
-  check("Posten: TikTok-Einrichtung mit Produkten, Rechten und Rückruf", ["Login Kit", "Content Posting API", "user.info.basic", "video.upload", "video.publish", "video.list", "Sandbox", "/tiktok/rueckruf", "TIKTOK_CLIENT_KEY"].every((w) => t.includes(w)), "");
+  check("Posten: TikTok-Einrichtung mit Produkten, Rechten und Rückruf", ["Login Kit", "Content Posting API", "user.info.basic", "video.upload", "video.publish", "Sandbox", "/tiktok/rueckruf", "TIKTOK_CLIENT_KEY"].every((w) => t.includes(w)), "");
   check("Posten: LinkedIn-Einrichtung mit Seite, Produkten und Rückruf", ["Unternehmensseite", "Share on LinkedIn", "OpenID Connect", "/linkedin/rueckruf", "LINKEDIN_CLIENT_ID"].every((w) => t.includes(w)), "");
   check("Posten: Einrichtung zugeklappt", !(await page.$$eval("#verbindungen details.einricht", (d) => d.some((x) => x.open))), ""); }
 check("Posten: LinkedIn-Häkchen standardmäßig aus", !(await page.isChecked("#plLinkedin")), "");
