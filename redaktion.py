@@ -200,11 +200,11 @@ SPRACH_NAME = {"de": "DE", "en": "EN", "hu": "HU", "it": "IT"}
 
 
 def punkte(besuche: int = 0, konten: int = 0, reaktionen: int = 0, kommentare: int = 0, geteilt: int = 0,
-           reichweite: int = 0) -> int:
+           reichweite: int = 0, gespeichert: int = 0) -> int:
     """Eine Zahl fuer "wie gut kam der Post an": neue Konten zaehlen am meisten, dann Teilen,
-    Kommentare, Besuche ueber den Link und Gefaellt-mir; je 100 erreichte Menschen 1 Punkt."""
+    Kommentare und Speichern (Instagram), Besuche ueber den Link und Gefaellt-mir; je 100 erreichte Menschen 1 Punkt."""
     return (int(besuche) * 2 + int(konten) * 15 + int(reaktionen) + int(kommentare) * 3 + int(geteilt) * 4
-            + int(reichweite or 0) // 100)
+            + int(gespeichert or 0) * 3 + int(reichweite or 0) // 100)
 
 
 def _statistik():
@@ -215,7 +215,7 @@ def _statistik():
 
 
 def bewerte(lade_post, statistik=None, lern_posts=None) -> list[dict]:
-    """Alle Posts der letzten 30 Tage mit Besuchen (Link) und Reaktionen (Facebook) und Punkten."""
+    """Alle Posts der letzten 30 Tage mit Besuchen (Link), Reaktionen (Facebook, Instagram, TikTok) und Punkten."""
     if statistik is None:
         try:
             statistik = _statistik()
@@ -232,7 +232,7 @@ def bewerte(lade_post, statistik=None, lern_posts=None) -> list[dict]:
     for p in lern_posts or []:
         posts[p["id"]] = {"post": p, "besuche": 0, "konten": 0, "reaktionen": int(p.get("reaktionen") or 0),
                           "kommentare": int(p.get("kommentare") or 0), "geteilt": int(p.get("geteilt") or 0),
-                          "reichweite": int(p.get("reichweite") or 0)}
+                          "reichweite": int(p.get("reichweite") or 0), "gespeichert": int(p.get("gespeichert") or 0)}
     for code, q in ((statistik or {}).get("quellen") or {}).items():
         if not re.fullmatch(r"p\d+", code or ""):
             continue
@@ -245,13 +245,13 @@ def bewerte(lade_post, statistik=None, lern_posts=None) -> list[dict]:
             if not post:
                 continue
             posts[pid] = {"post": post, "besuche": 0, "konten": 0, "reaktionen": 0, "kommentare": 0, "geteilt": 0,
-                          "reichweite": 0}
+                          "reichweite": 0, "gespeichert": 0}
         posts[pid]["besuche"] = int((q.get("schritte") or {}).get("besuch") or 0)
         posts[pid]["konten"] = int(q.get("konten") or 0)
     out = []
     for e in posts.values():
         e["punkte"] = punkte(e["besuche"], e["konten"], e["reaktionen"], e["kommentare"], e["geteilt"],
-                             e["reichweite"])
+                             e["reichweite"], e.get("gespeichert", 0))
         out.append(e)
     return sorted(out, key=lambda e: e["punkte"], reverse=True)
 
@@ -261,7 +261,8 @@ def _details(e: dict) -> str:
     for wert, eins, viele in ((e.get("reichweite", 0), "erreicht", "erreicht"),
                               (e["besuche"], "Besuch", "Besuche"), (e["konten"], "neues Konto", "neue Konten"),
                               (e["reaktionen"], "Reaktion", "Reaktionen"), (e["kommentare"], "Kommentar", "Kommentare"),
-                              (e["geteilt"], "mal geteilt", "mal geteilt")):
+                              (e["geteilt"], "mal geteilt", "mal geteilt"),
+                              (e.get("gespeichert", 0), "mal gespeichert", "mal gespeichert")):
         if wert:
             teile.append(f"{wert} {eins if wert == 1 else viele}")
     return ", ".join(teile)

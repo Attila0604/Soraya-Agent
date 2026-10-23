@@ -7,11 +7,15 @@ Alle Tests laufen lokal mit Attrappen (kein Claude, kein Meta, keine Engine) geg
 export TEST_DATABASE_URL=postgresql://agent@127.0.0.1:55432/agenttest
 
 pip install -r requirements.txt pytest httpx
-python -m pytest -q tests/test_agent.py          # ~50 Tests, ca. 1 Minute (rendert ein echtes Reel)
+python -m pytest -q tests/test_agent.py          # ~80 Tests, ca. 1 Minute (rendert ein echtes Reel)
 
 # UI-Test (Playwright, Chromium unter /opt/pw-browsers/chromium oder CHROMIUM=...)
 python tests/dev_server.py &                      # Dashboard mit Attrappen auf Port 8790
 npm i playwright && node tests/ui_test.mjs http://127.0.0.1:8790 /tmp/shots
+
+# Instagram-Zahlen, TikTok-Hinweis, LinkedIn-Ablauf (Server mit verbundenen Attrappen-Konten)
+DEMO_KANAELE=1 python tests/dev_server.py &
+node tests/ui_kanaele.mjs http://127.0.0.1:8790 /tmp/shots
 ```
 
 Achtung: `test_agent.py` und `dev_server.py` löschen beim Start die Agent-Tabellen in der

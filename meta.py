@@ -4,7 +4,8 @@ Anbindung an Meta: Facebook-Seite und Instagram (Business-Konto)
 Zwei getrennte Verbindungen, beide ueber eine eigene Meta-App ("Soraya Agent"):
 - Facebook-Seite: Facebook-Anmeldung -> Seiten-Zugang (laeuft nicht ab)
 - Instagram: Instagram-Anmeldung (Business Login, ohne Verknuepfung mit der Seite)
-  -> Zugang fuer 60 Tage, wird automatisch verlaengert
+  -> Zugang fuer 60 Tage, wird automatisch verlaengert. Zahlen je Beitrag (Reichweite, Aufrufe,
+  Speichern, Teilen) braucht zusaetzlich das Recht instagram_business_manage_insights.
 
 Railway-Variablen (aus developers.facebook.com, nie in den Chat kopieren):
   META_APP_ID, META_APP_SECRET            Facebook-Seite
@@ -30,7 +31,8 @@ import db
 
 TIMEOUT = 60
 FB_SCOPES = "pages_show_list,pages_read_engagement,pages_manage_posts"
-IG_SCOPES = "instagram_business_basic,instagram_business_content_publish"
+IG_SCOPES = "instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights"
+IG_INSIGHTS_RECHT = "instagram_business_manage_insights"
 
 
 class MetaFehler(RuntimeError):
@@ -163,9 +165,13 @@ def verbinde_instagram(code: str) -> dict:
     lang = _get("https://graph.instagram.com/access_token", grant_type="ig_exchange_token",
                 client_secret=os.environ["INSTAGRAM_APP_SECRET"], access_token=kurz["access_token"])
     ich = _get(graph_ig() + "/me", fields="user_id,username", access_token=lang["access_token"])
+    rechte = kurz.get("permissions")
+    if isinstance(rechte, str):
+        rechte = [r.strip() for r in rechte.split(",") if r.strip()]
     daten = {"konto_id": str(ich.get("user_id") or kurz.get("user_id")), "name": ich.get("username"),
              "token": lang["access_token"], "laeuft_ab": int(time.time()) + int(lang.get("expires_in") or 5184000),
-             "verbunden": int(time.time())}
+             "verbunden": int(time.time()), "angefragt": IG_SCOPES,
+             "rechte": rechte if isinstance(rechte, list) else None}
     db.setze_einstellung("meta_instagram", daten)
     return {"name": daten["name"]}
 
@@ -181,6 +187,16 @@ def zugang(dienst: str) -> dict | None:
         return None
 
 
+def instagram_zahlen_erlaubt(z: dict | None) -> bool:
+    """Darf der gespeicherte Instagram-Zugang Zahlen je Beitrag lesen (instagram_business_manage_insights)?
+    Verbindungen von vor diesem Recht haben es nie bekommen -> Hinweis "neu verbinden"."""
+    if not z or not z.get("token") or z.get("insights_fehlt"):
+        return False
+    if isinstance(z.get("rechte"), list):
+        return IG_INSIGHTS_RECHT in z["rechte"]
+    return IG_INSIGHTS_RECHT in (z.get("angefragt") or "")
+
+
 def verbindungen() -> dict:
     """Fuers Dashboard -- ohne Zugangsschluessel."""
     out = {}
@@ -189,6 +205,8 @@ def verbindungen() -> dict:
         out[dienst] = {"eingerichtet": eingerichtet(dienst), "verbunden": bool(z.get("token")),
                        "name": z.get("name"), "laeuft_ab": z.get("laeuft_ab"),
                        "rueckruf_url": rueckruf_url(dienst)}
+    if out["instagram"]["verbunden"]:
+        out["instagram"]["zahlen"] = instagram_zahlen_erlaubt(zugang("instagram"))
     return out
 
 
@@ -291,6 +309,102 @@ def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
             zeile["fehler"] = str(ex)[:160]
         out.append(zeile)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Instagram: Zahlen je Beitrag und Follower (Instagram API mit Instagram-Login)
+# ---------------------------------------------------------------------------
+# Kennzahlen je Art. Meta hat "impressions"/"plays" abgeschafft, "views" gilt fuer Feed, Reels und Storys.
+# Antwortet Meta mit "Kennzahl gibt es nicht", wird mit der kurzen Liste noch einmal gefragt.
+IG_METRIKEN = {"post": "reach,likes,comments,saved,shares,views", "reel": "reach,likes,comments,saved,shares,views",
+               "story": "reach,views,shares,replies"}
+IG_METRIKEN_KURZ = "reach,saved"
+
+
+class KeinRecht(MetaFehler):
+    """Dem Zugang fehlt das Recht fuer die Zahlen (instagram_business_manage_insights)."""
+
+
+def _ist_rechtefehler(ex: Exception) -> bool:
+    t = str(ex).lower()
+    return any(w in t for w in ("permission", "(#10)", "(#200)", "insufficient", "not authorized", "scope"))
+
+
+def _werte(d: dict) -> dict:
+    """Antwort von /insights -> {name: zahl} (Meta liefert mal values[], mal total_value)."""
+    out = {}
+    for e in d.get("data") or []:
+        wert = (e.get("total_value") or {}).get("value")
+        if wert is None and e.get("values"):
+            wert = e["values"][-1].get("value")
+        if isinstance(wert, (int, float)):
+            out[e.get("name")] = int(wert)
+    return out
+
+
+def instagram_insights(media_id: str, art: str, token: str) -> dict:
+    """Zahlen eines Instagram-Beitrags. Wirft KeinRecht, wenn das Insights-Recht fehlt."""
+    try:
+        return _werte(_get(f"{graph_ig()}/{media_id}/insights", metric=IG_METRIKEN.get(art, IG_METRIKEN["post"]),
+                           access_token=token))
+    except MetaFehler as ex:
+        if _ist_rechtefehler(ex):
+            raise KeinRecht(str(ex)) from ex
+        try:                       # z. B. eine Kennzahl, die es fuer diese Art (noch) nicht gibt
+            return _werte(_get(f"{graph_ig()}/{media_id}/insights", metric=IG_METRIKEN_KURZ, access_token=token))
+        except MetaFehler as ex2:
+            if _ist_rechtefehler(ex2):
+                raise KeinRecht(str(ex2)) from ex2
+            raise
+
+
+def instagram_konto() -> dict:
+    """Follower und Zahl der Beitraege (geht schon mit instagram_business_basic)."""
+    z = zugang("instagram")
+    if not z or not z.get("token"):
+        raise MetaFehler("Instagram ist nicht verbunden.")
+    d = _get(graph_ig() + "/me", fields="username,followers_count,media_count", access_token=z["token"])
+    return {"name": d.get("username") or z.get("name"), "follower": d.get("followers_count"),
+            "beitraege": d.get("media_count")}
+
+
+def instagram_zahlen(eintraege: list[dict]) -> dict:
+    """Gefaellt mir und Kommentare je Instagram-Beitrag (immer), dazu Reichweite, Aufrufe, Speichern und
+    Teilen, wenn der Zugang das Insights-Recht hat. Rueckgabe: {"beitraege": [...], "recht_fehlt": bool}"""
+    z = zugang("instagram")
+    if not z or not z.get("token"):
+        raise MetaFehler("Instagram ist nicht verbunden.")
+    token = z["token"]
+    insights = instagram_zahlen_erlaubt(z)
+    recht_fehlt = not insights
+    out = []
+    for e in eintraege:
+        zeile = {"post_id": e["post_id"], "titel": e.get("titel"), "art": e.get("art"), "url": e.get("url"),
+                 "gepostet": e.get("aktualisiert")}
+        try:
+            if e.get("art") != "story":         # Storys haben keine Gefaellt-mir-Zahl
+                d = _get(f"{graph_ig()}/{e['extern_id']}", fields="like_count,comments_count", access_token=token)
+                zeile.update(reaktionen=int(d.get("like_count") or 0), kommentare=int(d.get("comments_count") or 0))
+            if insights:
+                try:
+                    w = instagram_insights(e["extern_id"], e.get("art") or "post", token)
+                except KeinRecht:
+                    insights, recht_fehlt = False, True
+                    z["insights_fehlt"] = True          # bis zum Neu-Verbinden nicht mehr fragen
+                    db.setze_einstellung("meta_instagram", z)
+                    w = {}
+                zeile.setdefault("reaktionen", w.get("likes", 0))
+                zeile.setdefault("kommentare", w.get("comments", 0))
+                if w:
+                    zeile.update(reichweite=w.get("reach"), aufrufe=w.get("views"), gespeichert=w.get("saved"),
+                                 geteilt=w.get("shares", 0))
+            zeile.setdefault("reaktionen", 0)
+            zeile.setdefault("kommentare", 0)
+            zeile.setdefault("geteilt", 0)
+        except Exception as ex:  # noqa: BLE001 - ein Beitrag ohne Zahlen soll die Liste nicht stoppen
+            zeile["fehler"] = str(ex)[:160]
+        out.append(zeile)
+    return {"beitraege": out, "recht_fehlt": recht_fehlt}
 
 
 def _warte_auf(behaelter: str, token: str, art: str, warten_s: int) -> None:

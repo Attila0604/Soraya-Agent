@@ -274,7 +274,7 @@ def test_vorplanen_nur_einmal_gleichzeitig():
 def test_links(monkeypatch):
     r = client.get("/links", headers=AUTH).json()
     assert r["post_muster"] == "https://www.sorayaluxuryastroguide.com/?q=p{id}"
-    assert r["bio"]["instagram"].endswith("?q=bio-ig") and set(r["bio"]) == {"instagram", "tiktok", "facebook"}
+    assert r["bio"]["instagram"].endswith("?q=bio-ig") and set(r["bio"]) == {"instagram", "tiktok", "facebook", "linkedin"}
     monkeypatch.setenv("LINK_BASIS", "https://beispiel.at")
     assert client.get("/links", headers=AUTH).json()["bio"]["tiktok"] == "https://beispiel.at/?q=bio-tt"
     assert client.get("/links").status_code == 401
@@ -551,6 +551,8 @@ class FakeMeta:
         self.aufrufe = []
         self.fehler_bei = fehler_bei
         self.n = 0
+        self.follower = 250
+        self.ig_insights_fehler = False
 
     def _r(self, daten, code=200):
         return SimpleNamespace(status_code=code, json=lambda: daten, text=json.dumps(daten))
@@ -567,7 +569,20 @@ class FakeMeta:
         if url == "https://graph.instagram.com/refresh_access_token":
             return self._r({"access_token": "IGNEU", "expires_in": 5184000})
         if url.endswith("/me"):
+            if "followers_count" in (params or {}).get("fields", ""):
+                return self._r({"username": "soraya.astro", "followers_count": self.follower, "media_count": 12})
             return self._r({"user_id": "1789", "username": "soraya.astro"})
+        if url.endswith("/insights") and "graph.instagram.com" in url:
+            if self.ig_insights_fehler:
+                return self._r({"error": {"message": "(#10) Application does not have permission for this action",
+                                          "code": 10}}, 400)
+            if "views" in params["metric"] and "/M_ALT" in url:
+                return self._r({"error": {"message": "(#100) metric views not supported", "code": 100}}, 400)
+            werte = {"reach": 840, "likes": 31, "comments": 4, "saved": 7, "shares": 3, "views": 1210, "replies": 1}
+            return self._r({"data": [{"name": n, "period": "lifetime", "values": [{"value": werte[n]}]}
+                                     for n in params["metric"].split(",")]})
+        if (params or {}).get("fields") == "like_count,comments_count":
+            return self._r({"like_count": 29, "comments_count": 4, "id": url.rsplit("/", 1)[-1]})
         if "fields" in (params or {}) and params["fields"].startswith("status_code"):
             return self._r({"status_code": "FINISHED"})
         if (params or {}).get("fields", "").startswith("reactions"):
@@ -1273,20 +1288,31 @@ def test_zeit_vorschlaege():
 class FakeTikTok:
     def __init__(self):
         self.aufrufe = []
+        self.status = []
+        self.videos = []
+        self.liste_fehler = False
 
     @staticmethod
     def _r(d, code=200):
         return SimpleNamespace(status_code=code, json=lambda: d, text=json.dumps(d))
 
-    def post(self, url, data=None, json=None, headers=None, timeout=None):
+    def post(self, url, data=None, json=None, headers=None, timeout=None, params=None):
         self.aufrufe.append(("POST", url, data or json))
         if url.endswith("/oauth/token/"):
             return self._r({"access_token": "TT1", "expires_in": 86400, "refresh_token": "R1",
-                            "refresh_expires_in": 31536000, "open_id": "o1"})
+                            "refresh_expires_in": 31536000, "open_id": "o1",
+                            "scope": "user.info.basic,video.upload,video.publish,video.list"})
         if url.endswith("/creator_info/query/"):
             return self._r({"data": {"privacy_level_options": ["SELF_ONLY"]}, "error": {"code": "ok"}})
         if url.endswith("/video/init/"):
             return self._r({"data": {"publish_id": "P1", "upload_url": "https://upload.tiktok/x"}, "error": {"code": "ok"}})
+        if url.endswith("/status/fetch/"):
+            st = self.status.pop(0) if self.status else {"status": "SEND_TO_USER_INBOX"}
+            return self._r({"data": st, "error": {"code": "ok"}})
+        if url.endswith("/video/list/"):
+            if self.liste_fehler:
+                return self._r({"error": {"code": "scope_not_authorized", "message": "video.list"}}, 401)
+            return self._r({"data": {"videos": self.videos, "has_more": False, "cursor": 0}, "error": {"code": "ok"}})
         return self._r({"error": {"code": "unknown", "message": url}}, 400)
 
     def get(self, url, params=None, headers=None, timeout=None):
@@ -1348,3 +1374,325 @@ def test_tiktok_token_erneuern(monkeypatch):
     db.setze_einstellung("tiktok_zugang", {"token": "ALT", "laeuft_ab": int(time.time()) + 60, "refresh": "R0"})
     assert tiktok.gueltiger_token() == "TT1"
     assert f.aufrufe[-1][2]["grant_type"] == "refresh_token" and db.lade_einstellung("tiktok_zugang", {})["refresh"] == "R1"
+
+
+# ---------------------------------------------------------------- Instagram-Zahlen (Insights)
+def test_instagram_zahlen_follower_und_lernen(fake_meta, frische_db):
+    _, start = _verbinde("instagram")
+    assert "instagram_business_manage_insights" in _pq(_up(start.headers["location"]).query)["scope"][0]
+    assert client.get("/posten", headers=AUTH).json()["verbindungen"]["instagram"]["zahlen"] is True
+    tagesplan.erstelle("en")
+    heute = [p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en"]
+    for art in ("post", "story"):
+        p = next(x for x in heute if x["art"] == art)
+        assert client.post("/posten/jetzt", json={"post_id": p["id"], "plattform": "instagram"}, headers=AUTH).status_code == 200
+    d = client.get("/wirkung/instagram", headers=AUTH).json()
+    assert d["verbunden"] and d["recht_fehlt"] is False and d["konto"]["follower"] == 250
+    feed = next(b for b in d["beitraege"] if b["art"] == "post")
+    assert (feed["reaktionen"], feed["kommentare"], feed["gespeichert"], feed["geteilt"], feed["aufrufe"], feed["reichweite"]) == \
+        (29, 4, 7, 3, 1210, 840)
+    story = next(b for b in d["beitraege"] if b["art"] == "story")
+    assert story["aufrufe"] == 1210 and story["reaktionen"] == 0           # Storys: keine Gefaellt-mir-Zahl
+    metrik = [a[2]["metric"] for a in fake_meta.aufrufe if a[1].endswith("/insights")]
+    assert "reach,views,shares,replies" in metrik and "reach,likes,comments,saved,shares,views" in metrik
+    assert "IGLANG" not in json.dumps(d)
+    # gemerkt -> fliesst ins Lernen (gespeichert 3 Punkte, je 100 erreicht 1 Punkt)
+    lern = {x["id"]: x for x in db.lade_lern_posts(datetime.now(himmel.WIEN) - timedelta(days=1))}
+    fid = feed["post_id"]
+    assert lern[fid]["gespeichert"] == 7 and lern[fid]["reichweite"] == 840
+    b = {e["post"]["id"]: e for e in redaktion.bewerte(lambda i: None, statistik={})}
+    assert b[fid]["punkte"] == 29 + 4 * 3 + 3 * 4 + 7 * 3 + 840 // 100
+    assert "7 mal gespeichert" in redaktion._details(b[fid])
+    # Follower-Verlauf: Zuwachs gegen vor 7 Tagen
+    posten.merke_follower(240, HEUTE - timedelta(days=8))
+    fake_meta.follower = 262
+    assert client.get("/wirkung/instagram", headers=AUTH).json()["konto"] == {
+        "follower": 262, "am": HEUTE.isoformat(), "zuwachs_7": 22}
+
+
+def test_instagram_ohne_insights_recht(fake_meta, frische_db):
+    _verbinde("instagram")
+    tagesplan.erstelle("en")
+    p = next(x for x in db.lade_posts(von=HEUTE, bis=HEUTE) if x["sprache"] == "en" and x["art"] == "post")
+    client.post("/posten/jetzt", json={"post_id": p["id"], "plattform": "instagram"}, headers=AUTH)
+    # alte Verbindung (vor dem neuen Recht): Gefaellt mir/Kommentare ja, Insights nicht gefragt, Hinweis
+    z = meta.zugang("instagram"); z.pop("angefragt"); z.pop("rechte"); db.setze_einstellung("meta_instagram", z)
+    assert client.get("/posten", headers=AUTH).json()["verbindungen"]["instagram"]["zahlen"] is False
+    vorher = len(fake_meta.aufrufe)
+    d = client.get("/wirkung/instagram", headers=AUTH).json()
+    assert d["recht_fehlt"] is True and d["beitraege"][0]["reaktionen"] == 29 and "aufrufe" not in d["beitraege"][0]
+    assert not [a for a in fake_meta.aufrufe[vorher:] if a[1].endswith("/insights")]
+    # Meta gibt zurueck "keine Berechtigung" (Recht in der App nicht hinzugefuegt): merken, nicht mehr fragen
+    _verbinde("instagram")
+    fake_meta.ig_insights_fehler = True
+    d = client.get("/wirkung/instagram", headers=AUTH).json()
+    assert d["recht_fehlt"] is True and d["beitraege"][0]["kommentare"] == 4 and "fehler" not in d["beitraege"][0]
+    assert meta.zugang("instagram")["insights_fehlt"] is True
+    # Meta liefert die Freigaben beim Verbinden mit: dann zaehlen die
+    assert meta.instagram_zahlen_erlaubt({"token": "x", "rechte": ["instagram_business_basic"], "angefragt": meta.IG_SCOPES}) is False
+    # unbekannte Kennzahl -> kurze Liste
+    fake_meta.ig_insights_fehler = False
+    assert meta.instagram_insights("M_ALT", "post", "T") == {"reach": 840, "saved": 7}
+
+
+def test_zahlen_alle_6_stunden_alle_plattformen(fake_meta, monkeypatch, frische_db):
+    _verbinde("instagram")
+    tagesplan.erstelle("en")
+    p = next(x for x in db.lade_posts(von=HEUTE, bis=HEUTE) if x["sprache"] == "en" and x["art"] == "reel")
+    client.post("/posten/jetzt", json={"post_id": p["id"], "plattform": "instagram"}, headers=AUTH)
+    monkeypatch.setattr(posten, "_ZAHLEN", {"zuletzt": 0.0})
+    assert posten.aktualisiere_zahlen() == 1                       # Facebook nicht verbunden: Instagram trotzdem
+    assert posten.aktualisiere_zahlen() == 0                       # nicht oefter als alle 6 Stunden
+    z = db.lade_gemerkte_zahlen("instagram", datetime.now(himmel.WIEN) - timedelta(days=1))[0]
+    assert (z["aufrufe"], z["gespeichert"], z["reaktionen"]) == (1210, 7, 29)
+    assert redaktion.punkte(gespeichert=2) == 6
+
+
+# ---------------------------------------------------------------- TikTok: Status, Zahlen, Fehlertexte
+def test_tiktok_status_zahlen_und_fehler(fake_meta, monkeypatch, frische_db):
+    import tiktok
+    f = FakeTikTok()
+    monkeypatch.setattr(tiktok.requests, "post", f.post)
+    monkeypatch.setattr(tiktok.requests, "get", f.get)
+    monkeypatch.setattr(tiktok.requests, "put", f.put)
+    monkeypatch.setattr(tiktok.time, "sleep", lambda s: None)
+    monkeypatch.setenv("TIKTOK_CLIENT_KEY", "ck"); monkeypatch.setenv("TIKTOK_CLIENT_SECRET", "cs")
+    r = client.get("/tiktok/verbinden", headers=AUTH, follow_redirects=False)
+    assert "video.list" in _pq(_up(r.headers["location"]).query)["scope"][0]
+    state = _pq(_up(r.headers["location"]).query)["state"][0]
+    client.get(f"/tiktok/rueckruf?code=abc&state={state}", headers=AUTH, follow_redirects=False)
+    v = client.get("/posten", headers=AUTH).json()["verbindungen"]["tiktok"]
+    assert v["zahlen"] is True and v["laeuft_ab"] > time.time() + 300 * 86400
+    # Status: erst in Arbeit, dann fehlgeschlagen -> klarer Fehler
+    f.status = [{"status": "PROCESSING_UPLOAD"}, {"status": "FAILED", "fail_reason": "file_format_check_failed"}]
+    with pytest.raises(tiktok.TikTokFehler, match="file_format_check_failed"):
+        tiktok.poste_video(b"video", "T", "entwurf")
+    # direkt veroeffentlicht: TikTok nennt die Video-ID
+    f.status = [{"status": "PUBLISH_COMPLETE", "publicaly_available_post_id": [7444]}]
+    assert tiktok.poste_video(b"video", "T", "direkt") == {"id": "7444", "url": "https://www.tiktok.com/@Soraya/video/7444"}
+    # verstaendliche Fehlermeldung
+    with pytest.raises(tiktok.TikTokFehler, match="5 Entwürfe"):
+        tiktok._antwort(SimpleNamespace(status_code=403, json=lambda: {"error": {"code": "spam_risk_too_many_pending_share",
+                                                                                   "message": "x"}}, text=""))
+    # Zahlen: Reel als Entwurf geschickt, spaeter selbst gepostet -> Zuordnung ueber die Zeit
+    tagesplan.erstelle("en")
+    reel_post = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en" and p["art"] == "reel")
+    assert client.post("/posten/jetzt", json={"post_id": reel_post["id"], "plattform": "tiktok"}, headers=AUTH).status_code == 200
+    jetzt = int(time.time())
+    f.videos = [{"id": "1", "title": "alt", "create_time": jetzt - 9 * 86400, "view_count": 999},
+                {"id": "2", "title": "Two nights", "create_time": jetzt + 3600, "view_count": 512, "like_count": 40,
+                 "comment_count": 5, "share_count": 2, "share_url": "https://www.tiktok.com/@soraya/video/2"}]
+    d = client.get("/wirkung/tiktok", headers=AUTH).json()
+    assert d["recht_fehlt"] is False and len(d["beitraege"]) == 1
+    b = d["beitraege"][0]
+    assert (b["post_id"], b["aufrufe"], b["reaktionen"], b["kommentare"], b["geteilt"]) == (reel_post["id"], 512, 40, 5, 2)
+    lern = {x["id"]: x for x in db.lade_lern_posts(datetime.now(himmel.WIEN) - timedelta(days=1))}
+    assert lern[reel_post["id"]]["reaktionen"] == 40 and lern[reel_post["id"]]["reichweite"] == 0
+    # Recht fehlt (alte Verbindung ohne video.list)
+    f.liste_fehler = True
+    d = client.get("/wirkung/tiktok", headers=AUTH).json()
+    assert d["recht_fehlt"] is True
+    assert client.get("/posten", headers=AUTH).json()["verbindungen"]["tiktok"]["zahlen"] is False
+
+
+def test_tiktok_refresh_abgelaufen_und_im_zeitplan(monkeypatch):
+    import tiktok
+    f = FakeTikTok()
+    monkeypatch.setattr(tiktok.requests, "post", f.post)
+    monkeypatch.setenv("TIKTOK_CLIENT_KEY", "ck"); monkeypatch.setenv("TIKTOK_CLIENT_SECRET", "cs")
+    db.setze_einstellung("tiktok_zugang", {"token": "ALT", "laeuft_ab": int(time.time()) + 60, "refresh": "R0",
+                                           "refresh_ab": int(time.time()) - 10})
+    with pytest.raises(tiktok.TikTokFehler, match="neu verbinden"):
+        tiktok.gueltiger_token()
+    db.setze_einstellung("tiktok_zugang", {"token": "ALT", "laeuft_ab": int(time.time()) + 60, "refresh": "R0",
+                                           "refresh_ab": int(time.time()) + 999})
+    monkeypatch.setattr(tiktok, "_VERSUCHT", {"zuletzt": 0.0})
+    assert tiktok.erneuern_wenn_noetig() is True and tiktok.zugang()["token"] == "TT1"
+    assert tiktok.erneuern_wenn_noetig() is False                    # frisch: nichts zu tun
+
+
+# ---------------------------------------------------------------- LinkedIn (persoenliches Profil)
+import linkedin
+
+
+class FakeLinkedIn:
+    """Simuliert OAuth, userinfo, Images/Videos/Posts API; alles andere geht an `weiter` (z. B. FakeMeta)."""
+    def __init__(self, weiter=None):
+        self.aufrufe = []
+        self.weiter = weiter
+        self.n = 0
+        self.alte_version = None          # diese LinkedIn-Version "gibt es nicht"
+        self.posts_fehler = 0             # so oft schlaegt /rest/posts fehl
+        self.scope = "openid,profile,w_member_social"
+
+    @staticmethod
+    def _r(d, code=200, headers=None):
+        text = json.dumps(d) if d is not None else ""
+        return SimpleNamespace(status_code=code, json=lambda: d, text=text, content=text.encode(), headers=headers or {})
+
+    def post(self, url, data=None, json=None, headers=None, timeout=None, files=None, params=None):
+        if "linkedin.com" not in url:
+            return self.weiter.post(url, data=data, files=files, headers=headers, timeout=timeout)
+        self.aufrufe.append(("POST", url, data or json, headers))
+        if url.endswith("/oauth/v2/accessToken"):
+            return self._r({"access_token": "LI1", "expires_in": 5184000, "scope": self.scope})
+        return self._r({"message": "unbekannt"}, 404)
+
+    def get(self, url, params=None, headers=None, timeout=None):
+        if "linkedin.com" not in url:
+            return self.weiter.get(url, params=params, timeout=timeout)
+        self.aufrufe.append(("GET", url, params, headers))
+        if url.endswith("/v2/userinfo"):
+            return self._r({"sub": "abc123", "name": "Attila K."})
+        return self._r({"message": "unbekannt"}, 404)
+
+    def put(self, url, data=None, headers=None, timeout=None):
+        self.aufrufe.append(("PUT", url, {"bytes": len(data or b"")}, headers))
+        return self._r(None, 201, {"etag": f"/etag{len(self.aufrufe)}"})
+
+    def request(self, methode, url, headers=None, json=None, timeout=None, params=None):
+        self.aufrufe.append((methode, url, json, headers))
+        if headers.get("LinkedIn-Version") == self.alte_version:
+            return self._r({"status": 426, "code": "NONEXISTENT_VERSION", "message": "Requested version is not active"}, 426)
+        assert headers["X-Restli-Protocol-Version"] == "2.0.0" and headers["Authorization"] == "Bearer LI1"
+        if url.endswith("/rest/images?action=initializeUpload"):
+            self.n += 1
+            return self._r({"value": {"uploadUrl": f"https://www.linkedin.com/dms-uploads/img{self.n}",
+                                      "image": f"urn:li:image:I{self.n}"}})
+        if url.endswith("/rest/videos?action=initializeUpload"):
+            g = json["initializeUploadRequest"]["fileSizeBytes"]
+            return self._r({"value": {"video": "urn:li:video:V1", "uploadToken": "",
+                                      "uploadInstructions": [{"uploadUrl": "https://www.linkedin.com/up/v1", "firstByte": 0,
+                                                              "lastByte": g - 1}]}})
+        if url.endswith("/rest/videos?action=finalizeUpload"):
+            return self._r(None)
+        if "/rest/videos/urn" in url:
+            return self._r({"status": "AVAILABLE"})
+        if url.endswith("/rest/posts"):
+            if self.posts_fehler:
+                self.posts_fehler -= 1
+                return self._r({"message": "Internal error"}, 500)
+            return self._r(None, 201, {"x-restli-id": f"urn:li:share:{700 + len(self.aufrufe)}"})
+        return self._r({"message": "unbekannt " + url}, 404)
+
+
+@pytest.fixture
+def fake_li(fake_meta, monkeypatch):
+    f = FakeLinkedIn(fake_meta)
+    for name in ("post", "get", "put", "request"):
+        monkeypatch.setattr(linkedin.requests, name, getattr(f, name))
+    monkeypatch.setattr(linkedin, "_VERSION", {"gut": None})
+    monkeypatch.setattr(posten, "frage_json", lambda *a, **k: {"text": (
+        "The Moon in Scorpio asks for honest conversations this week.\n\nWhen emotions run deeper, clarity helps "
+        "more than speed. Take ten minutes today for the talk you keep postponing (it is worth it).")})
+    return f
+
+
+def _li_verbinden(f):
+    r = client.get("/linkedin/verbinden", headers=AUTH, follow_redirects=False)
+    assert r.status_code == 302
+    q = _pq(_up(r.headers["location"]).query)
+    return client.get(f"/linkedin/rueckruf?code=abc&state={q['state'][0]}", headers=AUTH, follow_redirects=False), q
+
+
+def test_linkedin_verbinden_und_ablauf(fake_li, monkeypatch):
+    assert client.get("/linkedin/verbinden", headers=AUTH, follow_redirects=False).status_code == 409   # ohne App
+    v = client.get("/posten", headers=AUTH).json()
+    assert v["verbindungen"]["linkedin"]["eingerichtet"] is False and v["einstellungen"]["plattformen"]["linkedin"] is False
+    monkeypatch.setenv("LINKEDIN_CLIENT_ID", "li-id"); monkeypatch.setenv("LINKEDIN_CLIENT_SECRET", "li-geheim")
+    r, q = _li_verbinden(fake_li)
+    assert q["scope"] == ["openid profile w_member_social"]
+    assert q["redirect_uri"] == ["https://agent.example.app/linkedin/rueckruf"]
+    assert r.headers["location"] == "/?verbunden=linkedin#posten"
+    v = client.get("/posten", headers=AUTH)
+    li = v.json()["verbindungen"]["linkedin"]
+    assert li["verbunden"] and li["name"] == "Attila K." and not li["bald_ablaufend"] and "LI1" not in v.text
+    assert linkedin.zugang()["autor"] == "urn:li:person:abc123"
+    # 7 Tage vor Ablauf: Warnung; danach abgelaufen (nicht mehr "verbunden", keine Termine mehr)
+    z = linkedin.zugang(); z["laeuft_ab"] = int(time.time()) + 5 * 86400; db.setze_einstellung("linkedin_zugang", z)
+    assert linkedin.verbindung()["bald_ablaufend"] is True
+    z["laeuft_ab"] = int(time.time()) - 10; db.setze_einstellung("linkedin_zugang", z)
+    assert linkedin.verbindung()["abgelaufen"] is True and linkedin.verbindung()["verbunden"] is False
+    with pytest.raises(linkedin.LinkedInFehler, match="neu verbinden"):
+        linkedin.poste("post", "Hallo", bild=b"jpg")
+    # ohne "Share on LinkedIn": klare Meldung
+    fake_li.scope = "openid,profile"
+    r, _ = _li_verbinden(fake_li)
+    assert "Share+on+LinkedIn" in r.headers["location"] or "Share%20on%20LinkedIn" in r.headers["location"]
+    assert client.post("/linkedin/trennen", headers=AUTH).status_code == 200
+    assert client.get("/posten", headers=AUTH).json()["verbindungen"]["linkedin"]["verbunden"] is False
+
+
+def test_linkedin_posten_bild_karussell_reel(fake_li, monkeypatch, frische_db):
+    monkeypatch.setenv("LINKEDIN_CLIENT_ID", "li-id"); monkeypatch.setenv("LINKEDIN_CLIENT_SECRET", "li-geheim")
+    _li_verbinden(fake_li)
+    fake_li.alte_version = linkedin.versionen()[0]          # erste Version "gibt es nicht" -> naechste
+    tagesplan.erstelle("en")
+    heute = {p["art"]: p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en"}
+    # Story: nicht auf LinkedIn
+    assert client.post("/posten/jetzt", json={"post_id": heute["story"]["id"], "plattform": "linkedin"}, headers=AUTH).status_code == 400
+    # Feed-Post (Karussell) -> Mehrbild-Beitrag
+    r = client.post("/posten/jetzt", json={"post_id": heute["post"]["id"], "plattform": "linkedin"}, headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert r.json()["ergebnis"]["url"].startswith("https://www.linkedin.com/feed/update/urn:li:share:")
+    post = [a for a in fake_li.aufrufe if a[1].endswith("/rest/posts")][-1]
+    assert post[3]["LinkedIn-Version"] == linkedin.versionen()[1]
+    body = post[2]
+    assert body["author"] == "urn:li:person:abc123" and body["visibility"] == "PUBLIC" and body["lifecycleState"] == "PUBLISHED"
+    n = paket.medien.anzahl_bilder(heute["post"])
+    if n > 1:
+        assert len(body["content"]["multiImage"]["images"]) == n
+    else:
+        assert body["content"]["media"]["id"].startswith("urn:li:image:")
+    puts = [a for a in fake_li.aufrufe if a[0] == "PUT"]
+    assert puts and puts[0][3]["Authorization"] == "Bearer LI1"
+    # Text: sachlich umgeschrieben, Link klickbar mit Kennung und Sprache, hoechstens 3 Hashtags, geschuetzte Zeichen
+    t = body["commentary"]
+    assert t.startswith("The Moon in Scorpio") and "\\(it is worth it\\)" in t
+    assert f"https://www.sorayaluxuryastroguide.com/?q=p{heute['post']['id']}&lang=en" in t
+    assert t.count("{hashtag|\\#|") == 3 and "bio" not in t.lower()
+    assert db.lade_post(heute["post"]["id"])["meta"]["linkedin_text"].startswith("The Moon")   # gemerkt
+    # Reel -> Video (Upload in Teilen, Abschluss, warten bis verarbeitet)
+    r = client.post("/posten/jetzt", json={"post_id": heute["reel"]["id"], "plattform": "linkedin"}, headers=AUTH)
+    assert r.status_code == 200, r.text
+    fin = next(a for a in fake_li.aufrufe if a[1].endswith("finalizeUpload"))
+    assert fin[2]["finalizeUploadRequest"]["uploadedPartIds"] and fin[2]["finalizeUploadRequest"]["video"] == "urn:li:video:V1"
+    body = [a for a in fake_li.aufrufe if a[1].endswith("/rest/posts")][-1][2]
+    assert body["content"]["media"]["id"] == "urn:li:video:V1"
+
+
+def test_linkedin_im_zeitplan_mit_wiederholung(fake_li, monkeypatch, frische_db):
+    monkeypatch.setenv("LINKEDIN_CLIENT_ID", "li-id"); monkeypatch.setenv("LINKEDIN_CLIENT_SECRET", "li-geheim")
+    monkeypatch.setenv("LINKEDIN_KI", "0")                  # ohne KI: nur aufgeraeumt
+    _li_verbinden(fake_li)
+    tagesplan.erstelle("en")
+    posten.speichere_einstellungen({"an": True, "plattformen": {"facebook": False, "instagram": False}})
+    posten.durchlauf(_um(8))
+    assert not [t for t in db.lade_veroeffentlichungen(_um(0), _um(23)) if t["plattform"] == "linkedin"]   # Standard aus
+    posten.speichere_einstellungen({"plattformen": {"linkedin": True}})
+    posten.durchlauf(_um(8))
+    li = [t for t in db.lade_veroeffentlichungen(_um(0), _um(23)) if t["plattform"] == "linkedin"]
+    assert sorted(t["art"] for t in li) == ["post", "reel"]                      # keine Story
+    fake_li.posts_fehler = 1
+    r = posten.durchlauf(_um(12, 31))
+    assert r["ausgefuehrt"][0]["status"] == "fehler" and "Internal error" in r["ausgefuehrt"][0]["fehler"]
+    # nach 15 Minuten der zweite Versuch
+    with psycopg.connect(os.environ["DATABASE_URL"]) as c:
+        c.execute("update soraya_veroeffentlichungen set aktualisiert = now() - interval '20 minutes' where plattform = 'linkedin'")
+    r = posten.durchlauf(_um(12, 50))
+    assert [x["status"] for x in r["ausgefuehrt"]] == ["fertig"]
+    feed = next(t for t in db.lade_veroeffentlichungen(_um(0), _um(23)) if t["plattform"] == "linkedin" and t["art"] == "post")
+    assert feed["status"] == "fertig" and feed["versuche"] == 2 and feed["extern_id"].startswith("urn:li:share:")
+    text = [a for a in fake_li.aufrufe if a[1].endswith("/rest/posts")][-1][2]["commentary"]
+    assert "✨" not in text and "?q=p" in text
+    posten.speichere_einstellungen({"an": False})
+
+
+def test_linkedin_text_und_versionen():
+    assert linkedin.little_text("Hallo (Test) #astro #3 a_b https://x.com/?q=p1&lang=en") == \
+        "Hallo \\(Test\\) {hashtag|\\#|astro} \\#3 a\\_b https://x.com/?q=p1&lang=en"
+    assert linkedin.versionen(date(2026, 1, 15)) == ["202511", "202510", "202509", "202508"]
+    p = {"id": 5, "sprache": "de", "art": "post", "meta": {"linkedin_text": "Sachlich."}, "text": "x", "hashtags": "#a #b #c #d"}
+    assert posten.text_fuer(p, "linkedin") == ("Sachlich.\n\nDein persönliches Horoskop, kostenlos: "
+                                              "https://www.sorayaluxuryastroguide.com/?q=p5&lang=de\n\n#a #b #c")
+    assert posten._li_regelbasiert("Der Mond ✨ wächst.\n\nDein Horoskop: Link in Bio 🔮", "de") == "Der Mond wächst.\n\nDein Horoskop: Link unten"
