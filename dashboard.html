@@ -2167,7 +2167,9 @@ async function ladeTikTokWirkung(){
   if(!r.verbunden){ box.innerHTML = ''; return; }
   const b = r.beitraege || [];
   const summe = (f) => b.reduce((n, x) => n + (x[f] || 0), 0);
+  const k = r.konto || {};
   box.innerHTML = `<div class="panel"><h2>${IKON.tiktok} Auf TikTok</h2>
+    ${k.follower != null ? `<div class="igkopf"><b>${zahl(k.follower)}</b><span>Follower</span>${k.zuwachs_7 ? `<span class="plus">${k.zuwachs_7 > 0 ? '+' : ''}${zahl(k.zuwachs_7)} in 7 Tagen</span>` : ''}</div>` : ''}
     ${r.recht_fehlt ? `<p class="meta">${kurzMehr('Die TikTok-Zahlen siehst du im TikTok Studio (Beiträge → Aufrufe, Likes).', 'Hier im Content Studio erscheinen sie nur, wenn deine TikTok-App das Recht <code>video.list</code> hat (Produkt „Display API“). Das bietet TikTok nicht jeder App an – fürs Posten ist es nicht nötig.')}</p>`
     : b.length ? `<div class="kpis klein3 vier">
         <div class="kpi"><div class="l">Aufrufe</div><div class="v">${zahl(summe('aufrufe'))}</div></div>
@@ -2178,7 +2180,7 @@ async function ladeTikTokWirkung(){
         ${b.map(x => `<tr><td style="white-space:normal"><b>${esc(x.titel || 'Post ' + x.post_id)}</b>${x.gepostet ? `<br><span class="meta">${esc(kurzIso(String(x.gepostet).slice(0, 10)))}</span>` : ''}</td>
           <td>${zahl(x.aufrufe)}</td><td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>
           <td>${x.url ? `<a class="fertig" href="${esc(x.url)}" target="_blank" rel="noopener">ansehen</a>` : ''}</td></tr>`).join('')}</tbody></table></div></details>
-      <p class="meta">${kurzMehr('Zuordnung über die Zeit.', 'Entwürfe postest du selbst in der TikTok-App – Soraya ordnet dann das erste Video innerhalb von 3 Tagen nach dem Hochladen dem Reel zu.')}</p>`
+      <p class="meta">${kurzMehr('Zuordnung über Zeit und Titel.', 'Entwürfe postest du selbst in der TikTok-App – Soraya ordnet dann das erste Video innerhalb von 3 Tagen nach dem Hochladen dem Reel zu. Selbst hochgeladene Videos erkennt sie am Titel des Reels am Anfang der Beschreibung.')}</p>`
     : '<p class="meta">Noch keine Reels auf TikTok gefunden.</p>'}</div>`;
 }
 const BIO_NAMEN = {'bio-ig': 'Bio-Link Instagram', 'bio-tt': 'Bio-Link TikTok', 'bio-fb': 'Bio-Link Facebook', 'bio-li': 'Profil-Link LinkedIn'};

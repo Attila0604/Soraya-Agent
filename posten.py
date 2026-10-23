@@ -466,20 +466,20 @@ def _merke(plattform: str, zeilen: list[dict]) -> int:
     return n
 
 
-def merke_follower(anzahl: int | None, heute: date | None = None) -> None:
-    """Instagram-Follower je Tag (90 Tage), damit Wirkung den Zuwachs zeigen kann."""
+def merke_follower(anzahl: int | None, heute: date | None = None, schluessel: str = "instagram_follower") -> None:
+    """Follower je Tag (90 Tage), damit Wirkung den Zuwachs zeigen kann (Instagram, TikTok)."""
     if anzahl is None:
         return
-    d = db.lade_einstellung("instagram_follower", {}) or {}
+    d = db.lade_einstellung(schluessel, {}) or {}
     verlauf = d.get("verlauf") or {}
     verlauf[(heute or datetime.now(himmel.WIEN).date()).isoformat()] = int(anzahl)
     verlauf = dict(sorted(verlauf.items())[-90:])
-    db.setze_einstellung("instagram_follower", {"verlauf": verlauf})
+    db.setze_einstellung(schluessel, {"verlauf": verlauf})
 
 
-def follower_stand() -> dict:
+def follower_stand(schluessel: str = "instagram_follower") -> dict:
     """Aktuelle Follower und Zuwachs gegen vor 7 Tagen (aus dem gemerkten Verlauf)."""
-    verlauf = (db.lade_einstellung("instagram_follower", {}) or {}).get("verlauf") or {}
+    verlauf = (db.lade_einstellung(schluessel, {}) or {}).get("verlauf") or {}
     if not verlauf:
         return {}
     tage = sorted(verlauf)
@@ -517,7 +517,21 @@ def zahlen_tiktok(seit: datetime) -> list[dict]:
             db.setze_einstellung(tiktok.SCHLUESSEL, z)
         raise
     zeilen = tiktok.zuordnen(db.lade_gepostete("tiktok", seit, limit=60), liste)
+    # selbst hochgeladene Videos (z. B. aus dem Wochenpaket): ueber den Titel den Reels zuordnen
+    schon = {z_["post_id"] for z_ in zeilen}
+    benutzt = {str(z_.get("url")) for z_ in zeilen}
+    reels = [{"post_id": p["id"], "titel": p.get("titel")} for p in db.lade_posts(200, von=seit.date())
+             if p.get("art") == "reel" and p["id"] not in schon]
+    zeilen += [x for x in tiktok.zuordnen_nach_titel(reels, [v for v in liste if str(v.get("share_url")) not in benutzt])]
+    for x in zeilen:
+        x.pop("_video", None)
     _merke("tiktok", zeilen)
+    try:
+        k = tiktok.konto()
+        if k:
+            merke_follower(k.get("follower"), schluessel="tiktok_follower")
+    except Exception as ex:  # noqa: BLE001
+        print(f"[Posten] TikTok-Follower nicht geholt: {ex}", flush=True)
     return zeilen
 
 

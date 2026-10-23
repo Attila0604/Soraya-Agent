@@ -25,6 +25,7 @@ Zahlen (Aufrufe, Gefaellt mir, Kommentare, Teilen) kommen ueber video.list -- oh
 from __future__ import annotations
 
 import os
+import re
 import secrets
 import threading
 import time
@@ -41,7 +42,9 @@ API = "https://open.tiktokapis.com/v2"
 # video.list (Zahlen) gibt es nur mit der "Display API", die TikTok nicht jeder App anbietet. Ohne das Recht in der
 # App lehnt TikTok das Verbinden ab -> nur anfragen, wenn TIKTOK_ZAHLEN=1 in Railway gesetzt ist.
 SCOPES_BASIS = "user.info.basic,video.upload,video.publish"
-SCOPES = SCOPES_BASIS + (",video.list" if os.environ.get("TIKTOK_ZAHLEN") == "1" else "")
+# TIKTOK_ZAHLEN=1: + video.list (Zahlen je Video); =2: zusaetzlich user.info.stats (Follower)
+_ZAHLEN = os.environ.get("TIKTOK_ZAHLEN", "")
+SCOPES = SCOPES_BASIS + (",video.list" if _ZAHLEN in ("1", "2") else "") + (",user.info.stats" if _ZAHLEN == "2" else "")
 ZAHLEN_RECHT = "video.list"
 # Klare deutsche Saetze fuer die haeufigsten Fehler der Content Posting API
 FEHLER_TEXTE = {
@@ -292,6 +295,41 @@ def videos(anzahl: int = 20) -> list[dict]:
         if not d.get("has_more") or not d.get("cursor"):
             break
         cursor = d["cursor"]
+    return out
+
+
+def konto() -> dict | None:
+    """Follower, Likes und Zahl der Videos (braucht user.info.stats); None ohne das Recht."""
+    z = zugang() or {}
+    if "user.info.stats" not in (z.get("rechte") or []):
+        return None
+    d = (_get_mit(gueltiger_token(), "/user/info/", fields="follower_count,likes_count,video_count").get("data") or {})
+    u = d.get("user") or {}
+    return {"follower": u.get("follower_count"), "likes": u.get("likes_count"), "videos": u.get("video_count")}
+
+
+def _kern(text: str | None) -> str:
+    return re.sub(r"[^0-9a-zà-ÿőű]+", " ", (text or "").lower()).strip()
+
+
+def zuordnen_nach_titel(reels: list[dict], liste: list[dict]) -> list[dict]:
+    """Selbst hochgeladene Videos (z. B. aus dem Wochenpaket) einem Reel zuordnen: der Reel-Titel steht am Anfang
+    der TikTok-Beschreibung."""
+    out, vergeben = [], set()
+    for v in liste:
+        t = _kern(v.get("title"))
+        if not t:
+            continue
+        for r in reels:
+            k = _kern(r.get("titel"))
+            if len(k) >= 8 and t.startswith(k[:40]) and r["post_id"] not in vergeben:
+                vergeben.add(r["post_id"])
+                out.append({"post_id": r["post_id"], "titel": r.get("titel"), "art": "reel", "url": v.get("share_url"),
+                            "gepostet": datetime.fromtimestamp(v["create_time"], timezone.utc) if v.get("create_time") else None,
+                            "aufrufe": int(v.get("view_count") or 0), "reaktionen": int(v.get("like_count") or 0),
+                            "kommentare": int(v.get("comment_count") or 0), "geteilt": int(v.get("share_count") or 0),
+                            "_video": str(v.get("id"))})
+                break
     return out
 
 
