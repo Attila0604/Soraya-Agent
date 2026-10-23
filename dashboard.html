@@ -568,6 +568,119 @@
   .kpi .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .zeiten-kopf{display:flex;align-items:center;margin:var(--s3) 0 6px;font-size:13px;color:var(--mist-dim)}
   @media (max-width:700px){ .raus>li.raus-leer,.raus>li.ladefehler-box{grid-column:1 / -1} }
+
+  /* ================= Runde 3: ruhiger & edler (Design-Linie 21.10.) ================= */
+  /* Knöpfe: kompakt, ganz rund, dezenter Goldverlauf, kein Glow; Hover nur mit Maus */
+  button,a.knopf{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 20px;
+         border-radius:999px;font-size:15px;font-weight:600;line-height:1.2;letter-spacing:.01em;
+         background:linear-gradient(180deg,#DDBF72,#C9A24B);border:1px solid #C9A24B;color:#1A140A;
+         box-shadow:none;transition:background-color .2s,border-color .2s,color .2s,filter .2s;text-decoration:none;text-align:center}
+  button:hover{filter:none}
+  .cockpit .kachel{display:block;min-height:0;border-radius:14px;font-weight:400;font-size:13px;text-align:left;line-height:1.45;
+                   background:var(--panel);border:1px solid rgba(201,162,75,.16);color:var(--mist);padding:var(--s3) var(--s4)}
+  .cockpit .kachel.achtung{border-color:var(--gelb-rand)}
+  @media (max-width:700px){ .cockpit .kachel{display:flex;align-items:baseline;gap:10px;padding:9px 12px;font-size:12px} }
+  .chip{min-height:34px;padding:0 13px;font-size:13px}
+  .vorschau{min-height:0}
+  button.ghost,a.knopf.ghost{background:transparent;color:var(--champagne);border:1px solid rgba(201,162,75,.4);font-weight:500}
+  button.klein,a.knopf.klein,button.freigeben{min-height:36px;padding:0 15px;font-size:13.5px}
+  button.gefahr{color:#ef9a8c;border-color:rgba(208,59,59,.4)}
+  button:disabled,button:disabled:hover{opacity:.5;cursor:default;filter:none}
+  @media (hover:hover){
+    button:not(:disabled):hover,a.knopf:hover{filter:brightness(1.06)}
+    button.ghost:not(:disabled):hover,a.knopf.ghost:hover{filter:none;border-color:var(--gold);background:rgba(201,162,75,.07)}
+    .tab:hover{color:var(--champagne)}
+  }
+  @media (pointer:coarse){ button.klein,a.knopf.klein,button.freigeben{min-height:40px} }
+  @media (max-width:560px){ button,a.knopf{min-height:44px} }
+  /* Text-Knöpfe: ohne Kasten, klein, mit Chevron */
+  button.textlink,.aktionen .nebenbei button,button.mehr-knopf{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+         min-height:40px;padding:0 8px;font-size:14px;font-weight:500;color:var(--champagne);border-radius:8px;white-space:nowrap}
+  .aktionen .nebenbei button:hover,button.textlink:hover,button.mehr-knopf:hover{text-decoration:underline;text-decoration-color:rgba(231,211,161,.45);text-underline-offset:3px}
+  .aktionen .nebenbei button:focus-visible,button.textlink:focus-visible,button.mehr-knopf:focus-visible{outline:2px solid var(--champagne);outline-offset:1px}
+  .aktionen .nebenbei button:disabled{opacity:.5;cursor:default}
+  button.mehr-knopf{min-height:28px;padding:0 2px;margin-left:2px;font-size:13px;color:var(--gold);vertical-align:baseline;display:inline}
+  button.mehr-knopf .chev{display:inline-block;transition:transform .2s;margin-left:2px}
+  button.mehr-knopf[aria-expanded="true"] .chev{transform:rotate(180deg)}
+  .rest{animation:auf .25s ease}
+  @media (prefers-reduced-motion:reduce){ .rest{animation:none} }
+  @keyframes auf{from{opacity:0}to{opacity:1}}
+
+  /* Reiter: ruhige Textreiter, nur der aktive bekommt eine Fläche */
+  .tabs{gap:2px}
+  .tab{all:unset;box-sizing:border-box;cursor:pointer;flex:none;font-family:'Inter',sans-serif;font-size:12.5px;letter-spacing:.12em;
+       text-transform:uppercase;color:var(--mist-dim);padding:0 13px;min-height:36px;display:inline-flex;align-items:center;border-radius:999px;font-weight:500}
+  .tab.on{background:rgba(201,162,75,.13);color:var(--champagne)}
+  .tab:focus-visible{outline:2px solid var(--champagne);outline-offset:2px}
+
+  /* Hierarchie: Überschrift, eine kurze Zeile, Inhalt */
+  .panel{border-color:rgba(201,162,75,.16);background:linear-gradient(180deg,rgba(22,27,52,.92),rgba(18,22,42,.92))}
+  .panel h2{font-size:22px;margin-bottom:2px}
+  .panel p.hint,.tpinfo,.note{max-width:65ch}
+  .panel p.hint{margin:0 0 var(--s4);color:var(--mist-dim)}
+  .note{font-size:12.5px}
+  .bar{margin:var(--s5) 2px var(--s3)}
+  .bar h3{font-size:23px}
+  label{font-size:10.5px}
+
+  /* Post-Karte: Text zuerst kurz (3–4 Zeilen), der Rest aufklappbar */
+  .langtext.zu{max-height:8.2em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+  .langtext .txt{margin-bottom:var(--s2)}
+  .klappe{margin:-2px 0 var(--s2) -2px}
+  .card .untertitel{margin-bottom:var(--s2)}
+  .aktionen{justify-content:space-between;row-gap:4px}
+  .aktionen .nebenbei{gap:0 2px;margin-left:-8px}
+  .aktionen .gruppe select,.aktionen .gruppe input{min-height:36px}
+  .pruefhinweis{padding:8px 12px}
+  .pruefhinweis span{display:inline;margin:0}
+  .kopf .kmeta{font-size:11.5px}
+  .card .tags{font-size:13px}
+  /* Aufklapp-Zeilen: wie Text-Links, mit Chevron statt "+ IN VERSALIEN" */
+  details:not(.pz)>summary{text-transform:none;letter-spacing:0;font-size:13.5px;font-weight:500;color:var(--champagne);
+                           display:inline-flex;align-items:center;min-height:36px}
+  details:not(.pz)>summary::before{content:""}
+  details:not(.pz)>summary::after{content:"⌄";color:var(--gold);margin-left:6px;transition:transform .2s;display:inline-block}
+  details:not(.pz)[open]>summary::after{transform:rotate(180deg)}
+  /* Zielgruppen-Profil: Kernaussage sichtbar, Details aufklappbar */
+  details.profil-mehr{margin-top:var(--s2)}
+  details.profil-mehr>summary{text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--champagne)}
+  .tagesplan-panel .himmel{border-bottom:0;padding-bottom:0}
+  /* Runde 4: noch knapper – Nebensachen in aufklappbaren Kästen */
+  details.panel.klapp{margin-top:0;padding-top:var(--s3);padding-bottom:var(--s3)}
+  details.panel.klapp>summary{display:flex;width:100%;align-items:center;justify-content:space-between;min-height:44px}
+  details.panel.klapp>summary h2{margin:0;flex:1;text-align:left}
+  details.panel.klapp>summary::after{font-size:18px}
+  details.panel.klapp[open]{padding-bottom:var(--s5)}
+  details.panel.klapp[open]>summary{margin-bottom:var(--s3)}
+  details.mehr-optionen{margin-top:var(--s3)}
+  details.mehr-optionen>summary{color:var(--mist-dim)}
+  details.mehr-optionen[open]>summary{color:var(--champagne)}
+  details.mehr-optionen #planSprachen{margin:var(--s2) 0 0}
+  details.wmehr{margin:var(--s2) 0 var(--s4)}
+  details.wmehr>summary{font-size:14.5px;padding:0 2px}
+  details.wmehr[open]>summary{margin-bottom:var(--s3)}
+  .himmel .gross{font-size:21px}
+  .card .untertitel{display:none}
+  .langtext.zu{max-height:5em}
+  .pruefhinweis.leicht{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 4px;padding:3px 10px;border-radius:999px;font-size:12.5px;margin:0 0 var(--s2)}
+  .pruefhinweis.leicht .rest{flex-basis:100%}
+  .kurzwirkung{font-size:13px}
+  .wirk{font-size:12.5px}
+  @media (max-width:560px){
+    .kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+    .kpis>.kpi:last-child:nth-child(odd){grid-column:auto}
+    .kpi{padding:10px}
+    .kpi .l{font-size:11.5px}
+    .kpi .v{font-size:22px}
+    .kpi .d{display:none}
+  }
+  .knopfzeile{gap:var(--s2)}
+  @media (max-width:560px){
+    .aktionen{flex-direction:column;align-items:stretch}
+    .aktionen .gruppe{width:100%}
+    .aktionen .nebenbei{margin-left:-8px}
+    .tab{padding:0 11px}
+  }
 </style>
 </head>
 <body>
@@ -596,32 +709,32 @@
       <div class="kurzwirkung hide" id="kurzWirkung"></div>
     </div>
 
-    <div class="bar">
-      <h3>Posts von heute<span data-hilfe="karten"></span></h3>
-      <div class="chips" id="heuteSprachen" role="group" aria-label="Sprache"></div>
-    </div>
-    <div id="heuteListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
-
     <div class="panel tagesplan-panel">
       <div class="himmel">
         <canvas id="mondKlein" width="152" height="152" aria-hidden="true"></canvas>
         <div id="himmelText"><div class="gross">Der Himmel heute</div><div class="zeile meta">wird geladen …</div></div>
       </div>
       <h2>Tagesplan<span data-hilfe="tagesplan"></span></h2>
-      <p class="hint">Soraya schreibt aus dem Himmel von heute pro Sprache einen Feed-Post, ein Reel und eine Story.</p>
-      <label class="imtp schalter" id="autoSchalter"><input type="checkbox" id="planAuto"> Jeden Morgen automatisch erstellen (heute und morgen)</label>
-      <p class="hint" id="planInfo">Pro Sprache: ein Feed-Post, ein Reel mit Skript und eine Story.</p>
-      <div class="chips" id="planSprachen" role="group" aria-label="Sprachen des Tagesplans"></div>
+      <label class="imtp schalter" id="autoSchalter"><input type="checkbox" id="planAuto"> Jeden Morgen automatisch</label>
+      <p class="hint" id="planInfo">Wird geladen …</p>
       <div class="chips laeufe" id="laeufe"></div>
       <div class="fehlerbox hide" id="planFehler" role="alert"></div>
       <div class="row knopfzeile">
         <button id="btnPlanJetzt">Fehlende jetzt erstellen</button>
-        <button class="ghost" id="btnPlanNeu">Alle neu erstellen</button>
+        <button class="textlink" id="btnPlanNeu">Alle neu erstellen</button>
       </div>
       <div class="fortschritt hide" id="fortschritt"></div>
-      <p class="note">Kostet pro Sprache ein paar Cent (findet die Prüfung etwas, wird einmal nachgebessert).
-        „Alle neu erstellen“ ersetzt nur Entwürfe, die du nicht bearbeitet hast.</p>
+      <details class="mehr-optionen"><summary>Sprachen</summary>
+        <div class="chips" id="planSprachen" role="group" aria-label="Sprachen des Tagesplans"></div>
+      </details>
     </div>
+
+    <div class="bar">
+      <h3>Posts von heute<span data-hilfe="karten"></span></h3>
+      <div class="chips" id="heuteSprachen" role="group" aria-label="Sprache"></div>
+    </div>
+    <div id="heuteListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
+
   </section>
 
   <!-- ============ PLAN ============ -->
@@ -645,8 +758,8 @@
       <div class="zaehler" id="planZaehler" style="margin-top:14px"></div>
       <div class="plan-knoepfe">
         <span class="paar"><button class="klein" id="btnVorplanen">Nächste 7 Tage vorplanen</button><span data-hilfe="vorplanen"></span></span>
-        <button class="ghost klein" id="btnAufklappen">Alle aufklappen</button>
-        <span class="paar"><button class="ghost klein" id="btnPaket">Wochenpaket herunterladen</button><span data-hilfe="paket"></span></span>
+        <button class="textlink" id="btnAufklappen">Alle aufklappen</button>
+        <span class="paar"><button class="textlink" id="btnPaket">Wochenpaket</button><span data-hilfe="paket"></span></span>
       </div>
       <div class="vorplan hide" id="vorplanStand" role="status"></div>
       <p class="plan-leer hide" id="planLeer"></p>
@@ -658,7 +771,6 @@
   <section id="view-studio" class="hide">
     <div class="panel">
       <h2>Aus einem Thema<span data-hilfe="studio"></span></h2>
-      <p class="hint">Gib ein Stichwort ein, der Rest passiert von selbst. Leer gelassen, sucht Soraya selbst ein Thema aus.</p>
       <div class="row">
         <div class="grow"><label for="thema">Thema</label>
           <input id="thema" placeholder="z. B. Vollmond in der Waage"></div>
@@ -669,9 +781,8 @@
       <div style="margin-top:16px"><button id="btnThema">Posts erzeugen</button></div>
     </div>
 
-    <div class="panel">
-      <h2>Aus einer Webseite</h2>
-      <p class="hint">Eine Quelle einlesen &mdash; Soraya macht daraus eigene Posts.</p>
+    <details class="panel klapp">
+      <summary><h2>Aus einer Webseite</h2></summary>
       <div class="row">
         <div class="grow"><label for="url">Webseite (URL)</label>
           <input id="url" type="url" inputmode="url" placeholder="https://… (z. B. ein Artikel über den Vollmond)"></div>
@@ -680,14 +791,14 @@
           <select id="anzahl2"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
       </div>
       <div style="margin-top:16px"><button id="btnUrl">Aus Webseite erzeugen</button></div>
-    </div>
+    </details>
 
     <div class="bar">
       <h3>Studio-Posts</h3>
-      <button class="ghost" id="btnStudioLaden">Aktualisieren</button>
+      <button class="ghost klein" id="btnStudioLaden">Aktualisieren</button>
     </div>
-    <p class="tpinfo">Diese Posts gehen nicht von selbst raus. Gib einem Post unten auf der Karte ein Datum – dann steht er im Plan
-      (und wird, wenn die Sprache passt, automatisch gepostet). Oder kopiere Text und Bild und poste selbst.</p>
+    <p class="tpinfo">Gehen erst mit Datum raus.<span class="rest" hidden> Gib einem Post auf der Karte ein Datum – dann steht er im Plan
+      (und wird, wenn die Sprache passt, automatisch gepostet). Oder kopiere Text und Bild und poste selbst.</span></p>
     <div id="studioListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
   </section>
 
@@ -695,8 +806,6 @@
   <section id="view-who" class="hide">
     <div class="panel">
       <h2>Kunden verstehen<span data-hilfe="zielgruppen"></span></h2>
-      <p class="hint">Wähle einen Bereich. Soraya durchsucht das Netz und erstellt ein Profil:
-         wer diese Menschen sind, was sie beschäftigt, welche Worte sie benutzen.</p>
       <div class="row">
         <div class="grow"><label for="bereich">Bereich</label>
           <select id="bereich"></select></div>
@@ -711,7 +820,9 @@
             <option value="us">USA</option>
           </select></div>
       </div>
-      <div class="row" style="margin-top:12px">
+      <details class="mehr-optionen">
+        <summary>Weitere Optionen</summary>
+      <div class="row" style="margin-top:8px">
         <div class="grow"><label for="eigen">Oder eigener Bereich</label>
           <input id="eigen" placeholder="z. B. Astrologie und Schwangerschaft"></div>
       </div>
@@ -723,12 +834,10 @@
           <label class="q on"><input type="checkbox" value="reddit" checked> Reddit <small>gratis</small></label>
           <label class="q on"><input type="checkbox" value="playstore" checked> Play Store <small>gratis</small></label>
         </div>
-        <p class="note">Reddit und Play Store sind kostenlos. Die Websuche läuft über deinen
-           KI-Zugang und kostet ein paar Cent pro Recherche. Rechne mit ein bis zwei Minuten.</p>
+        <p class="note">Dauert 1–2 Minuten.<span class="rest" hidden> Reddit und Play Store sind kostenlos. Die Websuche läuft über deinen
+           KI-Zugang und kostet ein paar Cent pro Recherche.</span></p>
       </div>
 
-      <details>
-        <summary>Selbst bestimmen, wonach gesucht wird</summary>
         <div class="feld">
           <label for="eBegriffe">Eigene Suchbegriffe</label>
           <p class="why">Für Google und Reddit. Eine Suche pro Zeile, als ganze Fragen.</p>
@@ -756,7 +865,7 @@
 
     <div class="bar">
       <h3>Deine Profile<span data-hilfe="profile"></span></h3>
-      <button class="ghost" id="btnProfileLaden">Aktualisieren</button>
+      <button class="ghost klein" id="btnProfileLaden">Aktualisieren</button>
     </div>
     <p class="tpinfo" id="tpInfo" hidden></p>
     <div id="profile"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
@@ -768,13 +877,12 @@
     <div class="panel hide" id="postenFehler"></div>
     <div class="panel">
       <h2>Automatisch posten<span data-hilfe="posten"></span></h2>
-      <label class="imtp schalter" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch posten (zu den Uhrzeiten unten)</label>
+      <label class="imtp schalter" id="postAutoSchalter"><input type="checkbox" id="postAuto"> Automatisch posten</label>
       <p class="hint" id="postInfo">Wird geladen …</p>
       <div class="achtung-box hide" id="postWarnung" role="alert"></div>
     </div>
     <div class="panel hide" id="einrichtungPanel">
-      <h2>Einrichtung – Schritt für Schritt</h2>
-      <p class="hint">Was schon erledigt ist, wird abgehakt. Wenn alles fertig ist, verschwindet dieser Kasten.</p>
+      <h2>Einrichtung</h2>
       <ol class="schritte" id="einrichtungSchritte"></ol>
     </div>
     <div class="panel">
@@ -783,16 +891,15 @@
     </div>
     <div class="panel">
       <h2>Termine<span data-hilfe="termine"></span></h2>
-      <p class="hint">Gestern bis übermorgen (Wiener Zeit). Stoppen setzt den Post auf „Nicht posten“, er geht dann nirgends raus.</p>
       <div id="termine"></div>
     </div>
-    <div class="panel">
-      <h2>Testpost</h2>
-      <p class="hint" id="testpostInfo">Ein Post von heute sofort posten – geht auch, wenn „Automatisch posten“ aus ist.</p>
+    <details class="panel klapp" id="testpostPanel">
+      <summary><h2>Testpost</h2></summary>
+      <p class="hint" id="testpostInfo"></p>
       <div id="testposts"></div>
-    </div>
-    <div class="panel">
-      <h2>Einstellungen</h2>
+    </details>
+    <details class="panel klapp" id="einstellungenPanel">
+      <summary><h2>Einstellungen</h2></summary>
       <div class="row">
         <div><label for="postSprache">Sprache der Posts<span data-hilfe="sprache"></span></label>
           <select id="postSprache"><option value="alle">Alle 4 Sprachen im Wechsel</option><option value="en">English</option><option value="de">Deutsch</option>
@@ -820,7 +927,7 @@
             <option value="direkt">Direkt veröffentlichen (erst nach TikTok-Prüfung öffentlich)</option></select></div>
       </div>
       <div class="row" style="margin-top:14px"><button id="postSpeichern">Speichern</button><span class="ungespeichert" id="postUngespeichert" hidden>Noch nicht gespeichert</span></div>
-    </div>
+    </details>
   </section>
 
   <section id="view-wirkung" class="hide">
@@ -897,6 +1004,29 @@ function fuelleHilfen(root = document){
   root.querySelectorAll('[data-hilfe]').forEach(el => { const h = HILFE[el.dataset.hilfe]; if(h) el.outerHTML = hilfe(h[1], h[0]); });
 }
 fuelleHilfen();
+// Kurz + aufklappbar: hinter jedem <span class="rest" hidden> steht ein kleiner Knopf "Mehr ⌄" / "Weniger ⌃".
+// Der Text bleibt im HTML (auch zugeklappt) – nur sichtbar wird er erst auf Wunsch.
+const MEHR = '<span class="lbl">Mehr</span><span class="chev" aria-hidden="true">⌄</span>';
+const kurzMehr = (kurz, rest) => rest ? `${kurz}<span class="rest" hidden> ${rest}</span>` : kurz;
+function mehrKnoepfe(root = document){
+  root.querySelectorAll('.rest:not([data-mk]), .langtext.zu:not([data-mk])').forEach(r => {
+    r.dataset.mk = '1';
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mehr-knopf' + (r.classList.contains('langtext') ? ' klappe' : '');
+    b.setAttribute('aria-expanded', 'false'); b.innerHTML = MEHR;
+    r.after(b);
+  });
+}
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('button.mehr-knopf'); if(!b) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const r = b.previousElementSibling, auf = b.getAttribute('aria-expanded') !== 'true';
+  if(r.classList.contains('langtext')) r.classList.toggle('zu', !auf); else r.hidden = !auf;
+  b.setAttribute('aria-expanded', String(auf));
+  b.querySelector('.lbl').textContent = auf ? 'Weniger' : 'Mehr';
+}, true);
+new MutationObserver(() => mehrKnoepfe()).observe(document.body, {childList: true, subtree: true});
+mehrKnoepfe();
 // Kasten "konnte nicht laden" mit Knopf, der den aktuellen Reiter neu lädt
 const ladeFehler = (was, e, tag = 'div') => `<${tag} class="ladefehler-box" role="alert"><div><b>${esc(was)} konnte nicht geladen werden.</b>${esc(e && e.message || e || '')}</div>
   <button class="ghost klein" data-nochmal="1">Nochmal versuchen</button></${tag}>`;
@@ -979,12 +1109,16 @@ function karte(p, {datum = true} = {}){
   const schnell = st === 'entwurf' ? `<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button>`
     : st === 'freigegeben' ? `<button class="ghost klein" data-schnell="entwurf">Freigabe zurücknehmen</button>` : '';
   const stopp = ['entwurf', 'freigegeben'].includes(st) && p.quelle === 'himmel' ? `<button class="ghost klein" data-schnell="gestoppt" title="Wird dann nicht automatisch gepostet">Nicht posten</button>` : '';
-  const kmeta = [m.thema ? `<span title="Format des Tages">${esc(m.thema)}${m.folge ? ' · Folge ' + esc(m.folge) : ''}</span>` : '',
-    m.zielgruppe ? `<span title="Zielgruppe, für die geschrieben wurde">Für: ${esc(m.zielgruppe)}</span>` : '',
+  // eine kurze Zeile (Format · Folge), Zielgruppe und Selbst-Test hinter "Mehr"
+  const kmetaRest = [m.zielgruppe ? `<span title="Zielgruppe, für die geschrieben wurde">Für: ${esc(m.zielgruppe)}</span>` : '',
     HOOK_STIL[m.hook_stil] && p.art !== 'story' ? `<span title="Selbst-Test: Soraya probiert verschiedene Anfänge aus und nimmt öfter, was ankommt">Anfang im Test: ${esc(HOOK_STIL[m.hook_stil])}</span>` : '']
     .filter(Boolean).join(' · ');
+  const kmetaKurz = m.thema ? `<span title="Format des Tages">${esc(m.thema)}${m.folge ? ' · Folge ' + esc(m.folge) : ''}</span>` : '';
+  const kmeta = kmetaKurz ? kurzMehr(kmetaKurz, kmetaRest ? '· ' + kmetaRest : '') : kmetaRest;
   const n = folienAnzahl(p);
   const v = esc(p.aktualisiert || p.created_at || '');
+  // lange Karten: zuerst nur 3–4 Zeilen Text, der Rest (Skript, Hashtags, Karussell-Texte) aufklappbar
+  const lang = (p.text || '').length > 160 || !!skript || (m.bild_punkte || []).length > 0 || n > 1;
   const streifen = n > 1 ? `<div class="folienstreifen" aria-label="Karussell: ${n} Bilder">${Array.from({length: n}, (_, i) =>
     `<button class="daumen" data-aktion="folie" data-nr="${i + 1}" aria-label="Bild ${i + 1} von ${n} ansehen"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/folie/${i + 1}?klein=1&v=${v}"><span class="nr">${i + 1}</span></button>`).join('')}</div>` : '';
   return `<article class="card mit-bild" data-id="${esc(p.id)}">
@@ -999,18 +1133,20 @@ function karte(p, {datum = true} = {}){
     </div>
     ${p.titel ? `<p class="titel">${esc(p.titel)}</p>` : ''}
     ${p.untertitel ? `<p class="untertitel">${esc(p.untertitel)}</p>` : ''}
-    <p class="txt">${esc(p.text)}</p>
     ${(m.pruefung || []).length && p.status !== 'gepostet' ? (befundSchwer(m.pruefung)
       ? `<div class="pruefhinweis" role="note"><b>Bitte prüfen und freigeben:</b> ${esc(m.pruefung.join(' · '))}
-      <span>Geht beim automatischen Posten erst raus, wenn du ihn freigibst (oder nach dem Bearbeiten nichts mehr auffällt).</span></div>`
-      : `<div class="pruefhinweis leicht" role="note"><b>Hinweis:</b> ${esc(m.pruefung.join(' · '))}
-      <span>Nur eine Kleinigkeit – geht trotzdem automatisch raus.</span></div>`) : ''}
-    ${(m.bild_punkte || []).length ? `<p class="tags">Im Bild: ${esc(m.bild_punkte.join(' · '))}</p>` : ''}
+      <span class="rest" hidden> Geht beim automatischen Posten erst raus, wenn du ihn freigibst (oder nach dem Bearbeiten nichts mehr auffällt).</span></div>`
+      : `<div class="pruefhinweis leicht" role="note"><b>${m.pruefung.length === 1 ? '1 Hinweis' : m.pruefung.length + ' Hinweise'}</b><span class="rest" hidden>${esc(m.pruefung.join(' · '))}
+      – nur Kleinigkeiten, geht trotzdem automatisch raus.</span></div>`) : ''}
     ${streifen}
+    <div class="langtext${lang ? ' zu' : ''}">
+    <p class="txt">${esc(p.text)}</p>
+    ${(m.bild_punkte || []).length ? `<p class="tags">Im Bild: ${esc(m.bild_punkte.join(' · '))}</p>` : ''}
     ${n > 1 ? `<details class="folien"><summary>Texte der ${n} Karussell-Bilder</summary><ol>${m.folien.map(f =>
       `<li><b>${esc(f.titel)}</b> – ${esc(f.text)}</li>`).join('')}<li><b>Schluss:</b> Einladung in die App</li></ol></details>` : ''}
     ${skript}
     ${p.hashtags ? `<p class="tags">${esc(p.hashtags)}</p>` : ''}
+    </div>
     <p class="wirk" data-wirk="p${esc(p.id)}">${wirkText('p' + p.id)}</p>
     ${termin}
     <div class="aktionen">
@@ -1019,12 +1155,12 @@ function karte(p, {datum = true} = {}){
           `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
         ${datum ? `<input type="date" data-aktion="datum" aria-label="Geplant für" value="${esc((p.geplant_fuer || '').slice(0,10))}">` : ''}</div>
       <div class="gruppe nebenbei rechts">
-        <button class="ghost klein" data-aktion="kopieren">Text kopieren</button>
-        <button class="ghost klein" data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
-        ${skript ? '<button class="ghost klein" data-aktion="skript">Skript kopieren</button>' : ''}
-        <button class="ghost klein" data-aktion="bild">${n > 1 ? 'Bilder' : 'Bild'}</button>
-        ${p.art === 'reel' ? '<button class="ghost klein" data-aktion="video">Video</button>' : ''}
-        <button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button></div>
+        <button data-aktion="bearbeiten">Bearbeiten</button>
+        <button data-aktion="kopieren">Text kopieren</button>
+        <button data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
+        ${skript ? '<button data-aktion="skript">Skript kopieren</button>' : ''}
+        <button data-aktion="bild">${n > 1 ? 'Bilder' : 'Bild'}</button>
+        ${p.art === 'reel' ? '<button data-aktion="video">Video</button>' : ''}</div>
     </div>
     </div>
   </article>`;
@@ -1051,7 +1187,7 @@ function wirkText(code){
   if(s.schnellstart) teile.push(`<span>${mehrzahl(s.schnellstart, 'Schnellstart', 'Schnellstarts')}</span>`);
   if(s.register_click) teile.push(`<span>${zahl(s.register_click)} × Registrieren</span>`);
   if(q.konten) teile.push(`<span><b>${mehrzahl(q.konten, 'neues Konto', 'neue Konten')}</b></span>`);
-  return teile.length ? `<span class="leise">Über den Post-Link:</span>${teile.join('')}` : '';
+  return teile.length ? `<span class="leise">Über den Link:</span>${teile[0]}${teile.length > 1 ? `<span class="rest" hidden>${teile.slice(1).join(' ')}</span>` : ''}` : '';
 }
 async function ladeQuellen(){
   if(Date.now() - quellenStand < 5 * 60 * 1000) return;
@@ -1215,8 +1351,7 @@ function videoDialog(p){
     <div class="row"><a class="knopf hide" id="vLaden" download>Herunterladen</a>
       <button class="ghost hide" id="vTeilen">Teilen …</button>
       <button class="ghost" id="vZu">Schließen</button></div>
-    <p class="note">15 bis 20 Sekunden, 1080×1920, mit ruhiger, eigens erzeugter Klangfläche (lizenzfrei).
-      In Instagram/TikTok kannst du sie beim Posten durch einen Trend-Sound ersetzen.</p>`;
+    <p class="note">15–20 Sekunden mit lizenzfreier Klangfläche.<span class="rest" hidden> 1080×1920. In Instagram/TikTok kannst du sie beim Posten durch einen Trend-Sound ersetzen.</span></p>`;
   d.showModal();
   d.addEventListener('close', () => clearTimeout(videoTimer), {once: true});
   $('vZu').onclick = () => d.close();
@@ -1249,8 +1384,7 @@ function paketDialog(){
   const von = iso(planStart), bis = iso(plusTage(planStart, 6));
   const sprachWahl = $('planSprache').value;
   d.innerHTML = `<h3>Wochenpaket</h3>
-    <p class="hint">${kurz(planStart)} bis ${kurz(plusTage(planStart, 6))}: Bilder, Reel-Videos und die Texte zum Kopieren,
-      pro Tag ein Ordner. Damit planst du die Woche z. B. in der Meta Business Suite.</p>
+    <p class="hint">${kurz(planStart)} bis ${kurz(plusTage(planStart, 6))}: Bilder, Videos und Texte, pro Tag ein Ordner.<span class="rest" hidden> Damit planst du die Woche z. B. in der Meta Business Suite.</span></p>
     <div class="paket-optionen">
       <div class="chips" id="pSprachen" role="group" aria-label="Sprachen">${SPRACHEN.map(([c]) =>
         `<label class="imtp${!sprachWahl || sprachWahl === c ? ' on' : ''}"><input type="checkbox" value="${c}"${!sprachWahl || sprachWahl === c ? ' checked' : ''}> ${c.toUpperCase()}</label>`).join('')}</div>
@@ -1308,9 +1442,8 @@ async function ladeHimmel(){
     const ereignis = (n, e) => e ? `${n} ${e.datum_text} (${e.in_tagen <= 0 ? 'heute' : e.in_tagen === 1 ? 'morgen' : 'in ' + e.in_tagen + ' Tagen'})` : '';
     const rueck = (h.ruecklaeufig || []).map(r => r.planet + (r.bis ? ' bis ' + r.bis : '')).join(', ');
     $('himmelText').innerHTML = `<div class="gross">${esc(h.mond_phase)} · Mond in ${esc(h.mond_zeichen)}</div>
-      <div class="zeile">${esc(h.datum_text)} · ${esc(h.beleuchtung)} % beleuchtet · Sonne in ${esc(h.sonne_zeichen)}</div>
-      <div class="zeile meta">${esc([ereignis('Vollmond', h.vollmond), ereignis('Neumond', h.neumond)].filter(Boolean).join(' · '))}</div>
-      ${rueck ? `<div class="zeile meta">Rückläufig: ${esc(rueck)}</div>` : ''}`;
+      <div class="zeile meta">${kurzMehr(esc(ereignis('Vollmond', h.vollmond) || h.datum_text), esc([h.datum_text + ' · ' + h.beleuchtung + ' % beleuchtet · Sonne in ' + h.sonne_zeichen,
+        ereignis('Neumond', h.neumond), rueck ? 'Rückläufig: ' + rueck : ''].filter(Boolean).join(' · ')))}</div>`;
   }catch(e){ const ctx = $('mondKlein').getContext('2d'); ctx.clearRect(0, 0, 152, 152); zeichneMond(ctx, 76, 76, 66, null);
     $('himmelText').innerHTML = `<div class="gross">Der Himmel heute</div><div class="zeile meta">Himmelsdaten gerade nicht erreichbar (${esc(e.message)}). Der Tagesplan versucht es beim Erstellen selbst noch einmal.</div>`; }
 }
@@ -1337,11 +1470,10 @@ function zeigeKurzWirkung(){
   if(!d){ box.classList.add('hide'); return; }
   const tage = d.tage || [];
   const besuche = Object.values(d.quellen || {}).reduce((n, q) => n + ((q.schritte || {}).besuch || 0), 0);
-  box.innerHTML = `<div class="zahlen"><span class="meta">Letzte 7 Tage:</span>
-      <span><b>${zahl(besuche)}</b> ${besuche === 1 ? 'Besuch' : 'Besuche'} über deine Links</span>
-      <span><b>${zahl(summe(tage, 'schnellstart_berechnet'))}</b> Schnellstarts</span>
+  box.innerHTML = `<div class="zahlen"><span class="meta">7 Tage:</span>
+      <span><b>${zahl(besuche)}</b> ${besuche === 1 ? 'Besuch' : 'Besuche'}</span>
       <span><b>${zahl(summe(tage, 'neue_konten'))}</b> neue Konten</span></div>
-    <button class="ghost klein" data-ziel-tab="wirkung">Mehr unter „Wirkung“ ›</button>`;
+    <button class="textlink" data-ziel-tab="wirkung">Wirkung ›</button>`;
   box.classList.remove('hide');
 }
 document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-ziel-tab]'); if(b) zeige(b.dataset.zielTab); });
@@ -1369,7 +1501,7 @@ function rausZustand(p, tt, wo, e, art, zeit){
   const f = tt.find(t => t.status === 'fehler');
   if(f) return {cls: 'bad', text: 'Fehler beim Posten', sub: `${PL_NAME[f.plattform] || f.plattform}: ${f.fehler || 'unbekannt'} (Versuch ${f.versuche || 1} von 3${(f.versuche || 1) < 3 ? ', Soraya versucht es selbst nochmal' : ''})`};
   if(tt.length && tt.every(t => ['verpasst', 'abgebrochen'].includes(t.status))) return {cls: 'aus', text: 'Nicht gepostet', sub: 'Der Termin ist verpasst oder abgebrochen.'};
-  if(!e.an) return {cls: 'aus', text: 'Geht nicht von selbst raus', sub: 'Automatisch posten ist aus (Reiter „Posten“).'};
+  if(!e.an) return {cls: 'aus', text: 'Geht nicht von selbst raus', sub: ''};
   if(!wo.some(w => w.st !== 'nicht')) return {cls: 'achtung', text: 'Keine Plattform verbunden', sub: 'Unter „Posten“ → Verbindungen.'};
   const schwer = befundSchwer(befunde);
   if(st !== 'freigegeben' && (schwer || e.modus === 'freigabe'))
@@ -1502,10 +1634,10 @@ async function ladeHeute(){
   $('planSprachen').innerHTML = '<span class="kleinlabel">Sprachen</span>' + SPRACHEN.map(([c]) =>
     `<label class="imtp${d.sprachen.includes(c) ? ' on' : ''}"><input type="checkbox" data-plansprache="${c}"${d.sprachen.includes(c) ? ' checked' : ''}> ${c.toUpperCase()}</label>`).join('');
   if(!heuteGewaehlt && !d.sprachen.includes(heuteSprache)) heuteSprache = d.sprachen[0];
-  $('planInfo').textContent = d.automatisch
-    ? `An: ab ${d.ab_stunde} Uhr (Wiener Zeit) für heute und morgen, ${d.sprachen.map(s => s.toUpperCase()).join(', ')}. Pro Sprache: Feed-Post, Reel, Story – jeden Tag ein anderes Format.`
-    : d.automatik_gesperrt ? 'Automatik ist in Railway gesperrt (TAGESPLAN_AUTO=0). Erstelle den Plan hier per Knopf.'
-    : 'Automatik ist aus: Es wird nichts von selbst erstellt. Per Knopf geht es trotzdem.';
+  $('planInfo').innerHTML = d.automatisch
+    ? kurzMehr(`An: ab ${d.ab_stunde} Uhr für heute und morgen.`, `Wiener Zeit, Sprachen ${esc(d.sprachen.map(s => s.toUpperCase()).join(', '))}. Pro Sprache: Feed-Post, Reel, Story – jeden Tag ein anderes Format.`)
+    : d.automatik_gesperrt ? kurzMehr('Automatik ist in Railway gesperrt.', '(TAGESPLAN_AUTO=0) Erstelle den Plan hier per Knopf.')
+    : kurzMehr('Automatik ist aus: Es wird nichts von selbst erstellt.', 'Per Knopf geht es trotzdem.');
   $('laeufe').innerHTML = d.sprachen.map(s => {
     const l = stand[s], st = l ? l.status : 'fehlt';
     const text = {fertig: 'fertig', laeuft: 'wird erstellt …', fehler: 'Fehler', fehlt: 'noch nicht erstellt'}[st] || st;
@@ -1714,9 +1846,10 @@ function tagesplanInfo(wahl){
   const auto = sprachen.some(s => wahl[s].automatisch);
   info.hidden = false;
   const ohne = ['de', 'en', 'hu', 'it'].filter(s => !wahl[s]);
-  info.innerHTML = 'Der Tagesplan schreibt für: ' + sprachen.map(s => `${s.toUpperCase()} <b>${esc(wahl[s].bereich)}</b>`).join(' &middot; ')
-    + (ohne.length ? ` &middot; ${ohne.map(s => s.toUpperCase()).join(', ')} <span class="meta">allgemein (kein passendes Profil – z. B. eines fürs Land ${ohne.map(s => ({de: 'Österreich', en: 'USA/UK', hu: 'Ungarn', it: 'Italien'})[s]).join(' / ')} erforschen)</span>` : '')
-    + (auto ? '<br>Kein Profil markiert, deshalb wählt er je Sprache automatisch: das Profil aus dem passenden Land, sonst eines ohne Land. Mit „Im Tagesplan verwenden“ legst du es selbst fest.' : '');
+  info.innerHTML = kurzMehr('Der Tagesplan schreibt für: ' + sprachen.map(s => `${s.toUpperCase()} <b>${esc(wahl[s].bereich)}</b>`).join(' &middot; ')
+    + (ohne.length ? ` &middot; ${ohne.map(s => s.toUpperCase()).join(', ')} allgemein` : '') + (auto ? ' (automatisch gewählt)' : ''),
+    (ohne.length ? `Für ${ohne.map(s => s.toUpperCase()).join(', ')} gibt es kein passendes Profil – z. B. eines fürs Land ${ohne.map(s => ({de: 'Österreich', en: 'USA/UK', hu: 'Ungarn', it: 'Italien'})[s]).join(' / ')} erforschen. ` : '')
+    + (auto ? 'Kein Profil markiert, deshalb wählt er je Sprache automatisch: das Profil aus dem passenden Land, sonst eines ohne Land. Mit „Im Tagesplan verwenden“ legst du es selbst fest.' : ''));
 }
 function renderProfile(zeilen, wahl){
   const box = $('profile');
@@ -1733,6 +1866,7 @@ function renderProfile(zeilen, wahl){
       ${p._quellen && p._quellen.length ? `<p class="src">Quellen: ${p._quellen.map(esc).join(' &middot; ')}</p>` : ''}
       <p class="lede">${esc(p.wer_sind_sie || '')}</p>
       ${p.antwort_auf_frage ? `<div class="answer">${esc(p.antwort_auf_frage)}</div>` : ''}
+      <details class="profil-mehr"><summary>Ganzes Profil</summary>
       <div class="who-raster">${liPunkte('Was sie beschäftigt', p.beschaeftigt_sie || p['beschäftigt_sie'])}
       ${liPunkte('Was sie sich wünschen', p.wuensche)}
       ${liPunkte('Ihre Sprache', p.sprache)}
@@ -1741,6 +1875,7 @@ function renderProfile(zeilen, wahl){
       ${liPunkte('Lücke am Markt', p.luecke_am_markt)}</div>
       ${(p.unsicher && p.unsicher.length) ? `<h4>Unsicher</h4><p class="warn">${p.unsicher.map(esc).join(' &middot; ')}</p>` : ''}
       ${(p._gesucht && p._gesucht.length) ? `<h4>Gesucht wurde nach</h4><p class="warn">${p._gesucht.map(esc).join(' &middot; ')}</p>` : ''}
+      </details>
       <div class="foot" style="margin-top:14px">
         <label class="imtp schalter${z.im_tagesplan ? ' on' : ''}"><input type="checkbox" data-imtp="${esc(z.id)}"${z.im_tagesplan ? ' checked' : ''}>
           Im Tagesplan verwenden${fuer.length ? ` <span class="tag leise">${fuer.join(' · ')}</span>` : ''}</label>
@@ -1818,8 +1953,7 @@ function einrichtung(hinweis, stand){
     engine_fehlt: 'Das Content Studio hat den Schlüssel – in der astro-engine fehlt er noch.',
     passt_nicht: 'Beide haben einen Schlüssel, aber sie sind verschieden. Trag bei beiden denselben ein.'}[stand] || hinweis;
   $('wirkungInhalt').innerHTML = `<div class="panel"><h2>Statistik verbinden</h2>
-    <p class="hint">Damit Soraya sieht, wie viele Menschen über deine Posts in die App kommen und ein Konto anlegen –
-      und daraus lernt –, müssen App-Server und Content Studio einmal verbunden werden. Dauert etwa 5 Minuten.</p>
+    <p class="hint">${kurzMehr('Einmal verbinden, etwa 5 Minuten.', 'Damit Soraya sieht, wie viele Menschen über deine Posts in die App kommen und ein Konto anlegen – und daraus lernt –, müssen App-Server und Content Studio einmal verbunden werden.')}</p>
     <div class="statusleiste"><span class="${agentOk ? 'an' : 'aus'}">Content Studio</span><span class="linie"></span>
       <span class="${stand === 'passt_nicht' ? 'an' : 'aus'}">App-Server (astro-engine)</span></div>
     <p class="lernhinweis">✦ ${esc(status)}</p>
@@ -1884,11 +2018,11 @@ function zeigeWirkung(){
   const maxSprache = Math.max(1, ...sprachen.map(s => s[1]));
   $('wirkungInhalt').innerHTML = `
     <div class="kpis">
-      ${kpi('Schnellstarts', summe(tage, 'schnellstart_berechnet'), tage.some(t => 'gratis_tests' in t) ? `berechnet · mit Landingpage ${zahl(summe(tage, 'gratis_tests'))}` : 'berechnet in der App')}
+      ${kpi('Schnellstarts', summe(tage, 'schnellstart_berechnet'), tage.some(t => 'gratis_tests' in t) ? `mit Landingpage ${zahl(summe(tage, 'gratis_tests'))}` : '')}
       ${kpi('Neue Konten', summe(tage, 'neue_konten'), `gesamt ${zahl(d.gesamt && d.gesamt.konten)}`)}
-      ${kpi('Aktive Nutzer', d.aktive_nutzer_zeitraum, 'mindestens einmal geöffnet')}
-      ${kpi('Einladungen geöffnet', summe(tage, 'einladung_geoeffnet'), `Links gesamt ${zahl(d.gesamt && d.gesamt.einladungslinks)}`)}
-      ${kpi('Posts gepostet', posts, 'laut Plan')}
+      ${kpi('Aktive Nutzer', d.aktive_nutzer_zeitraum, '')}
+      ${kpi('Einladungen', summe(tage, 'einladung_geoeffnet'), `Links gesamt ${zahl(d.gesamt && d.gesamt.einladungslinks)}`)}
+      ${kpi('Posts gepostet', posts, '')}
     </div>
     <div class="panel"><h2>${esc(($('wKennzahl').selectedOptions[0] || {}).text || '')} pro Tag</h2>
       <p class="hint">${esc(kurzIso(d.von))} – ${esc(kurzIso(d.bis))}${d.ignoriert ? ` · ${d.ignoriert} eigene Konten ausgeblendet` : ''}</p>
@@ -1897,10 +2031,10 @@ function zeigeWirkung(){
       <div class="viz" id="verlauf"></div>
       <details><summary>Als Tabelle</summary><div class="tabwrap">${tabelle(tage)}</div></details>
     </div>
+    <details class="wmehr"><summary>Mehr Zahlen: Herkunft, Trichter, Lernen, Links</summary>
     ${herkunftPanel()}
     <div id="fbPanel"></div>
     <div class="panel trichter"><h2>Vom Schnellstart zum Profil${hilfe('Wie viele Menschen von Stufe zu Stufe weiterkommen. Wird der Balken zwischen zwei Stufen plötzlich viel kürzer, springen dort viele ab – dort lohnt sich eine Verbesserung in der App.', 'Trichter')}</h2>
-      <p class="hint">Summen im Zeitraum. Prozent bezogen auf die erste Stufe.</p>
       ${stufen.map(([n, v]) => `<div class="stufe"><span class="name">${n}</span><div class="spur">
         <div class="balken" style="width:${(v / maxStufe * 82).toFixed(1)}%"></div>
         <span class="wert" style="left:calc(${(v / maxStufe * 82).toFixed(1)}% + 8px)">${zahl(v)}<small>${stufen[0][1] ? Math.round(v / stufen[0][1] * 100) + ' %' : ''}</small></span>
@@ -1909,12 +2043,11 @@ function zeigeWirkung(){
     <div id="lernPanel"></div>
     ${linksPanel()}
     <div class="panel trichter"><h2>Sprachen der aktiven Nutzer</h2>
-      <p class="hint">Welche App-Sprache die Nutzer im Zeitraum hatten.</p>
       ${sprachen.length ? sprachen.map(([s, v]) => `<div class="stufe"><span class="name">${esc(s === 'unbekannt' ? 'unbekannt (alte Version)' : s.toUpperCase())}</span><div class="spur">
         <div class="balken" style="width:${(v / maxSprache * 82).toFixed(1)}%"></div>
         <span class="wert" style="left:calc(${(v / maxSprache * 82).toFixed(1)}% + 8px)">${zahl(v)}</span></div></div>`).join('')
         : '<p class="meta">Noch keine Daten.</p>'}
-    </div>`;
+    </div></details>`;
   zeichneVerlauf();
   ladeFacebookWirkung().then(ladeLernen);
 }
@@ -1931,10 +2064,9 @@ async function ladeLernen(){
       <div class="balken" style="width:${(x.schnitt / max * 82).toFixed(1)}%"></div>
       <span class="wert" style="left:calc(${(x.schnitt / max * 82).toFixed(1)}% + 8px)">Ø ${zahl(x.schnitt)}<small>${mehrzahl(x.posts, 'Post', 'Posts')}</small></span></div></div>`).join(''); };
   box.innerHTML = `<div class="panel trichter"><h2>Was Soraya daraus lernt</h2>
-    <p class="hint">Jeder Post bekommt Punkte: neues Konto 15, geteilt 4, Kommentar 3, Besuch über den Link 2, Gefällt mir 1,
-      je 100 erreichte Menschen 1. Die besten Posts (auch aus anderen Sprachen) und die stärksten Formate fließen in jeden neuen Tagesplan ein.</p>
-    <p class="hint"><b>Selbst-Tests:</b> Jeder Tagesplan probiert einen anderen Anfang (z. B. Frage, Alltags-Szene, Neugier-Lücke) und eine
-      andere Einladung in die App. Sobald je Variante 3 Posts gemessen sind, nimmt Soraya meistens die beste – und probiert ab und zu weiter Neues.</p>
+    <p class="hint">${kurzMehr('Die besten Posts und Formate fließen in jeden neuen Tagesplan ein.', `Jeder Post bekommt Punkte: neues Konto 15, geteilt 4, Kommentar 3, Besuch über den Link 2, Gefällt mir 1,
+      je 100 erreichte Menschen 1. <b>Selbst-Tests:</b> Jeder Tagesplan probiert einen anderen Anfang (z. B. Frage, Alltags-Szene, Neugier-Lücke) und eine
+      andere Einladung in die App. Sobald je Variante 3 Posts gemessen sind, nimmt Soraya meistens die beste – und probiert ab und zu weiter Neues.`)}</p>
     ${d.beste && d.beste.length ? `<h3 class="unter">Am besten angekommen</h3><ol class="beste">${d.beste.map(b => `<li><b>${esc(b.titel || 'Post ' + b.id)}</b>
         <span class="meta">${esc(ART[b.art] || 'Post')} · ${esc((b.sprache || '').toUpperCase())}${b.format ? ' · ' + esc(b.format) : ''} · ${zahl(b.punkte)} Punkte (${esc(b.details)})</span></li>`).join('')}</ol>`
       : '<p class="meta">Noch keine Wirkung gemessen. Sobald Posts Besucher oder Reaktionen bekommen, lernt der Tagesplan daraus.</p>'}
@@ -1955,13 +2087,12 @@ async function ladeFacebookWirkung(){
   const summe = (k) => b.reduce((n, x) => n + (x[k] || 0), 0);
   const mitReichweite = b.some(x => x.reichweite != null);
   box.innerHTML = `<div class="panel"><h2>Auf Facebook</h2>
-    <p class="hint">Reaktionen auf deine geposteten Beiträge im Zeitraum (live von Facebook).</p>
     ${b.length ? `<div class="kpis klein3${mitReichweite ? ' vier' : ''}">
         <div class="kpi"><div class="l">Gefällt mir</div><div class="v">${zahl(summe('reaktionen'))}</div></div>
         <div class="kpi"><div class="l">Kommentare</div><div class="v">${zahl(summe('kommentare'))}</div></div>
         <div class="kpi"><div class="l">Geteilt</div><div class="v">${zahl(summe('geteilt'))}</div></div>
         ${mitReichweite ? `<div class="kpi"><div class="l">Erreicht</div><div class="v">${zahl(summe('reichweite'))}</div></div>` : ''}</div>
-      ${mitReichweite ? '' : '<p class="meta">Reichweite (wie viele Menschen es gesehen haben): dafür braucht die Meta-App zusätzlich das Recht „read_insights“. Ohne es lernt Soraya aus Reaktionen und Besuchen.</p>'}
+      ${mitReichweite ? '' : `<p class="meta">${kurzMehr('Ohne Reichweite.', 'Wie viele Menschen es gesehen haben: dafür braucht die Meta-App zusätzlich das Recht „read_insights“. Ohne es lernt Soraya aus Reaktionen und Besuchen.')}</p>`}
       <div class="tabwrap"><table class="tabelle herkunft"><thead><tr><th scope="col">Beitrag</th><th scope="col">👍</th><th scope="col">💬</th><th scope="col">↗</th>${mitReichweite ? '<th scope="col">👁</th>' : ''}<th scope="col"></th></tr></thead><tbody>
       ${b.map(x => `<tr><td style="white-space:normal"><b>${esc(x.titel || 'Post ' + x.post_id)}</b><br><span class="meta">${esc(ART[x.art] || 'Post')}${x.gepostet ? ' · ' + esc(kurzIso(String(x.gepostet).slice(0, 10))) : ''}</span></td>
         ${x.fehler ? `<td colspan="${mitReichweite ? 4 : 3}" class="meta">nicht abrufbar</td>` : `<td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>${mitReichweite ? `<td>${x.reichweite != null ? zahl(x.reichweite) : '–'}</td>` : ''}`}
@@ -1982,14 +2113,14 @@ function herkunftPanel(){
       <th scope="col">Besuche</th><th scope="col">Play Store</th><th scope="col">Schnellstart</th><th scope="col">Registrieren</th><th scope="col">Neue Konten</th></tr></thead><tbody>
       ${zeilen.map(z => `<tr><td style="white-space:normal">${quellenName(z.code)}</td><td>${zahl(z.s.besuch)}</td><td>${zahl(z.s.store_klick)}</td>
         <td>${zahl(z.s.schnellstart)}</td><td>${zahl(z.s.register_click)}</td><td><b>${zahl(z.konten)}</b></td></tr>`).join('')}</tbody></table></div>`
-    : `<p class="meta">Noch keine Besuche über deine Links. Trag die Bio-Links unten in deine Profile ein und nutze bei Storys und Facebook-Posts „Link kopieren“ auf der Post-Karte.</p>`;
+    : `<p class="meta">${kurzMehr('Noch keine Besuche über deine Links.', 'Trag die Bio-Links unten in deine Profile ein und nutze bei Storys und Facebook-Posts „Link kopieren“ auf der Post-Karte.')}</p>`;
   return `<div class="panel"><h2>Welche Posts wirken${hilfe('Jeder Post und jeder Bio-Link hat eine eigene Kennung im Link (z. B. <b>?q=p12</b>). So zählt die App, woher Besucher und neue Konten kommen.', 'Welche Posts wirken')}</h2>
-    <p class="hint">Besuche und Konten über deine Links im Zeitraum. Neue Konten zählen, wenn sich jemand innerhalb von 7 Tagen nach dem Klick registriert.</p>${inhalt}</div>`;
+    <p class="hint">${kurzMehr('Besuche und neue Konten über deine Links.', 'Neue Konten zählen, wenn sich jemand innerhalb von 7 Tagen nach dem Klick registriert.')}</p>${inhalt}</div>`;
 }
 function linksPanel(){
   const bio = LINKS.bio || {}, namen = {instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook'};
   return `<div class="panel"><h2>Deine Links</h2>
-    <p class="hint">Trag jeden Bio-Link einmal in das passende Profil ein. Für einzelne Posts (Story-Link-Sticker, Facebook) nimm „Link kopieren“ auf der Post-Karte – dann siehst du genau, was dieser Post bringt.</p>
+    <p class="hint">${kurzMehr('Jeden Bio-Link einmal ins passende Profil eintragen.', 'Für einzelne Posts (Story-Link-Sticker, Facebook) nimm „Link kopieren“ auf der Post-Karte – dann siehst du genau, was dieser Post bringt.')}</p>
     ${Object.entries(bio).map(([k, url]) => `<div class="linkzeile"><span class="name">${namen[k] || esc(k)}</span><code>${esc(url)}</code>
       <button class="ghost klein" data-kopiere="${esc(url)}">Kopieren</button></div>`).join('')}</div>`;
 }
@@ -2077,10 +2208,10 @@ async function zeigeZeitTipp(){
   const z = d.zeiten || [];
   box.hidden = false;
   box.innerHTML = z.length
-    ? '✦ ' + z.map(x => `${esc(ART[x.art] || x.art)}: um ${esc(x.stunde)} Uhr kommen sie besser an (Ø ${zahl(x.schnitt)} Punkte) als um ${esc(x.statt)} Uhr (Ø ${zahl(x.statt_schnitt)}).`).join(' ')
-      + ' Wenn du magst, stell die Uhrzeit oben um.'
-    : '✦ Uhrzeiten: Soraya vergleicht, wann deine Posts am besten ankommen. Dafür braucht es je Uhrzeit 3 gemessene Posts – '
-      + 'probier z. B. eine Woche lang eine andere Uhrzeit, dann gibt es hier einen Vorschlag.';
+    ? '✦ ' + kurzMehr(z.map(x => `${esc(ART[x.art] || x.art)}: besser um ${esc(x.stunde)} Uhr als um ${esc(x.statt)} Uhr.`).join(' '),
+        z.map(x => `${esc(ART[x.art] || x.art)}: Ø ${zahl(x.schnitt)} statt Ø ${zahl(x.statt_schnitt)} Punkte.`).join(' ') + ' Wenn du magst, stell die Uhrzeit oben um.')
+    : '✦ ' + kurzMehr('Noch kein Uhrzeit-Vorschlag.', 'Soraya vergleicht, wann deine Posts am besten ankommen. Dafür braucht es je Uhrzeit 3 gemessene Posts – '
+      + 'probier z. B. eine Woche lang eine andere Uhrzeit, dann gibt es hier einen Vorschlag.');
 }
 async function ladePosten(){
   clearTimeout(postTimer);
@@ -2093,8 +2224,9 @@ async function ladePosten(){
   const verbunden = ['facebook', 'instagram', 'tiktok'].filter(p => e.plattformen[p] && v[p] && v[p].verbunden);
   $('postAuto').checked = e.an; $('postAutoSchalter').classList.toggle('on', e.an);
   $('postInfo').innerHTML = e.an
-    ? `An: ${sprachText(d)} · Story ${esc(e.zeiten.story)}, Feed-Post ${esc(e.zeiten.post)}, Reel ${esc(e.zeiten.reel)} (Wiener Zeit) · ${verbunden.map(p => PL_NAME[p]).join(' + ') || 'keine Plattform verbunden'} · ${e.modus === 'auto' ? 'automatisch, außer du stoppst' : 'nur freigegebene'}`
-    : 'Aus: Es wird nichts automatisch gepostet. Zum Testen gibt es unten den Kasten „Testpost“.';
+    ? kurzMehr(`An: ${esc(sprachText(d))} · Story ${esc(e.zeiten.story)}, Feed-Post ${esc(e.zeiten.post)}, Reel ${esc(e.zeiten.reel)}`,
+        `(Wiener Zeit) · ${esc(verbunden.map(p => PL_NAME[p]).join(' + ') || 'keine Plattform verbunden')} · ${e.modus === 'auto' ? 'automatisch, außer du stoppst' : 'nur freigegebene'}`)
+    : kurzMehr('Aus: Es wird nichts automatisch gepostet.', 'Zum Testen gibt es unten den Kasten „Testpost“.');
   const warn = [];
   if(e.an && !verbunden.length) warn.push('Es ist noch keine Plattform verbunden – siehe „Verbindungen“.');
   if(e.an && !d.tagesplan_auto) warn.push('Der Tagesplan erstellt nicht automatisch (Reiter „Heute“). Ohne neue Posts gibt es nichts zu posten.');
@@ -2116,7 +2248,7 @@ async function ladePosten(){
     const tt = p === 'tiktok' && x.verbunden ? `<div class="klein">${e.plattformen.tiktok
       ? `Ein · ${e.tiktok_modus === 'direkt' ? 'veröffentlicht direkt' : 'Reels kommen als Entwurf in deine TikTok-App'}` : 'Aus – es geht nichts auf TikTok (unten bei Einstellungen einschalten)'}</div>` : '';
     return `<div class="verbindung"><div><div class="name">${titel}</div><div class="klein">${stand}</div>${tt}
-      ${x.eingerichtet || x.verbunden ? '' : `<div class="klein">Rückruf-Adresse für die ${p === 'tiktok' ? 'TikTok' : 'Meta'}-App: <code>${esc(x.rueckruf_url || '')}</code></div>`}</div>${knopf}</div>`;
+      ${x.eingerichtet || x.verbunden ? '' : `<div class="klein">${kurzMehr('Rückruf-Adresse', `für die ${p === 'tiktok' ? 'TikTok' : 'Meta'}-App: <code>${esc(x.rueckruf_url || '')}</code>`)}</div>`}</div>${knopf}</div>`;
   }).join('');
 
   zeigeEinrichtung(d);
@@ -2137,7 +2269,7 @@ async function ladePosten(){
         <td class="pl">${plIkon(t.plattform)}</td>
         <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}</td></tr>`;
     }).join('')}</tbody></table>`
-    : `<div class="empty">Keine Termine.<span>${e.an ? 'Termine entstehen, sobald es Posts für heute oder morgen gibt und eine Plattform verbunden ist.' : 'Termine entstehen, wenn „Automatisch posten“ an ist. Zum Testen: Kasten „Testpost“ unten.'}</span></div>`;
+    : `<div class="empty">Keine Termine.<span>${e.an ? 'Sie entstehen, sobald es Posts gibt und eine Plattform verbunden ist.' : 'Sie entstehen, wenn „Automatisch posten“ an ist.'}</span></div>`;
 
   $('postSprache').value = e.sprache; $('postModus').value = e.modus;
   $('zStory').value = e.zeiten.story; $('zPost').value = e.zeiten.post; $('zReel').value = e.zeiten.reel;
@@ -2185,9 +2317,9 @@ async function zeigeTestposts(d){
   let posts = [];
   const passt = (p) => e.sprache === 'alle' ? (d.sprachen_heute || {})[p.art] === p.sprache : p.sprache === e.sprache;
   try{ posts = ((await api('/tagesplan')).posts || []).filter(p => passt(p) && p.status !== 'gestoppt').sort(ordne); }catch(err){}
-  $('testpostInfo').textContent = verbunden.length
-    ? `Ein Post von heute (${sprachText(d)}) sofort posten – geht auch, wenn „Automatisch posten“ aus ist.`
-    : 'Sobald Facebook oder Instagram verbunden ist, kannst du hier einen Post von heute sofort posten – auch wenn „Automatisch posten“ aus ist.';
+  $('testpostInfo').innerHTML = verbunden.length
+    ? kurzMehr(`Ein Post von heute sofort posten (${esc(sprachText(d))}).`, 'Geht auch, wenn „Automatisch posten“ aus ist.')
+    : kurzMehr('Geht, sobald Facebook oder Instagram verbunden ist.', 'Dann kannst du hier einen Post von heute sofort posten – auch wenn „Automatisch posten“ aus ist.');
   $('testposts').innerHTML = posts.length ? posts.map(p => `<div class="testpost"><div><span class="tag">${esc(ART[p.art] || 'Post')}</span>
       <p class="titel">${esc(p.titel || p.text.slice(0, 60))}</p></div>
       <div class="row">${['facebook', 'instagram', 'tiktok'].filter(pl => pl !== 'tiktok' || (p.art === 'reel' && v.tiktok && v.tiktok.verbunden)).map(pl => { const f = fertig(p.id, pl);

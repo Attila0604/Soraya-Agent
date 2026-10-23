@@ -1189,7 +1189,7 @@ def test_karussell_bilder_und_posten(fake_meta, monkeypatch):
     tagesplan.erstelle("en")
     feed = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post" and p["sprache"] == "en")
     assert feed["meta"]["folien"] == FOLIEN and _medien.anzahl_bilder(feed) == 5
-    assert feed["meta"]["folge"] == 1 or feed["meta"]["thema"].startswith("Großes Ereignis")
+    assert feed["meta"].get("folge") == 1 or feed["meta"]["thema"].startswith("Großes Ereignis")
     for nr in (2, 5):
         r = client.get(f"/medien/{feed['id']}/folie/{nr}", headers=AUTH)
         assert r.status_code == 200 and r.content[:2] == b"\xff\xd8"
@@ -1222,6 +1222,39 @@ def test_luftiger_text_und_hook_pruefung():
     lang = {"art": "post", "titel": "T", "untertitel": "", "hashtags": ["#a", "#b", "#c"],
             "text": " ".join(["word"] * 25) + "\n\n" + " ".join(["more"] * 40)}
     assert any(b.startswith("Erste Zeile zu lang") for b in redaktion.pruefe_post(lang, "en"))
+
+
+def test_bildunterschrift_wie_von_der_redaktion(monkeypatch):
+    monkeypatch.setattr(meta, "zugang", lambda d: {"name": "soraya.astroguide"})
+    wand = ("Skorpion, Krebs, Fische – heute trifft es euch. " + "Der Mond zieht alles nach oben, was ihr sonst versteckt. " * 4
+            + "Welches Zeichen bist du? Schreib es in die Kommentare 👇 Finde dein Mondzeichen – gratis. Link in Bio ✨")
+    t = posten._luftig(wand)
+    absaetze = t.split("\n\n")
+    assert absaetze[0] == "Skorpion, Krebs, Fische – heute trifft es euch."          # Hook allein, < 125 Zeichen
+    assert all(len(a) <= posten.ABSATZ_MAX for a in absaetze)                        # kurze Absaetze
+    assert absaetze[-1] == "Finde dein Mondzeichen – gratis. Link in Bio ✨"          # Aufforderung am Ende
+    assert absaetze[-2] == "Welches Zeichen bist du? Schreib es in die Kommentare 👇"  # Frage allein
+    assert posten._luftig("Ein Satz z. B. so. Zwei.") == "Ein Satz z. B. so.\n\nZwei."   # Abkuerzung bleibt
+    ig = posten.text_fuer({"id": 3, "art": "post", "sprache": "de", "text": wand, "hashtags": "#a1 #b2 #c3 #d4 #e5 #f6 #g7"}, "instagram")
+    assert "Link in Bio ✨ 👉 @soraya.astroguide" in ig and "#e5" in ig and "#f6" not in ig     # max. 5 Hashtags
+    b = redaktion.pruefe_post({"art": "post", "titel": "T", "text": "x " * 50, "hashtags": ["#a"] * 6}, "en")
+    assert "6 Hashtags (3 bis 5 sinnvoll)" in b and not redaktion.schwer(b)
+    lange_folie = {"art": "post", "titel": "T", "text": "x " * 50, "hashtags": ["#a", "#b", "#c"],
+                   "_folien": [{"titel": "F", "text": "eins " * 15}]}
+    assert "Folien-Text zu lang (max. 14 Wörter)" in redaktion.pruefe_post(lange_folie, "en")
+    assert any(x.startswith("Erste Zeile zu lang") for x in redaktion.pruefe_post(
+        {"art": "post", "titel": "T", "hashtags": ["#a", "#b", "#c"], "text": "Wort " * 21 + "Ende. " + "x " * 40}, "en"))
+
+
+def test_bild_feinschliff():
+    # Story mit Antwort-Knoepfen: die Anleitung "Antworte mit ..." steht nicht noch einmal im Bild
+    assert _medien.ohne_antwort_anleitung("Der Mond macht alles intensiver. Schläfst du schlechter? Antworte mit 🌙 oder ☀️") \
+        == "Der Mond macht alles intensiver. Schläfst du schlechter?"
+    # ausgeglichener Umbruch: kein einzelnes Wort allein in der letzten Zeile
+    font = _medien.schrift("cormorant", 92)
+    z = _medien.ausgleichen(font, "Drei Zeichen, die heute fühlen", 900)
+    assert len(z) == 2 and min(len(x) for x in z) >= 10
+    assert _medien.datumszeile({"datum_kurz": "20. Okt", "mond_phase": "Zunehmende Sichel"}) == "20. Okt  ·  Zunehmende Sichel"
 
 
 def test_zeit_vorschlaege():

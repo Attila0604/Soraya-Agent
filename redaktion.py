@@ -116,7 +116,11 @@ _HEIKEL = re.compile(
     r"lotto|lottery|reich werden|get rich|gewinnspiel|giveaway)\b", re.IGNORECASE)
 _DEUTSCH_IN_FREMD = re.compile(r"\b(und|nicht|deine?n?|für|heute|Mond|Sonne|Sternzeichen|Liebe|Woche)\b")
 _URL = re.compile(r"https?://|www\.", re.IGNORECASE)
-_GRENZEN = {"post": (40, 230), "reel": (5, 70), "story": (4, 50)}
+_GRENZEN = {"post": (40, 110), "reel": (5, 60), "story": (4, 25)}
+FOLIE_WOERTER = 14       # Text je Karussell-Folie (steht gross im Bild)
+HOOK_ZEICHEN = 100        # Hook steht sicher vor "… mehr" (Instagram zeigt ~125 Zeichen)
+HASHTAGS_MAX = 5          # Instagram nimmt hoechstens 5 Hashtags je Beitrag
+_EMOJI = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
 
 
 def _woerter(text: str) -> int:
@@ -138,8 +142,8 @@ def pruefe_post(post: dict, sprache: str) -> list[str]:
     if _woerter(post.get("untertitel")) > 14:
         befunde.append("Unterzeile zu lang")
     erste = re.split(r"(?<=[.!?…])\s", (post.get("text") or "").strip().split("\n", 1)[0], maxsplit=1)[0]
-    if art in ("post", "reel") and _woerter(erste) > 22:
-        befunde.append("Erste Zeile zu lang (der Hook sollte kurz sein)")
+    if art in ("post", "reel") and (_woerter(erste) > 22 or len(erste) > HOOK_ZEICHEN):
+        befunde.append(f"Erste Zeile zu lang (der Hook sollte kurz sein, max. {HOOK_ZEICHEN} Zeichen)")
     lo, hi = _GRENZEN.get(art, (1, 300))
     n = _woerter(post.get("text"))
     if n < lo:
@@ -148,8 +152,14 @@ def pruefe_post(post: dict, sprache: str) -> list[str]:
         befunde.append(f"Text zu lang ({n} Wörter, max. {hi})")
     tags = [t for t in re.split(r"\s+", post.get("hashtags") or "") if t] if isinstance(post.get("hashtags"), str) \
         else list(post.get("hashtags") or [])
-    if art != "story" and not 3 <= len(tags) <= 10:
-        befunde.append(f"{len(tags)} Hashtags (3 bis 10 sinnvoll)")
+    if art != "story" and not 3 <= len(tags) <= HASHTAGS_MAX:
+        befunde.append(f"{len(tags)} Hashtags (3 bis {HASHTAGS_MAX} sinnvoll)")
+    emojis = len(_EMOJI.findall(post.get("text") or ""))
+    if emojis > 3:
+        befunde.append(f"Zu viele Emojis ({emojis}, höchstens 2–3)")
+    folien = post.get("_folien") or post.get("folien") or (post.get("meta") or {}).get("folien") or []
+    if any(_woerter(f.get("text")) > FOLIE_WOERTER for f in folien if isinstance(f, dict)):
+        befunde.append(f"Folien-Text zu lang (max. {FOLIE_WOERTER} Wörter)")
     if any(not t.startswith("#") or len(t) < 3 for t in tags):
         befunde.append("Hashtag ohne # oder zu kurz")
     if art == "reel":
