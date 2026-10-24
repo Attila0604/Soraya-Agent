@@ -396,7 +396,7 @@ def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
         raise ValueError("Auf TikTok gehen nur Reels (Videos)." if p == "tiktok" else "Storys gibt es auf LinkedIn nicht.")
     text = text_fuer(post, p)
     if p == "tiktok":
-        return tiktok.poste_video(paket._rendere_video(post), text, (e or einstellungen()).get("tiktok_modus", "entwurf"))
+        return tiktok.poste_video(paket.rendere_tiktok(post), text, (e or einstellungen()).get("tiktok_modus", "entwurf"))
     if p == "linkedin":
         alt = post.get("titel") or "Soraya"
         if art == "reel":
