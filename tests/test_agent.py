@@ -1979,6 +1979,55 @@ def test_cockpit_kennzahlen_vergleich_top_und_tabelle(monkeypatch, frische_db):
     assert gefragt[-1] == 60
 
 
+def test_tiktok_selbst_gepostet_zaehlt_ueberall(monkeypatch, frische_db):
+    """Selbst hochgeladenes Reel (kein TikTok-Termin) bekommt seine Zahlen; eigene Videos ohne Soraya-Post
+    zaehlen bei Erreicht, Reaktionen, Reichweite pro Tag und Plattformen mit."""
+    import tiktok
+    cockpit.leeren()
+    monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)
+    tag = HEUTE - timedelta(days=1)
+    reel = db.speichere_posts([{"art": "reel", "titel": "Scorpio Season: 3 Changes", "text": "x"}], quelle="tagesplan",
+                              geplant_fuer=tag, meta={"thema": "Ritual"})[0]
+    um = int(datetime.combine(tag, _time(18), tzinfo=himmel.WIEN).timestamp())
+    videos = [{"id": "71", "title": "", "video_description": "Scorpio Season: 3 Changes ✨ #astro", "create_time": um,
+               "share_url": "https://tiktok/71", "view_count": 300, "like_count": 9, "comment_count": 2, "share_count": 1},
+              {"id": "72", "title": "Mein eigenes Video", "create_time": um + 3600, "view_count": 150, "like_count": 4,
+               "comment_count": 0, "share_count": 0}]
+    db.setze_einstellung(tiktok.SCHLUESSEL, {"token": "t", "rechte": ["video.list"]})
+    monkeypatch.setattr(tiktok, "zahlen_erlaubt", lambda z: True)
+    monkeypatch.setattr(tiktok, "videos", lambda n=20: videos)
+    monkeypatch.setattr(tiktok, "konto", lambda: None)
+    monkeypatch.setattr(tiktok, "verbindung", lambda: {"verbunden": True, "zahlen": True})
+    zeilen = posten.zahlen_tiktok(datetime.now(himmel.WIEN) - timedelta(days=14))
+    assert [(z["post_id"], z["aufrufe"]) for z in zeilen] == [(reel["id"], 300)]
+    # jetzt gibt es einen fertigen TikTok-Eintrag mit Zahlen; ein zweiter Abruf passt ueber die Video-ID
+    g = db.lade_gemerkte_zahlen("tiktok", datetime.now(himmel.WIEN) - timedelta(days=14))
+    assert len(g) == 1 and g[0]["extern_id"] == "71" and g[0]["aufrufe"] == 300 and g[0]["reaktionen"] == 9
+    videos[0]["view_count"] = 420
+    assert [z["aufrufe"] for z in posten.zahlen_tiktok(datetime.now(himmel.WIEN) - timedelta(days=14))] == [420]
+    assert len(db.lade_gemerkte_zahlen("tiktok", datetime.now(himmel.WIEN) - timedelta(days=14))) == 1
+    gemerkt = {v["id"]: v for v in posten.tiktok_videos()}
+    assert gemerkt["71"]["post_id"] == reel["id"] and gemerkt["72"]["post_id"] is None and gemerkt["72"]["aufrufe"] == 150
+    # Cockpit: Reel (420) + eigenes Video (150)
+    d = client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()
+    k = {x["schluessel"]: x for x in d["kpis"]}
+    assert k["erreicht"]["wert"] == 420 + 150 and k["reaktionen"]["wert"] == (9 + 2 + 1) + 4
+    assert d["verbunden"]["tiktok"] is True
+    pt = {x["datum"]: x for x in d["analyse"]["plattform_tage"]}
+    assert pt[tag.isoformat()]["tiktok"] == 570
+    pv = {z["plattform"]: z for z in d["analyse"]["plattformen"]["zeilen"]}
+    assert pv["tiktok"]["posts"] == 1 and pv["tiktok"]["videos_extra"] == 1 and pv["tiktok"]["erreicht"] == 570
+    assert {x["datum"]: x for x in d["verlauf"]}[tag.isoformat()]["erreicht"] == 570
+    assert [z["plattformen"]["tiktok"]["erreicht"] for z in d["beitraege"]] == [420]
+
+
+def test_plattformen_verbunden_auch_ohne_zahlen():
+    import auswertung
+    tage = [HEUTE - timedelta(days=i) for i in range(6, -1, -1)]
+    pv = auswertung.plattform_vergleich([], {}, tage, verbunden=["tiktok"])
+    assert [(z["plattform"], z["erreicht"], z["anteil_erreicht"]) for z in pv["zeilen"]] == [("tiktok", 0, None)]
+
+
 def test_cockpit_ohne_statistik_und_ohne_posts(monkeypatch, frische_db):
     cockpit.leeren()
     monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)

@@ -186,6 +186,11 @@ if os.environ.get("DEMO_KANAELE"):
                                               "konten": 1 if faktor > 1.5 and k % 2 else 0,
                                               "tage": {d.isoformat(): int(wert(k, 1, 9) * faktor), (d + timedelta(days=1)).isoformat(): wert(k, 0, 4)}}
     con.commit(); con.close()
+    if WENIG:
+        # ein selbst gemachtes TikTok-Video ohne Soraya-Post (zaehlt bei TikTok mit)
+        eigen = datetime.combine(H - timedelta(days=3), datetime.min.time()).replace(hour=18, tzinfo=himmel.WIEN)
+        posten.merke_tiktok_videos([{"id": "eigen1", "title": "Mein Abend-Ritual", "create_time": int(eigen.timestamp()),
+                                     "view_count": 85, "like_count": 6, "comment_count": 1, "share_count": 0}], {})
     tagesplan.erstelle("en")
     for i, p in enumerate(db.lade_posts(von=H, bis=H)):
         if p["sprache"] != "en":

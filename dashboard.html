@@ -2120,7 +2120,7 @@ async function ladeStudio(){
     liste($('studioListe'), posts, 'Noch keine Posts.<span>Gib oben ein Thema ein und leg los.</span>');
   }catch(e){ if(nr !== studioNr) return; $('studioListe').innerHTML = ladeFehler('Die Studio-Posts', e); }
 }
-$('btnStudioLaden').onclick = async () => { const b = $('btnStudioLaden'); busy(b, true, 'Lädt …'); await ladeStudio(); busy(b, false); };
+$('btnStudioLaden').onclick = async () => { const b = $('btnStudioLaden'); busy(b, true, 'Lädt …'); await ladeStudio(); busy(b, false); melde('Neu geladen ✓'); };
 $('btnThema').onclick = async () => {
   const b = $('btnThema'); busy(b, true, 'Wird geschrieben … (etwa 30 Sekunden)'); melde('');
   try{
@@ -2211,7 +2211,10 @@ async function ladeProfile(){
   catch(e){ if(nr !== profilNr) return; $('tpInfo').hidden = true; $('profile').innerHTML = ladeFehler('Die Profile', e); }
 }
 document.querySelectorAll('#quellen input').forEach(cb => cb.addEventListener('change', () => cb.closest('.q').classList.toggle('on', cb.checked)));
-$('btnProfileLaden').onclick = async () => { const b = $('btnProfileLaden'); busy(b, true, 'Lädt …'); await ladeProfile(); busy(b, false); };
+$('btnProfileLaden').onclick = async () => { const b = $('btnProfileLaden'); busy(b, true, 'Lädt …'); await ladeProfile(); busy(b, false);
+  // sichtbare Rückmeldung – sonst wirkt der Knopf, als täte er nichts (die Liste ist ja meist gleich)
+  const n = document.querySelectorAll('#profile .card.who').length;
+  melde(`Profile neu geladen ✓${n ? ` · ${n} Profil${n === 1 ? '' : 'e'}` : ''}. Neue Recherche: oben „Bereich erforschen“.`); };
 $('btnWho').onclick = async () => {
   const b = $('btnWho');
   const bereich = $('eigen').value.trim() || $('bereich').value;
@@ -2646,7 +2649,7 @@ function htmlTrichter(d){
     <p class="weg-tipp${t.schwach ? '' : ' leise'}">${esc(t.hinweis)}</p></div>`;
 }
 function htmlUeberblick(d){
-  const hilfeK = 'Erreicht: Reichweite, wenn die Plattform sie liefert, sonst Aufrufe – für die Posts aus diesem Zeitraum, zusammengezählt über Facebook, Instagram und TikTok. Reaktionen: Gefällt mir, Kommentare, Gespeichert, Geteilt. Besuche: über deine Post- und Bio-Links. Neue Konten: neu angelegt in der App.';
+  const hilfeK = 'Erreicht: Reichweite, wenn die Plattform sie liefert, sonst Aufrufe – für die Posts aus diesem Zeitraum, zusammengezählt über Facebook, Instagram und TikTok (dort auch deine eigenen Videos ohne Soraya-Post). Reaktionen: Gefällt mir, Kommentare, Gespeichert, Geteilt. Besuche: über deine Post- und Bio-Links. Neue Konten: neu angelegt in der App.';
   const kacheln = d.kpis.map(k => `<div class="wz-kpi"><div class="l">${esc(k.name)}${k.schluessel === 'erreicht' ? hilfe(hilfeK, 'Was zählt hier?') : ''}</div>
     <div class="v">${k.wert == null ? '–' : zahl(k.wert)}</div><div class="d">${trend(k)}</div></div>`).join('');
   const fol = (d.follower || []).map(f => `<span class="f"><span class="ikon" aria-hidden="true">${IKON[f.plattform]}</span><span class="sr">${PL_KURZ[f.plattform]}</span>
@@ -2677,7 +2680,8 @@ function htmlPosts(d){
 }
 function zeigePostTabelle(){
   const d = cockpitDaten; if(!d || !$('wzPosts')) return;
-  const pls = COCKPIT_PL.filter(pl => d.beitraege.some(p => p.plattformen[pl]));
+  // verbundene Plattformen immer zeigen (auch ohne Zahlen), damit klar ist, dass sie mitzählen
+  const pls = COCKPIT_PL.filter(pl => d.beitraege.some(p => p.plattformen[pl]) || (d.verbunden || {})[pl]);
   const formate = [...new Set(d.beitraege.map(p => p.format).filter(Boolean))].sort();
   if(wFilter.pl !== 'alle' && !pls.includes(wFilter.pl)) wFilter.pl = 'alle';
   if(wFilter.format && !formate.includes(wFilter.format)) wFilter.format = '';
@@ -2793,6 +2797,9 @@ function tipZeigen(box, tip, x, html, W){
 }
 
 /* --- Plattformen --- */
+// TikTok verbunden, aber noch nichts gemessen: kurz sagen, warum (statt TikTok einfach wegzulassen)
+const tiktokLeer = (zeilen) => { const t = zeilen.find(z => z.plattform === 'tiktok');
+  return t && !t.erreicht && !t.reaktionen ? `<p class="meta">${kurzMehr('TikTok: noch keine Zahlen in diesem Zeitraum.', 'Sie erscheinen, sobald ein Video auf TikTok öffentlich ist – egal ob aus einem Soraya-Entwurf oder selbst gemacht. Soraya holt die Zahlen alle 6 Stunden; eigene Videos ohne Soraya-Post zählen bei Erreicht und Reaktionen mit.')}</p>` : ''; };
 function htmlPlattformen(d){
   const a = d.analyse || {}, pv = a.plattformen || {zeilen: []}, zeilen = pv.zeilen;
   const gruppe = (k, titel, leerText) => {
@@ -2804,9 +2811,10 @@ function htmlPlattformen(d){
   };
   const vergleich = zeilen.length ? `<div class="pv">${gruppe('erreicht', 'Erreicht', 'Noch keine Reichweite gemessen.')}${gruppe('reaktionen', 'Reaktionen', 'Noch keine Reaktionen.')}
       ${gruppe('besuche', 'Besuche über den Bio-Link', 'Noch keine Besuche über die Bio-Links.')}</div>
-      <p class="meta">${zeilen.filter(z => z.posts).map(z => `${PL_KURZ[z.plattform]}: ${mehrzahl(z.posts, 'Post', 'Posts')}${z.schnitt_erreicht != null ? `, Ø ${zahl(Math.round(z.schnitt_erreicht))} erreicht` : ''}`).join(' · ')}${pv.post_link_besuche ? ` · Dazu ${mehrzahl(pv.post_link_besuche, 'Besuch', 'Besuche')} über Post-Links (keiner Plattform zuordenbar).` : ''}</p>`
+      <p class="meta">${zeilen.filter(z => z.posts || z.videos_extra).map(z => `${PL_KURZ[z.plattform]}: ${mehrzahl(z.posts, 'Post', 'Posts')}${z.videos_extra ? ` + ${mehrzahl(z.videos_extra, 'eigenes Video', 'eigene Videos')}` : ''}${z.schnitt_erreicht != null ? `, Ø ${zahl(Math.round(z.schnitt_erreicht))} erreicht` : ''}`).join(' · ')}${pv.post_link_besuche ? ` · Dazu ${mehrzahl(pv.post_link_besuche, 'Besuch', 'Besuche')} über Post-Links (keiner Plattform zuordenbar).` : ''}</p>
+      ${tiktokLeer(zeilen)}`
     : leer('Noch nichts gepostet', 'Sobald Posts auf Facebook, Instagram oder TikTok erscheinen, siehst du hier, welche Plattform am meisten bringt.');
-  const pls = COCKPIT_PL.filter(pl => (a.plattform_tage || []).some(t => t[pl]));
+  const pls = COCKPIT_PL.filter(pl => (a.plattform_tage || []).some(t => t[pl]) || (d.verbunden || {})[pl]);
   const legende = pls.map(pl => `<span><i class="sq" style="background:${PL_FARBE[pl]}"></i>${PL_KURZ[pl]}</span>`).join('');
   return `<div class="panel wz-pv"><h2>Plattformen im Vergleich</h2>${vergleich}</div>
     <div class="panel wz-tage"><h2>Reichweite ${W_TAGE > 31 ? 'pro Woche' : 'pro Tag'}</h2>

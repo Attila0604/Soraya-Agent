@@ -307,13 +307,34 @@ def _statistik(tage: int) -> tuple[dict | None, str | None]:
         return None, str(e)[:200]
 
 
-def _kennzahlen(posts: list[dict], werte: dict, tage: list[date], stat_ok: bool) -> dict:
+def tiktok_extra() -> list[dict]:
+    """TikTok-Videos ohne Soraya-Post (selbst gemacht): zaehlen bei Erreicht, Reaktionen und Plattformen mit."""
+    try:
+        videos = posten.tiktok_videos()
+    except Exception:  # noqa: BLE001
+        return []
+    out = []
+    for v in videos:
+        if v.get("post_id"):
+            continue
+        try:
+            tag = _tag(datetime.fromisoformat(v["zeit"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        out.append({"tag": tag, "erreicht": int(v.get("aufrufe") or 0), "titel": v.get("titel"), "url": v.get("url"),
+                    "reaktionen": sum(int(v.get(k) or 0) for k in ("gefaellt", "kommentare", "geteilt"))})
+    return out
+
+
+def _kennzahlen(posts: list[dict], werte: dict, tage: list[date], stat_ok: bool, extra: list[dict] | None = None) -> dict:
     drin = [p for p in posts if p["tag"] and tage[0] <= p["tag"] <= tage[-1]]
-    return {"erreicht": sum(p["erreicht"] for p in drin), "reaktionen": sum(p["reaktionen_summe"] for p in drin),
+    dazu = [x for x in (extra or []) if tage[0] <= x["tag"] <= tage[-1]]
+    return {"erreicht": sum(p["erreicht"] for p in drin) + sum(x["erreicht"] for x in dazu),
+            "reaktionen": sum(p["reaktionen_summe"] for p in drin) + sum(x["reaktionen"] for x in dazu),
             "besuche": _summe(werte, tage, "besuche") if stat_ok else None,
             "gratis": _summe(werte, tage, "gratis") if stat_ok else None,
             "konten": _summe(werte, tage, "konten") if stat_ok else None,
-            "posts": len(drin), "gemessen": sum(1 for p in drin if p["gemessen"])}
+            "posts": len(drin), "gemessen": sum(1 for p in drin if p["gemessen"]) + len(dazu)}
 
 
 def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bool = True) -> dict:
@@ -329,8 +350,9 @@ def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bo
         zeilen = []
     posts = beitraege(zeilen, (stat or {}).get("quellen"))
     tage, vor_tage = _bereich(von, bis), _bereich(vor_von, vor_bis)
-    jetzt = _kennzahlen(posts, werte, tage, stat is not None)
-    vorher = _kennzahlen(posts, werte, vor_tage, stat is not None)
+    extra = tiktok_extra()
+    jetzt = _kennzahlen(posts, werte, tage, stat is not None, extra)
+    vorher = _kennzahlen(posts, werte, vor_tage, stat is not None, extra)
     kpis = []
     for k, name in (("erreicht", "Erreicht"), ("reaktionen", "Reaktionen"), ("besuche", "Besuche"), ("konten", "Neue Konten")):
         # ohne Posts/ohne Statistik im Vorzeitraum gibt es keinen fairen Vergleich -> neutral
@@ -343,7 +365,8 @@ def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bo
     for d in tage:
         am_tag = [p for p in im_zeitraum if p["tag"] == d]
         w = werte.get(d.isoformat(), {})
-        verlauf.append({"datum": d.isoformat(), "erreicht": sum(p["erreicht"] for p in am_tag),
+        verlauf.append({"datum": d.isoformat(), "erreicht": sum(p["erreicht"] for p in am_tag)
+                        + sum(x["erreicht"] for x in extra if x["tag"] == d),
                         "besuche": w.get("besuche", 0) if stat is not None else None,
                         "konten": w.get("konten", 0) if stat is not None else None, "posts": len(am_tag)})
     try:
@@ -373,7 +396,8 @@ def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bo
             except Exception:  # noqa: BLE001
                 verlaeufe[pl] = {}
     analyse = auswertung.auswerten(im_zeitraum, tage=tage, quellen=(stat or {}).get("quellen"), kpis=kpis, trichter=tr,
-                                   trichter_vorher=trichter(vorher), follower_verlaeufe=verlaeufe, zeiten=zeiten)
+                                   trichter_vorher=trichter(vorher), follower_verlaeufe=verlaeufe, zeiten=zeiten,
+                                   extra=extra, verbunden=[pl for pl in PLATTFORMEN if verb.get(pl)])
 
     return {
         "von": von.isoformat(), "bis": bis.isoformat(), "tage": laenge,

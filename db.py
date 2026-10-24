@@ -291,6 +291,23 @@ def speichere_zahlen(post_id: int, plattform: str, reaktionen: int, kommentare: 
         conn.commit()
 
 
+def merke_extern_gepostet(post_id: int, plattform: str, extern_id: str, url: str | None, gepostet=None) -> None:
+    """Ein Video, das ausserhalb von Soraya veroeffentlicht wurde (TikTok-Entwurf in der App gepostet oder selbst
+    hochgeladen), als 'fertig' merken -- sonst haetten seine Zahlen keinen Platz. Ein schon fertiger Eintrag
+    behaelt seine Zeit; die Video-ID ersetzt die Upload-ID (dann passt beim naechsten Abruf die ID direkt)."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "insert into soraya_veroeffentlichungen (post_id, plattform, geplant_um, status, extern_id, url, aktualisiert) "
+            "values (%s, %s, coalesce(%s, now()), 'fertig', %s, %s, coalesce(%s, now())) "
+            "on conflict (post_id, plattform) do update set status = 'fertig', fehler = null, extern_id = excluded.extern_id, "
+            "url = coalesce(excluded.url, soraya_veroeffentlichungen.url), "
+            "aktualisiert = case when soraya_veroeffentlichungen.status = 'fertig' then soraya_veroeffentlichungen.aktualisiert "
+            "else excluded.aktualisiert end;",
+            (post_id, plattform, gepostet, str(extern_id), url, gepostet),
+        )
+        conn.commit()
+
+
 def lade_gemerkte_zahlen(plattform: str, seit, limit: int = 30) -> list[dict]:
     """Gepostete Beitraege einer Plattform mit den zuletzt gemerkten Zahlen (ohne API-Aufruf)."""
     with _verbindung() as conn, conn.cursor() as cur:
