@@ -501,7 +501,7 @@ def test_tagesplan_fragt_einblendungen(frische_db):
 
 
 def test_wochenpaket(monkeypatch):
-    monkeypatch.setattr(reel, "als_bytes", lambda post: b"\x00\x00\x00\x18ftypmp42-fake-video")
+    monkeypatch.setattr(reel, "als_bytes", lambda post, tiktok=False: b"\x00\x00\x00\x18ftypmp42-fake-video")
     for s in ("de", "hu"):
         tagesplan.erstelle(s)
     morgen = HEUTE + timedelta(days=1)
@@ -635,7 +635,7 @@ def fake_meta(monkeypatch):
     for k, v in {"META_APP_ID": "app1", "META_APP_SECRET": "geheim1", "INSTAGRAM_APP_ID": "ig1",
                  "INSTAGRAM_APP_SECRET": "geheim2", "RAILWAY_PUBLIC_DOMAIN": "agent.example.app"}.items():
         monkeypatch.setenv(k, v)
-    monkeypatch.setattr(reel, "als_bytes", lambda post: b"\x00\x00\x00\x18ftypmp42-video")
+    monkeypatch.setattr(reel, "als_bytes", lambda post, tiktok=False: b"\x00\x00\x00\x18ftypmp42-video")
     return f
 
 
@@ -938,6 +938,23 @@ def test_reel_wort_fuer_wort_und_medaillon():
     assert voll is karte and sum(halb.getchannel("A").getdata()) < sum(karte.getchannel("A").getdata())
     ohne, k2 = reel._textkarte("Just words here", breite=900, groesse=78, name="cormorant", farbe="#F6E3B4")
     assert len(k2) == 3
+
+
+def test_reel_tiktok_fassung_kurz_und_still(tmp_path):
+    import subprocess
+    post = {"id": 5, "art": "reel", "sprache": "en", "titel": "T", "meta": {"thema": "Astro-Wissen", "phase_index": 4},
+            "skript": {"hook": "Mercury retrograde starts tomorrow.", "einblendungen": ["Back up your files.",
+                       "Double-check every message.", "Old friends may call."], "schluss": "Your free horoscope"}}
+    zeilen, _ = reel.texte(post)
+    _, _, lang = reel.zeitplan(zeilen)
+    _, _, kurz = reel.zeitplan(zeilen[:reel.TIKTOK_ZEILEN], reel.TIKTOK_ENDE)
+    assert kurz < lang and 6 <= kurz <= 10.5
+    ziel = str(tmp_path / "tt.mp4")
+    r = reel.erstelle(post, ziel, tiktok=True)
+    assert r["sekunden"] == round(kurz, 1)
+    out = subprocess.run([reel.ffmpeg_pfad(), "-i", ziel, "-af", "volumedetect", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    assert "max_volume: -91" in out or "max_volume: -inf" in out      # Tonspur da, aber still
 
 
 # ---------------------------------------------------------------- Claude-Anbindung

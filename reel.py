@@ -225,7 +225,13 @@ def klang(dauer: float, einsaetze: list[float], seed: int = 1, rate: int = 48000
     return (gesamt * 32767).astype(np.int16)
 
 
-def zeitplan(zeilen: list[str]) -> tuple[list[tuple[float, float]], float, float]:
+# TikTok-Fassung: kurz (Hook + eine Zeile + kurze Endkarte, ~8-9 s, wird oefter ganz und wiederholt geschaut)
+# und ohne eigenen Ton -- in der TikTok-App kommt ein Sound dazu, ohne dass die Klangflaeche mitspielt
+TIKTOK_ZEILEN = 2
+TIKTOK_ENDE = 1.8
+
+
+def zeitplan(zeilen: list[str], ende_s: float = 3.2) -> tuple[list[tuple[float, float]], float, float]:
     """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden)."""
     t, plan = 0.0, []                     # Hook ab dem ersten Bild (Vorschaubild, erste Sekunde)
     for i, z in enumerate(zeilen):
@@ -235,15 +241,18 @@ def zeitplan(zeilen: list[str]) -> tuple[list[tuple[float, float]], float, float
         plan.append((t, t + dauer))
         t += dauer + 0.15
     ende = t + 0.1
-    return plan, ende, ende + 3.2
+    return plan, ende, ende + ende_s
 
 
-def erstelle(post: dict, ziel: str) -> dict:
-    """Rendert das Reel nach `ziel` (MP4). Rueckgabe: {"sekunden", "bilder"}."""
+def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
+    """Rendert das Reel nach `ziel` (MP4). tiktok=True: kurze Fassung ohne Klangflaeche.
+    Rueckgabe: {"sekunden", "bilder"}."""
     meta = post.get("meta") or {}
     seed = post.get("id") or 1
     zeilen, _ = texte(post)
-    plan, end_start, dauer = zeitplan(zeilen)
+    if tiktok:
+        zeilen = zeilen[:TIKTOK_ZEILEN]
+    plan, end_start, dauer = zeitplan(zeilen, TIKTOK_ENDE if tiktok else 3.2)
     n = int(round(dauer * FPS))
 
     # --- feste Ebenen einmal vorbereiten
@@ -290,7 +299,10 @@ def erstelle(post: dict, ziel: str) -> dict:
     ffmpeg = ffmpeg_pfad()
     ton = os.path.join(os.path.dirname(os.path.abspath(ziel)) or ".", f".klang-{os.getpid()}-{seed}.raw")
     with open(ton, "wb") as f:
-        f.write(klang(dauer + 0.5, [max(0.0, s) for s, _ in plan] + [end_start], int(seed)).tobytes())
+        if tiktok:      # Stille (eine Tonspur bleibt drin, manche Apps erwarten sie)
+            f.write(np.zeros((int((dauer + 0.5) * 48000), 2), dtype=np.int16).tobytes())
+        else:
+            f.write(klang(dauer + 0.5, [max(0.0, s) for s, _ in plan] + [end_start], int(seed)).tobytes())
     befehl = [ffmpeg, "-y", "-loglevel", "error",
               "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
               "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", ton,
@@ -356,9 +368,9 @@ def erstelle(post: dict, ziel: str) -> dict:
     return {"sekunden": round(dauer, 1), "bilder": n}
 
 
-def als_bytes(post: dict) -> bytes:
+def als_bytes(post: dict, tiktok: bool = False) -> bytes:
     with tempfile.TemporaryDirectory() as ordner:
         ziel = os.path.join(ordner, "reel.mp4")
-        erstelle(post, ziel)
+        erstelle(post, ziel, tiktok)
         with open(ziel, "rb") as f:
             return f.read()

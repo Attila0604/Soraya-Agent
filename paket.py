@@ -42,7 +42,7 @@ ART_NAME = {"post": "Feed-Post", "reel": "Reel", "story": "Story"}
 
 def _fingerabdruck(post: dict, art: str) -> str:
     felder = {k: post.get(k) for k in ("id", "art", "sprache", "titel", "untertitel", "text", "meta", "skript")}
-    version = reel.VERSION if art == "reel" else BILD_VERSION
+    version = reel.VERSION if art in ("reel", "reel-tiktok") else BILD_VERSION
     roh = json.dumps([version, art, felder], sort_keys=True, default=str, ensure_ascii=False)
     return hashlib.sha1(roh.encode("utf-8")).hexdigest()
 
@@ -111,6 +111,18 @@ def _rendere_video(post: dict) -> bytes:
     with _RENDER:
         daten = reel.als_bytes(post)
     db.speichere_medium(post["id"], "reel", fp, "video/mp4", daten)
+    return daten
+
+
+def rendere_tiktok(post: dict) -> bytes:
+    """Kurze Fassung ohne eigenen Ton fuer TikTok (eigener Zwischenspeicher "reel-tiktok")."""
+    fp = _fingerabdruck(post, "reel-tiktok")
+    vorhanden = db.lade_medium(post["id"], "reel-tiktok", fp)
+    if vorhanden:
+        return vorhanden
+    with _RENDER:
+        daten = reel.als_bytes(post, tiktok=True)
+    db.speichere_medium(post["id"], "reel-tiktok", fp, "video/mp4", daten)
     return daten
 
 
