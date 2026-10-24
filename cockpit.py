@@ -411,7 +411,15 @@ def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bo
         "verlauf": verlauf,
         "beitraege": [oeffentlich(p) for p in im_zeitraum] if mit_tabelle else [],
         "zahlen_stand": stand.isoformat() if stand else None,
+        "abruf": _abruf(),
     }
+
+
+def _abruf() -> dict:
+    try:
+        return posten.abruf_stand()
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def cockpit(tage: int = 7, heute: date | None = None) -> dict:

@@ -2021,6 +2021,36 @@ def test_tiktok_selbst_gepostet_zaehlt_ueberall(monkeypatch, frische_db):
     assert [z["plattformen"]["tiktok"]["erreicht"] for z in d["beitraege"]] == [420]
 
 
+def test_facebook_zahlen_ersatzabfrage_und_meldung(monkeypatch, frische_db):
+    import meta
+    db.setze_einstellung("meta_facebook", {"seite_id": "555", "token": "t", "name": "Soraya"})
+    gefragt = []
+
+    def fake_get(url, **params):
+        gefragt.append(params["fields"])
+        if url.endswith("/insights"):
+            raise meta.MetaFehler("Meta: (#10) read_insights fehlt")
+        if url.endswith("/v1") and "reactions" in params["fields"]:
+            raise meta.MetaFehler("Meta: (#100) Tried accessing nonexisting field (reactions) on node type (Video)")
+        if url.endswith("/v2"):
+            raise meta.MetaFehler("Meta: (#200) pages_read_engagement fehlt")
+        if "likes" in params["fields"]:
+            return {"likes": {"summary": {"total_count": 7}}, "comments": {"summary": {"total_count": 2}}}
+        return {"reactions": {"summary": {"total_count": 3}}, "comments": {"summary": {"total_count": 1}}, "shares": {"count": 1}}
+    monkeypatch.setattr(meta, "_get", fake_get)
+    z = meta.facebook_reaktionen([{"post_id": 1, "extern_id": "v1", "art": "reel"}, {"post_id": 2, "extern_id": "p1", "art": "post"},
+                                  {"post_id": 3, "extern_id": "v2", "art": "post"}])
+    assert (z[0]["reaktionen"], z[0]["kommentare"]) == (7, 2) and (z[1]["reaktionen"], z[1]["geteilt"]) == (3, 1)
+    assert "pages_read_engagement" in z[2]["fehler"]
+    monkeypatch.setattr(posten, "_merke", lambda pl, zeilen: sum("fehler" not in x for x in zeilen))
+    assert posten.merke_facebook(z) == 2
+    a = posten.abruf_stand()["facebook"]
+    assert a["ok"] == 2 and a["fehler"] == 1 and "pages_read_engagement" in a["meldung"]
+    cockpit.leeren()
+    monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)
+    assert client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()["abruf"]["facebook"]["fehler"] == 1
+
+
 def test_plattformen_verbunden_auch_ohne_zahlen():
     import auswertung
     tage = [HEUTE - timedelta(days=i) for i in range(6, -1, -1)]

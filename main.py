@@ -612,13 +612,13 @@ def wirkung_facebook(tage: int = 30):
     try:
         seit = datetime.now(himmel.WIEN) - timedelta(days=max(1, min(tage, 90)))
         beitraege = meta.facebook_reaktionen(db.lade_gepostete("facebook", seit))
-        for z in beitraege:
-            if "fehler" not in z:
-                db.speichere_zahlen(z["post_id"], "facebook", z["reaktionen"], z["kommentare"], z["geteilt"],
-                                    z.get("reichweite"))
+        posten.merke_facebook(beitraege)
         posten.facebook_follower_merken()
-        return {"verbunden": True, "beitraege": beitraege, "konto": posten.follower_stand("facebook_follower")}
+        cockpit.leeren()
+        return {"verbunden": True, "beitraege": beitraege, "konto": posten.follower_stand("facebook_follower"),
+                "abruf": posten.abruf_stand().get("facebook")}
     except Exception as e:
+        posten.merke_abruf("facebook", 0, 1, str(e))
         raise HTTPException(status_code=502, detail=str(e))
 
 
