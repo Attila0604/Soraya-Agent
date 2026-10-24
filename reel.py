@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw, ImageFilter
 import medien
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-9"
+VERSION = "reel-10"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -183,6 +183,123 @@ def _sternschnuppe(bild: Image.Image, start: tuple[float, float], winkel: float,
     d.ellipse([kx - r, ky - r, kx + r, ky + r], fill=(255, 250, 230, int(255 * staerke)))
 
 
+# ---------------------------------------------------------------------------
+# Bewegte Bildideen (reel-10): Sternbild zeichnet sich, Umlaufbahn um den Mond, Goldstaub,
+# Lichtschimmer ueber dem Hook, sanftes Aufleuchten bei jeder neuen Zeile
+# ---------------------------------------------------------------------------
+# vereinfachte Sternbilder (x, y in 0..1) und ihre Linien, Reihenfolge wie medien.ZEICHEN_GLYPHE
+STERNBILDER = [
+    ([(0.1, 0.55), (0.45, 0.38), (0.7, 0.4), (0.88, 0.55)], [(0, 1), (1, 2), (2, 3)]),
+    ([(0.45, 0.78), (0.5, 0.6), (0.42, 0.5), (0.35, 0.42), (0.1, 0.22), (0.58, 0.5), (0.66, 0.42), (0.9, 0.18)],
+     [(0, 1), (1, 2), (2, 3), (3, 4), (1, 5), (5, 6), (6, 7)]),
+    ([(0.3, 0.1), (0.28, 0.35), (0.25, 0.6), (0.2, 0.9), (0.6, 0.12), (0.62, 0.38), (0.66, 0.62), (0.72, 0.9)],
+     [(0, 1), (1, 2), (2, 3), (0, 4), (4, 5), (5, 6), (6, 7), (1, 5)]),
+    ([(0.5, 0.5), (0.45, 0.12), (0.18, 0.86), (0.82, 0.84)], [(1, 0), (0, 2), (0, 3)]),
+    ([(0.2, 0.3), (0.28, 0.14), (0.42, 0.12), (0.46, 0.3), (0.36, 0.45), (0.4, 0.6), (0.76, 0.55), (0.88, 0.76), (0.6, 0.76)],
+     [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 5)]),
+    ([(0.12, 0.3), (0.3, 0.4), (0.46, 0.45), (0.62, 0.4), (0.8, 0.24), (0.52, 0.66), (0.4, 0.88), (0.72, 0.82)],
+     [(0, 1), (1, 2), (2, 3), (3, 4), (2, 5), (5, 6), (5, 7)]),
+    ([(0.5, 0.14), (0.25, 0.45), (0.75, 0.45), (0.2, 0.82), (0.8, 0.76)], [(0, 1), (0, 2), (1, 2), (1, 3), (2, 4)]),
+    ([(0.08, 0.2), (0.18, 0.3), (0.1, 0.44), (0.3, 0.36), (0.4, 0.46), (0.48, 0.6), (0.55, 0.74), (0.68, 0.84),
+      (0.82, 0.82), (0.9, 0.7), (0.84, 0.6)], [(0, 1), (2, 1), (1, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10)]),
+    ([(0.18, 0.52), (0.34, 0.4), (0.5, 0.28), (0.62, 0.42), (0.82, 0.34), (0.8, 0.62), (0.56, 0.68), (0.3, 0.72)],
+     [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 0), (1, 3), (3, 6)]),
+    ([(0.1, 0.3), (0.3, 0.46), (0.5, 0.72), (0.66, 0.62), (0.9, 0.24), (0.7, 0.34), (0.4, 0.3)],
+     [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 0)]),
+    ([(0.08, 0.3), (0.28, 0.24), (0.44, 0.4), (0.6, 0.34), (0.76, 0.5), (0.92, 0.44), (0.56, 0.66), (0.42, 0.86)],
+     [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (3, 6), (6, 7)]),
+    ([(0.06, 0.14), (0.18, 0.08), (0.22, 0.2), (0.32, 0.46), (0.5, 0.86), (0.68, 0.58), (0.86, 0.5), (0.94, 0.38), (0.84, 0.32)],
+     [(0, 1), (1, 2), (2, 0), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 6)]),
+]
+
+
+def welches_zeichen(post: dict, st: dict) -> int | None:
+    """Sternbild fuers Reel: Ereignis-Zeichen, sonst Zeichen am Anfang des Hooks, sonst das Mondzeichen."""
+    if st.get("zeichen") is not None:
+        return st["zeichen"]
+    meta = post.get("meta") or {}
+    for text in [(post.get("skript") or {}).get("hook"), post.get("titel"), meta.get("mond_zeichen")]:
+        i = medien.zeichen_aus_text(text)
+        if i is not None:
+            return i
+    return None
+
+
+def _sternbild(d: ImageDraw.ImageDraw, idx: int, kasten: tuple, t: float, sichtbar: float, farbe, start=0.35, laenge=2.6) -> None:
+    """Zeichnet das Sternbild Linie fuer Linie (start..start+laenge), danach funkeln die Sterne leise."""
+    if sichtbar <= 0:
+        return
+    punkte, linien = STERNBILDER[idx]
+    x0, y0, bw, bh = kasten
+    p = [(x0 + x * bw, y0 + y * bh) for x, y in punkte]
+    fortschritt = (t - start) / laenge * len(linien)
+    erreicht = set()
+    for k, (a, b) in enumerate(linien):
+        f = min(1.0, max(0.0, fortschritt - k))
+        if f <= 0:
+            break
+        (ax, ay), (bx, by) = p[a], p[b]
+        d.line([(ax, ay), (ax + (bx - ax) * f, ay + (by - ay) * f)], fill=farbe + (int(165 * sichtbar),), width=3)
+        erreicht.add(a)
+        if f >= 1:
+            erreicht.add(b)
+    for i, (x, y) in enumerate(p):
+        if i not in erreicht:
+            continue
+        funkeln = 0.75 + 0.25 * math.sin(t * 2.1 + i * 1.3)
+        for r, a in ((24, 0.08), (12, 0.22), (5, 1.0)):
+            d.ellipse([x - r, y - r, x + r, y + r], fill=farbe + (int(255 * a * funkeln * sichtbar),))
+
+
+def _bahn_punkte(cx, cy, rx, ry, neigung, n=180):
+    c, s = math.cos(neigung), math.sin(neigung)
+    out = []
+    for i in range(n + 1):
+        w = 2 * math.pi * i / n
+        x, y = rx * math.cos(w), ry * math.sin(w)
+        out.append((cx + x * c - y * s, cy + x * s + y * c, math.sin(w)))
+    return out
+
+
+def _staub(seed: int, n: int = 56) -> list[tuple]:
+    rnd = medien.zufall(seed + 99)
+    return [(rnd() * W, rnd() * H, 1.2 + rnd() * 2.8, 18 + rnd() * 40, rnd() * 6.28, 0.25 + rnd() * 0.5) for _ in range(n)]
+
+
+def _staub_malen(d, staub, t, sichtbar, farbe) -> None:
+    for x, y, r, tempo, phase, a in staub:
+        yy = (y - tempo * t) % H
+        xx = x + 22 * math.sin(t * 0.6 + phase)
+        alpha = a * (0.6 + 0.4 * math.sin(t * 1.7 + phase)) * sichtbar
+        d.ellipse([xx - r, yy - r, xx + r, yy + r], fill=farbe + (int(200 * alpha),))
+
+
+def _schimmer(karte: Image.Image, fortschritt: float) -> Image.Image:
+    """Ein schmaler goldener Lichtstreif gleitet einmal schraeg ueber den Text (fortschritt 0..1)."""
+    if not 0 < fortschritt < 1:
+        return karte
+    a = np.asarray(karte.getchannel("A"), dtype=np.float32) / 255
+    h, w = a.shape
+    yy, xx = np.mgrid[0:h, 0:w]
+    mitte = -0.3 * w + fortschritt * 1.6 * w
+    band = np.clip(1 - np.abs((xx + 0.35 * yy) - mitte) / (0.12 * w), 0, 1) ** 1.5
+    licht = (band * a * 0.95 * 255).astype(np.uint8)
+    glanz = Image.new("RGBA", (w, h), (255, 244, 214, 0))
+    glanz.putalpha(Image.fromarray(licht, "L"))
+    out = karte.copy()
+    out.alpha_composite(glanz)
+    return out
+
+
+def _glut(breite: int, hoehe: int, farbe) -> Image.Image:
+    yy, xx = np.mgrid[0:hoehe, 0:breite]
+    r = np.sqrt(((xx - breite / 2) / (breite / 2)) ** 2 + ((yy - hoehe / 2) / (hoehe / 2)) ** 2)
+    a = (np.clip(1 - r, 0, 1) ** 2 * 90).astype(np.uint8)
+    g = Image.new("RGBA", (breite, hoehe), farbe + (0,))
+    g.putalpha(Image.fromarray(a, "L"))
+    return g
+
+
 # Akkordfolgen (Frequenzen in Hz), ruhig und etwas geheimnisvoll; je Post eine andere
 AKKORDE = [
     [(220.0, 261.63, 329.63), (174.61, 220.0, 261.63), (196.0, 246.94, 293.66), (164.81, 196.0, 246.94)],
@@ -295,6 +412,21 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                          max_zeilen=4, akzent=akzent) for i, z_ in enumerate(zeilen)]
     text_mitte = 1270
     endkarte, end_pos = _zuschneiden(_endkarte(post))
+    # Bildideen (reel-10)
+    zeichen = welches_zeichen(post, st)
+    sb_kasten = (70, mond_y - 430, W - 140, 860)                    # Sternbild rund um den Mond
+    bahn = _bahn_punkte(W / 2, mond_y, 330, 86, math.radians(-14)) if mit_mond else []
+    staub = _staub(int(seed))
+    staub_farbe = (236, 180, 160) if st["palette"] == "liebe" else (233, 207, 156)
+    glut = _glut(1000, 560, tuple(akzent))
+    # kleine Szene je Format: Liebe = zwei Lichter kreisen gegenlaeufig um den Mond, Ritual = Kerzenschein von unten
+    szene = st["layout"]
+    kerze = _glut(1300, 900, (255, 176, 92)) if szene == "ritual" else None
+
+    def lichter(u: float) -> list:
+        if szene == "liebe":
+            return [(u, (255, 214, 200)), ((1 - u + 0.5) % 1.0, (255, 170, 170))]
+        return [(u, (255, 240, 205))]
 
     ffmpeg = ffmpeg_pfad()
     ton = os.path.join(os.path.dirname(os.path.abspath(ziel)) or ".", f".klang-{os.getpid()}-{seed}.raw")
@@ -324,6 +456,20 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
             for start_t, pos, winkel in schnuppen:
                 _sternschnuppe(bild, pos, winkel, (t - start_t) / 0.9)
             sichtbar_ende = 1 - _weich((t - end_start) / 0.8)      # Mond und Texte gehen vor der Endkarte
+            _staub_malen(dd, staub, t, 0.5 + 0.5 * sichtbar_ende, staub_farbe)
+            if zeichen is not None:
+                _sternbild(dd, zeichen, sb_kasten, t, sichtbar_ende * _weich(t / 0.6), tuple(akzent))
+            umlauf = (t / 7.0) % 1.0                                 # ein Lichtpunkt umkreist den Mond
+            if bahn and sichtbar_ende > 0:
+                dd.line([(x, y) for x, y, _ in bahn], fill=tuple(akzent) + (int(105 * sichtbar_ende * _weich(t / 1.2)),), width=2)
+                for u, fb in lichter(umlauf):
+                    bx, by, vorne = bahn[int(u * (len(bahn) - 1))]
+                    if vorne < 0:                                    # hinter dem Mond
+                        for r_, a_ in ((18, 0.15), (6, 0.9)):
+                            dd.ellipse([bx - r_, by - r_, bx + r_, by + r_], fill=fb + (int(255 * a_ * sichtbar_ende),))
+            if szene == "ritual":                                    # warmes Kerzenlicht von unten, flackernd
+                flacker = 0.75 + 0.15 * math.sin(t * 7.3) + 0.1 * math.sin(t * 12.9 + 1)
+                medien.aufkleben(bild, _mit_alpha(kerze, flacker * (0.4 + 0.6 * sichtbar_ende)), (W / 2 - kerze.width / 2, H - kerze.height + 120))
             if sichtbar_ende > 0:
                 medien.aufkleben(bild, _mit_alpha(oben, sichtbar_ende), oben_pos)
             if mond is not None and sichtbar_ende > 0:
@@ -334,13 +480,25 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 skala = 0.94 + 0.08 * min(1.0, t / max(end_start, 1))   # langsamer Zoom (Bewegung)
                 mb = mond if abs(skala - 1) < 0.002 else mond.resize((int(mond.width * skala), int(mond.height * skala)), Image.BILINEAR)
                 medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
-            for (start, stopp), (karte, kaesten) in zip(plan, karten):
+                if bahn:
+                    d2 = ImageDraw.Draw(bild, "RGBA")
+                    for u, fb in lichter(umlauf):
+                        bx, by, vorne = bahn[int(u * (len(bahn) - 1))]
+                        if vorne >= 0:
+                            for r_, a_ in ((20, 0.15), (7, 0.95)):
+                                d2.ellipse([bx - r_, by - r_, bx + r_, by + r_], fill=fb + (int(255 * a_ * sichtbar_ende),))
+            for nr, ((start, stopp), (karte, kaesten)) in enumerate(zip(plan, karten)):
+                if nr and 0 <= t - start <= 0.9:                       # neue Zeile: weiches Aufleuchten dahinter
+                    medien.aufkleben(bild, _mit_alpha(glut, math.sin(math.pi * (t - start) / 0.9) * 0.9),
+                                     (W / 2 - glut.width / 2, text_mitte - glut.height / 2))
                 if start - 0.01 <= t <= stopp + AUSBLENDEN:
                     # Hook steht ab dem ersten Bild ganz da, alle weiteren Texte erscheinen Wort fuer Wort
                     fortschritt = 1.0 if start <= 0 else min(1.0, (t - start) / min(1.1, 0.16 * len(kaesten) + 0.3))
                     raus = 1 - _weich((t - stopp) / AUSBLENDEN)
                     if raus > 0.003:
                         k = _wort_fuer_wort(karte, kaesten, fortschritt)
+                        if nr == 0:
+                            k = _schimmer(k, (t - 0.5) / 1.3)               # Lichtstreif ueber den Hook
                         # sanft von unten herein, beim Ausblenden ein wenig nach oben
                         hub = 0 if start <= 0 else 26 * (1 - _weich((t - start) / 0.6))
                         hub -= 18 * (1 - raus)
