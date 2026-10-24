@@ -2315,7 +2315,7 @@ async function ladeTikTokWirkung(){
           <td>${zahl(x.aufrufe)}</td><td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>
           <td>${x.url ? `<a class="fertig" href="${esc(x.url)}" target="_blank" rel="noopener">ansehen</a>` : ''}</td></tr>`).join('')}</tbody></table></div></details>
       <p class="meta">${kurzMehr('Zuordnung über Zeit und Titel.', 'Entwürfe postest du selbst in der TikTok-App – Soraya ordnet dann das erste Video innerhalb von 3 Tagen nach dem Hochladen dem Reel zu. Selbst hochgeladene Videos erkennt sie am Titel des Reels am Anfang der Beschreibung.')}</p>`
-    : '<p class="meta">Noch keine Reels auf TikTok gefunden.</p>'}</div>`;
+    : `<p class="meta">${r.gefunden ? `TikTok liefert ${zahl(r.gefunden)} Video(s), aber keines passt zu einem Reel von Soraya. Tipp: Beim Hochladen den Reel-Titel an den Anfang der Beschreibung setzen (Text aus „Text kopieren“).` : 'Noch keine Videos auf TikTok gefunden.'}</p>`}</div>`;
 }
 const BIO_NAMEN = {'bio-ig': 'Bio-Link Instagram', 'bio-tt': 'Bio-Link TikTok', 'bio-fb': 'Bio-Link Facebook', 'bio-li': 'Profil-Link LinkedIn'};
 function quellenName(code){

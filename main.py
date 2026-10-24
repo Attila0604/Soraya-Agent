@@ -649,7 +649,7 @@ def wirkung_tiktok(tage: int = 30):
     try:
         beitraege = posten.zahlen_tiktok(seit)
         return {"verbunden": True, "recht_fehlt": False, "beitraege": beitraege,
-                "konto": posten.follower_stand("tiktok_follower")}
+                "konto": posten.follower_stand("tiktok_follower"), "gefunden": posten._TIKTOK_STAND.get("gefunden")}
     except Exception as e:
         if not tiktok.verbindung().get("zahlen"):
             return {"verbunden": True, "recht_fehlt": True, "beitraege": []}
