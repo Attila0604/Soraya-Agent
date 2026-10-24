@@ -321,9 +321,13 @@ def _fb_zahlen_eines(oid: str, art: str | None, seite: str | None, token: str) -
                 raise
     letzter: Exception | None = None
     for k in kandidaten:
+        # Kommentare sind "Inhalte anderer Nutzer" (Recht pages_read_user_content) -- ohne das Recht eben ohne Kommentare
         felder = ["reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0),shares",
                   "reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)",
-                  "likes.summary(true).limit(0),comments.summary(true).limit(0)"]
+                  "reactions.summary(total_count).limit(0),shares",
+                  "reactions.summary(total_count).limit(0)",
+                  "likes.summary(true).limit(0),comments.summary(true).limit(0)",
+                  "likes.summary(true).limit(0)"]
         for f in felder:
             try:
                 d = _get(f"{graph_fb()}/{k}", fields=f, access_token=token)
@@ -334,7 +338,10 @@ def _fb_zahlen_eines(oid: str, art: str | None, seite: str | None, token: str) -
                 letzter = ex
         try:   # als Kanten fragen (manche Objekte kennen die Felder nicht, die Kanten aber schon)
             r = _get(f"{graph_fb()}/{k}/reactions", summary="total_count", limit=0, access_token=token)
-            c = _get(f"{graph_fb()}/{k}/comments", summary="true", limit=0, access_token=token)
+            try:
+                c = _get(f"{graph_fb()}/{k}/comments", summary="true", limit=0, access_token=token)
+            except MetaFehler:
+                c = {}
             return {"reaktionen": (r.get("summary") or {}).get("total_count", 0),
                     "kommentare": (c.get("summary") or {}).get("total_count", 0), "geteilt": 0}, k
         except MetaFehler as ex:

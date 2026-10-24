@@ -2036,6 +2036,10 @@ def test_facebook_zahlen_ersatzabfrage_und_meldung(monkeypatch, frische_db):
             return {"summary": {"total_count": 5}}
         if url.endswith("/f1/comments"):
             return {"summary": {"total_count": 4}}
+        if url.endswith("/u1") and "comments" in (params.get("fields") or ""):
+            raise meta.MetaFehler("Meta: (#10) This endpoint requires the 'pages_read_user_content' permission")
+        if url.endswith("/u1"):
+            return {"reactions": {"summary": {"total_count": 6}}, "shares": {"count": 2}}
         if url.endswith("/r1") and params.get("fields") == "post_id":
             return {"post_id": "999"}
         if url.endswith("/555_999"):
@@ -2050,16 +2054,18 @@ def test_facebook_zahlen_ersatzabfrage_und_meldung(monkeypatch, frische_db):
     monkeypatch.setattr(meta, "_get", fake_get)
     z = meta.facebook_reaktionen([{"post_id": 1, "extern_id": "v1", "art": "reel"}, {"post_id": 2, "extern_id": "p1", "art": "post"},
                                   {"post_id": 3, "extern_id": "x2", "art": "post"}, {"post_id": 4, "extern_id": "s1", "art": "story"},
-                                  {"post_id": 5, "extern_id": "f1", "art": "post"}, {"post_id": 6, "extern_id": "r1", "art": "reel"}])
+                                  {"post_id": 5, "extern_id": "f1", "art": "post"}, {"post_id": 6, "extern_id": "r1", "art": "reel"},
+                                  {"post_id": 7, "extern_id": "u1", "art": "post"}])
     assert (z[0]["reaktionen"], z[0]["kommentare"]) == (7, 2) and (z[1]["reaktionen"], z[1]["geteilt"]) == (3, 1)
     assert "pages_read_engagement" in z[2]["fehler"] and z[2]["fehler"].startswith("Feed-Post:")
     assert z[3]["nicht_messbar"] and "fehler" not in z[3]                       # Story: ohne Zahlen, kein Fehler
     assert (z[4]["reaktionen"], z[4]["kommentare"]) == (5, 4)                     # ueber die Kanten
     assert z[5]["reaktionen"] == 11                                              # Reel ueber seinen Seitenbeitrag
+    assert (z[6]["reaktionen"], z[6]["kommentare"], z[6]["geteilt"]) == (6, 0, 2)   # ohne Recht fuer Kommentare
     monkeypatch.setattr(posten, "_merke", lambda pl, zeilen: sum("fehler" not in x for x in zeilen))
-    assert posten.merke_facebook(z) == 4
+    assert posten.merke_facebook(z) == 5
     a = posten.abruf_stand()["facebook"]
-    assert a["ok"] == 4 and a["fehler"] == 1 and "pages_read_engagement" in a["meldung"]
+    assert a["ok"] == 5 and a["fehler"] == 1 and "pages_read_engagement" in a["meldung"]
     cockpit.leeren()
     monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)
     assert client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()["abruf"]["facebook"]["fehler"] == 1
