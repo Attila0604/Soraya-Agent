@@ -482,6 +482,7 @@ def abruf_stand() -> dict:
 
 
 def merke_facebook(zeilen: list[dict]) -> int:
+    zeilen = [z for z in zeilen if not z.get("nicht_messbar")]     # Storys: Facebook gibt keine Zahlen
     n = _merke("facebook", zeilen)
     fehler = [z for z in zeilen if "fehler" in z]
     merke_abruf("facebook", n, len(fehler), fehler[0]["fehler"] if fehler else None)

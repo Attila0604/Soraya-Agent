@@ -2416,7 +2416,7 @@ async function ladeFacebookWirkung(){
       ${mitReichweite ? '' : `<p class="meta">${kurzMehr('Ohne Reichweite.', 'Wie viele Menschen es gesehen haben: dafür braucht die Meta-App zusätzlich das Recht „read_insights“. Ohne es lernt Soraya aus Reaktionen und Besuchen.')}</p>`}
       <div class="tabwrap"><table class="tabelle herkunft"><thead><tr><th scope="col">Beitrag</th><th scope="col">👍</th><th scope="col">💬</th><th scope="col">↗</th>${mitReichweite ? '<th scope="col">👁</th>' : ''}<th scope="col"></th></tr></thead><tbody>
       ${b.map(x => `<tr><td style="white-space:normal"><b>${esc(x.titel || 'Post ' + x.post_id)}</b><br><span class="meta">${esc(ART[x.art] || 'Post')}${x.gepostet ? ' · ' + esc(kurzIso(String(x.gepostet).slice(0, 10))) : ''}</span></td>
-        ${x.fehler ? `<td colspan="${mitReichweite ? 4 : 3}" class="meta">nicht abrufbar</td>` : `<td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>${mitReichweite ? `<td>${x.reichweite != null ? zahl(x.reichweite) : '–'}</td>` : ''}`}
+        ${x.fehler || x.nicht_messbar ? `<td colspan="${mitReichweite ? 4 : 3}" class="meta">${x.nicht_messbar ? 'Story – Facebook gibt keine Zahlen' : 'nicht abrufbar'}</td>` : `<td>${zahl(x.reaktionen)}</td><td>${zahl(x.kommentare)}</td><td>${zahl(x.geteilt)}</td>${mitReichweite ? `<td>${x.reichweite != null ? zahl(x.reichweite) : '–'}</td>` : ''}`}
         <td>${x.url ? `<a class="fertig" href="${esc(x.url)}" target="_blank" rel="noopener">ansehen</a>` : ''}</td></tr>`).join('')}</tbody></table></div>`
       : '<p class="meta">Noch nichts auf Facebook gepostet.</p>'}</div>`;
 }
