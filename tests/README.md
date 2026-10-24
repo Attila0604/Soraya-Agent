@@ -7,7 +7,7 @@ Alle Tests laufen lokal mit Attrappen (kein Claude, kein Meta, keine Engine) geg
 export TEST_DATABASE_URL=postgresql://agent@127.0.0.1:55432/agenttest
 
 pip install -r requirements.txt pytest httpx
-python -m pytest -q tests/test_agent.py          # ~80 Tests, ca. 1 Minute (rendert ein echtes Reel)
+python -m pytest -q tests/test_agent.py          # ~90 Tests, ca. 1,5 Minuten (rendert ein echtes Reel)
 
 # UI-Test (Playwright, Chromium unter /opt/pw-browsers/chromium oder CHROMIUM=...)
 python tests/dev_server.py &                      # Dashboard mit Attrappen auf Port 8790

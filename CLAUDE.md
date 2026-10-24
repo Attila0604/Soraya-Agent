@@ -6,7 +6,8 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
 - FastAPI auf Railway, Dashboard „Content Studio“ = `dashboard.html` (HTTP-Basic-Login).
 - Module: `tagesplan.py` + `redaktion.py` (Tagesplan, Formate, Qualitätsprüfung), `medien.py` / `reel.py` /
   `paket.py` (Bilder, Reels, Wochenpaket), `posten.py` + `meta.py` / `tiktok.py` / `linkedin.py` (automatisch posten;
-  LinkedIn = persönliches Profil, Zugang 60 Tage ohne Verlängerung), `wirkung.py`,
+  LinkedIn = persönliches Profil, Zugang 60 Tage ohne Verlängerung), `wirkung.py` + `cockpit.py`
+  (Zahlen-Cockpit `/wirkung/cockpit`, Wochenbericht `/wirkung/wochenbericht`, nur gemerkte Zahlen, 5 Min. Cache),
   `research_agent.py` (Zielgruppen), `db.py` (Tabellen werden in `init_db()` angelegt/erweitert).
 - Tagesplan je Sprache: Feed-Post, 2 Reels (zweites = `meta.reel_nr = 2`, Platz `reel2`, eigene Uhrzeit), Story –
   aus einem Claude-Aufruf. `posten.platz()`/`sprache_fuer()` und `platzVon()`/`spracheFuer()` im Dashboard gleich halten.

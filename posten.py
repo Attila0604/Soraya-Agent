@@ -489,6 +489,14 @@ def follower_stand(schluessel: str = "instagram_follower") -> dict:
     return {"follower": jetzt, "am": tage[-1], "zuwachs_7": jetzt - verlauf[frueher[-1]] if frueher else None}
 
 
+def facebook_follower_merken() -> None:
+    """Follower der Facebook-Seite merken (fuer den Zuwachs im Zahlen-Cockpit). Fehler stoppen nichts."""
+    try:
+        merke_follower(meta.facebook_konto().get("follower"), schluessel="facebook_follower")
+    except Exception as ex:  # noqa: BLE001
+        print(f"[Posten] Facebook-Follower nicht geholt: {ex}", flush=True)
+
+
 def zahlen_instagram(seit: datetime, limit: int = 60) -> dict:
     """Instagram-Zahlen holen und merken. Rueckgabe wie meta.instagram_zahlen."""
     jetzt = datetime.now(himmel.WIEN)
@@ -581,6 +589,7 @@ def aktualisiere_zahlen(erzwingen: bool = False) -> int:
             n += _merke("facebook", meta.facebook_reaktionen(db.lade_gepostete("facebook", seit, limit=60)))
         except Exception as ex:  # noqa: BLE001 -- die anderen Plattformen trotzdem holen
             print(f"[Posten] Facebook-Zahlen nicht geholt: {ex}", flush=True)
+        facebook_follower_merken()
     if v["instagram"]["verbunden"]:
         try:
             n += sum("fehler" not in z for z in zahlen_instagram(seit)["beitraege"])
