@@ -210,15 +210,26 @@ check("Studio: Himmel-Posts erscheinen hier nicht", !(await page.textContent("#s
 await page.click('.tab[data-tab="plan"]'); await wait(800);
 check("Plan: Ideen ohne Datum eingeklappt unten", /Ideen ohne Datum \(3\)/.test(await page.textContent("details.ideen summary")) && !(await page.$eval("details.ideen", (d) => d.open)), "");
 
-// Wirkung: Zahlen-Cockpit oben, alles andere unter "Details"
+// Wirkung: vier Unterreiter (Überblick, Posts, Plattformen, Lernen), Rohdaten unter Plattformen
 await page.click('.tab[data-tab="wirkung"]'); await wait(1500);
+check("Wirkung: 4 Unterreiter, Überblick zuerst", JSON.stringify(await page.$$eval("#wReiter [role=tab]", (x) => x.map((e) => e.textContent))) === JSON.stringify(["Überblick", "Posts", "Plattformen", "Lernen"])
+  && (await page.getAttribute('[data-wr="ueberblick"]', "aria-selected")) === "true", "");
 check("Cockpit: 4 Kacheln (Erreicht, Reaktionen, Besuche, Neue Konten)", JSON.stringify(await page.$$eval(".wz-kpi .l", (x) => x.map((e) => e.firstChild.textContent.trim()))) === JSON.stringify(["Erreicht", "Reaktionen", "Besuche", "Neue Konten"]), await page.textContent(".wz-kpis"));
-check("Cockpit: Standard 7 Tage", (await page.getAttribute('#wZeitraum [data-tage="7"]', "aria-pressed")) === "true" && (await page.$$eval("#wzTage .hit", (x) => x.length)) === 7, "");
 check("Cockpit: Vergleich neutral ohne Vordaten", (await page.textContent(".wz-kpi:first-child .trend")).includes("kein Vergleich"), await page.textContent(".wz-kpi:first-child .trend"));
-check("Cockpit: Weg vom Post zum Konto in 4 Stufen", (await page.$$eval(".weg .stufe", (x) => x.length)) === 4, "");
+check("Cockpit: Weg vom Post zum Konto als Trichter in 4 Stufen", (await page.$$eval(".trichter2 .tr-stufe", (x) => x.length)) === 4, "");
 check("Cockpit: Soraya lernt in 3 Sätzen", JSON.stringify(await page.$$eval("dl.lernt dt", (x) => x.map((e) => e.textContent))) === JSON.stringify(["Mehr davon", "Weniger davon", "Nächster Test"]), "");
 check("Cockpit: ehrlich bei wenig Daten", (await page.textContent("dl.lernt")).includes("Noch zu wenig Daten"), await page.textContent("dl.lernt"));
-check("Cockpit: Details zugeklappt", !(await page.$eval("#wDetails", (d) => d.open)), "");
+check("Soraya erkennt: ehrliche Karte 'zu wenig Daten'", (await page.$$eval("ol.erkennt li.erk.duenn", (x) => x.length)) === 1 && (await page.textContent("ol.erkennt")).includes("zu wenig Daten"), await page.textContent(".wz-erkennt"));
+check("Cockpit: Rohdaten nur unter Plattformen", await page.$eval("#wDetails", (d) => d.hidden), "");
+await page.click('[data-wr="posts"]'); await wait(300);
+check("Posts: freundlicher Leerzustand", (await page.textContent("#wzPosts")).includes("nichts gepostet"), await page.textContent("#wzPosts"));
+await page.click('[data-wr="lernen"]'); await wait(300);
+check("Lernen: Leerzustand ohne Posts", (await page.textContent("#wCockpit")).includes("Noch nichts zum Lernen"), await page.textContent("#wCockpit"));
+await page.click('[data-wr="plattformen"]'); await wait(400);
+check("Plattformen: Standard 7 Tage, 7 Tagesfelder", (await page.getAttribute('#wZeitraum [data-tage="7"]', "aria-pressed")) === "true" && (await page.$$eval("#wzTage .hit", (x) => x.length)) === 7, "");
+check("Plattformen: Leerzustände (keine Reichweite, Bio-Link-Besuche, keine Plattform verbunden)", (await page.textContent(".wz-pv")).includes("Noch keine Reichweite gemessen") && (await page.textContent(".wz-pv")).includes("51")
+  && (await page.textContent("#wzFollower")).includes("Noch keine Plattform verbunden") && (await page.$$("#wzTage path.bes")).length >= 1, await page.textContent(".wz-pv"));
+check("Plattformen: Rohdaten zugeklappt", !(await page.$eval("#wDetails", (d) => d.hidden)) && !(await page.$eval("#wDetails", (d) => d.open)), "");
 await page.click('#wZeitraum [data-tage="30"]'); await wait(1200);
 check("Cockpit: Zeitraum 30 Tage", (await page.$$eval("#wzTage .hit", (x) => x.length)) === 30 && /\d+\. [A-ZÄÖÜ][a-zä]+ – \d+\. [A-ZÄÖÜ][a-zä]+/.test(await page.textContent("#wZeitraumText")), await page.textContent("#wZeitraumText"));
 await page.click("#wDetails > summary"); await wait(1500);
@@ -236,13 +247,16 @@ check("Wirkung: Bio-Links zum Kopieren", (await page.$$eval(".linkzeile code", (
 await page.selectOption("#wKennzahl", "link_besuche"); await wait(300);
 const linkBalken = await page.$$eval("#verlauf path", (p) => p.length);
 check("Wirkung: Kennzahl 'Besuche über deine Links' (3 Tage mit Besuchen)", linkBalken === 3, linkBalken);
-check("Cockpit: Besuche pro Tag aus den Links", (await page.$$eval("#wzTage path", (p) => p.length)) === 3, await page.$$eval("#wzTage path", (p) => p.length));
+check("Cockpit: Besuche pro Tag aus den Links", (await page.$$eval("#wzTage path.bes", (p) => p.length)) === 3, await page.$$eval("#wzTage path.bes", (p) => p.length));
 await page.selectOption("#wKennzahl", "aktive_nutzer"); await wait(200);
 if (OUT) await page.screenshot({ path: OUT + "/ui-wirkung.png", fullPage: true });
 await page.click('#wZeitraum [data-tage="7"]'); await wait(1500);
 check("Wirkung: Zeitraum 7 Tage (auch in den Details)", (await page.$$eval("#verlauf .hit", (x) => x.length)) === 7, "");
 await page.selectOption("#wKennzahl", "neue_konten"); await wait(400);
 check("Wirkung: Kennzahl wechseln", (await page.textContent("#wirkungInhalt .legende")).includes("Neue Konten"), "");
+await page.goto(BASE + "/#wirkung", { waitUntil: "load" }); await wait(1500);
+check("Wirkung: Unterreiter und Zeitraum bleiben gemerkt", (await page.getAttribute('[data-wr="plattformen"]', "aria-selected")) === "true" && (await page.getAttribute('#wZeitraum [data-tage="7"]', "aria-pressed")) === "true", "");
+await page.click('[data-wr="ueberblick"]'); await wait(300);
 
 // Zielgruppen-Tab laedt
 await page.click('.tab[data-tab="who"]'); await wait(700);

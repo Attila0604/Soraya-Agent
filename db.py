@@ -309,7 +309,7 @@ def lade_cockpit_zeilen(seit, limit: int = 2000) -> list[dict]:
     """Je geposteter Beitrag und Plattform die gemerkten Zahlen (fuers Zahlen-Cockpit, ohne API-Aufruf)."""
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
-            "select v.post_id, v.plattform, v.aktualisiert as gepostet, v.url, v.reaktionen, v.kommentare, v.geteilt, "
+            "select v.post_id, v.plattform, v.aktualisiert as gepostet, v.geplant_um, v.url, v.reaktionen, v.kommentare, v.geteilt, "
             "v.reichweite, v.gespeichert, v.aufrufe, v.zahlen_am, p.titel, p.art, p.sprache, p.meta, "
             "coalesce(p.aktualisiert, p.created_at) as post_stand "
             "from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "

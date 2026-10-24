@@ -37,8 +37,11 @@ for (const breite of [900, 390]) {
   check(`Cockpit (${breite}): Top 3 mit Bild und Punkten`, (await page.$$("ol.top3 li")).length === 3 && (await page.$$("ol.top3 li .wz-daumen img")).length === 3 && (await page.textContent("ol.top3")).includes("Punkte"), "");
   const pkt = await page.$$eval("ol.top3 .pkt b", (b) => b.map((x) => +x.textContent.replace(/\D/g, "")));
   check(`Cockpit (${breite}): Top 3 absteigend`, pkt[0] >= pkt[1] && pkt[1] >= pkt[2], JSON.stringify(pkt));
-  check(`Cockpit (${breite}): schwächster Schritt markiert mit Tipp`, (await page.$$(".weg .stufe.schwach")).length === 1 && !(await page.$eval(".weg-tipp", (e) => e.classList.contains("leise"))), await page.textContent(".wz-weg"));
+  check(`Cockpit (${breite}): schwächster Schritt markiert mit Tipp`, (await page.$$(".trichter2 .tr-stufe.schwach")).length === 1 && !(await page.$eval(".weg-tipp", (e) => e.classList.contains("leise"))), await page.textContent(".wz-weg"));
   check(`Cockpit (${breite}): Soraya lernt nennt das beste Format`, (await page.textContent("dl.lernt .mehr dd")).includes("Ritual") && (await page.textContent("dl.lernt .weniger dd")).includes("Rückblick"), await page.textContent("dl.lernt"));
+  const erk = await page.$$eval("ol.erkennt li.erk", (l) => l.map((x) => x.textContent.replace(/\s+/g, " ").trim()));
+  check(`Soraya erkennt (${breite}): 3–5 Karten mit Zahl`, erk.length >= 3 && erk.length <= 5 && erk.some((x) => /\d/.test(x)) && !erk.some((x) => x.includes("zu wenig Daten")), JSON.stringify(erk));
+  await page.click('[data-wr="posts"]'); await wait(300);
   const zeilen = await page.$$eval("table.wz-posts tbody tr", (r) => r.length);
   await page.click('[data-wz-pl="tiktok"]'); await wait(200);
   const tt = await page.$$eval("table.wz-posts tbody tr .post .meta", (r) => r.map((x) => x.textContent));
@@ -47,12 +50,30 @@ for (const breite of [900, 390]) {
   const daten = await page.$$eval("table.wz-posts tbody tr .post .meta", (r) => r.map((x) => x.textContent.split(" · ")[0]));
   check(`Cockpit (${breite}): sortiert nach Datum`, daten.length === zeilen && daten[0] !== daten[daten.length - 1], JSON.stringify(daten));
   await page.selectOption("#wzSort", "punkte");
-  check(`Cockpit (${breite}): Pro Tag mit Markern an Post-Tagen`, (await page.$$("#wzTage circle")).length >= 5, "");
+  await page.click("table.wz-posts tbody tr:first-child button.wz-titel"); await wait(400);
+  const sd = await page.textContent("#wzPost");
+  check(`Post-Details (${breite}): Schublade mit Plattform-Zahlen, Punkten und Zeitleiste`, await page.$eval("#wzPost", (d) => d.open) && sd.includes("Zeitleiste") && sd.includes("Gepostet auf")
+    && (await page.$$("#wzPost .sd-pl")).length >= 2 && sd.includes("dein Schnitt"), sd.slice(0, 300));
+  if (OUT) await page.screenshot({ path: OUT + `/schublade-${breite}.png` });
+  await page.keyboard.press("Escape"); await wait(200);
+  check(`Post-Details (${breite}): mit Escape zu`, !(await page.$eval("#wzPost", (d) => d.open)), "");
+  await page.click('[data-wr="plattformen"]'); await wait(500);
+  check(`Plattformen (${breite}): Vergleich in 3 Gruppen, Reichweite je Tag gestapelt, Follower-Linien`, (await page.$$(".pv-gruppe")).length === 3 && (await page.$$eval("#wzTage .hit", (x) => x.length)) === 7
+    && (await page.$$("#wzTage .seg")).length >= 5 && (await page.$$("#wzFollower polyline")).length >= 2, "");
+  await page.hover("#wzTage .hit >> nth=5"); await wait(150);
+  check(`Plattformen (${breite}): Werte beim Zeigen`, !(await page.$eval("#wzTip", (t) => t.classList.contains("hide"))) && (await page.textContent("#wzTip")).includes("erreicht"), "");
+  await page.click('[data-wr="lernen"]'); await wait(500);
+  check(`Lernen (${breite}): Heatmap mit eingestellten Zeiten, Selbst-Tests, Sprachen`, (await page.$$("table.hm button.hm-zelle")).length >= 5 && (await page.$$("table.hm .hm-marke")).length >= 2
+    && (await page.textContent("#wCockpit")).includes("Neugier-Lücke") && (await page.textContent(".wz-spr")).includes("Deutsch"), "");
+  if (breite === 390) { const w = await page.evaluate(() => document.documentElement.scrollWidth); check("Handy: Lernen ohne Querscrollen", w <= 390, w); }
+  await page.click('[data-wr="plattformen"]'); await wait(300);
   if (breite === 900) {
     await page.click('#wZeitraum [data-tage="30"]'); await wait(1500);
+    await page.click('[data-wr="posts"]'); await wait(300);
     check("Cockpit: 30 Tage, mehr Posts in der Tabelle", (await page.textContent("#wzAnzahl")).match(/\d+/) && +(await page.textContent("#wzAnzahl")).match(/\d+/)[0] > 30, await page.textContent("#wzAnzahl"));
     if (OUT) await page.screenshot({ path: OUT + "/cockpit-30.png", fullPage: true });
     await page.click('#wZeitraum [data-tage="7"]'); await wait(1200);
+    await page.click('[data-wr="plattformen"]'); await wait(300);
   }
   await page.click("#wDetails > summary"); await wait(2500);
   const ig = await page.textContent("#igPanel");
@@ -75,6 +96,21 @@ for (const breite of [900, 390]) {
     const w2 = await page.evaluate(() => document.documentElement.scrollWidth);
     check("Handy: Posten ohne Querscrollen", w2 <= 390, w2);
     if (OUT) await (await page.$("#verbindungen")).screenshot({ path: OUT + "/handy-verbindungen.png" });
+  }
+  if (breite === 900) {
+    // "Übernehmen": trägt die Uhrzeit nur ein -- gespeichert wird nichts, kein Schalter wird umgelegt
+    await page.click('.tab[data-tab="wirkung"]'); await wait(1200);
+    await page.click('[data-wr="ueberblick"]'); await page.click('#wZeitraum [data-tage="30"]'); await wait(1500);
+    const erk30 = await page.textContent("ol.erkennt");
+    check("Soraya erkennt (30 Tage): Reels um 9 Uhr besser, mit Übernehmen", erk30.includes("Reels um 9 Uhr laufen besser als um 19 Uhr") && (await page.$$("ol.erkennt [data-zeit-platz='reel']")).length === 1, erk30);
+    if (OUT) await (await page.$(".wz-erkennt")).screenshot({ path: OUT + "/soraya-erkennt.png" });
+    const vorher = (await (await page.request.get(BASE + "/posten")).json()).einstellungen;
+    await page.click("ol.erkennt [data-zeit-platz='reel']"); await wait(1500);
+    const nachher = (await (await page.request.get(BASE + "/posten")).json()).einstellungen;
+    check("Übernehmen: Reel-Zeit 09:00 eingetragen, nicht gespeichert", (await page.inputValue("#zReel")) === "09:00" && await page.$eval("#einstellungenPanel", (d) => d.open)
+      && !(await page.$eval("#postUngespeichert", (e) => e.hidden)) && nachher.zeiten.reel === vorher.zeiten.reel && nachher.an === vorher.an, JSON.stringify(nachher.zeiten));
+    check("Übernehmen: Schalter unverändert", (await page.isChecked("#postAuto")) === vorher.an, "");
+    if (OUT) await (await page.$("#einstellungenPanel")).screenshot({ path: OUT + "/uebernehmen.png" });
   }
   check(`Keine JS-Fehler (${breite})`, fehler.length === 0, fehler.join(" | "));
   await ctx.close();

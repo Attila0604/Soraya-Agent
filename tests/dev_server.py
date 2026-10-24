@@ -51,7 +51,7 @@ def fake_get(url, params=None, headers=None, timeout=None):
     tage = []
     for i in range(int(params["tage"])):
         d = H - timedelta(days=int(params["tage"]) - 1 - i)
-        a = random.randint(0, 9)
+        a = random.randint(0, 1) if WENIG else random.randint(0, 9)
         tage.append({"datum": d.isoformat(), "schnellstart_geoeffnet": a + 3, "schnellstart_berechnet": a, "registrieren_geklickt": a // 3,
                      "neue_konten": a // 4, "neue_profile": a // 5, "aktive_nutzer": random.randint(1, 6), "app_starts": random.randint(2, 14),
                      "horoskope": random.randint(0, 5), "analysen": 0, "partner_vergleiche": random.randint(0, 2), "chat_nachrichten": random.randint(0, 4),
@@ -68,6 +68,7 @@ def fake_get(url, params=None, headers=None, timeout=None):
         if t:
             data["quellen"][code] = {**q, "tage": t, "schritte": {**q["schritte"], "besuch": sum(t.values())}}
     return SimpleNamespace(status_code=200, json=lambda: {"ok": True, "data": data}, text="")
+WENIG = bool(os.environ.get("DEMO_WENIG"))   # mit DEMO_KANAELE=1: wenige Posts, kleine Zahlen (wie beim Start)
 DEMO_QUELLEN = {}   # p<id> -> Besuche je Tag (DEMO_KANAELE=1: Posts der letzten 30 Tage)
 def wert(n, lo, hi):
     """Feste, plausible Zufallszahl je Beitrag (gleich bei jedem Abruf)."""
@@ -120,12 +121,19 @@ if os.environ.get("DEMO_KANAELE"):
     posten.speichere_einstellungen({"plattformen": {"facebook": False, "linkedin": True, "tiktok": True}})
     db.setze_einstellung("meta_facebook", {"seite_id": "555", "name": "Soraya Luxury Astrology", "token": "demo", "verbunden": jetzt})
     # Follower-Verlauf (Instagram: der Wert von vor 8 Tagen bleibt der Vergleich fuer "+63 in 7 Tagen")
-    for i in range(30, 7, -1):
-        posten.merke_follower(1180 - (i - 8) * 4, H - timedelta(days=i))
-    for i in range(30, 0, -1):
-        posten.merke_follower(412 - i * 2 + (i % 3), H - timedelta(days=i), "facebook_follower")
-        posten.merke_follower(318 - i * 3, H - timedelta(days=i), "tiktok_follower")
-    posten.merke_follower(318, H, "tiktok_follower")
+    if WENIG:
+        for i, n in ((20, 1), (12, 2), (6, 3), (1, 4)):
+            posten.merke_follower(n, H - timedelta(days=i))
+        for i, n in ((15, 1), (3, 2)):
+            posten.merke_follower(n, H - timedelta(days=i), "facebook_follower")
+        posten.merke_follower(1, H - timedelta(days=2), "tiktok_follower")
+    else:
+        for i in range(30, 7, -1):
+            posten.merke_follower(1180 - (i - 8) * 4, H - timedelta(days=i))
+        for i in range(30, 0, -1):
+            posten.merke_follower(412 - i * 2 + (i % 3), H - timedelta(days=i), "facebook_follower")
+            posten.merke_follower(318 - i * 3, H - timedelta(days=i), "tiktok_follower")
+        posten.merke_follower(318, H, "tiktok_follower")
     # Posts der letzten 30 Tage auf Facebook, Instagram und TikTok mit gemerkten Zahlen
     FORMATE = ["Deine Woche", "Mitmachen", "Ritual", "Astro-Wissen", "Ritual", "Mitmachen", "Rückblick"]
     STILE, AUFF = ["frage", "szene", "geheimnis", "zeichen", "aussage", "zahl"], ["mondzeichen", "partner", "horoskop", "chat"]
@@ -135,10 +143,13 @@ if os.environ.get("DEMO_KANAELE"):
                       "Ein Satz für deine Woche", "Wenn der Mond im Krebs steht"],
              "story": ["Wie schläfst du gerade?", "A, B oder C?", "Dein Gefühl heute"]}
     con = psycopg.connect(os.environ["DATABASE_URL"])
+    klein = (lambda v: v // 8) if WENIG else (lambda v: v)
     k = 0
     for tag in range(29, 0, -1):
         d = H - timedelta(days=tag)
         arten = ["post", "reel", "story"] if tag % 2 else ["post", "reel"]
+        if WENIG:
+            arten = {9: ["post"], 6: ["reel"], 4: ["story"], 2: ["post"]}.get(tag, [])
         for art in arten:
             k += 1
             fm = FORMATE[d.weekday()]
@@ -148,9 +159,13 @@ if os.environ.get("DEMO_KANAELE"):
                                    meta={"thema": fm, "hook_stil": stil, "aufforderung": AUFF[k % 4]})[0]
             db.aendere_post(p["id"], {"status": "gepostet"})
             wo = {"post": ["facebook", "instagram"], "reel": ["instagram", "tiktok", "facebook"], "story": ["instagram"]}[art]
-            stunde = {"post": 12, "reel": 19, "story": 9}[art]
-            # Rituale und Reels kommen besser an, Rueckblick schwaecher -> "Soraya lernt" hat etwas zu sagen
+            stunde = {"post": (12, 12, 9, 18)[k % 4], "reel": (19, 19, 9)[k % 3], "story": 9}[art]
+            # Rituale und Reels kommen besser an, Rueckblick schwaecher -> "Soraya lernt" hat etwas zu sagen;
+            # Reels am Morgen laufen besser als am Abend -> "Soraya erkennt" schlaegt eine Uhrzeit vor
             faktor = (1.8 if fm == "Ritual" else 0.5 if fm == "Rückblick" else 1.0) * (1.5 if art == "reel" else 1)
+            faktor *= 1.6 if art == "reel" and stunde == 9 else 1
+            if WENIG:
+                faktor = 0.08
             for pl in wo:
                 zid = db.plane_veroeffentlichung(p["id"], pl, datetime.combine(d, datetime.min.time()).replace(hour=stunde, tzinfo=himmel.WIEN), zurueckgeben=True)
                 n = 100 + k * 10 + len(pl)
@@ -158,15 +173,15 @@ if os.environ.get("DEMO_KANAELE"):
                 db.setze_veroeffentlichung(zid, "fertig", extern_id=ext, url=f"https://example.com/{ext}")
                 r = int(wert(n, 150, 1300) * faktor)
                 if pl == "facebook":
-                    db.speichere_zahlen(p["id"], pl, int(wert(n, 2, 30) * faktor), wert(n, 0, 6), wert(n, 0, 4), reichweite=wert(n, 60, 520))
+                    db.speichere_zahlen(p["id"], pl, int(wert(n, 2, 30) * faktor), klein(wert(n, 0, 6)), klein(wert(n, 0, 4)), reichweite=klein(wert(n, 60, 520)))
                 elif pl == "instagram":
-                    db.speichere_zahlen(p["id"], pl, int(wert(n, 8, 70) * faktor), wert(n, 0, 12), wert(n, 0, 9), reichweite=r,
+                    db.speichere_zahlen(p["id"], pl, int(wert(n, 8, 70) * faktor), klein(wert(n, 0, 12)), klein(wert(n, 0, 9)), reichweite=r,
                                         gespeichert=int(wert(n, 1, 24) * faktor), aufrufe=r * 3 // 2)
                 else:
-                    db.speichere_zahlen(p["id"], pl, int(wert(n, 20, 160) * faktor), wert(n, 0, 15), wert(n, 0, 10), aufrufe=int(wert(n, 300, 2600) * faktor))
+                    db.speichere_zahlen(p["id"], pl, int(wert(n, 20, 160) * faktor), klein(wert(n, 0, 15)), klein(wert(n, 0, 10)), aufrufe=int(wert(n, 300, 2600) * faktor))
                 um = datetime.combine(d, datetime.min.time()).replace(hour=stunde, minute=k % 50, tzinfo=himmel.WIEN)
                 con.execute("update soraya_veroeffentlichungen set aktualisiert = %s, geplant_um = %s where id = %s", (um, um, zid))
-            if art != "story":
+            if art != "story" and not WENIG:
                 DEMO_QUELLEN[f"p{p['id']}"] = {"schritte": {"schnellstart": int(faktor * 2), "register_click": 1},
                                               "konten": 1 if faktor > 1.5 and k % 2 else 0,
                                               "tage": {d.isoformat(): int(wert(k, 1, 9) * faktor), (d + timedelta(days=1)).isoformat(): wert(k, 0, 4)}}
