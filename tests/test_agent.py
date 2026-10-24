@@ -2027,25 +2027,39 @@ def test_facebook_zahlen_ersatzabfrage_und_meldung(monkeypatch, frische_db):
     gefragt = []
 
     def fake_get(url, **params):
-        gefragt.append(params["fields"])
+        gefragt.append(params.get("fields"))
+        if "/x2" in url:
+            raise meta.MetaFehler("Meta: (#200) pages_read_engagement fehlt")
+        if url.endswith("/f1"):
+            raise meta.MetaFehler("Meta: (#100) Tried accessing nonexisting field (likes)")
+        if url.endswith("/f1/reactions"):
+            return {"summary": {"total_count": 5}}
+        if url.endswith("/f1/comments"):
+            return {"summary": {"total_count": 4}}
+        if url.endswith("/r1") and params.get("fields") == "post_id":
+            return {"post_id": "999"}
+        if url.endswith("/555_999"):
+            return {"reactions": {"summary": {"total_count": 11}}, "comments": {"summary": {"total_count": 0}}}
         if url.endswith("/insights"):
             raise meta.MetaFehler("Meta: (#10) read_insights fehlt")
         if url.endswith("/v1") and "reactions" in params["fields"]:
             raise meta.MetaFehler("Meta: (#100) Tried accessing nonexisting field (reactions) on node type (Video)")
-        if url.endswith("/v2"):
-            raise meta.MetaFehler("Meta: (#200) pages_read_engagement fehlt")
         if "likes" in params["fields"]:
             return {"likes": {"summary": {"total_count": 7}}, "comments": {"summary": {"total_count": 2}}}
         return {"reactions": {"summary": {"total_count": 3}}, "comments": {"summary": {"total_count": 1}}, "shares": {"count": 1}}
     monkeypatch.setattr(meta, "_get", fake_get)
     z = meta.facebook_reaktionen([{"post_id": 1, "extern_id": "v1", "art": "reel"}, {"post_id": 2, "extern_id": "p1", "art": "post"},
-                                  {"post_id": 3, "extern_id": "v2", "art": "post"}])
+                                  {"post_id": 3, "extern_id": "x2", "art": "post"}, {"post_id": 4, "extern_id": "s1", "art": "story"},
+                                  {"post_id": 5, "extern_id": "f1", "art": "post"}, {"post_id": 6, "extern_id": "r1", "art": "reel"}])
     assert (z[0]["reaktionen"], z[0]["kommentare"]) == (7, 2) and (z[1]["reaktionen"], z[1]["geteilt"]) == (3, 1)
-    assert "pages_read_engagement" in z[2]["fehler"]
+    assert "pages_read_engagement" in z[2]["fehler"] and z[2]["fehler"].startswith("Feed-Post:")
+    assert z[3]["nicht_messbar"] and "fehler" not in z[3]                       # Story: ohne Zahlen, kein Fehler
+    assert (z[4]["reaktionen"], z[4]["kommentare"]) == (5, 4)                     # ueber die Kanten
+    assert z[5]["reaktionen"] == 11                                              # Reel ueber seinen Seitenbeitrag
     monkeypatch.setattr(posten, "_merke", lambda pl, zeilen: sum("fehler" not in x for x in zeilen))
-    assert posten.merke_facebook(z) == 2
+    assert posten.merke_facebook(z) == 4
     a = posten.abruf_stand()["facebook"]
-    assert a["ok"] == 2 and a["fehler"] == 1 and "pages_read_engagement" in a["meldung"]
+    assert a["ok"] == 4 and a["fehler"] == 1 and "pages_read_engagement" in a["meldung"]
     cockpit.leeren()
     monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)
     assert client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()["abruf"]["facebook"]["fehler"] == 1

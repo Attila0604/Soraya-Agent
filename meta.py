@@ -300,40 +300,78 @@ def facebook_konto() -> dict:
     return {"follower": anzahl if anzahl is not None else d.get("fan_count")}
 
 
+def _fb_summen(d: dict, schluessel: str = "reactions") -> dict:
+    return {"reaktionen": ((d.get(schluessel) or {}).get("summary") or {}).get("total_count", 0),
+            "kommentare": ((d.get("comments") or {}).get("summary") or {}).get("total_count", 0),
+            "geteilt": (d.get("shares") or {}).get("count", 0)}
+
+
+def _fb_zahlen_eines(oid: str, art: str | None, seite: str | None, token: str) -> tuple[dict, str]:
+    """Zahlen eines Beitrags. Je nach Objekt (Seitenbeitrag, Foto, Reel/Video) kennt Meta andere Felder:
+    erst Felder, dann einfachere Felder, dann die Kanten /reactions und /comments. Bei Reels zuerst den
+    zugehoerigen Seitenbeitrag (post_id) suchen. Rueckgabe: (Zahlen, ID, die geantwortet hat)."""
+    kandidaten = [oid]
+    if art == "reel":
+        try:
+            pid = str(_get(f"{graph_fb()}/{oid}", fields="post_id", access_token=token).get("post_id") or "")
+            if pid:
+                kandidaten.insert(0, pid if "_" in pid or not seite else f"{seite}_{pid}")
+        except MetaFehler as ex:
+            if "abgelaufen" in str(ex):
+                raise
+    letzter: Exception | None = None
+    for k in kandidaten:
+        felder = ["reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0),shares",
+                  "reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)",
+                  "likes.summary(true).limit(0),comments.summary(true).limit(0)"]
+        for f in felder:
+            try:
+                d = _get(f"{graph_fb()}/{k}", fields=f, access_token=token)
+                return _fb_summen(d, "likes" if f.startswith("likes") else "reactions"), k
+            except MetaFehler as ex:
+                if "abgelaufen" in str(ex):
+                    raise
+                letzter = ex
+        try:   # als Kanten fragen (manche Objekte kennen die Felder nicht, die Kanten aber schon)
+            r = _get(f"{graph_fb()}/{k}/reactions", summary="total_count", limit=0, access_token=token)
+            c = _get(f"{graph_fb()}/{k}/comments", summary="true", limit=0, access_token=token)
+            return {"reaktionen": (r.get("summary") or {}).get("total_count", 0),
+                    "kommentare": (c.get("summary") or {}).get("total_count", 0), "geteilt": 0}, k
+        except MetaFehler as ex:
+            if "abgelaufen" in str(ex):
+                raise
+            letzter = ex
+    raise letzter or MetaFehler("Meta: keine Zahlen")
+
+
 def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
     """Gefaellt-mir, Kommentare und Teilen je Facebook-Beitrag (braucht pages_read_engagement),
-    dazu die Reichweite, wenn Meta sie herausgibt."""
+    dazu die Reichweite, wenn Meta sie herausgibt. Storys liefert Facebook ohne Zahlen (nicht_messbar)."""
     z = zugang("facebook")
     if not z or not z.get("token"):
         raise MetaFehler("Facebook-Seite ist nicht verbunden.")
     out = []
     reichweite_geht = True
     for e in eintraege:
-        felder = "reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)"
-        if e.get("art") != "reel":
-            felder += ",shares"
         zeile = {"post_id": e["post_id"], "titel": e.get("titel"), "art": e.get("art"), "url": e.get("url"),
                  "gepostet": e.get("aktualisiert")}
+        if e.get("art") == "story":
+            zeile["nicht_messbar"] = True          # Facebook-Storys: keine Gefaellt-mir/Kommentare ueber die API
+            out.append(zeile)
+            continue
         try:
-            try:
-                d = _get(f"{graph_fb()}/{e['extern_id']}", fields=felder, access_token=z["token"])
-            except MetaFehler as ex1:
-                if "abgelaufen" in str(ex1):
-                    raise
-                # manche Objekte (Reels/Videos, Foto-IDs) kennen "reactions"/"shares" nicht -> Gefaellt mir + Kommentare
-                d = _get(f"{graph_fb()}/{e['extern_id']}", access_token=z["token"],
-                         fields="likes.summary(true).limit(0),comments.summary(true).limit(0)")
-                d["reactions"] = d.get("likes")
-            zeile.update(reaktionen=((d.get("reactions") or {}).get("summary") or {}).get("total_count", 0),
-                         kommentare=((d.get("comments") or {}).get("summary") or {}).get("total_count", 0),
-                         geteilt=(d.get("shares") or {}).get("count", 0))
+            zahlen, oid = _fb_zahlen_eines(str(e["extern_id"]), e.get("art"), z.get("seite_id"), z["token"])
+            zeile.update(zahlen)
             if reichweite_geht:
-                zeile["reichweite"] = facebook_reichweite(e["extern_id"], z["token"])
+                zeile["reichweite"] = facebook_reichweite(oid, z["token"])
                 reichweite_geht = zeile["reichweite"] is not None   # ohne Recht nicht bei jedem Beitrag fragen
         except Exception as ex:  # noqa: BLE001 - ein Beitrag ohne Zahlen soll die Liste nicht stoppen
-            zeile["fehler"] = str(ex)[:160]
+            zeile["fehler"] = f"{ARTNAME.get(e.get('art'), 'Beitrag')}: {str(ex)[:160]}"
         out.append(zeile)
     return out
+
+
+ARTNAME = {"post": "Feed-Post", "reel": "Reel", "story": "Story"}
 
 
 # ---------------------------------------------------------------------------
