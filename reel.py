@@ -24,9 +24,10 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 import medien
+import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-10"
+VERSION = "reel-11"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -401,7 +402,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     gross = gross.resize((W, 320), Image.LANCZOS)
     oben.alpha_composite(gross, (0, 230))
     oben, oben_pos = _zuschneiden(oben)
-    mit_mond = meta.get("phase_index") is not None
+    motiv = motive.waehle(post, st)                    # Hauptmotiv je Format (reel-11)
+    mit_mond = meta.get("phase_index") is not None and motiv == "mond"
     r = 200
     mond = medien.mond(r * 2, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
     if mond is not None:
@@ -415,13 +417,16 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     # Bildideen (reel-10)
     zeichen = welches_zeichen(post, st)
     sb_kasten = (70, mond_y - 430, W - 140, 860)                    # Sternbild rund um den Mond
-    bahn = _bahn_punkte(W / 2, mond_y, 330, 86, math.radians(-14)) if mit_mond else []
+    held = motive.baue(motiv, W / 2, mond_y, zeichen=zeichen, akzent=akzent, seed=int(seed), post=post)
+    if held is not None and not held.mit_sternbild:
+        zeichen = None
+    bahn = _bahn_punkte(W / 2, mond_y, 330, 86, math.radians(-14)) if mit_mond or (held and held.mit_bahn) else []
     staub = _staub(int(seed))
     staub_farbe = (236, 180, 160) if st["palette"] == "liebe" else (233, 207, 156)
     glut = _glut(1000, 560, tuple(akzent))
     # kleine Szene je Format: Liebe = zwei Lichter kreisen gegenlaeufig um den Mond, Ritual = Kerzenschein von unten
     szene = st["layout"]
-    kerze = _glut(1300, 900, (255, 176, 92)) if szene == "ritual" else None
+    kerze = _glut(1300, 900, (255, 176, 92)) if szene == "ritual" and motiv != "kerze" else None
 
     def lichter(u: float) -> list:
         if szene == "liebe":
@@ -467,7 +472,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                     if vorne < 0:                                    # hinter dem Mond
                         for r_, a_ in ((18, 0.15), (6, 0.9)):
                             dd.ellipse([bx - r_, by - r_, bx + r_, by + r_], fill=fb + (int(255 * a_ * sichtbar_ende),))
-            if szene == "ritual":                                    # warmes Kerzenlicht von unten, flackernd
+            if kerze is not None:                                    # warmes Kerzenlicht von unten, flackernd
                 flacker = 0.75 + 0.15 * math.sin(t * 7.3) + 0.1 * math.sin(t * 12.9 + 1)
                 medien.aufkleben(bild, _mit_alpha(kerze, flacker * (0.4 + 0.6 * sichtbar_ende)), (W / 2 - kerze.width / 2, H - kerze.height + 120))
             if sichtbar_ende > 0:
@@ -480,13 +485,15 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 skala = 0.94 + 0.08 * min(1.0, t / max(end_start, 1))   # langsamer Zoom (Bewegung)
                 mb = mond if abs(skala - 1) < 0.002 else mond.resize((int(mond.width * skala), int(mond.height * skala)), Image.BILINEAR)
                 medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
-                if bahn:
-                    d2 = ImageDraw.Draw(bild, "RGBA")
-                    for u, fb in lichter(umlauf):
-                        bx, by, vorne = bahn[int(u * (len(bahn) - 1))]
-                        if vorne >= 0:
-                            for r_, a_ in ((20, 0.15), (7, 0.95)):
-                                d2.ellipse([bx - r_, by - r_, bx + r_, by + r_], fill=fb + (int(255 * a_ * sichtbar_ende),))
+            if held is not None:
+                held.zeichne(bild, t, sichtbar_ende)
+            if bahn and sichtbar_ende > 0:
+                d2 = ImageDraw.Draw(bild, "RGBA")
+                for u, fb in lichter(umlauf):
+                    bx, by, vorne = bahn[int(u * (len(bahn) - 1))]
+                    if vorne >= 0:
+                        for r_, a_ in ((20, 0.15), (7, 0.95)):
+                            d2.ellipse([bx - r_, by - r_, bx + r_, by + r_], fill=fb + (int(255 * a_ * sichtbar_ende),))
             for nr, ((start, stopp), (karte, kaesten)) in enumerate(zip(plan, karten)):
                 if nr and 0 <= t - start <= 0.9:                       # neue Zeile: weiches Aufleuchten dahinter
                     medien.aufkleben(bild, _mit_alpha(glut, math.sin(math.pi * (t - start) / 0.9) * 0.9),
