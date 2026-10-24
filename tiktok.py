@@ -277,7 +277,7 @@ def poste_video(video: bytes, titel: str, modus: str = "entwurf", warten_s: int 
 # ---------------------------------------------------------------------------
 # Zahlen: die eigenen Videos mit Aufrufen, Gefaellt mir, Kommentaren, Teilen (video.list, ohne Audit)
 # ---------------------------------------------------------------------------
-VIDEO_FELDER = "id,title,create_time,share_url,view_count,like_count,comment_count,share_count"
+VIDEO_FELDER = "id,title,video_description,create_time,share_url,view_count,like_count,comment_count,share_count"
 
 
 def videos(anzahl: int = 20) -> list[dict]:
@@ -317,7 +317,8 @@ def zuordnen_nach_titel(reels: list[dict], liste: list[dict]) -> list[dict]:
     der TikTok-Beschreibung."""
     out, vergeben = [], set()
     for v in liste:
-        t = _kern(v.get("title"))
+        # in der TikTok-App gepostete Videos haben den Text oft nur in video_description, title ist leer
+        t = _kern(v.get("title") or v.get("video_description"))
         if not t:
             continue
         for r in reels:

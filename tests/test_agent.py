@@ -1868,6 +1868,10 @@ def test_tiktok_selbst_hochgeladen_ueber_titel():
              {"id": "v2", "title": "", "create_time": 1792700000, "view_count": 247}]
     z = tiktok.zuordnen_nach_titel(reels, liste)
     assert len(z) == 1 and z[0]["post_id"] == 7 and z[0]["aufrufe"] == 90 and z[0]["reaktionen"] == 1
+    # in der App gepostet: Text nur in video_description
+    z2 = tiktok.zuordnen_nach_titel(reels, [{"id": "v3", "title": "", "video_description": "Scorpio Season: 3 Changes ✨ #astro",
+                                             "view_count": 5}])
+    assert len(z2) == 1 and z2[0]["post_id"] == 7 and z2[0]["aufrufe"] == 5
     # zu kurze Titel werden nicht geraten
     assert tiktok.zuordnen_nach_titel([{"post_id": 8, "titel": "Kurz"}], [{"id": "x", "title": "Kurz und gut"}]) == []
 

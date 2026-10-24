@@ -512,6 +512,9 @@ def zahlen_instagram(seit: datetime, limit: int = 60) -> dict:
     return r
 
 
+_TIKTOK_STAND: dict = {}      # wie viele Videos TikTok beim letzten Abruf geliefert hat (fuers Dashboard)
+
+
 def zahlen_tiktok(seit: datetime) -> list[dict]:
     """TikTok-Videos (video.list) unseren Reels zuordnen und die Zahlen merken."""
     z = tiktok.zugang() or {}
@@ -524,6 +527,7 @@ def zahlen_tiktok(seit: datetime) -> list[dict]:
             z["zahlen_fehlt"] = True
             db.setze_einstellung(tiktok.SCHLUESSEL, z)
         raise
+    _TIKTOK_STAND.update(gefunden=len(liste), am=datetime.now(himmel.WIEN).isoformat(timespec="minutes"))
     zeilen = tiktok.zuordnen(db.lade_gepostete("tiktok", seit, limit=60), liste)
     # selbst hochgeladene Videos (z. B. aus dem Wochenpaket): ueber den Titel den Reels zuordnen
     schon = {z_["post_id"] for z_ in zeilen}
