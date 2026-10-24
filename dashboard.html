@@ -706,6 +706,8 @@
   .trend{font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
   .trend.auf{color:var(--gruen)} .trend.ab{color:#e88a7a} .trend.neutral{color:var(--mist-dim);font-weight:400}
   .trend .vgl{color:var(--mist-dim);font-weight:400}
+  .fb-abruf{margin-top:var(--s3);padding:12px 14px;border:1px solid rgba(231,211,161,.25);border-radius:12px;font-size:13.5px;line-height:1.55}
+  .fb-abruf button{margin-top:10px}
   .wz-hinweis{font-size:13px;color:var(--mist-dim);margin:0 0 var(--s3);display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center}
   .wz-follower{display:flex;align-items:center;gap:var(--s2) var(--s5);flex-wrap:wrap;margin:0 0 var(--s5);padding:var(--s3) var(--s4);
                border:1px solid var(--line-soft);border-radius:14px;font-variant-numeric:tabular-nums}
@@ -2746,6 +2748,9 @@ document.addEventListener('click', (ev) => {
   if(ev.target.closest('[data-wz-alle]')){ wFilter.alle = true; return zeigePostTabelle(); }
   const po = ev.target.closest('[data-wz-post]'); if(po && !ev.target.closest('a')){ return oeffnePost(po.dataset.wzPost); }
   const z = ev.target.closest('[data-zeit-platz]'); if(z) return uebernehmeZeit(z.dataset.zeitPlatz, z.dataset.zeit);
+  const fb = ev.target.closest('[data-fb-abruf]'); if(fb){ busy(fb, true, 'Holt …');
+    api('/wirkung/facebook?tage=30').then(r => { const a = r.abruf || {}; melde(a.fehler ? 'Facebook meldet weiterhin einen Fehler – siehe Hinweis.' : `Facebook-Zahlen geholt ✓ (${a.ok || 0})`); })
+      .catch(e => melde('Fehler: ' + e.message)).finally(() => ladeCockpit()); return; }
   if(ev.target.closest('[data-oeffne-details]')){ waehleReiter('plattformen'); $('wDetails').open = true; $('wDetails').scrollIntoView({behavior: 'smooth', block: 'start'}); }
   const wr = ev.target.closest('[data-geh-reiter]'); if(wr) waehleReiter(wr.dataset.gehReiter);
 });
@@ -2800,6 +2805,13 @@ function tipZeigen(box, tip, x, html, W){
 // TikTok verbunden, aber noch nichts gemessen: kurz sagen, warum (statt TikTok einfach wegzulassen)
 const tiktokLeer = (zeilen) => { const t = zeilen.find(z => z.plattform === 'tiktok');
   return t && !t.erreicht && !t.reaktionen ? `<p class="meta">${kurzMehr('TikTok: noch keine Zahlen in diesem Zeitraum.', 'Sie erscheinen, sobald ein Video auf TikTok öffentlich ist – egal ob aus einem Soraya-Entwurf oder selbst gemacht. Soraya holt die Zahlen alle 6 Stunden; eigene Videos ohne Soraya-Post zählen bei Erreicht und Reaktionen mit.')}</p>` : ''; };
+// Facebook liefert keine Zahlen: Meldung von Facebook zeigen und neu abrufen lassen
+const fbAbruf = (d) => { const a = (d.abruf || {}).facebook;
+  if(!(d.verbunden || {}).facebook || !a || !a.fehler) return '';
+  return `<div class="fb-abruf"><b>${a.ok ? `Facebook: ${mehrzahl(a.fehler, 'Beitrag', 'Beiträge')} ohne Zahlen.` : 'Facebook liefert gerade keine Zahlen.'}</b>
+    ${a.meldung ? `<br><span class="meta">Meldung von Facebook: ${esc(a.meldung)}</span>` : ''}
+    <br><span class="meta">Letzter Versuch: ${esc(tagName(a.am))} ${esc(uhr(a.am))}</span>
+    <br><button class="ghost klein" data-fb-abruf="1">Facebook-Zahlen jetzt holen</button></div>`; };
 function htmlPlattformen(d){
   const a = d.analyse || {}, pv = a.plattformen || {zeilen: []}, zeilen = pv.zeilen;
   const gruppe = (k, titel, leerText) => {
@@ -2812,7 +2824,7 @@ function htmlPlattformen(d){
   const vergleich = zeilen.length ? `<div class="pv">${gruppe('erreicht', 'Erreicht', 'Noch keine Reichweite gemessen.')}${gruppe('reaktionen', 'Reaktionen', 'Noch keine Reaktionen.')}
       ${gruppe('besuche', 'Besuche über den Bio-Link', 'Noch keine Besuche über die Bio-Links.')}</div>
       <p class="meta">${zeilen.filter(z => z.posts || z.videos_extra).map(z => `${PL_KURZ[z.plattform]}: ${mehrzahl(z.posts, 'Post', 'Posts')}${z.videos_extra ? ` + ${mehrzahl(z.videos_extra, 'eigenes Video', 'eigene Videos')}` : ''}${z.schnitt_erreicht != null ? `, Ø ${zahl(Math.round(z.schnitt_erreicht))} erreicht` : ''}`).join(' · ')}${pv.post_link_besuche ? ` · Dazu ${mehrzahl(pv.post_link_besuche, 'Besuch', 'Besuche')} über Post-Links (keiner Plattform zuordenbar).` : ''}</p>
-      ${tiktokLeer(zeilen)}`
+      ${tiktokLeer(zeilen)}${fbAbruf(d)}`
     : leer('Noch nichts gepostet', 'Sobald Posts auf Facebook, Instagram oder TikTok erscheinen, siehst du hier, welche Plattform am meisten bringt.');
   const pls = COCKPIT_PL.filter(pl => (a.plattform_tage || []).some(t => t[pl]) || (d.verbunden || {})[pl]);
   const legende = pls.map(pl => `<span><i class="sq" style="background:${PL_FARBE[pl]}"></i>${PL_KURZ[pl]}</span>`).join('');

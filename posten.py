@@ -466,6 +466,30 @@ def _merke(plattform: str, zeilen: list[dict]) -> int:
     return n
 
 
+ABRUF = "zahlen_abruf"
+
+
+def merke_abruf(plattform: str, ok: int, fehler: int, meldung: str | None = None) -> None:
+    """Wie der letzte Zahlen-Abruf einer Plattform lief (fuer den Hinweis in „Wirkung“)."""
+    d = db.lade_einstellung(ABRUF, {}) or {}
+    d[plattform] = {"am": datetime.now(himmel.WIEN).isoformat(timespec="minutes"), "ok": ok, "fehler": fehler,
+                    "meldung": (meldung or "")[:300] or None}
+    db.setze_einstellung(ABRUF, d)
+
+
+def abruf_stand() -> dict:
+    return db.lade_einstellung(ABRUF, {}) or {}
+
+
+def merke_facebook(zeilen: list[dict]) -> int:
+    n = _merke("facebook", zeilen)
+    fehler = [z for z in zeilen if "fehler" in z]
+    merke_abruf("facebook", n, len(fehler), fehler[0]["fehler"] if fehler else None)
+    if fehler:
+        print(f"[Posten] Facebook: {len(fehler)} Beitrag/Beitraege ohne Zahlen, z. B. {fehler[0]['fehler']}", flush=True)
+    return n
+
+
 def merke_follower(anzahl: int | None, heute: date | None = None, schluessel: str = "instagram_follower") -> None:
     """Follower je Tag (90 Tage), damit Wirkung den Zuwachs zeigen kann (Instagram, TikTok)."""
     if anzahl is None:
@@ -628,9 +652,10 @@ def aktualisiere_zahlen(erzwingen: bool = False) -> int:
     n = 0
     if v["facebook"]["verbunden"]:
         try:
-            n += _merke("facebook", meta.facebook_reaktionen(db.lade_gepostete("facebook", seit, limit=60)))
+            n += merke_facebook(meta.facebook_reaktionen(db.lade_gepostete("facebook", seit, limit=60)))
         except Exception as ex:  # noqa: BLE001 -- die anderen Plattformen trotzdem holen
             print(f"[Posten] Facebook-Zahlen nicht geholt: {ex}", flush=True)
+            merke_abruf("facebook", 0, 1, str(ex))
         facebook_follower_merken()
     if v["instagram"]["verbunden"]:
         try:

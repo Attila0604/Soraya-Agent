@@ -315,7 +315,15 @@ def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
         zeile = {"post_id": e["post_id"], "titel": e.get("titel"), "art": e.get("art"), "url": e.get("url"),
                  "gepostet": e.get("aktualisiert")}
         try:
-            d = _get(f"{graph_fb()}/{e['extern_id']}", fields=felder, access_token=z["token"])
+            try:
+                d = _get(f"{graph_fb()}/{e['extern_id']}", fields=felder, access_token=z["token"])
+            except MetaFehler as ex1:
+                if "abgelaufen" in str(ex1):
+                    raise
+                # manche Objekte (Reels/Videos, Foto-IDs) kennen "reactions"/"shares" nicht -> Gefaellt mir + Kommentare
+                d = _get(f"{graph_fb()}/{e['extern_id']}", access_token=z["token"],
+                         fields="likes.summary(true).limit(0),comments.summary(true).limit(0)")
+                d["reactions"] = d.get("likes")
             zeile.update(reaktionen=((d.get("reactions") or {}).get("summary") or {}).get("total_count", 0),
                          kommentare=((d.get("comments") or {}).get("summary") or {}).get("total_count", 0),
                          geteilt=(d.get("shares") or {}).get("count", 0))
