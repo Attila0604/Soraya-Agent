@@ -350,5 +350,6 @@ def zuordnen(eintraege: list[dict], liste: list[dict]) -> list[dict]:
             out.append({"post_id": e["post_id"], "titel": e.get("titel"), "art": e.get("art"),
                         "url": v.get("share_url") or e.get("url"), "gepostet": e.get("aktualisiert"),
                         "aufrufe": int(v.get("view_count") or 0), "reaktionen": int(v.get("like_count") or 0),
-                        "kommentare": int(v.get("comment_count") or 0), "geteilt": int(v.get("share_count") or 0)})
+                        "kommentare": int(v.get("comment_count") or 0), "geteilt": int(v.get("share_count") or 0),
+                        "_video": str(v.get("id"))})
     return out

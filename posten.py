@@ -19,7 +19,7 @@ import os
 import re
 import threading
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import db
 import himmel
@@ -520,6 +520,34 @@ def zahlen_instagram(seit: datetime, limit: int = 60) -> dict:
 _TIKTOK_STAND: dict = {}      # wie viele Videos TikTok beim letzten Abruf geliefert hat (fuers Dashboard)
 
 
+TIKTOK_VIDEOS = "tiktok_videos"
+TIKTOK_VIDEOS_TAGE = 120
+
+
+def merke_tiktok_videos(liste: list[dict], zugeordnet: dict, jetzt: datetime | None = None) -> None:
+    """Alle TikTok-Videos des Kontos mit ihren Zahlen merken -- auch die ohne Soraya-Post (selbst gemacht),
+    damit TikTok in „Wirkung“ ueberall mitzaehlt. Aeltere Eintraege bleiben stehen (bis 120 Tage)."""
+    jetzt = jetzt or datetime.now(timezone.utc)
+    alt = ((db.lade_einstellung(TIKTOK_VIDEOS, {}) or {}).get("videos")) or {}
+    for v in liste:
+        vid, ct = str(v.get("id") or ""), v.get("create_time")
+        if not vid or not ct:
+            continue
+        alt[vid] = {"zeit": datetime.fromtimestamp(int(ct), timezone.utc).isoformat(timespec="minutes"),
+                    "titel": ((v.get("title") or v.get("video_description") or "").strip())[:80],
+                    "aufrufe": int(v.get("view_count") or 0), "gefaellt": int(v.get("like_count") or 0),
+                    "kommentare": int(v.get("comment_count") or 0), "geteilt": int(v.get("share_count") or 0),
+                    "url": v.get("share_url"), "post_id": zugeordnet.get(vid)}
+    grenze = (jetzt - timedelta(days=TIKTOK_VIDEOS_TAGE)).isoformat()
+    db.setze_einstellung(TIKTOK_VIDEOS, {"videos": {k: x for k, x in alt.items() if x["zeit"] >= grenze[:16]}})
+
+
+def tiktok_videos() -> list[dict]:
+    """Die gemerkten TikTok-Videos (ohne API-Aufruf), aelteste zuerst."""
+    v = ((db.lade_einstellung(TIKTOK_VIDEOS, {}) or {}).get("videos")) or {}
+    return sorted(({"id": k, **x} for k, x in v.items()), key=lambda x: x["zeit"])
+
+
 def zahlen_tiktok(seit: datetime) -> list[dict]:
     """TikTok-Videos (video.list) unseren Reels zuordnen und die Zahlen merken."""
     z = tiktok.zugang() or {}
@@ -541,8 +569,13 @@ def zahlen_tiktok(seit: datetime) -> list[dict]:
              if p.get("art") == "reel" and p["id"] not in schon]
     zeilen += [x for x in tiktok.zuordnen_nach_titel(reels, [v for v in liste if str(v.get("share_url")) not in benutzt])]
     for x in zeilen:
-        x.pop("_video", None)
+        vid = x.pop("_video", None)
+        if vid and vid != "None":
+            # selbst gepostet/hochgeladen: ohne fertigen Eintrag gingen die Zahlen verloren
+            db.merke_extern_gepostet(x["post_id"], "tiktok", vid, x.get("url"), x.get("gepostet"))
+            x["video_id"] = vid
     _merke("tiktok", zeilen)
+    merke_tiktok_videos(liste, {x.get("video_id"): x["post_id"] for x in zeilen if x.get("video_id")})
     try:
         k = tiktok.konto()
         if k:

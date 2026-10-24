@@ -70,8 +70,9 @@ def gruppen(posts: list[dict], schluessel, namen: dict | None = None, alle: tupl
 # ---------------------------------------------------------------------------
 # Plattformen
 # ---------------------------------------------------------------------------
-def plattform_tage(posts: list[dict], tage: list[date]) -> list[dict]:
-    """Erreicht je Tag und Plattform -- dem Tag zugeordnet, an dem der Post erschien."""
+def plattform_tage(posts: list[dict], tage: list[date], extra: list[dict] | None = None) -> list[dict]:
+    """Erreicht je Tag und Plattform -- dem Tag zugeordnet, an dem der Post erschien.
+    extra: TikTok-Videos ohne Soraya-Post (zaehlen bei TikTok mit)."""
     out = {d.isoformat(): {"datum": d.isoformat(), **{pl: 0 for pl in PLATTFORMEN}, "posts": 0} for d in tage}
     for p in posts:
         t = out.get(p["tag"].isoformat()) if p.get("tag") else None
@@ -81,11 +82,19 @@ def plattform_tage(posts: list[dict], tage: list[date]) -> list[dict]:
         for pl, x in p["plattformen"].items():
             if pl in PLATTFORMEN and x.get("erreicht"):
                 t[pl] += x["erreicht"]
+    for x in extra or []:
+        t = out.get(x["tag"].isoformat()) if x.get("tag") else None
+        if t:
+            t["tiktok"] += x["erreicht"]
     return list(out.values())
 
 
-def plattform_vergleich(posts: list[dict], quellen: dict | None, tage: list[date]) -> dict:
+def plattform_vergleich(posts: list[dict], quellen: dict | None, tage: list[date], extra: list[dict] | None = None,
+                        verbunden: list | tuple = ()) -> dict:
+    """Je Plattform: Posts, erreicht, Reaktionen, Bio-Besuche. Verbundene Plattformen erscheinen auch mit 0,
+    TikTok-Videos ohne Soraya-Post zaehlen bei TikTok mit (videos_extra)."""
     von, bis = tage[0].isoformat(), tage[-1].isoformat()
+    dazu = [x for x in (extra or []) if x.get("tag") and tage[0] <= x["tag"] <= tage[-1]]
     zeilen = []
     for pl in PLATTFORMEN:
         mit = [p for p in posts if pl in p["plattformen"]]
@@ -94,8 +103,14 @@ def plattform_vergleich(posts: list[dict], quellen: dict | None, tage: list[date
         zeilen.append({"plattform": pl, "posts": len(mit), "gemessen": len(gem),
                        "erreicht": sum(x["erreicht"] for x in gem), "reaktionen": sum(x["reaktionen"] or 0 for x in gem),
                        "besuche": sum(int(n or 0) for d, n in bio.items() if von <= str(d)[:10] <= bis),
-                       "schnitt_erreicht": _schnitt([x["erreicht"] for x in gem], True)})
-    zeilen = [z for z in zeilen if z["posts"] or z["besuche"]]
+                       "schnitt_erreicht": _schnitt([x["erreicht"] for x in gem], True), "videos_extra": 0})
+        if pl == "tiktok" and dazu:
+            z = zeilen[-1]
+            z["videos_extra"] = len(dazu)
+            z["gemessen"] += len(dazu)
+            z["erreicht"] += sum(x["erreicht"] for x in dazu)
+            z["reaktionen"] += sum(x["reaktionen"] for x in dazu)
+    zeilen = [z for z in zeilen if z["posts"] or z["besuche"] or z["videos_extra"] or z["plattform"] in verbunden]
     for k in ("erreicht", "reaktionen", "besuche"):
         ges = sum(z[k] for z in zeilen)
         for z in zeilen:
@@ -287,16 +302,17 @@ def erkennt(gem: list[dict], *, kpis: dict, trichter: dict, plattformen: dict, z
 # Alles zusammen
 # ---------------------------------------------------------------------------
 def auswerten(im_zeitraum: list[dict], *, tage: list[date], quellen: dict | None, kpis: list[dict], trichter: dict,
-              trichter_vorher: dict, follower_verlaeufe: dict, zeiten: dict) -> dict:
+              trichter_vorher: dict, follower_verlaeufe: dict, zeiten: dict, extra: list[dict] | None = None,
+              verbunden: list | tuple = ()) -> dict:
     gem = [p for p in im_zeitraum if p["gemessen"]]
-    pv = plattform_vergleich(im_zeitraum, quellen, tage)
+    pv = plattform_vergleich(im_zeitraum, quellen, tage, extra, verbunden)
     fk = follower_kurven(follower_verlaeufe, tage)
     formate = gruppen(gem, lambda p: p.get("format"))
     bz = beste_zeiten(gem, zeiten)
     sprachen = gruppen(gem, lambda p: p.get("sprache"), SPRACH_NAME)
     return {
         "gemessen": len(gem), "posts": len(im_zeitraum),
-        "plattform_tage": plattform_tage(im_zeitraum, tage),
+        "plattform_tage": plattform_tage(im_zeitraum, tage, extra),
         "plattformen": pv,
         "follower": fk,
         "arten": gruppen(gem, lambda p: p["platz"], PLATZ_NAME, alle=[a for a in ("post", "reel", "reel2", "story")
