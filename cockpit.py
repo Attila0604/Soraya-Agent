@@ -19,6 +19,7 @@ import threading
 import time
 from datetime import date, datetime, time as uhrzeit, timedelta
 
+import auswertung
 import db
 import himmel
 import meta
@@ -98,6 +99,29 @@ def _summe(werte: dict, tage: list[date], k: str) -> int:
 # ---------------------------------------------------------------------------
 # Beitraege: eine Zeile je Post, Spalten je Plattform
 # ---------------------------------------------------------------------------
+def _gemessen(z: dict) -> bool:
+    """Zahlen geholt -- bei Storys nur, wenn es Reichweite/Aufrufe gab (eine abgelaufene Story ohne Insights ist
+    nicht "0", sondern nie gemessen; wie db.lade_lern_posts)."""
+    if z.get("zahlen_am") is None:
+        return False
+    return (z.get("art") or "post") != "story" or z.get("reichweite") is not None or z.get("aufrufe") is not None
+
+
+def _iso(v):
+    return v.isoformat() if hasattr(v, "isoformat") else v
+
+
+def punkte_teile(p: dict) -> list[dict]:
+    """Woraus sich die Punkte eines Posts zusammensetzen (fuer die Post-Details), nur Teile > 0."""
+    teile = [("Neue Konten", p.get("konten", 0), 15), ("Besuche über den Link", p.get("besuche", 0), 2),
+             ("Geteilt", p.get("geteilt", 0), 4), ("Kommentare", p.get("kommentare", 0), 3),
+             ("Gespeichert", p.get("gespeichert", 0), 3), ("Gefällt mir", p.get("reaktionen", 0), 1)]
+    out = [{"name": n, "anzahl": int(a or 0), "punkte": int(a or 0) * f} for n, a, f in teile if a]
+    if (p.get("reichweite") or 0) >= 100:
+        out.append({"name": "Erreicht (je 100 = 1)", "anzahl": int(p["reichweite"]), "punkte": int(p["reichweite"]) // 100})
+    return out
+
+
 def beitraege(zeilen: list[dict], quellen: dict | None = None) -> list[dict]:
     posts: dict = {}
     for z in zeilen:
@@ -106,31 +130,47 @@ def beitraege(zeilen: list[dict], quellen: dict | None = None) -> list[dict]:
         p = posts.setdefault(pid, {
             "id": pid, "titel": z.get("titel"), "art": z.get("art") or "post", "sprache": z.get("sprache"),
             "reel_nr": m.get("reel_nr"), "format": m.get("thema"), "hook_stil": m.get("hook_stil"),
+            "aufforderung": m.get("aufforderung"), "folge": m.get("folge"),
             "stand": z["post_stand"].isoformat() if hasattr(z.get("post_stand"), "isoformat") else z.get("post_stand"),
-            "gepostet": z.get("gepostet"), "plattformen": {},
+            "gepostet": z.get("gepostet"), "geplant": z.get("geplant_um"), "plattformen": {},
             "reaktionen": 0, "kommentare": 0, "geteilt": 0, "gespeichert": 0, "reichweite": 0,
             "erreicht": 0, "reaktionen_summe": 0, "gemessen": False, "zahlen_am": None})
         if z.get("gepostet") and (p["gepostet"] is None or z["gepostet"] < p["gepostet"]):
             p["gepostet"] = z["gepostet"]
-        gemessen = z.get("zahlen_am") is not None
-        p["plattformen"][z["plattform"]] = {"erreicht": erreicht(z) if gemessen else None,
-                                            "reaktionen": reaktionen(z) if gemessen else None,
-                                            "url": z.get("url")}
+        if z.get("geplant_um") and (p["geplant"] is None or z["geplant_um"] < p["geplant"]):
+            p["geplant"] = z["geplant_um"]
+        gemessen = _gemessen(z)
+        p["plattformen"][z["plattform"]] = {
+            "erreicht": erreicht(z) if gemessen else None, "reaktionen": reaktionen(z) if gemessen else None,
+            "url": z.get("url"), "gepostet": _iso(z.get("gepostet")), "zahlen_am": _iso(z.get("zahlen_am")),
+            **{k: (int(z[k]) if z.get(k) is not None else None) for k in
+               ("reichweite", "aufrufe", "kommentare", "gespeichert", "geteilt")},
+            "gefaellt": int(z["reaktionen"]) if z.get("reaktionen") is not None else None}
         for k in ("reaktionen", "kommentare", "geteilt", "gespeichert", "reichweite"):
             p[k] += int(z.get(k) or 0)
         p["erreicht"] += erreicht(z)
         p["reaktionen_summe"] += reaktionen(z)
         if gemessen:
             p["gemessen"] = True
+        if z.get("zahlen_am") is not None:
             p["zahlen_am"] = max(p["zahlen_am"], z["zahlen_am"]) if p["zahlen_am"] else z["zahlen_am"]
     out = []
     for p in posts.values():
         q = (quellen or {}).get(f"p{p['id']}") or {}
         p["besuche"] = int((q.get("schritte") or {}).get("besuch") or 0)
         p["konten"] = int(q.get("konten") or 0)
+        p["besuche_tage"] = {str(d)[:10]: int(n or 0) for d, n in sorted((q.get("tage") or {}).items())}
+        if p["besuche"] or p["konten"]:
+            p["gemessen"] = True                     # Besuche ueber den Post-Link sind eine Messung
         p["punkte"] = redaktion.punkte(p["besuche"], p["konten"], p["reaktionen"], p["kommentare"], p["geteilt"],
                                        p["reichweite"], p["gespeichert"])
+        p["punkte_teile"] = punkte_teile(p)
         p["tag"] = _tag(p["gepostet"])
+        p["platz"] = "reel2" if p["art"] == "reel" and p["reel_nr"] == 2 else p["art"]
+        g = p["gepostet"]
+        lokal = g.astimezone(himmel.WIEN) if isinstance(g, datetime) and g.tzinfo else g
+        p["stunde"] = lokal.hour if isinstance(lokal, datetime) else None
+        p["uhrzeit"] = lokal.strftime("%H:%M") if isinstance(lokal, datetime) else None
         out.append(p)
     return sorted(out, key=lambda p: p["gepostet"] or datetime.min.replace(tzinfo=himmel.WIEN), reverse=True)
 
@@ -314,8 +354,26 @@ def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bo
     stand = max((p["zahlen_am"] for p in posts if p["zahlen_am"]), default=None)
 
     def oeffentlich(p: dict) -> dict:
-        return {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in p.items()
-                if k not in ("reaktionen", "kommentare", "geteilt", "gespeichert", "reichweite", "zahlen_am", "hook_stil")}
+        out = {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in p.items()
+               if k not in ("reaktionen", "kommentare", "geteilt", "gespeichert", "reichweite")}
+        out["hook_name"] = redaktion.HOOK_NAMEN.get(p.get("hook_stil"))
+        out["aufforderung_name"] = redaktion.AUFFORDERUNG_NAMEN.get(p.get("aufforderung"))
+        return out
+
+    tr = trichter(jetzt)
+    try:
+        zeiten = posten.einstellungen().get("zeiten") or {}
+    except Exception:  # noqa: BLE001
+        zeiten = {}
+    verlaeufe = {}
+    for pl in PLATTFORMEN:
+        if verb.get(pl):
+            try:
+                verlaeufe[pl] = posten.follower_verlauf(FOLLOWER_SCHLUESSEL[pl])
+            except Exception:  # noqa: BLE001
+                verlaeufe[pl] = {}
+    analyse = auswertung.auswerten(im_zeitraum, tage=tage, quellen=(stat or {}).get("quellen"), kpis=kpis, trichter=tr,
+                                   trichter_vorher=trichter(vorher), follower_verlaeufe=verlaeufe, zeiten=zeiten)
 
     return {
         "von": von.isoformat(), "bis": bis.isoformat(), "tage": laenge,
@@ -323,7 +381,8 @@ def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bo
         "statistik": "ok" if stat is not None else stat_fehler,
         "verbunden": verb, "kpis": kpis, "follower": follower(verb),
         "top": [oeffentlich(p) for p in top],
-        "trichter": trichter(jetzt),
+        "trichter": tr,
+        "analyse": analyse, "zeiten": zeiten,
         "lernen": lern_saetze(bewertet),
         "verlauf": verlauf,
         "beitraege": [oeffentlich(p) for p in im_zeitraum] if mit_tabelle else [],

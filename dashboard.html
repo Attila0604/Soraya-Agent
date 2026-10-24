@@ -814,6 +814,146 @@
     .trichter .spur{margin-right:96px}
     .wz-wahl select{flex:1 1 0;max-width:none}
   }
+  /* ================= Wirkung, Runde 2: Unterreiter, Diagramme, Soraya erkennt ================= */
+  /* feste Farbe je Plattform (Validator: dunkel gegen #12162A, alle Paare farbfehlsichtig-sicher) */
+  :root{--pl-facebook:#3987e5;--pl-instagram:#d55181;--pl-tiktok:#AE8B3E}
+  .wz-leiste{position:sticky;top:var(--kopf-h,58px);z-index:4;display:flex;align-items:center;justify-content:space-between;
+             gap:var(--s2) var(--s3);flex-wrap:wrap;margin:calc(-1 * var(--s3)) -18px var(--s4);padding:var(--s2) 18px;
+             background:rgba(11,14,26,.92);border-bottom:1px solid var(--line-soft);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .wz-zeit{display:flex;align-items:center;gap:var(--s3)}
+  .wz-zeit .segment button,.wz-reiter button{white-space:nowrap}
+  #wZeitraumText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .segment button[aria-selected="true"]{background:rgba(201,162,75,.14);color:var(--champagne)}
+  .wz-reiter button{font-size:13.5px}
+  .wz-zwei{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--s4)}
+  .wz-zwei>.panel{min-width:0}
+  .wz-unter{margin:-6px 0 var(--s3)}
+  .wz-erkennt h2,.wz-spr h2,.wz-pv h2,.wz-fol h2,.wz-zeiten h2,.wz-zwei h2{font-size:21px;margin:0 0 var(--s3)}
+  .wz-stand{margin:0 0 var(--s4)}
+  ol.erkennt{list-style:none;margin:0;padding:0}
+  .erk{display:grid;grid-template-columns:24px 76px minmax(0,1fr);gap:var(--s3);align-items:start;padding:var(--s3) 0;border-top:1px solid var(--line-soft)}
+  .erk:first-child{border-top:0;padding-top:0}
+  .erk-ikon{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;margin-top:3px;border:1px solid var(--line)}
+  .erk.plus .erk-ikon{color:var(--gruen);border-color:rgba(127,210,127,.45)}
+  .erk.minus .erk-ikon{color:#e88a7a;border-color:rgba(232,138,122,.45)}
+  .erk.achtung .erk-ikon{color:#FFD58A;border-color:var(--gelb-rand)}
+  .erk.info .erk-ikon{color:var(--gold)}
+  .erk.duenn .erk-ikon{color:var(--mist-dim);border-color:var(--line-soft)}
+  .erk-zahl{font-size:21px;font-weight:600;color:var(--champagne);line-height:1.2;white-space:nowrap}
+  .erk.duenn .erk-zahl{color:var(--mist-dim)}
+  .erk-text{min-width:0}
+  .erk-text b{display:block;color:#F4EEDD;font-weight:500;font-size:15px;line-height:1.4}
+  .erk-text .meta{display:block;margin-top:2px}
+  .erk-text .textlink{margin:2px 0 -8px -8px;min-height:36px}
+  .trichter2{display:flex;flex-direction:column;align-items:center}
+  .tr-stufe{width:var(--b);min-width:150px;display:flex;align-items:baseline;justify-content:center;gap:8px;padding:8px 12px;border-radius:10px;
+            background:linear-gradient(180deg,rgba(231,211,161,var(--a)),rgba(201,162,75,calc(var(--a) * .55)));border:1px solid rgba(201,162,75,.38)}
+  .tr-stufe b{font-size:19px;color:#F4EEDD;font-weight:600;font-variant-numeric:tabular-nums}
+  .tr-stufe span{font-size:13px;color:var(--mist)}
+  .tr-stufe.schwach{border-color:var(--gelb-rand)}
+  .tr-schritt{font-size:12.5px;color:var(--mist-dim);padding:5px 0;display:flex;gap:4px 6px;align-items:center;flex-wrap:wrap;justify-content:center;font-variant-numeric:tabular-nums}
+  .tr-schritt b{color:var(--mist);font-weight:600}
+  .tr-schritt.schwach b{color:#FFD58A}
+  .tr-schritt .trend{font-size:12px}
+  .tr-marke{font-size:11px;color:#FFD58A;border:1px solid var(--gelb-rand);border-radius:999px;padding:0 7px}
+  button.wz-titel{all:unset;box-sizing:border-box;cursor:pointer;display:block;max-width:100%;color:#F4EEDD;font-weight:600;font-size:14.5px;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px}
+  button.wz-titel:focus-visible{outline:2px solid var(--champagne);outline-offset:2px}
+  table.wz-posts td.post button.wz-titel{white-space:normal;font-size:14px}
+  table.wz-posts tbody tr{cursor:pointer}
+  @media (hover:hover){ table.wz-posts tbody tr:hover{background:rgba(231,211,161,.035)} button.wz-titel:hover{color:var(--champagne)} }
+  ul.hb{list-style:none;margin:0;padding:0;display:grid;gap:var(--s3)}
+  ul.hb li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px var(--s3);align-items:baseline}
+  .hb-n{grid-row:1;grid-column:1;font-size:13.5px;color:var(--mist);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hb-w{grid-row:1;grid-column:2;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .hb-w b{color:#F4EEDD;font-weight:600;font-size:13.5px;margin-right:6px}
+  .hb-w small{font-size:11.5px;color:var(--mist-dim)}
+  .hb-spur{grid-row:2;grid-column:1/-1;height:8px;position:relative;border-radius:4px;background:rgba(195,199,214,.05)}
+  .hb-spur i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--viz-gold)}
+  ul.hb li.grau .hb-spur i{background:#3A4060}
+  ul.hb li.grau .hb-n,ul.hb li.grau .hb-w b{color:var(--mist-dim);font-weight:500}
+  .hb-offen{margin:var(--s3) 0 0}
+  .pl-name{display:inline-flex;align-items:center;gap:6px}
+  .pl-name .ikon{width:14px;height:14px;color:var(--mist-dim)}
+  .pl-farbe{display:inline-block;width:8px;height:8px;border-radius:2px;flex:none}
+  .pv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s5)}
+  .pv-gruppe h3{font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mist-dim);font-weight:500;margin:0 0 var(--s3)}
+  .wz-pv>.meta{margin:var(--s4) 0 0}
+  .wz-leer{text-align:center;padding:var(--s5) var(--s3);color:var(--mist-dim)}
+  .wz-leer b{display:block;font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--champagne);font-weight:600;margin-bottom:4px}
+  .wz-leer span{font-size:13.5px}
+  .viz-leer{position:absolute;left:40px;right:0;top:0;height:150px;display:grid;place-items:center;font-size:13px;color:var(--mist-dim);pointer-events:none}
+  ul.fol-liste{list-style:none;padding:0;margin:0}
+  ul.fol-liste li{display:flex;gap:var(--s1) var(--s3);align-items:baseline;flex-wrap:wrap;padding:var(--s2) 0;border-top:1px solid var(--line-soft)}
+  ul.fol-liste li:first-child{border-top:0}
+  ul.fol-liste b{color:#F4EEDD;font-size:17px;font-weight:600}
+  .wz-fol .legende{margin:var(--s2) 0 0}
+  .hm-rahmen{overflow-x:auto}
+  table.hm{width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed;font-variant-numeric:tabular-nums}
+  table.hm th{font-size:11.5px;font-weight:500;color:var(--mist-dim);padding:2px;text-align:center;vertical-align:bottom}
+  table.hm thead th:first-child,table.hm tbody th{width:28px;text-align:left}
+  table.hm em.hm-marke{display:block;font-style:normal;font-size:10.5px;color:var(--gold);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  table.hm td{padding:0;height:34px;border-radius:6px}
+  table.hm td.hm-leer{border:1px solid var(--line-soft);text-align:center;color:#3A4060}
+  table.hm td.mark.hm-leer{border-color:rgba(201,162,75,.28)}
+  button.hm-zelle{all:unset;box-sizing:border-box;display:grid;place-items:center;width:100%;height:34px;border-radius:6px;cursor:pointer;
+                  font-size:12.5px;font-weight:600;background:color-mix(in oklab,#E7D3A1 calc(var(--st) * 100%),#1E2342)}
+  table.hm td.mark button.hm-zelle{box-shadow:inset 0 0 0 1px rgba(231,211,161,.55)}
+  button.hm-zelle.duenn{font-weight:400}
+  button.hm-zelle:focus-visible{outline:2px solid var(--champagne);outline-offset:1px}
+  .hm-info{margin:var(--s2) 0 0;min-height:1.6em}
+  ul.zeit-tipps{list-style:none;padding:0;margin:var(--s3) 0 0}
+  ul.zeit-tipps li{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:center;padding:var(--s1) 0;border-top:1px solid var(--line-soft);font-size:14px}
+  ul.zeit-tipps b{color:#F4EEDD;font-weight:600}
+  .zeiten input.vorschlag{border-color:var(--champagne);box-shadow:0 0 0 3px rgba(231,211,161,.16)}
+  a.textlink{display:inline-flex;align-items:center;min-height:36px;padding:0 4px;color:var(--champagne);font-size:13.5px;text-decoration:none}
+  a.textlink:focus-visible{outline:2px solid var(--champagne)}
+  /* Post-Details als Schublade (PC rechts, Handy von unten) */
+  dialog.wz-schublade{margin:0 0 0 auto;height:100vh;max-height:100vh;width:min(440px,100vw);border-radius:16px 0 0 16px;border-right:0;padding:var(--s5)}
+  .sd-kopf{display:grid;grid-template-columns:44px minmax(0,1fr) 36px;gap:var(--s3);align-items:start;margin-bottom:var(--s3)}
+  .sd-kopf h3{font-size:21px;margin:0 0 2px;line-height:1.2}
+  .sd-kopf .wk-zu{margin:-6px -8px 0 0}
+  .sd-punkte{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);padding:var(--s3) 0 var(--s1);border-top:1px solid var(--line-soft)}
+  .sd-punkte b{font-size:30px;color:var(--champagne);font-weight:600;margin-right:6px}
+  .sd-punkte span{color:var(--mist-dim);font-size:13px}
+  details.sd-teile summary{font-size:13px;color:var(--gold);cursor:pointer;padding:4px 0}
+  details.sd-teile ul{list-style:none;padding:0;margin:4px 0 var(--s2);font-size:13px}
+  details.sd-teile li{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--line-soft)}
+  details.sd-teile li b{color:var(--champagne);font-weight:600}
+  .sd-link{display:flex;gap:var(--s2) var(--s5);flex-wrap:wrap;padding:var(--s3) 0;border-top:1px solid var(--line-soft);font-size:13px;color:var(--mist-dim)}
+  .sd-link b{color:#F4EEDD;font-size:16px;margin-right:3px;font-weight:600}
+  .sd-pl{border-top:1px solid var(--line-soft);padding:var(--s2) 0 var(--s3)}
+  .sd-pl-kopf{display:flex;justify-content:space-between;align-items:center;color:#F4EEDD;font-weight:500;font-size:14px}
+  dl.sd-zahlen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2) var(--s3);margin:var(--s1) 0 0}
+  dl.sd-zahlen dt{font-size:11.5px;color:var(--mist-dim)}
+  dl.sd-zahlen dd{margin:0;font-size:16px;color:#F4EEDD;font-weight:600;font-variant-numeric:tabular-nums}
+  dialog.wz-schublade h4{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mist-dim);font-weight:500;margin:var(--s2) 0 var(--s3);
+                         border-top:1px solid var(--line-soft);padding-top:var(--s3)}
+  ol.sd-zeit{list-style:none;margin:0 0 var(--s3) 5px;padding:0 0 0 16px;border-left:1px solid var(--line)}
+  ol.sd-zeit li{position:relative;padding:0 0 var(--s3);font-size:13.5px}
+  ol.sd-zeit li:last-child{padding-bottom:0}
+  ol.sd-zeit li::before{content:"";position:absolute;left:-22px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--gold);border:1px solid var(--panel)}
+  ol.sd-zeit .zp{display:block;font-size:12px;color:var(--mist-dim);font-variant-numeric:tabular-nums}
+  ol.sd-zeit b{display:block;color:#F4EEDD;font-weight:500}
+  .sd-mini{display:inline-flex;align-items:flex-end;gap:2px;height:24px;margin:4px 8px 0 0;vertical-align:bottom}
+  .sd-mini i{width:6px;background:var(--viz-violet);border-radius:2px 2px 0 0}
+  @media (max-width:820px){ .wz-zwei{grid-template-columns:1fr} .pv{grid-template-columns:1fr;gap:var(--s4)} }
+  @media (max-width:560px){
+    .wz-leiste{padding:var(--s2) 16px;margin-left:-16px;margin-right:-16px}
+    .wz-reiter{display:flex;width:100%}
+    .wz-reiter button{flex:1 1 auto;justify-content:center;padding:0 8px;font-size:13px}
+    .wz-zeit{width:100%;justify-content:space-between;gap:var(--s2)}
+    #wZeitraumText{font-size:12px}
+    .wz-zeit .segment button{padding:0 11px;min-height:32px;font-size:12.5px}
+    .erk{grid-template-columns:22px 62px minmax(0,1fr);gap:var(--s2)}
+    .erk-zahl{font-size:17px;padding-top:2px}
+    .erk-text b{font-size:14.5px}
+    .tr-stufe{min-width:132px}
+    dialog.wz-schublade{margin:auto 0 0;width:100vw;max-width:100vw;height:auto;max-height:88vh;border-radius:18px 18px 0 0;border-bottom:0;padding:var(--s4)}
+    table.hm em.hm-marke{font-size:9.5px}
+    table.hm th{font-size:10.5px}
+    button.hm-zelle{font-size:11.5px}
+  }
 </style>
 </head>
 <body>
@@ -1067,22 +1207,31 @@
   </section>
 
   <section id="view-wirkung" class="hide">
-    <div class="wz-kopf">
-      <span class="meta" id="wZeitraumText"></span>
-      <div class="segment" id="wZeitraum" role="group" aria-label="Zeitraum">
-        <button type="button" data-tage="7" aria-pressed="true">7 Tage</button>
-        <button type="button" data-tage="30" aria-pressed="false">30 Tage</button>
-        <button type="button" data-tage="90" aria-pressed="false">90 Tage</button>
+    <div class="wz-leiste" id="wzLeiste">
+      <div class="segment wz-reiter" id="wReiter" role="tablist" aria-label="Bereiche der Wirkung">
+        <button type="button" role="tab" id="wr-ueberblick" data-wr="ueberblick" aria-selected="true" aria-controls="wCockpit">Überblick</button>
+        <button type="button" role="tab" id="wr-posts" data-wr="posts" aria-selected="false" aria-controls="wCockpit" tabindex="-1">Posts</button>
+        <button type="button" role="tab" id="wr-plattformen" data-wr="plattformen" aria-selected="false" aria-controls="wCockpit" tabindex="-1">Plattformen</button>
+        <button type="button" role="tab" id="wr-lernen" data-wr="lernen" aria-selected="false" aria-controls="wCockpit" tabindex="-1">Lernen</button>
+      </div>
+      <div class="wz-zeit">
+        <span class="meta" id="wZeitraumText"></span>
+        <div class="segment" id="wZeitraum" role="group" aria-label="Zeitraum">
+          <button type="button" data-tage="7" aria-pressed="true">7 Tage</button>
+          <button type="button" data-tage="30" aria-pressed="false">30 Tage</button>
+          <button type="button" data-tage="90" aria-pressed="false">90 Tage</button>
+        </div>
       </div>
     </div>
-    <div id="wCockpit"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
-    <details class="wmehr" id="wDetails"><summary>Details</summary>
+    <div id="wCockpit" role="tabpanel" aria-labelledby="wr-ueberblick"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
+    <details class="wmehr" id="wDetails" hidden><summary>Rohdaten der Plattformen und der App</summary>
       <div class="werkzeug">
         <div><label for="wKennzahl">Kennzahl im Verlauf<span data-hilfe="kennzahl"></span></label>
           <select id="wKennzahl"></select></div>
       </div>
       <div id="wirkungInhalt"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
     </details>
+    <dialog id="wzPost" class="wz-schublade" aria-labelledby="wzPostTitel"></dialog>
   </section>
 
   <div id="status" class="leer" role="status" aria-live="polite"></div>
@@ -2402,13 +2551,22 @@ function zeichneVerlauf(){
   box.addEventListener('pointerleave', () => { tip.classList.add('hide'); box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); });
 }
 $('wKennzahl').onchange = () => wirkungDaten && zeigeWirkung();
-window.addEventListener('resize', () => { if(aktiv === 'wirkung'){ zeichneVerlauf(); zeichneTage(); } });
+window.addEventListener('resize', () => { if(aktiv === 'wirkung'){ zeichneVerlauf(); zeichneWirkung(); } });
 LADER.wirkung = ladeCockpit;
-/* ---------- Zahlen-Cockpit (oben in "Wirkung"): ein Aufruf /wirkung/cockpit ---------- */
+/* ---------- Zahlen-Cockpit "Wirkung": ein Aufruf /wirkung/cockpit, vier Unterreiter ---------- */
 let W_TAGE = 7, cockpitDaten = null, wDetailsTage = null, cockpitNr = 0;
+const W_REITER = ['ueberblick', 'posts', 'plattformen', 'lernen'];
+const merkLesen = (k) => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+const merkSchreiben = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} };
+let wReiter = W_REITER.includes(merkLesen('soraya.wirkung.reiter')) ? merkLesen('soraya.wirkung.reiter') : 'ueberblick';
+if([7, 30, 90].includes(+merkLesen('soraya.wirkung.tage'))) W_TAGE = +merkLesen('soraya.wirkung.tage');
 const wFilter = {pl: 'alle', format: '', sort: 'punkte', alle: false};
 const PL_KURZ = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok'};
 const COCKPIT_PL = ['facebook', 'instagram', 'tiktok'];
+// feste Farbe je Plattform (geprueft gegen #12162A, auch fuer Farbfehlsichtige) -- nie nach Rang vergeben
+const PL_FARBE = {facebook: 'var(--pl-facebook)', instagram: 'var(--pl-instagram)', tiktok: 'var(--pl-tiktok)'};
+const SPRACHE_NAME = {de: 'Deutsch', en: 'Englisch', hu: 'Ungarisch', it: 'Italienisch'};
+const komma = (x) => x == null ? '–' : (Math.abs(x) >= 10 || Number.isInteger(x) ? zahl(Math.round(x)) : x.toFixed(1).replace('.', ','));
 const prozent = (q) => q == null ? '–' : (q >= 10 || Number.isInteger(q) ? Math.round(q) : String(q).replace('.', ',')) + ' %';
 function trend(k){
   if(k.wert == null) return '<span class="trend neutral">ohne Statistik</span>';
@@ -2422,43 +2580,100 @@ function daumenKlein(p){
 }
 const artName = (p) => ART[platzVon(p)] || ART[p.art] || 'Post';
 const plIkons = (p) => `<span class="wz-pls">${COCKPIT_PL.filter(pl => p.plattformen[pl]).map(pl => `<span class="ikon" title="${PL_KURZ[pl]}">${IKON[pl]}</span>`).join('')}</span>`;
+const plName = (pl) => `<span class="pl-name"><i class="pl-farbe" style="background:${PL_FARBE[pl]}"></i>${IKON[pl]}${PL_KURZ[pl]}</span>`;
+const leer = (titel, text) => `<div class="wz-leer"><b>${esc(titel)}</b><span>${esc(text)}</span></div>`;
+
+/* --- Unterreiter --- */
 function zeigeCockpitW(){
   const d = cockpitDaten, box = $('wCockpit');
-  $('wZeitraumText').textContent = `${kurzIso(d.von)} – ${kurzIso(d.bis)}`;
-  const kp = Object.fromEntries(d.kpis.map(k => [k.schluessel, k]));
-  const hilfeK = {erreicht: 'Wie viele Menschen deine Posts aus diesem Zeitraum gesehen haben – Reichweite, wenn die Plattform sie liefert, sonst Aufrufe. Zusammengezählt über Facebook, Instagram und TikTok.',
-    reaktionen: 'Gefällt mir, Kommentare, Gespeichert und Geteilt – für die Posts aus diesem Zeitraum.',
-    besuche: 'Besuche über deine Post- und Bio-Links (Landingpage und App).', konten: 'Neu angelegte Konten in der App.'};
-  const kacheln = d.kpis.map(k => `<div class="wz-kpi"><div class="l">${esc(k.name)}${k.schluessel === 'erreicht' ? hilfe(hilfeK.erreicht + ' Reaktionen: Gefällt mir, Kommentare, Gespeichert, Geteilt. Besuche: über deine Post- und Bio-Links.', 'Was zählt hier?') : ''}</div>
+  $('wZeitraumText').textContent = matchMedia('(max-width:560px)').matches ? `${datumKurz(d.von)} – ${datumKurz(d.bis)}` : `${kurzIso(d.von)} – ${kurzIso(d.bis)}`;
+  $('wZeitraumText').title = `${datumLang(d.von)} – ${datumLang(d.bis)}`;
+  document.querySelectorAll('#wReiter [data-wr]').forEach(b => {
+    const an = b.dataset.wr === wReiter;
+    b.setAttribute('aria-selected', String(an)); b.tabIndex = an ? 0 : -1;
+  });
+  box.setAttribute('aria-labelledby', 'wr-' + wReiter);
+  box.dataset.reiter = wReiter;
+  box.innerHTML = ({ueberblick: htmlUeberblick, posts: htmlPosts, plattformen: htmlPlattformen, lernen: htmlLernen})[wReiter](d);
+  $('wDetails').hidden = wReiter !== 'plattformen';
+  if(wReiter === 'posts') zeigePostTabelle();
+  zeichneWirkung();
+}
+function zeichneWirkung(){
+  if(!cockpitDaten) return;
+  if(wReiter === 'plattformen'){ zeichneReichweite(); zeichneFollower(); }
+}
+function waehleReiter(r, fokus){
+  if(!W_REITER.includes(r)) return;
+  wReiter = r; merkSchreiben('soraya.wirkung.reiter', r);
+  if(cockpitDaten) zeigeCockpitW();
+  if(fokus) $('wr-' + r).focus();
+  const leiste = $('wzLeiste'); if(leiste.getBoundingClientRect().top < 0 || window.scrollY > $('view-wirkung').offsetTop) window.scrollTo({top: Math.max(0, $('view-wirkung').offsetTop - 70)});
+}
+$('wReiter').addEventListener('click', (ev) => { const b = ev.target.closest('[data-wr]'); if(b) waehleReiter(b.dataset.wr); });
+$('wReiter').addEventListener('keydown', (ev) => {
+  const i = W_REITER.indexOf(wReiter);
+  const n = ev.key === 'ArrowRight' ? i + 1 : ev.key === 'ArrowLeft' ? i - 1 : ev.key === 'Home' ? 0 : ev.key === 'End' ? W_REITER.length - 1 : null;
+  if(n == null) return; ev.preventDefault(); waehleReiter(W_REITER[(n + W_REITER.length) % W_REITER.length], true);
+});
+// Kopfzeile ist fest oben: die Unterreiter-Leiste haengt direkt darunter
+const kopfHoehe = () => document.documentElement.style.setProperty('--kopf-h', (document.querySelector('.kopfzeile').offsetHeight || 0) + 'px');
+kopfHoehe(); window.addEventListener('resize', kopfHoehe);
+
+/* --- Überblick --- */
+const ERK_IKON = {plus: ['↑', 'Gut'], minus: ['↓', 'Schwächer'], achtung: ['!', 'Prüfen'], info: ['✦', 'Hinweis'], duenn: ['○', 'Noch offen']};
+function htmlErkennt(d){
+  const k = (d.analyse || {}).erkennt || [];
+  if(!k.length) return '';
+  return `<div class="panel wz-erkennt"><h2>Soraya erkennt</h2><ol class="erkennt">${k.map(x => {
+    const [ik, lab] = ERK_IKON[x.art] || ERK_IKON.info;
+    const aktion = x.aktion ? `<button class="textlink" data-zeit-platz="${esc(x.aktion.platz)}" data-zeit="${esc(x.aktion.zeit)}">Übernehmen ›<span class="sr"> ${esc(x.aktion.text)} (nur eintragen, du speicherst selbst)</span></button>`
+      : x.post_id ? `<button class="textlink" data-wz-post="${esc(x.post_id)}">Ansehen ›</button>` : '';
+    return `<li class="erk ${esc(x.art)}"><span class="erk-ikon" aria-hidden="true">${ik}</span><span class="sr">${lab}: </span>
+      <span class="erk-zahl">${esc(x.zahl)}</span>
+      <div class="erk-text"><b>${esc(x.text)}</b>${x.detail ? `<span class="meta">${esc(x.detail)}</span>` : ''}${aktion}</div></li>`; }).join('')}</ol></div>`;
+}
+function htmlTrichter(d){
+  const t = d.trichter, v = ((d.analyse || {}).trichter_vorher || {}).stufen || [];
+  const breite = [100, 80, 62, 46];
+  const stufen = t.stufen.map((s, i) => {
+    const vq = (v[i] || {}).quote, q = s.quote;
+    const vgl = i && q != null && vq != null ? (q > vq ? `<span class="trend auf"><span aria-hidden="true">↑</span> davor ${prozent(vq)}</span>` : q < vq ? `<span class="trend ab"><span aria-hidden="true">↓</span> davor ${prozent(vq)}</span>` : `<span class="trend neutral">wie davor</span>`) : '';
+    return `${i ? `<div class="tr-schritt${s.schwach ? ' schwach' : ''}"><span aria-hidden="true">↓</span> <b>${prozent(q)}</b> kommen weiter ${vgl}${s.schwach ? ' <span class="tr-marke">schwächster Schritt</span>' : ''}</div>` : ''}
+      <div class="tr-stufe${s.schwach ? ' schwach' : ''}" role="listitem" style="--b:${breite[i]}%;--a:${(0.17 - i * 0.03).toFixed(2)}"><b>${s.wert == null ? '–' : zahl(s.wert)}</b><span>${esc(s.name)}</span></div>`;
+  }).join('');
+  return `<div class="panel wz-weg"><h2>Vom Post zum Konto</h2><div class="trichter2" role="list" aria-label="Vom Post zum Konto">${stufen}</div>
+    <p class="weg-tipp${t.schwach ? '' : ' leise'}">${esc(t.hinweis)}</p></div>`;
+}
+function htmlUeberblick(d){
+  const hilfeK = 'Erreicht: Reichweite, wenn die Plattform sie liefert, sonst Aufrufe – für die Posts aus diesem Zeitraum, zusammengezählt über Facebook, Instagram und TikTok. Reaktionen: Gefällt mir, Kommentare, Gespeichert, Geteilt. Besuche: über deine Post- und Bio-Links. Neue Konten: neu angelegt in der App.';
+  const kacheln = d.kpis.map(k => `<div class="wz-kpi"><div class="l">${esc(k.name)}${k.schluessel === 'erreicht' ? hilfe(hilfeK, 'Was zählt hier?') : ''}</div>
     <div class="v">${k.wert == null ? '–' : zahl(k.wert)}</div><div class="d">${trend(k)}</div></div>`).join('');
   const fol = (d.follower || []).map(f => `<span class="f"><span class="ikon" aria-hidden="true">${IKON[f.plattform]}</span><span class="sr">${PL_KURZ[f.plattform]}</span>
       <b>${f.follower == null ? '–' : zahl(f.follower)}</b>${f.zuwachs_7 ? `<small class="${f.zuwachs_7 > 0 ? 'plus' : 'minus'}">${f.zuwachs_7 > 0 ? '+' : '−'}${zahl(Math.abs(f.zuwachs_7))} diese Woche</small>`
       : f.follower == null ? '<small>noch nicht gemessen</small>' : ''}</span>`).join('');
-  const top = d.top.length ? `<ol class="top3">${d.top.map((p, i) => `<li>${daumenKlein(p)}<div class="was"><b>${esc(p.titel || 'Post ' + p.id)}</b>
+  const top = d.top.length ? `<ol class="top3">${d.top.map(p => `<li>${daumenKlein(p)}<div class="was"><button class="wz-titel" data-wz-post="${esc(p.id)}">${esc(p.titel || 'Post ' + p.id)}</button>
       <span class="meta">${esc(artName(p))}${p.format ? ' · ' + esc(p.format) : ''} · ${esc(kurzIso(p.tag))}</span>${plIkons(p)}</div>
       <span class="pkt"><b>${zahl(p.punkte)}</b><small>Punkte</small></span></li>`).join('')}</ol>`
     : `<p class="meta">${d.beitraege.length ? 'Für diese Posts gibt es noch keine Zahlen.' : 'In diesem Zeitraum wurde nichts gepostet.'}</p>`;
-  const t = d.trichter, weg = t.stufen.map((s, i) => `${i ? `<span class="pfeil${s.schwach ? ' schwach' : ''}"><span aria-hidden="true">→</span><small>${prozent(s.quote)}</small></span>` : ''}
-      <span class="stufe${s.schwach ? ' schwach' : ''}" role="listitem"><b>${s.wert == null ? '–' : zahl(s.wert)}</b><small>${esc(s.name)}</small>${i ? `<em class="wq"><span aria-hidden="true">→ </span>${prozent(s.quote)}</em>` : ''}</span>`).join('');
   const lernt = d.lernen.saetze.map(x => `<div class="${x.art}"><dt>${esc(x.titel)}</dt><dd>${esc(x.text)}</dd></div>`).join('');
-  box.innerHTML = `
+  return `
     <div class="wz-kpis">${kacheln}</div>
     ${d.statistik !== 'ok' ? `<p class="wz-hinweis">${d.statistik === 'nicht_verbunden' ? 'Besuche und neue Konten fehlen: Die Statistik ist noch nicht verbunden.' : 'Die App-Statistik ist gerade nicht erreichbar.'}
       <button class="textlink" data-oeffne-details="1">Anleitung ›</button></p>` : ''}
     ${fol ? `<div class="wz-follower"><span class="wz-label">Follower</span>${fol}</div>` : ''}
-    <div class="panel wz-top"><h2>Beste Posts</h2>${top}</div>
-    <div class="panel wz-weg"><h2>Vom Post zum Konto</h2>
-      <div class="weg" role="list">${weg}</div>
-      <p class="weg-tipp${t.schwach ? '' : ' leise'}">${esc(t.hinweis)}</p></div>
+    ${htmlErkennt(d)}
+    <div class="wz-zwei">${htmlTrichter(d)}
+      <div class="panel wz-top"><h2>Beste Posts</h2>${top}</div></div>
     <div class="panel wz-lernt"><h2>Soraya lernt</h2><dl class="lernt">${lernt}</dl>
-      ${d.lernen.duenn ? '' : `<p class="meta">Aus ${mehrzahl(d.lernen.gemessen, 'gemessenen Post', 'gemessenen Posts')} der letzten 30 Tage.</p>`}</div>
-    <div class="panel wz-tabelle"><div class="panel-kopf"><h2>Alle Posts</h2><span class="meta" id="wzAnzahl"></span></div>
+      ${d.lernen.duenn ? '' : `<p class="meta">Aus ${mehrzahl(d.lernen.gemessen, 'gemessenen Post', 'gemessenen Posts')} der letzten 30 Tage.</p>`}</div>`;
+}
+
+/* --- Posts: Tabelle + Details-Schublade --- */
+function htmlPosts(d){
+  return `<div class="panel wz-tabelle"><div class="panel-kopf"><h2>Alle Posts</h2><span class="meta" id="wzAnzahl"></span></div>
       <div class="wz-filter" id="wzFilter"></div><div id="wzPosts"></div></div>
-    <div class="panel wz-tage"><h2>Pro Tag</h2>
-      <div class="legende"><span><i class="sq"></i>Erreicht</span><span><i class="sq viol"></i>Besuche</span><span><i class="dot"></i>Tag mit Post</span></div>
-      <div class="viz" id="wzTage"></div>
-      ${d.zahlen_stand ? `<p class="meta">Zahlen der Plattformen: Stand ${esc(tagName(d.zahlen_stand))} ${esc(uhr(d.zahlen_stand))} · werden alle 6 Stunden geholt.</p>` : ''}</div>`;
-  zeigePostTabelle(); zeichneTage();
+    ${d.zahlen_stand ? `<p class="meta wz-stand">Zahlen der Plattformen: Stand ${esc(tagName(d.zahlen_stand))} ${esc(uhr(d.zahlen_stand))} · werden alle 6 Stunden geholt.</p>` : ''}`;
 }
 function zeigePostTabelle(){
   const d = cockpitDaten; if(!d || !$('wzPosts')) return;
@@ -2473,76 +2688,283 @@ function zeigePostTabelle(){
   const s = wFilter.sort;
   liste.sort((a, b) => s === 'datum' ? String(b.gepostet).localeCompare(String(a.gepostet)) : s === 'erreicht' ? b.erreicht - a.erreicht : b.punkte - a.punkte);
   $('wzAnzahl').textContent = mehrzahl(liste.length, 'Post', 'Posts');
-  if(!liste.length){ $('wzPosts').innerHTML = `<p class="meta">${d.beitraege.length ? 'Keine Posts für diese Auswahl.' : 'In diesem Zeitraum wurde nichts gepostet.'}</p>`; return; }
-  const zeigen = wFilter.alle ? liste : liste.slice(0, matchMedia('(max-width:560px)').matches ? 6 : 12);
+  if(!liste.length){ $('wzPosts').innerHTML = d.beitraege.length ? '<p class="meta">Keine Posts für diese Auswahl.</p>' : leer('In diesem Zeitraum wurde nichts gepostet.', 'Sobald Posts rausgehen, stehen sie hier – mit den Zahlen jeder Plattform.'); return; }
+  const zeigen = wFilter.alle ? liste : liste.slice(0, matchMedia('(max-width:560px)').matches ? 8 : 15);
   const zelle = (p, pl) => { const x = p.plattformen[pl];
     if(!x) return `<td class="pl leer" data-l="${PL_KURZ[pl]}"><span title="nicht gepostet">–</span><span class="sr">nicht gepostet</span></td>`;
     if(x.erreicht == null) return `<td class="pl" data-l="${PL_KURZ[pl]}"><span class="meta">noch keine Zahlen</span></td>`;
     return `<td class="pl" data-l="${PL_KURZ[pl]}"><b>${zahl(x.erreicht)}</b><small>${zahl(x.reaktionen)} Reakt.</small></td>`; };
   $('wzPosts').innerHTML = `<table class="wz-posts" style="--n:${Math.max(2, pls.length)}"><thead><tr><th scope="col">Post</th>${pls.map(pl => `<th scope="col" class="pl" title="${PL_KURZ[pl]}: erreicht · Reaktionen"><span class="ikon">${IKON[pl]}</span><span class="sr">${PL_KURZ[pl]}</span></th>`).join('')}<th scope="col" class="pkt">Punkte</th></tr></thead><tbody>
-    ${zeigen.map(p => `<tr><td class="post"><b>${esc(p.titel || 'Post ' + p.id)}</b><span class="meta">${esc(kurzIso(p.tag))} · ${esc(artName(p))}${p.format ? ' · ' + esc(p.format) : ''}${p.besuche ? ` · ${mehrzahl(p.besuche, 'Besuch', 'Besuche')}` : ''}</span></td>
+    ${zeigen.map(p => `<tr data-wz-post="${esc(p.id)}"><td class="post"><button class="wz-titel" data-wz-post="${esc(p.id)}">${esc(p.titel || 'Post ' + p.id)}</button><span class="meta">${esc(kurzIso(p.tag))} · ${esc(artName(p))}${p.format ? ' · ' + esc(p.format) : ''}${p.besuche ? ` · ${mehrzahl(p.besuche, 'Besuch', 'Besuche')}` : ''}</span></td>
       ${pls.map(pl => zelle(p, pl)).join('')}<td class="pkt" data-l="Punkte"><b>${zahl(p.punkte)}</b></td></tr>`).join('')}</tbody></table>
     ${liste.length > zeigen.length ? `<button class="textlink" data-wz-alle="1">Alle ${liste.length} zeigen ⌄</button>` : ''}
-    <p class="meta">Je Plattform: erreicht (Reichweite, sonst Aufrufe) und Reaktionen.</p>`;
+    <p class="meta">Je Plattform: erreicht (Reichweite, sonst Aufrufe) und Reaktionen. Tippe auf einen Post für alle Zahlen.</p>`;
 }
+const zeitpunkt = (iso) => iso ? `${tagName(iso)} ${uhr(iso)}` : '–';
+function oeffnePost(id){
+  const d = cockpitDaten; if(!d) return;
+  const p = d.beitraege.find(x => String(x.id) === String(id)) || d.top.find(x => String(x.id) === String(id)); if(!p) return;
+  const gem = d.beitraege.filter(x => x.gemessen), schnitt = gem.length ? gem.reduce((s, x) => s + x.punkte, 0) / gem.length : 0;
+  const faktor = schnitt > 0 && p.gemessen ? p.punkte / schnitt : null;
+  const vgl = faktor == null ? '' : faktor >= 1.15 ? `<span class="trend auf">${komma(faktor)}× dein Schnitt</span>` : faktor <= 0.85 ? `<span class="trend ab">${komma(faktor)}× dein Schnitt</span>` : '<span class="trend neutral">etwa dein Schnitt</span>';
+  const ZAHLEN = [['erreicht', 'Erreicht'], ['aufrufe', 'Aufrufe'], ['gefaellt', 'Gefällt mir'], ['kommentare', 'Kommentare'], ['gespeichert', 'Gespeichert'], ['geteilt', 'Geteilt']];
+  const pls = COCKPIT_PL.filter(pl => p.plattformen[pl]).map(pl => { const x = p.plattformen[pl];
+    const werte = x.erreicht == null ? '<p class="meta">Noch keine Zahlen von dieser Plattform.</p>'
+      : `<dl class="sd-zahlen">${ZAHLEN.filter(([k]) => x[k] != null && !(k === 'aufrufe' && x.aufrufe === x.erreicht)).map(([k, n]) => `<div><dt>${n}</dt><dd>${zahl(x[k])}</dd></div>`).join('')}</dl>`;
+    return `<section class="sd-pl"><div class="sd-pl-kopf">${plName(pl)}${x.url ? `<a class="textlink" href="${esc(x.url)}" target="_blank" rel="noopener">Öffnen ↗</a>` : ''}</div>${werte}</section>`; }).join('');
+  const teile = (p.punkte_teile || []).map(t => `<li><span>${esc(t.name)}${t.name.startsWith('Erreicht') ? '' : ` · ${zahl(t.anzahl)}`}</span><b>+${zahl(t.punkte)}</b></li>`).join('');
+  // kleine Zeitleiste: geplant -> gepostet (je Plattform) -> Besuche ueber den Link -> Zahlen geholt
+  const schritte = [];
+  if(p.geplant) schritte.push([p.geplant, 'Geplant', '']);
+  COCKPIT_PL.filter(pl => p.plattformen[pl] && p.plattformen[pl].gepostet).forEach(pl => schritte.push([p.plattformen[pl].gepostet, 'Gepostet auf ' + PL_KURZ[pl], '']));
+  const bt = Object.entries(p.besuche_tage || {}).filter(([, n]) => n > 0);
+  if(bt.length){ const m = Math.max(...bt.map(([, n]) => n));
+    schritte.push([bt[0][0] + 'T23:59', mehrzahl(p.besuche, 'Besuch', 'Besuche') + ' über den Link', `<span class="sd-mini" aria-hidden="true">${bt.map(([t, n]) => `<i style="height:${Math.max(3, n / m * 22)}px" title="${esc(kurzIso(t))}: ${n}"></i>`).join('')}</span><span class="meta">${bt.map(([t, n]) => `${esc(kurzIso(t))}: ${n}`).join(' · ')}</span>`]); }
+  if(p.zahlen_am) schritte.push([p.zahlen_am, 'Zahlen zuletzt geholt', '']);
+  schritte.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+  const zl = schritte.map(([t, n, x]) => `<li><span class="zp">${esc(t.endsWith('T23:59') ? kurzIso(t) : zeitpunkt(t))}</span><b>${esc(n)}</b>${x}</li>`).join('');
+  const tests = [p.hook_name && `Anfang „${esc(p.hook_name)}“`, p.aufforderung_name && `Einladung „${esc(p.aufforderung_name)}“`].filter(Boolean).join(' · ');
+  const dlg = $('wzPost');
+  dlg.innerHTML = `<div class="sd-kopf">${daumenKlein(p)}<div class="sd-titel"><h3 id="wzPostTitel">${esc(p.titel || 'Post ' + p.id)}</h3>
+      <span class="meta">${esc(artName(p))}${p.format ? ' · ' + esc(p.format) : ''}${p.sprache ? ' · ' + esc((p.sprache || '').toUpperCase()) : ''}${p.folge ? ' · Folge ' + esc(p.folge) : ''}</span></div>
+      <button class="wk-zu" data-sd-zu="1" aria-label="Schließen">×</button></div>
+    <div class="sd-punkte"><div><b>${zahl(p.punkte)}</b><span>Punkte</span></div>${vgl}</div>
+    ${teile ? `<details class="sd-teile"><summary>Woraus sich die Punkte ergeben</summary><ul>${teile}</ul></details>` : ''}
+    <div class="sd-link"><span><b>${zahl(p.erreicht)}</b> erreicht</span><span><b>${zahl(p.besuche)}</b> ${p.besuche === 1 ? 'Besuch' : 'Besuche'}</span><span><b>${zahl(p.konten)}</b> ${p.konten === 1 ? 'Konto' : 'Konten'}</span></div>
+    ${pls}
+    <h4>Zeitleiste</h4><ol class="sd-zeit">${zl || '<li><span class="meta">Noch nichts gemessen.</span></li>'}</ol>
+    ${tests ? `<p class="meta">Selbst-Test: ${tests}</p>` : ''}`;
+  if(!dlg.open) dlg.showModal();
+}
+$('wzPost').addEventListener('click', (ev) => { if(ev.target === ev.currentTarget || ev.target.closest('[data-sd-zu]')) $('wzPost').close(); });
 document.addEventListener('click', (ev) => {
   const pl = ev.target.closest('[data-wz-pl]'); if(pl){ wFilter.pl = pl.dataset.wzPl; wFilter.alle = false; return zeigePostTabelle(); }
   if(ev.target.closest('[data-wz-alle]')){ wFilter.alle = true; return zeigePostTabelle(); }
-  if(ev.target.closest('[data-oeffne-details]')){ $('wDetails').open = true; $('wDetails').scrollIntoView({behavior: 'smooth', block: 'start'}); }
+  const po = ev.target.closest('[data-wz-post]'); if(po && !ev.target.closest('a')){ return oeffnePost(po.dataset.wzPost); }
+  const z = ev.target.closest('[data-zeit-platz]'); if(z) return uebernehmeZeit(z.dataset.zeitPlatz, z.dataset.zeit);
+  if(ev.target.closest('[data-oeffne-details]')){ waehleReiter('plattformen'); $('wDetails').open = true; $('wDetails').scrollIntoView({behavior: 'smooth', block: 'start'}); }
+  const wr = ev.target.closest('[data-geh-reiter]'); if(wr) waehleReiter(wr.dataset.gehReiter);
 });
 document.addEventListener('change', (ev) => {
   if(ev.target.id === 'wzFormat'){ wFilter.format = ev.target.value; zeigePostTabelle(); }
   if(ev.target.id === 'wzSort'){ wFilter.sort = ev.target.value; zeigePostTabelle(); }
 });
-// Pro Tag: oben Erreicht, darunter Besuche (eigene Skala), Punkte = Tag mit Post
-function zeichneTage(){
-  const box = $('wzTage'); if(!box || !cockpitDaten) return;
-  const tage = cockpitDaten.verlauf, mitBesuch = tage.some(t => t.besuche != null);
-  const W = Math.max(300, box.clientWidth), L = 40, R = 8, T = 8;
-  const h1 = 120, gap = 22, h2 = mitBesuch ? 60 : 0, unten = 40, H = T + h1 + (mitBesuch ? gap + h2 : 0) + unten;
-  const pw = W - L - R, band = pw / Math.max(1, tage.length), bw = Math.min(22, Math.max(2, band - 2));
-  const rund = (m) => { if(m <= 4) return Math.max(1, m); const p = Math.pow(10, Math.floor(Math.log10(m))); return Math.ceil(m / p) * p; };
-  const max1 = rund(Math.max(...tage.map(t => t.erreicht || 0), 0)), max2 = rund(Math.max(...tage.map(t => t.besuche || 0), 0));
-  const y1 = T + h1, y2 = T + h1 + gap + h2;
-  const balken = (cx, v, max, basis, hoehe, farbe) => { if(!v) return ''; const top = basis - v / max * hoehe, r = Math.min(3, basis - top, bw / 2), x0 = cx - bw / 2, x1 = cx + bw / 2;
-    return `<path d="M${x0},${basis} V${top + r} Q${x0},${top} ${x0 + r},${top} H${x1 - r} Q${x1},${top} ${x1},${top + r} V${basis} Z" fill="${farbe}"/>`; };
-  const achse = (basis, hoehe, max, name) => `<line x1="${L}" x2="${W - R}" y1="${basis}" y2="${basis}" stroke="var(--viz-axis)"/><line x1="${L}" x2="${W - R}" y1="${basis - hoehe}" y2="${basis - hoehe}" stroke="var(--viz-grid)"/>
-    <text x="${L - 6}" y="${basis - hoehe + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(max)}</text><text x="${L - 6}" y="${basis + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">0</text>`;
-  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Erreicht und Besuche pro Tag">` + achse(y1, h1, max1) + (mitBesuch ? achse(y2, h2, max2) : '');
-  const jeder = Math.ceil(tage.length / Math.max(1, Math.floor(pw / 46))), basisPunkte = (mitBesuch ? y2 : y1) + 11;
-  tage.forEach((t, i) => {
-    const cx = L + band * i + band / 2;
-    s += balken(cx, t.erreicht, max1, y1, h1, 'var(--viz-gold)');
-    if(mitBesuch) s += balken(cx, t.besuche, max2, y2, h2, 'var(--viz-violet)');
-    if(t.posts) s += `<circle cx="${cx}" cy="${basisPunkte}" r="3.5" fill="var(--champagne)" stroke="#12162A" stroke-width="1.5"/>`;
-    if((tage.length - 1 - i) % jeder === 0){ const [, m, dd] = t.datum.split('-'); s += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#8A8FA6">${+dd}.${+m}.</text>`; }
-    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${basisPunkte - T + 6}" fill="transparent" tabindex="0" aria-label="${esc(kurzIso(t.datum))}: ${t.erreicht} erreicht${mitBesuch ? ', ' + t.besuche + ' Besuche' : ''}"/>`;
+// "Übernehmen": nur ins Formular unter Posten → Einstellungen eintragen, speichern tut der Inhaber selbst
+let zeitVorschlag = null;
+function uebernehmeZeit(platz, zeit){
+  if(!/^\d\d:\d\d$/.test(zeit || '')) return;
+  zeitVorschlag = {platz, zeit}; zeige('posten');
+}
+function wendeVorschlagAn(){
+  if(!zeitVorschlag) return;
+  const {platz, zeit} = zeitVorschlag; zeitVorschlag = null;
+  const feld = $({story: 'zStory', post: 'zPost', reel: 'zReel', reel2: 'zReel2'}[platz]); if(!feld) return;
+  $('einstellungenPanel').open = true; feld.value = zeit; feld.classList.add('vorschlag');
+  $('postUngespeichert').hidden = false;
+  feld.scrollIntoView({block: 'center'}); feld.focus({preventScroll: true});
+  melde(`${ART[platz] || 'Uhrzeit'} auf ${zeit} Uhr eingetragen – zum Übernehmen „Speichern“ drücken.`);
+}
+
+/* --- Kleine Diagramm-Bausteine --- */
+// waagrechte Balken (HTML): [{name (HTML), wert, text, grau, farbe, titel}]
+function balken(liste, {max} = {}){
+  const m = max || Math.max(1, ...liste.map(x => x.wert || 0));
+  return `<ul class="hb">${liste.map(x => `<li class="${x.grau ? 'grau' : ''}"${x.titel ? ` title="${esc(x.titel)}"` : ''}>
+    <span class="hb-n">${x.name}</span><span class="hb-spur"><i style="width:${x.wert ? Math.max(1.5, x.wert / m * 100) : 0}%;${x.farbe ? 'background:' + x.farbe : ''}"></i></span>
+    <span class="hb-w">${x.text}</span></li>`).join('')}</ul>`;
+}
+const SICHER_TEXT = {gut: 'recht sicher', erste: 'erste Hinweise', wenig: 'zu wenig Daten'};
+function gruppenBalken(alle, {mitSicherheit = false, erreicht = false, mitErreicht = false} = {}){
+  if(!alle.length) return '<p class="meta">Noch nichts gemessen.</p>';
+  const k = erreicht ? 'schnitt_erreicht' : 'schnitt';
+  const gruppen = alle.filter(g => g.posts), offen = alle.filter(g => !g.posts);
+  const rest = offen.length ? `<p class="meta hb-offen">Noch nicht getestet: ${offen.map(g => esc(g.name)).join(', ')}</p>` : '';
+  if(!gruppen.length) return rest || '<p class="meta">Noch nichts gemessen.</p>';
+  return balken(gruppen.map(g => ({name: esc(g.name), wert: g.genug ? g[k] : (g[k] || 0), grau: !g.genug,
+    text: g.posts ? `<b>${g[k] == null ? '–' : (erreicht ? zahl(Math.round(g[k])) : 'Ø ' + komma(g[k]))}</b><small>${mitErreicht && g.schnitt_erreicht != null ? `Ø ${zahl(Math.round(g.schnitt_erreicht))} erreicht · ` : ''}${mehrzahl(g.posts, 'Post', 'Posts')}${mitSicherheit || !g.genug ? ' · ' + SICHER_TEXT[g.sicherheit] : ''}</small>`
+      : '<small>noch nicht getestet</small>',
+    titel: `${g.name}: ${g.posts ? (erreicht ? 'Ø ' + zahl(g[k] || 0) + ' erreicht' : 'Ø ' + komma(g[k] || 0) + ' Punkte') + ' aus ' + g.posts + ' Posts' : 'noch kein gemessener Post'}`}))) + rest;
+}
+const runde = (m) => { if(m <= 4) return Math.max(1, Math.ceil(m)); const p = Math.pow(10, Math.floor(Math.log10(m))), f = m / p;
+  return ([1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(x => f <= x)) * p; };
+const datumKurz = (s) => { const [, m, dd] = s.split('-'); return `${+dd}.${+m}.`; };
+function tipZeigen(box, tip, x, html, W){
+  tip.innerHTML = html; tip.style.left = Math.min(Math.max(x, 90), W - 90) + 'px'; tip.style.top = '6px'; tip.classList.remove('hide');
+}
+
+/* --- Plattformen --- */
+function htmlPlattformen(d){
+  const a = d.analyse || {}, pv = a.plattformen || {zeilen: []}, zeilen = pv.zeilen;
+  const gruppe = (k, titel, leerText) => {
+    const mit = zeilen.filter(z => z[k]);
+    if(!mit.length) return `<div class="pv-gruppe"><h3>${titel}</h3><p class="meta">${leerText}</p></div>`;
+    return `<div class="pv-gruppe"><h3>${titel}</h3>${balken(zeilen.map(z => ({name: plName(z.plattform), wert: z[k], farbe: PL_FARBE[z.plattform],
+      text: `<b>${zahl(z[k])}</b><small>${z['anteil_' + k] != null ? z['anteil_' + k] + ' %' : ''}</small>`,
+      titel: `${PL_KURZ[z.plattform]}: ${zahl(z[k])} (${z['anteil_' + k] ?? 0} %) · ${mehrzahl(z.posts, 'Post', 'Posts')}`})))}</div>`;
+  };
+  const vergleich = zeilen.length ? `<div class="pv">${gruppe('erreicht', 'Erreicht', 'Noch keine Reichweite gemessen.')}${gruppe('reaktionen', 'Reaktionen', 'Noch keine Reaktionen.')}
+      ${gruppe('besuche', 'Besuche über den Bio-Link', 'Noch keine Besuche über die Bio-Links.')}</div>
+      <p class="meta">${zeilen.filter(z => z.posts).map(z => `${PL_KURZ[z.plattform]}: ${mehrzahl(z.posts, 'Post', 'Posts')}${z.schnitt_erreicht != null ? `, Ø ${zahl(Math.round(z.schnitt_erreicht))} erreicht` : ''}`).join(' · ')}${pv.post_link_besuche ? ` · Dazu ${mehrzahl(pv.post_link_besuche, 'Besuch', 'Besuche')} über Post-Links (keiner Plattform zuordenbar).` : ''}</p>`
+    : leer('Noch nichts gepostet', 'Sobald Posts auf Facebook, Instagram oder TikTok erscheinen, siehst du hier, welche Plattform am meisten bringt.');
+  const pls = COCKPIT_PL.filter(pl => (a.plattform_tage || []).some(t => t[pl]));
+  const legende = pls.map(pl => `<span><i class="sq" style="background:${PL_FARBE[pl]}"></i>${PL_KURZ[pl]}</span>`).join('');
+  return `<div class="panel wz-pv"><h2>Plattformen im Vergleich</h2>${vergleich}</div>
+    <div class="panel wz-tage"><h2>Reichweite ${W_TAGE > 31 ? 'pro Woche' : 'pro Tag'}</h2>
+      ${pls.length ? `<div class="legende">${legende}<span><i class="sq viol"></i>Besuche</span></div>` : ''}
+      <div class="viz" id="wzTage"></div>
+      <p class="meta">Erreicht zählt am Tag, an dem der Post erschien.</p></div>
+    <div class="panel wz-fol"><h2>Follower-Zuwachs</h2><div class="viz" id="wzFollower"></div></div>`;
+}
+// Reichweite je Tag (oder Woche), gestapelt nach Plattform; darunter Besuche (eigene Skala, eigenes Feld)
+function zeichneReichweite(){
+  const box = $('wzTage'), a = (cockpitDaten || {}).analyse; if(!box || !a) return;
+  const besuche = Object.fromEntries((cockpitDaten.verlauf || []).map(t => [t.datum, t.besuche]));
+  const mitBesuch = (cockpitDaten.verlauf || []).some(t => t.besuche != null);
+  const woche = a.plattform_tage.length > 31;
+  const bins = [];
+  a.plattform_tage.forEach((t, i) => {
+    const neu = !woche || (a.plattform_tage.length - 1 - i) % 7 === 6 || !bins.length;
+    if(neu) bins.push({von: t.datum, bis: t.datum, facebook: 0, instagram: 0, tiktok: 0, besuche: 0, posts: 0});
+    const b = bins[bins.length - 1]; b.bis = t.datum;
+    COCKPIT_PL.forEach(pl => b[pl] += t[pl] || 0); b.posts += t.posts || 0; b.besuche += besuche[t.datum] || 0;
   });
-  box.innerHTML = s + '</svg><div class="tip hide" id="wzTip"></div>';
+  const pls = COCKPIT_PL.filter(pl => bins.some(b => b[pl]));
+  const W = Math.max(300, box.clientWidth), L = 40, R = 8, T = 10, h1 = 140, gap = 26, h2 = mitBesuch ? 48 : 0, unten = 26;
+  const H = T + h1 + (mitBesuch ? gap + h2 : 0) + unten, pw = W - L - R, band = pw / Math.max(1, bins.length), bw = Math.min(28, Math.max(3, band - 3));
+  const sum = (b) => pls.reduce((s, pl) => s + b[pl], 0);
+  const max1 = runde(Math.max(0, ...bins.map(sum))), max2 = runde(Math.max(0, ...bins.map(b => b.besuche)));
+  const y1 = T + h1, y2 = T + h1 + gap + h2;
+  const kopf = (cx, top, r) => `M${cx - bw / 2},${top + r} Q${cx - bw / 2},${top} ${cx - bw / 2 + r},${top} H${cx + bw / 2 - r} Q${cx + bw / 2},${top} ${cx + bw / 2},${top + r}`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Reichweite ${woche ? 'pro Woche' : 'pro Tag'} nach Plattform${mitBesuch ? ' und Besuche' : ''}">`;
+  const achse = (basis, hoehe, max) => `<line x1="${L}" x2="${W - R}" y1="${basis - hoehe}" y2="${basis - hoehe}" stroke="var(--viz-grid)"/><line x1="${L}" x2="${W - R}" y1="${basis - hoehe / 2}" y2="${basis - hoehe / 2}" stroke="var(--viz-grid)"/><line x1="${L}" x2="${W - R}" y1="${basis}" y2="${basis}" stroke="var(--viz-axis)"/>
+    <text x="${L - 6}" y="${basis - hoehe + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(max)}</text>${Number.isInteger(max / 2) ? `<text x="${L - 6}" y="${basis - hoehe / 2 + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(max / 2)}</text>` : ''}<text x="${L - 6}" y="${basis + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">0</text>`;
+  s += achse(y1, h1, max1);
+  if(mitBesuch) s += achse(y2, h2, max2) + `<text x="${L}" y="${y2 - h2 - 8}" font-size="11" fill="#8A8FA6">Besuche</text>`;
+  const jeder = Math.ceil(bins.length / Math.max(1, Math.floor(pw / 48)));
+  bins.forEach((b, i) => {
+    const cx = L + band * i + band / 2; let basis = y1;
+    const teile = pls.filter(pl => b[pl]);
+    teile.forEach((pl, j) => {
+      const h = b[pl] / max1 * h1, top = basis - h, oben = j === teile.length - 1;
+      const hh = Math.max(0, h - (oben ? 0 : 2));     // 2 px Abstand zwischen den Teilen
+      s += oben ? `<path class="seg" d="${kopf(cx, basis - hh, Math.min(3, hh, bw / 2))} V${basis} H${cx - bw / 2} Z" fill="${PL_FARBE[pl]}"/>`
+        : `<rect class="seg" x="${cx - bw / 2}" y="${basis - hh}" width="${bw}" height="${hh}" fill="${PL_FARBE[pl]}"/>`;
+      basis = top;
+    });
+    if(mitBesuch && b.besuche){ const h = b.besuche / max2 * h2, r = Math.min(3, h, bw / 2);
+      s += `<path class="bes" d="${kopf(cx, y2 - h, r)} V${y2} H${cx - bw / 2} Z" fill="var(--viz-violet)"/>`; }
+    if((bins.length - 1 - i) % jeder === 0) s += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#8A8FA6">${datumKurz(b.von)}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${(mitBesuch ? y2 : y1) - T + 4}" fill="transparent" tabindex="0" aria-label="${esc(woche ? 'Woche ab ' + kurzIso(b.von) : kurzIso(b.von))}: ${zahl(sum(b))} erreicht${mitBesuch ? ', ' + b.besuche + ' Besuche' : ''}"/>`;
+  });
+  const nichts = !bins.some(b => sum(b) || b.besuche);
+  box.innerHTML = s + '</svg><div class="tip hide" id="wzTip"></div>' + (nichts ? `<div class="viz-leer">Noch keine Reichweite in diesem Zeitraum</div>` : '');
   const tip = $('wzTip');
-  const zeig = (el) => { const t = tage[+el.dataset.i];
-    tip.innerHTML = `<strong>${esc(kurzIso(t.datum))}</strong><span class="key" style="background:var(--viz-gold)"></span>${zahl(t.erreicht)} erreicht
-      ${mitBesuch ? `<br><span class="key" style="background:var(--viz-violet)"></span>${mehrzahl(t.besuche, 'Besuch', 'Besuche')}` : ''}${t.posts ? `<br>${mehrzahl(t.posts, 'Post', 'Posts')} gepostet` : ''}`;
-    const x = +el.getAttribute('x') + band / 2; tip.style.left = Math.min(Math.max(x, 80), W - 80) + 'px'; tip.style.top = (T + 40) + 'px';
-    tip.classList.remove('hide'); box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); el.setAttribute('fill', 'rgba(231,211,161,.06)'); };
-  box.querySelectorAll('.hit').forEach(el => { el.addEventListener('pointermove', () => zeig(el)); el.addEventListener('focus', () => zeig(el)); });
+  const zeig = (el) => { const b = bins[+el.dataset.i];
+    tipZeigen(box, tip, +el.getAttribute('x') + band / 2, `<strong>${esc(woche ? kurzIso(b.von) + ' – ' + kurzIso(b.bis) : kurzIso(b.von))}</strong>${zahl(sum(b))} erreicht
+      ${pls.map(pl => `<br><span class="key" style="background:${PL_FARBE[pl]}"></span>${PL_KURZ[pl]}: ${zahl(b[pl])}`).join('')}
+      ${mitBesuch ? `<br><span class="key" style="background:var(--viz-violet)"></span>${mehrzahl(b.besuche, 'Besuch', 'Besuche')}` : ''}${b.posts ? `<br>${mehrzahl(b.posts, 'Post', 'Posts')} gepostet` : ''}`, W);
+    box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); el.setAttribute('fill', 'rgba(231,211,161,.06)'); };
+  box.querySelectorAll('.hit').forEach(el => { el.addEventListener('pointermove', () => zeig(el)); el.addEventListener('focus', () => zeig(el)); el.addEventListener('click', () => zeig(el)); });
   box.addEventListener('pointerleave', () => { tip.classList.add('hide'); box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); });
 }
+// Follower-Zuwachs: je Plattform eine Linie ab dem Start des Zeitraums (eine Skala: Zuwachs, nicht Gesamtzahl)
+function zeichneFollower(){
+  const box = $('wzFollower'), a = (cockpitDaten || {}).analyse; if(!box || !a) return;
+  const kurven = (a.follower || []).filter(k => k.punkte.length >= 1);
+  if(!(a.follower || []).length){ box.innerHTML = leer('Noch keine Plattform verbunden', 'Verbinde Facebook, Instagram oder TikTok unter „Posten“ – dann zeigt Soraya hier, wie deine Follower wachsen.'); return; }
+  if(!kurven.some(k => k.punkte.length >= 2)){
+    box.innerHTML = `<ul class="fol-liste">${a.follower.map(k => `<li>${plName(k.plattform)}<b>${k.aktuell == null ? '–' : zahl(k.aktuell)}</b><span class="meta">${k.punkte.length ? 'erst ein Messpunkt – die Kurve entsteht in den nächsten Tagen' : 'noch nicht gemessen'}</span></li>`).join('')}</ul>`;
+    return;
+  }
+  const tage = cockpitDaten.analyse.plattform_tage.map(t => t.datum), idx = Object.fromEntries(tage.map((t, i) => [t, i]));
+  const reihen = kurven.map(k => { const start = k.start ?? k.punkte[0].follower;
+    return {pl: k.plattform, start, pkt: k.punkte.map(p => ({i: idx[p.datum] ?? 0, d: p.follower - start, f: p.follower, datum: p.datum}))}; });
+  const W = Math.max(300, box.clientWidth), L = 40, R = 64, T = 12, ph = 150, B = 26, H = T + ph + B, pw = W - L - R;
+  const alle = reihen.flatMap(r => r.pkt.map(p => p.d)), maxD = Math.max(0, ...alle), minD = Math.min(0, ...alle);
+  const oben = runde(Math.max(1, maxD)), unten = minD < 0 ? -runde(-minD) : 0;
+  const x = (i) => L + (tage.length > 1 ? i / (tage.length - 1) * pw : pw / 2), y = (v) => T + ph - (v - unten) / (oben - unten) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Follower-Zuwachs je Plattform">`;
+  [unten, 0, oben].filter((v, i, l) => l.indexOf(v) === i).forEach(v => {
+    s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'var(--viz-axis)' : 'var(--viz-grid)'}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${v > 0 ? '+' : ''}${zahl(v)}</text>`; });
+  const jeder = Math.ceil(tage.length / Math.max(1, Math.floor(pw / 52)));
+  tage.forEach((t, i) => { if((tage.length - 1 - i) % jeder === 0) s += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#8A8FA6">${datumKurz(t)}</text>`; });
+  const endY = [];
+  reihen.forEach(r => {
+    if(r.pkt.length >= 2) s += `<polyline fill="none" stroke="${PL_FARBE[r.pl]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${r.pkt.map(p => `${x(p.i)},${y(p.d)}`).join(' ')}"/>`;
+    if(r.pkt.length <= 12) r.pkt.forEach(p => { s += `<circle cx="${x(p.i)}" cy="${y(p.d)}" r="3.5" fill="${PL_FARBE[r.pl]}" stroke="#12162A" stroke-width="2"/>`; });
+    const e = r.pkt[r.pkt.length - 1]; let ey = y(e.d);
+    endY.forEach(v => { if(Math.abs(v - ey) < 14) ey = v + (ey >= v ? 14 : -14); }); endY.push(ey);
+    s += `<circle cx="${x(e.i)}" cy="${y(e.d)}" r="4" fill="${PL_FARBE[r.pl]}" stroke="#12162A" stroke-width="2"/><text x="${x(e.i) + 8}" y="${ey + 4}" font-size="12" fill="#E4E6EF">${e.d > 0 ? '+' : e.d < 0 ? '−' : '±'}${zahl(Math.abs(e.d))} ${PL_KURZ[r.pl]}</text>`;
+  });
+  s += `<line class="kreuz" x1="0" x2="0" y1="${T}" y2="${T + ph}" stroke="var(--viz-axis)" visibility="hidden"/><rect class="flaeche" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent" tabindex="0" aria-label="${esc(reihen.map(r => `${PL_KURZ[r.pl]}: ${r.pkt[r.pkt.length - 1].f} Follower, ${r.pkt[r.pkt.length - 1].d >= 0 ? '+' : ''}${r.pkt[r.pkt.length - 1].d} im Zeitraum`).join('; '))}"/>`;
+  box.innerHTML = s + '</svg><div class="tip hide" id="wzFolTip"></div>' + `<div class="legende">${reihen.map(r => `<span><i class="sq" style="background:${PL_FARBE[r.pl]}"></i>${PL_KURZ[r.pl]} · ${zahl(r.pkt[r.pkt.length - 1].f)} Follower</span>`).join('')}</div>`;
+  const tip = $('wzFolTip'), fl = box.querySelector('.flaeche'), kreuz = box.querySelector('.kreuz'), svg = box.querySelector('svg');
+  const zeig = (cx) => { const i = Math.max(0, Math.min(tage.length - 1, Math.round((cx - L) / Math.max(1, pw) * (tage.length - 1))));
+    const zeilen = reihen.map(r => { const p = [...r.pkt].reverse().find(q => q.i <= i); return p ? `<br><span class="key" style="background:${PL_FARBE[r.pl]}"></span>${PL_KURZ[r.pl]}: ${zahl(p.f)} (${p.d >= 0 ? '+' : '−'}${zahl(Math.abs(p.d))})` : ''; }).join('');
+    kreuz.setAttribute('x1', x(i)); kreuz.setAttribute('x2', x(i)); kreuz.setAttribute('visibility', 'visible');
+    tipZeigen(box, tip, x(i), `<strong>${esc(kurzIso(tage[i]))}</strong>Follower${zeilen}`, W); };
+  const pos = (ev) => { const r = svg.getBoundingClientRect(); return (ev.clientX - r.left) * (W / r.width); };
+  fl.addEventListener('pointermove', (ev) => zeig(pos(ev))); fl.addEventListener('click', (ev) => zeig(pos(ev))); fl.addEventListener('focus', () => zeig(W - R));
+  box.addEventListener('pointerleave', () => { tip.classList.add('hide'); kreuz.setAttribute('visibility', 'hidden'); });
+}
+
+/* --- Lernen --- */
+const TAGE_KURZ = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+function htmlHeatmap(z){
+  const zellen = Object.fromEntries((z.zellen || []).map(c => [c.tag + '-' + c.slot, c]));
+  const max = Math.max(1, ...(z.zellen || []).map(c => c.schnitt || 0));
+  const marken = {}; (z.eingestellt || []).forEach(e => (marken[e.slot] = marken[e.slot] || []).push(e));
+  const kopf = z.slots.map((n, i) => `<th scope="col"><span>${esc(n)}</span>${marken[i] ? `<em class="hm-marke" title="Eingestellt: ${esc(marken[i].map(e => `${e.name} ${e.zeit}`).join(', '))}">${marken[i].map(e => esc(e.name.replace('Feed-Post', 'Feed').replace('2. Reel', 'Reel 2'))).join(' · ')}</em>` : ''}</th>`).join('');
+  const zeilen = TAGE_KURZ.map((t, ti) => `<tr><th scope="row">${t}</th>${z.slots.map((n, si) => { const c = zellen[ti + '-' + si];
+    if(!c) return `<td class="hm-leer${marken[si] ? ' mark' : ''}"><span aria-hidden="true">·</span><span class="sr">${WOCHENTAGE[ti]} ${n} Uhr: nichts gepostet</span></td>`;
+    const st = (c.schnitt || 0) / max, dunkel = st > 0.55;
+    const label = `${WOCHENTAGE[ti]}, ${n} Uhr: Ø ${komma(c.schnitt)} Punkte, Ø ${zahl(c.schnitt_erreicht || 0)} erreicht, ${mehrzahl(c.posts, 'Post', 'Posts')}`;
+    return `<td class="${marken[si] ? 'mark' : ''}"><button class="hm-zelle${c.posts < 2 ? ' duenn' : ''}" style="--st:${(0.10 + st * 0.78).toFixed(2)};color:${dunkel ? '#1A140A' : '#F4EEDD'}" data-hm="${esc(label)}" aria-label="${esc(label)}" title="${esc(label)}">${komma(c.schnitt)}</button></td>`; }).join('')}</tr>`).join('');
+  return `<div class="hm-rahmen"><table class="hm"><thead><tr><th></th>${kopf}</tr></thead><tbody>${zeilen}</tbody></table></div>
+    <p class="meta hm-info" id="wzHmInfo" aria-live="polite">Zahl = Ø Punkte je Post · heller = besser · Spalten mit Namen = deine eingestellten Uhrzeiten.</p>`;
+}
+function htmlLernen(d){
+  const a = d.analyse || {};
+  if(!a.posts) return `<div class="panel">${leer('Noch nichts zum Lernen', `In diesen ${W_TAGE} Tagen wurde nichts gepostet. Wähle einen längeren Zeitraum oder schau nach ein paar Posts wieder vorbei.`)}</div>`;
+  const hinweis = a.gemessen < 5 ? `<p class="wz-hinweis">Erst ${mehrzahl(a.gemessen, 'gemessener Post', 'gemessene Posts')} – graue Balken haben zu wenig Daten. ${W_TAGE < 90 ? `<button class="textlink" data-tage-wahl="${W_TAGE === 7 ? 30 : 90}">${W_TAGE === 7 ? 30 : 90} Tage ansehen ›</button>` : ''}</p>` : '';
+  const zeiten = a.zeiten || {}, beste = zeiten.beste || [];
+  const zeitTipps = beste.length ? `<ul class="zeit-tipps">${beste.map(b => `<li><b>${esc(ART[b.platz])}: ${b.stunde} Uhr</b> <span class="meta">Ø ${komma(b.schnitt)} statt ${komma(b.statt_schnitt)} Punkte um ${b.statt_stunde} Uhr${b.eingestellt ? ` · eingestellt ${esc(b.eingestellt)}` : ''}</span>
+      ${b.vorschlag ? `<button class="textlink" data-zeit-platz="${esc(b.platz)}" data-zeit="${esc(b.vorschlag)}">Übernehmen ›<span class="sr"> ${esc(ART[b.platz])} auf ${esc(b.vorschlag)} (nur eintragen)</span></button>` : `<span class="meta">${!b.faktor || b.faktor < 1.3 ? '· kaum Unterschied' : '· passt schon'}</span>`}</li>`).join('')}</ul>`
+    : `<p class="meta">Für einen fairen Vergleich braucht es je Art mindestens zwei Uhrzeiten mit je 3 gemessenen Posts.</p>`;
+  return `${hinweis}
+    <div class="wz-zwei">
+      <div class="panel"><h2>Je Art</h2><p class="meta wz-unter">Ø Punkte je Post</p>${gruppenBalken(a.arten || [])}</div>
+      <div class="panel"><h2>Je Format</h2><p class="meta wz-unter">Ø Punkte je Post</p>${gruppenBalken(a.formate || [])}</div>
+    </div>
+    <div class="panel wz-zeiten"><h2>Beste Zeiten</h2>${a.gemessen ? htmlHeatmap(zeiten) : '<p class="meta">Noch kein gemessener Post.</p>'}${zeitTipps}</div>
+    <div class="wz-zwei">
+      <div class="panel"><h2>Anfang</h2><p class="meta wz-unter">Selbst-Test: Ø Punkte je Hook-Stil</p>${gruppenBalken(a.stile || [], {mitSicherheit: true})}</div>
+      <div class="panel"><h2>Einladung</h2><p class="meta wz-unter">Selbst-Test: Ø Punkte je Handlungsaufforderung</p>${gruppenBalken(a.aufforderungen || [], {mitSicherheit: true})}</div>
+    </div>
+    ${(a.sprachen || []).length ? `<div class="panel wz-spr"><h2>Sprachen</h2><p class="meta wz-unter">Ø Punkte je Post</p>${gruppenBalken(a.sprachen, {mitErreicht: true})}</div>` : ''}
+    <p class="meta">Sicherheit: ab ${6} gemessenen Posts „recht sicher“, ab 3 „erste Hinweise“. Punkte: neues Konto 15, Teilen 4, Kommentar/Speichern 3, Link-Besuch 2, Gefällt mir 1, je 100 erreicht 1.</p>`;
+}
+document.addEventListener('click', (ev) => {
+  const h = ev.target.closest('[data-hm]'); if(h && $('wzHmInfo')) $('wzHmInfo').textContent = h.dataset.hm;
+  const t = ev.target.closest('[data-tage-wahl]'); if(t) setzeZeitraum(+t.dataset.tageWahl);
+});
+
 async function ladeCockpit(){
   const box = $('wCockpit'), nr = ++cockpitNr;
   box.style.opacity = cockpitDaten ? .55 : 1;
+  $('wZeitraum').querySelectorAll('[data-tage]').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.tage === W_TAGE)));
   try{ const d = await api('/wirkung/cockpit?tage=' + W_TAGE); if(nr !== cockpitNr) return; cockpitDaten = d; box.style.opacity = 1; zeigeCockpitW(); }
   catch(e){ if(nr !== cockpitNr) return; box.style.opacity = 1; cockpitDaten = null; box.innerHTML = ladeFehler('Die Zahlen', e); }
   if($('wDetails').open && wDetailsTage !== W_TAGE){ wDetailsTage = W_TAGE; ladeWirkung(); }
 }
-// Details (App-Zahlen, Herkunft, Plattformen, Lernen, Links) erst beim Aufklappen laden: holt frische Plattform-Zahlen
+// Rohdaten (App-Zahlen, Herkunft, Plattformen, Lernen, Links) erst beim Aufklappen laden: holt frische Plattform-Zahlen
 $('wDetails').addEventListener('toggle', () => { if($('wDetails').open && wDetailsTage !== W_TAGE){ wDetailsTage = W_TAGE; ladeWirkung(); } });
-$('wZeitraum').addEventListener('click', (ev) => {
-  const b = ev.target.closest('[data-tage]'); if(!b || +b.dataset.tage === W_TAGE) return;
-  W_TAGE = +b.dataset.tage;
-  $('wZeitraum').querySelectorAll('[data-tage]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+function setzeZeitraum(t){
+  if(![7, 30, 90].includes(t) || t === W_TAGE) return;
+  W_TAGE = t; merkSchreiben('soraya.wirkung.tage', String(t));
   ladeCockpit();
-});
+}
+$('wZeitraum').addEventListener('click', (ev) => { const b = ev.target.closest('[data-tage]'); if(b) setzeZeitraum(+b.dataset.tage); });
 
 /* ---------- Wochenbericht auf "Heute" (ab Montag, bis weggeklickt) ---------- */
 let wochenStand = 0;
@@ -2647,13 +3069,18 @@ async function ladePosten(){
     }).join('')}</tbody></table>`
     : `<div class="empty">Keine Termine.<span>${e.an ? 'Sie entstehen, sobald es Posts gibt und eine Plattform verbunden ist.' : 'Sie entstehen, wenn „Automatisch posten“ an ist.'}</span></div>`;
 
+  // ungespeicherte Eingaben (auch ein übernommener Vorschlag) beim Nachladen nicht überschreiben
+  if($('postUngespeichert').hidden){
   $('postSprache').value = e.sprache; $('postModus').value = e.modus;
   $('zStory').value = e.zeiten.story; $('zPost').value = e.zeiten.post; $('zReel').value = e.zeiten.reel;
   $('zReel2').value = e.zeiten.reel2 || '19:30';
   $('plFacebook').checked = !!e.plattformen.facebook; $('plInstagram').checked = !!e.plattformen.instagram;
   $('plTiktok').checked = !!e.plattformen.tiktok; $('tiktokModus').value = e.tiktok_modus || 'entwurf';
   $('plLinkedin').checked = !!e.plattformen.linkedin;
-  $('tiktokZeile').hidden = !$('plTiktok').checked; $('postUngespeichert').hidden = true;
+  $('tiktokZeile').hidden = !$('plTiktok').checked;
+  document.querySelectorAll('.zeiten input.vorschlag').forEach(f => f.classList.remove('vorschlag'));
+  }
+  wendeVorschlagAn();
   if(e.an && aktiv === 'posten') postTimer = setTimeout(() => aktiv === 'posten' && ladePosten(), 30000);
 }
 const DATENSCHUTZ_URL = 'https://app.sorayaluxuryastroguide.com/datenschutz.html';
@@ -2792,7 +3219,7 @@ $('postSpeichern').onclick = async () => {
       tiktok_modus: $('tiktokModus').value,
       plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked, tiktok: $('plTiktok').checked,
                     linkedin: $('plLinkedin').checked}})});
-    melde('Gespeichert ✓ (gilt für neue Termine)'); ladePosten();
+    melde('Gespeichert ✓ (gilt für neue Termine)'); $('postUngespeichert').hidden = true; ladePosten();
   }catch(e){ melde('Fehler: ' + e.message); }
 };
 $('view-posten').addEventListener('click', async (ev) => {

@@ -1943,7 +1943,10 @@ def test_cockpit_kennzahlen_vergleich_top_und_tabelle(monkeypatch, frische_db):
     # Tabelle: eine Zeile je Post, Spalten je Plattform; "noch nicht gemessen" bleibt leer statt 0
     zeilen = {z["id"]: z for z in d["beitraege"]}
     assert set(zeilen) == {a, b}
-    assert zeilen[a]["plattformen"]["tiktok"] == {"erreicht": 2000, "reaktionen": 110, "url": "https://x/tiktok"}
+    tt = zeilen[a]["plattformen"]["tiktok"]
+    assert {k: tt[k] for k in ("erreicht", "reaktionen", "url", "aufrufe", "gefaellt", "kommentare")} == \
+        {"erreicht": 2000, "reaktionen": 110, "url": "https://x/tiktok", "aufrufe": 2000, "gefaellt": 100, "kommentare": 8}
+    assert tt["gepostet"].startswith((HEUTE - timedelta(days=1)).isoformat()) and tt["zahlen_am"]
     assert zeilen[b]["plattformen"]["instagram"]["erreicht"] is None and zeilen[b]["plattformen"]["facebook"]["erreicht"] == 0
     assert zeilen[b]["besuche"] == 6 and zeilen[b]["konten"] == 1 and zeilen[b]["punkte"] == 6 * 2 + 15 + 10 + 3
     assert [t["id"] for t in d["top"]] == sorted([a, b], key=lambda i: -zeilen[i]["punkte"])
@@ -1957,6 +1960,17 @@ def test_cockpit_kennzahlen_vergleich_top_und_tabelle(monkeypatch, frische_db):
     assert v[(HEUTE - timedelta(days=2)).isoformat()]["besuche"] == 5 and v[(HEUTE - timedelta(days=3)).isoformat()]["posts"] == 1
     # nichts verbunden -> keine Follower-Zeile
     assert d["follower"] == [] and len(d["lernen"]["saetze"]) == 3
+    # Auswertung fuer die Unterreiter: Reichweite je Plattform und Tag, ehrlich "zu wenig Daten" bei 2 Posts
+    an = d["analyse"]
+    pt = {x["datum"]: x for x in an["plattform_tage"]}
+    assert pt[(HEUTE - timedelta(days=1)).isoformat()]["instagram"] == 900 and pt[(HEUTE - timedelta(days=1)).isoformat()]["tiktok"] == 2000
+    assert an["gemessen"] == 2 and an["erkennt"][-1]["id"] == "duenn" and "zu wenig Daten" in an["erkennt"][-1]["text"]
+    assert {z["plattform"] for z in an["plattformen"]["zeilen"]} == {"facebook", "instagram", "tiktok"}
+    assert an["plattformen"]["post_link_besuche"] == 6 and d["zeiten"]["reel"] == "19:00"
+    assert [s["name"] for s in an["zeiten"]["eingestellt"]] == ["Story", "Feed-Post", "Reel", "2. Reel"]
+    assert len(an["stile"]) == len(redaktion.HOOK_NAMEN) and all(x["sicherheit"] == "wenig" for x in an["stile"])
+    assert an["sprachen"] == [] and an["trichter_vorher"]["stufen"][0]["wert"] == 1000
+    assert zeilen[b]["punkte_teile"][0] == {"name": "Neue Konten", "anzahl": 1, "punkte": 15}
     # zwischengespeichert: kein zweiter Engine-Aufruf
     client.get("/wirkung/cockpit?tage=7", headers=AUTH)
     assert gefragt == [14]
@@ -2028,3 +2042,65 @@ def test_wochenbericht_ab_montag_bis_weggeklickt(monkeypatch, frische_db):
     assert w2["woche"] != w["woche"]
     monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)                 # ohne Daten: keine Karte
     assert cockpit.wochenbericht(heute=montag + timedelta(days=70))["zeigen"] is False
+
+
+import auswertung
+
+
+def _p(i, platz, stunde, erreicht, punkte, tag=None, sprache="en", fmt="Ritual", stil="frage", pl="instagram"):
+    tag = tag or HEUTE - timedelta(days=i % 6)
+    return {"id": i, "titel": f"Post {i}", "art": "reel" if platz.startswith("reel") else platz, "platz": platz,
+            "stunde": stunde, "tag": tag, "erreicht": erreicht, "punkte": punkte, "gemessen": True, "format": fmt,
+            "hook_stil": stil, "aufforderung": "partner", "sprache": sprache, "besuche": 0,
+            "plattformen": {pl: {"erreicht": erreicht, "reaktionen": punkte}}}
+
+
+def _auswerten(posts, kpis=None, trichter=None, zeiten=None, verlaeufe=None):
+    tage = [HEUTE - timedelta(days=i) for i in range(29, -1, -1)]
+    kpis = kpis or [{"schluessel": "erreicht", "wert": 0, "vorher": None, "aenderung": None}]
+    tr = trichter or cockpit.trichter({})
+    return auswertung.auswerten(posts, tage=tage, quellen={"bio-tt": {"tage": {HEUTE.isoformat(): 7}}}, kpis=kpis,
+                                trichter=tr, trichter_vorher=tr, follower_verlaeufe=verlaeufe or {},
+                                zeiten=zeiten or {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"})
+
+
+def test_auswertung_soraya_erkennt():
+    posts = ([_p(i, "reel", 9, 900, 30, pl="tiktok") for i in range(4)] + [_p(10 + i, "reel", 19, 300, 10) for i in range(3)]
+             + [_p(20 + i, "post", 12, 200, 5, fmt="Rückblick", sprache="de") for i in range(3)])
+    a = _auswerten(posts, kpis=[{"schluessel": "erreicht", "wert": 5000, "vorher": 2500, "aenderung": 100},
+                                {"schluessel": "besuche", "wert": 40, "vorher": 20, "aenderung": 100}],
+                   trichter=cockpit.trichter({"erreicht": 5000, "besuche": 40, "gratis": 2, "konten": 0}),
+                   verlaeufe={"instagram": {(HEUTE - timedelta(days=40)).isoformat(): 1, HEUTE.isoformat(): 4}})
+    k = {x["id"]: x for x in a["erkennt"]}
+    assert len(a["erkennt"]) <= 5 and [x["gewicht"] for x in a["erkennt"]] == sorted((x["gewicht"] for x in a["erkennt"]), reverse=True)
+    assert "duenn" not in k
+    assert k["arten"]["text"] == "Reels erreichen 3,2× mehr Menschen als Feed-Posts" and k["arten"]["zahl"] == "3,2×"
+    # Reels um 9 besser als um 19 -> Vorschlag zum Übernehmen (nur ausfuellen, nie speichern)
+    z = k["zeit-reel"]
+    assert z["text"] == "Reels um 9 Uhr laufen besser als um 19 Uhr" and z["aktion"]["zeit"] == "09:00" and z["aktion"]["platz"] == "reel"
+    assert k["landing"]["text"].startswith("Besuche steigen, aber kaum Gratis-Tests") and k["landing"]["zahl"] == "5 %"
+    assert k["trend"]["zahl"] == "+100 %"
+    # weitere Bausteine der Unterreiter
+    assert a["plattformen"]["zeilen"][-1]["plattform"] == "tiktok" and a["plattformen"]["zeilen"][-1]["besuche"] == 7
+    assert [s["name"] for s in a["sprachen"]] == ["Englisch", "Deutsch"]
+    zellen = {(c["tag"], c["slot"]): c for c in a["zeiten"]["zellen"]}
+    assert sum(c["posts"] for c in zellen.values()) == 10 and a["zeiten"]["eingestellt"][2]["slot"] == 4
+    assert a["formate"][0]["name"] == "Ritual" and a["formate"][0]["sicherheit"] == "gut"
+    assert a["follower"][0]["zuwachs"] == 3 and a["follower"][0]["punkte"][0]["davor"]
+    stile = {s["schluessel"]: s for s in a["stile"]}
+    assert stile["frage"]["posts"] == 10 and stile["zahl"]["posts"] == 0 and stile["zahl"]["sicherheit"] == "wenig"
+    # eingestellte Zeit liegt schon im besten Fenster -> kein Übernehmen
+    b = _auswerten(posts, zeiten={"reel": "09:30", "post": "12:30"})
+    assert {x["id"]: x for x in b["erkennt"]}["zeit-reel"]["aktion"] is None
+    # Ausreisser
+    c = _auswerten([_p(i, "post", 12, 300, 4) for i in range(6)] + [_p(9, "post", 12, 3000, 40, fmt="Mitmachen")])
+    aus = {x["id"]: x for x in c["erkennt"]}["ausreisser"]
+    assert aus["post_id"] == 9 and "Format Mitmachen" in aus["text"] and aus["zahl"] == "4,4×"
+
+
+def test_auswertung_wenig_daten_ehrlich():
+    a = _auswerten([_p(1, "story", 9, 12, 0), _p(2, "post", 12, 30, 1)])
+    assert [x["id"] for x in a["erkennt"]] == ["duenn"] and a["erkennt"][0]["zahl"] == "2"
+    assert all(not g["genug"] for g in a["arten"]) and a["zeiten"]["beste"] == []
+    leer = _auswerten([])
+    assert leer["erkennt"][0]["detail"].startswith("0 gemessene Posts") and leer["arten"] == [] and leer["formate"] == []

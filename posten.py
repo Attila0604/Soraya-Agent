@@ -489,6 +489,11 @@ def follower_stand(schluessel: str = "instagram_follower") -> dict:
     return {"follower": jetzt, "am": tage[-1], "zuwachs_7": jetzt - verlauf[frueher[-1]] if frueher else None}
 
 
+def follower_verlauf(schluessel: str = "instagram_follower") -> dict:
+    """{iso-datum: follower} (bis zu 90 Tage, aelteste zuerst) fuer die Wachstumskurve im Zahlen-Cockpit."""
+    return dict(sorted(((db.lade_einstellung(schluessel, {}) or {}).get("verlauf") or {}).items()))
+
+
 def facebook_follower_merken() -> None:
     """Follower der Facebook-Seite merken (fuer den Zuwachs im Zahlen-Cockpit). Fehler stoppen nichts."""
     try:
