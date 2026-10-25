@@ -15,5 +15,7 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   aus einem Claude-Aufruf. `posten.platz()`/`sprache_fuer()` und `platzVon()`/`spracheFuer()` im Dashboard gleich halten.
 - TikTok bekommt eine eigene Reel-Fassung (`paket.rendere_tiktok`, `reel.erstelle(..., tiktok=True)`): nur Hook + 1 Zeile,
   kurze Endkarte (~7–9 s), **stille** Tonspur – Attila legt in der TikTok-App einen Sound dazu.
+- Instagram: Feed-Post nur Mo/Mi/Fr als Karussell (`posten.KARUSSELL_TAGE`), sonst als Reel aus den Folien
+  (`posten.als_diashow`, `paket.rendere_diashow`, `reel.diashow`; Folien mit `video=True` ohne „Wischen“). Facebook bleibt Karussell.
 - **Tagesplan-Automatik und automatisches Posten stehen AUS** – nur Attila schaltet sie ein.
 - Tests: siehe `tests/README.md` (nie gegen die echte Datenbank laufen lassen).

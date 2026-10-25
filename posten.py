@@ -390,11 +390,21 @@ def text_fuer(post: dict, plattform: str) -> str:
     return "\n\n".join(t for t in teile if t)
 
 
-def medien_url(post: dict, nr: int = 1) -> str:
+# Instagram zeigt Fremden fast nur Reels: an diesen Wochentagen bleibt der Feed-Post ein Karussell (Mo, Mi, Fr),
+# an den anderen wird er auf Instagram als Reel aus seinen Folien gepostet (Diashow). Facebook bleibt Karussell.
+KARUSSELL_TAGE = (0, 2, 4)
+
+
+def als_diashow(post: dict, tag: date | None = None) -> bool:
+    tag = tag or datetime.now(himmel.WIEN).date()
+    return post.get("art") == "post" and tag.weekday() not in KARUSSELL_TAGE
+
+
+def medien_url(post: dict, nr: int = 1, art: str | None = None) -> str:
     """Oeffentliche, signierte Adresse, von der Instagram Bild oder Video holt (nr > 1: Karussell-Folie)."""
-    art = "reel" if post.get("art") == "reel" else (f"folie{nr}" if nr > 1 else paket.medien.standard_format(post))
+    art = art or ("reel" if post.get("art") == "reel" else (f"folie{nr}" if nr > 1 else paket.medien.standard_format(post)))
     fp = paket._fingerabdruck(post, art)
-    endung = "mp4" if art == "reel" else "jpg"
+    endung = "mp4" if art in ("reel", "diashow") else "jpg"
     sig = meta.signiere(f"{post['id']}:{art}:{fp}")
     return f"{meta.basis_url()}/oeffentlich/medien/{post['id']}-{art}-{sig}.{endung}"
 
@@ -407,13 +417,15 @@ def oeffentliches_medium(name: str) -> tuple[bytes, str] | None:
         post = db.lade_post(int(pid))
     except (ValueError, TypeError):
         return None
-    if not post or not (art in ("feed", "story", "reel") or re.fullmatch(r"folie([2-9]|10)", art)):
+    if not post or not (art in ("feed", "story", "reel", "diashow") or re.fullmatch(r"folie([2-9]|10)", art)):
         return None
     fp = paket._fingerabdruck(post, art)
     if sig != meta.signiere(f"{post['id']}:{art}:{fp}"):
         return None
     if art == "reel":
         return paket._rendere_video(post), "video/mp4"
+    if art == "diashow":
+        return paket.rendere_diashow(post), "video/mp4"
     if art.startswith("folie"):
         return paket.hole_folie(post, int(art[5:])), "image/jpeg"
     return paket.hole_bild(post, art), "image/jpeg"
@@ -454,6 +466,9 @@ def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
         return meta.poste_facebook(art, text, bild=paket.hole_bild(post))
     if art == "reel":
         paket._rendere_video(post)       # vorher erzeugen, damit Instagram es sofort holen kann
+    elif als_diashow(post):
+        paket.rendere_diashow(post)
+        return meta.poste_instagram("reel", text, medien_url(post, art="diashow"))
     elif art == "post" and paket.medien.anzahl_bilder(post) > 1:
         paket.hole_karussell(post)
         n = paket.medien.anzahl_bilder(post)
