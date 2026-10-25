@@ -17,5 +17,8 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   kurze Endkarte (~7–9 s), **stille** Tonspur – Attila legt in der TikTok-App einen Sound dazu.
 - Instagram: Feed-Post nur Mo/Mi/Fr als Karussell (`posten.KARUSSELL_TAGE`), sonst als Reel aus den Folien
   (`posten.als_diashow`, `paket.rendere_diashow`, `reel.diashow`; Folien mit `video=True` ohne „Wischen“). Facebook bleibt Karussell.
+- Pinterest (`pinterest.py`): Feed-Post (Titelbild) + Story werden Pins, je Sprache eine Pinnwand, Link auf Landingpage bzw.
+  Zeichen-Seite (`ziel_link`), Zugang 30 Tage mit Refresh. Railway `PINTEREST_APP_ID`/`PINTEREST_APP_SECRET`, bis „Standard access“
+  `PINTEREST_SANDBOX=1` (Pins nicht öffentlich). Rückruf `/pinterest/rueckruf`, eigener Haken Standard AUS.
 - **Tagesplan-Automatik und automatisches Posten stehen AUS** – nur Attila schaltet sie ein.
 - Tests: siehe `tests/README.md` (nie gegen die echte Datenbank laufen lassen).

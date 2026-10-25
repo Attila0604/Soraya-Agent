@@ -40,6 +40,7 @@ import cockpit
 import db
 import himmel
 import linkedin
+import pinterest
 import meta
 import paket
 import posten
@@ -473,6 +474,34 @@ def tiktok_rueckruf(code: Optional[str] = None, state: Optional[str] = None,
 def tiktok_trennen():
     tiktok.trennen()
     return {"getrennt": "tiktok"}
+
+
+@app.get("/pinterest/verbinden")
+def pinterest_verbinden():
+    try:
+        return RedirectResponse(pinterest.anmelde_url(), status_code=302)
+    except pinterest.PinterestFehler as e:
+        from urllib.parse import quote
+        return RedirectResponse(f"/?verbindungsfehler={quote(str(e)[:300])}#posten", status_code=302)
+
+
+@app.get("/pinterest/rueckruf")
+def pinterest_rueckruf(code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
+    try:
+        if not code:
+            raise pinterest.PinterestFehler(error or "Verbindung abgebrochen.")
+        meta.pruefe_state("pinterest", state or "")
+        pinterest.verbinde(code)
+        return RedirectResponse("/?verbunden=pinterest#posten", status_code=302)
+    except Exception as e:
+        from urllib.parse import quote
+        return RedirectResponse(f"/?verbindungsfehler={quote(str(e)[:300])}#posten", status_code=302)
+
+
+@app.post("/pinterest/trennen")
+def pinterest_trennen():
+    pinterest.trennen()
+    return {"getrennt": "pinterest"}
 
 
 @app.get("/linkedin/verbinden")

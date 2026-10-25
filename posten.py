@@ -27,14 +27,17 @@ import linkedin
 import meta
 import paket
 import redaktion
+import pinterest
 import tiktok
 from claude import frage_json
 from wirkung import link_basis
 
 STANDARD = {"an": False, "sprache": "en", "modus": "auto", "tiktok_modus": "entwurf",
             "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"},
-            "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False}}
-PLATTFORMEN = ("facebook", "instagram", "tiktok", "linkedin")
+            "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False, "pinterest": False}}
+PLATTFORMEN = ("facebook", "instagram", "tiktok", "linkedin", "pinterest")
+# Pinterest nimmt (noch) nur Bilder: Feed-Post (Titelbild) und Story (Hochformat) werden zu Pins
+NUR_BILDER = {"pinterest"}
 # TikTok nimmt nur Videos: dort gehen nur die Reels hin
 NUR_REELS = {"tiktok"}
 # Storys gibt es auf LinkedIn nicht
@@ -55,6 +58,8 @@ def passt(plattform: str, art: str) -> bool:
     """Geht diese Art von Post auf diese Plattform?"""
     if plattform in NUR_REELS:
         return art == "reel"
+    if plattform in NUR_BILDER:
+        return art in ("post", "story")
     if plattform in OHNE_STORYS:
         return art != "story"
     return True
@@ -121,7 +126,8 @@ def termin(tag: date, zeit: str) -> datetime:
 
 def verbindungen() -> dict:
     """Facebook, Instagram, TikTok und LinkedIn zusammen (fuers Dashboard und den Zeitplan)."""
-    return {**meta.verbindungen(), "tiktok": tiktok.verbindung(), "linkedin": linkedin.verbindung()}
+    return {**meta.verbindungen(), "tiktok": tiktok.verbindung(), "linkedin": linkedin.verbindung(),
+            "pinterest": pinterest.verbindung()}
 
 
 def _aktive_plattformen(e: dict) -> list[str]:
@@ -361,7 +367,23 @@ def tiktok_texte(tage: int = 3) -> list[dict]:
     return out
 
 
+def pinterest_text(post: dict) -> str:
+    """Pin-Beschreibung: Pinterest ist eine Suche -- klare Saetze mit Stichworten statt Plaudern, ohne "Link in Bio"
+    (der Pin selbst verlinkt), hoechstens 500 Zeichen, ein paar Hashtags am Ende."""
+    absaetze = [a.strip() for a in _luftig(post.get("text") or "").split("\n\n") if a.strip() and not _BIO.search(a)]
+    kurz = []
+    for a in absaetze:
+        if kurz and len("\n\n".join(kurz + [a])) > 380:
+            break
+        kurz.append(a)
+    tags = " ".join((post.get("hashtags") or "").split()[:4])
+    text = "\n\n".join(kurz + ([tags] if tags else []))
+    return text[:500]
+
+
 def text_fuer(post: dict, plattform: str) -> str:
+    if plattform == "pinterest":
+        return pinterest_text(post)
     if plattform == "tiktok":
         return tiktok_text(post)
     if plattform == "linkedin":
@@ -451,8 +473,13 @@ def _freigegeben(post: dict, e: dict) -> tuple[bool, str]:
 def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
     p, art = zeile["plattform"], post.get("art") or "post"
     if not passt(p, art):
-        raise ValueError("Auf TikTok gehen nur Reels (Videos)." if p == "tiktok" else "Storys gibt es auf LinkedIn nicht.")
+        raise ValueError("Auf TikTok gehen nur Reels (Videos)." if p == "tiktok" else
+                         "Auf Pinterest gehen nur Bilder (Feed-Posts und Storys)." if p == "pinterest" else "Storys gibt es auf LinkedIn nicht.")
     text = text_fuer(post, p)
+    if p == "pinterest":
+        bild = paket.hole_bild(post, "story" if art == "story" else "feed")
+        return pinterest.poste_pin(bild, post.get("titel") or "Soraya", text, pinterest.ziel_link(post, link_basis()),
+                                   post.get("sprache") or "en", alt=post.get("untertitel") or post.get("titel"))
     if p == "tiktok":
         return tiktok.poste_video(paket.rendere_tiktok(post), text, (e or einstellungen()).get("tiktok_modus", "entwurf"))
     if p == "linkedin":
