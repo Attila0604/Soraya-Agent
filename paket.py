@@ -42,7 +42,7 @@ ART_NAME = {"post": "Feed-Post", "reel": "Reel", "story": "Story"}
 
 def _fingerabdruck(post: dict, art: str) -> str:
     felder = {k: post.get(k) for k in ("id", "art", "sprache", "titel", "untertitel", "text", "meta", "skript")}
-    version = reel.VERSION if art in ("reel", "reel-tiktok") else BILD_VERSION
+    version = reel.VERSION if art in ("reel", "reel-tiktok") else (f"{reel.VERSION}+{BILD_VERSION}" if art == "diashow" else BILD_VERSION)
     roh = json.dumps([version, art, felder], sort_keys=True, default=str, ensure_ascii=False)
     return hashlib.sha1(roh.encode("utf-8")).hexdigest()
 
@@ -123,6 +123,21 @@ def rendere_tiktok(post: dict) -> bytes:
     with _RENDER:
         daten = reel.als_bytes(post, tiktok=True)
     db.speichere_medium(post["id"], "reel-tiktok", fp, "video/mp4", daten)
+    return daten
+
+
+def rendere_diashow(post: dict) -> bytes:
+    """Reel aus den Karussell-Folien (Instagram an Nicht-Karussell-Tagen), eigener Zwischenspeicher."""
+    fp = _fingerabdruck(post, "diashow")
+    vorhanden = db.lade_medium(post["id"], "diashow", fp)
+    if vorhanden:
+        return vorhanden
+    with _RENDER:
+        # eigene Fassung der Folien ohne "Wischen" und Seitenpunkte (im Video blaettert man nicht)
+        bilder = [medien.als_bytes(medien.bild(post, "feed", video=True))] + \
+                 [medien.als_bytes(medien.folie(post, nr, video=True)) for nr in range(2, medien.anzahl_bilder(post) + 1)]
+        daten = reel.diashow_bytes(post, bilder)
+    db.speichere_medium(post["id"], "diashow", fp, "video/mp4", daten)
     return daten
 
 

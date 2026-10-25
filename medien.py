@@ -1129,7 +1129,7 @@ def _liebe_ringe(d, cx, cy, r, m, akzent):
                   outline=akzent + (120,), width=max(1, int(2.4 * m)))
 
 
-def bild(post: dict, format: str = "feed") -> Image.Image:
+def bild(post: dict, format: str = "feed", video: bool = False) -> Image.Image:
     """Das fertige Post-Bild als RGB (1080x1350 oder 1080x1920), Look je nach Wochenformat."""
     story = format == "story"
     W, H = 1080, (1920 if story else 1350)
@@ -1253,7 +1253,7 @@ def bild(post: dict, format: str = "feed") -> Image.Image:
     if not story and not karten and st["layout"] in ("wissen", "ritual") and post.get("art") == "post":
         _merken_zeichen(d, W, m, akzent, post.get("sprache") or "de")
     # Karussell: das Titelbild laedt zum Wischen ein (die Einladung in die App kommt auf der Schlussfolie)
-    knopf = "wischen" if not story and folien_von(post) else "link"
+    knopf = "wischen" if not story and folien_von(post) and not video else "link"   # im Video: kein "Wischen"
     marke(leinwand, W, H, story, post.get("sprache") or "de", m, knopf)
     return leinwand.resize((W, H), Image.LANCZOS)
 
@@ -1305,7 +1305,7 @@ def _seitenzahl(d, W, m, akzent, nr, gesamt):
         d.ellipse([cx - r * m, cy - r * m, cx + r * m, cy + r * m], fill=farbe)
 
 
-def folie(post: dict, nr: int) -> Image.Image:
+def folie(post: dict, nr: int, video: bool = False) -> Image.Image:
     """Bild nr (2 .. anzahl_bilder) des Karussells, 1080x1350. nr 1 ist das normale Titelbild."""
     folien = folien_von(post)
     gesamt = anzahl_bilder(post)
@@ -1318,7 +1318,8 @@ def folie(post: dict, nr: int) -> Image.Image:
     leinwand = hintergrund(W, H, (post.get("id") or 1) * 7 + nr, False, m, st["palette"])
     d = ImageDraw.Draw(leinwand, "RGBA")
     rahmen(d, W, H, m, akzent)
-    _seitenzahl(d, W, m, akzent, nr, gesamt)
+    if not video:
+        _seitenzahl(d, W, m, akzent, nr, gesamt)
     oben, unten = 110, H - 200                         # freier Bereich zwischen Seitenpunkten und Marke
     if nr == gesamt:                                   # Schlussfolie: Einladung in die App
         schluessel = (post.get("meta") or {}).get("aufforderung") or "mondzeichen"
@@ -1357,7 +1358,8 @@ def folie(post: dict, nr: int) -> Image.Image:
     d.line([((W / 2 - 40) * m, y * m), ((W / 2 + 40) * m, y * m)], fill=akzent + (160,), width=max(1, int(2 * m)))
     zeichne_text(d, tx, W / 2, y + 44, "#EFE8F8", m)
     gesperrt(d, "SORAYA", W * m / 2, (H - 120) * m, schrift("cinzel", 34 * m), 12 * m, akzent + (200,))
-    _wisch_hinweis(d, W, H, m, akzent, sprache)
+    if not video:
+        _wisch_hinweis(d, W, H, m, akzent, sprache)
     return leinwand.resize((W, H), Image.LANCZOS)
 
 

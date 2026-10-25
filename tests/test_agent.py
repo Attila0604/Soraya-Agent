@@ -692,7 +692,8 @@ def _um(h, m=0, tag=None):
     return _dt.combine(tag or HEUTE, _time(h, m), tzinfo=himmel.WIEN)
 
 
-def test_automatisch_posten(fake_meta, frische_db):
+def test_automatisch_posten(fake_meta, frische_db, monkeypatch):
+    monkeypatch.setattr(posten, "KARUSSELL_TAGE", tuple(range(7)))     # unabhaengig vom Wochentag: Feed-Post als Bild
     _verbinde("facebook"); _verbinde("instagram")
     tagesplan.erstelle("en"); tagesplan.erstelle("de")
     assert posten.durchlauf(_um(8)) == {"an": False}                      # Hauptschalter aus: nichts
@@ -2100,6 +2101,20 @@ def test_tiktok_text_zum_kopieren(frische_db):
     db.setze_veroeffentlichung(zid, "fertig", extern_id="pub1")
     d = client.get("/posten/tiktok-texte", headers=AUTH).json()["texte"]
     assert [x["post_id"] for x in d] == [p["id"]] and d[0]["text"] == t and d[0]["zuordnet"] is False
+
+
+def test_instagram_diashow_an_reel_tagen(monkeypatch):
+    post = {"id": 9, "art": "post"}
+    assert posten.als_diashow(post, date(2026, 10, 27))          # Dienstag: Reel aus den Folien
+    assert not posten.als_diashow(post, date(2026, 10, 26))      # Montag: Karussell
+    assert not posten.als_diashow({"id": 9, "art": "reel"}, date(2026, 10, 27))
+    gesendet = {}
+    monkeypatch.setattr(posten.paket, "rendere_diashow", lambda p: b"mp4")
+    monkeypatch.setattr(posten.meta, "poste_instagram", lambda art, text, url, **kw: gesendet.update(art=art, url=url) or {"id": "1"})
+    monkeypatch.setattr(posten, "als_diashow", lambda p, tag=None: True)
+    monkeypatch.setattr(posten, "text_fuer", lambda p, pl: "Text")
+    posten.veroeffentliche({"plattform": "instagram"}, {"id": 9, "art": "post", "titel": "T"})
+    assert gesendet["art"] == "reel" and "-diashow-" in gesendet["url"] and gesendet["url"].endswith(".mp4")
 
 
 def test_plattformen_verbunden_auch_ohne_zahlen():

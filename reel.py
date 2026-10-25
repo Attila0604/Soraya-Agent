@@ -539,3 +539,76 @@ def als_bytes(post: dict, tiktok: bool = False) -> bytes:
         erstelle(post, ziel, tiktok)
         with open(ziel, "rb") as f:
             return f.read()
+
+
+# ---------------------------------------------------------------------------
+# Diashow: aus den Karussell-Folien eines Feed-Posts ein Reel (fuer Instagram, wo Reels Fremde erreichen)
+# ---------------------------------------------------------------------------
+DIA_FOLIE, DIA_UEBERGANG, DIA_LETZTE = 2.6, 0.5, 3.2
+
+
+def diashow(post: dict, bilder: list[bytes], ziel: str) -> dict:
+    """Folien (1080x1350) nacheinander im Hochformat, sanfter Zoom, weiche Ueberblendung, Goldstaub und Klang."""
+    import io
+    seed = int(post.get("id") or 1)
+    st = medien.stil(post)
+    folien = [Image.open(io.BytesIO(b)).convert("RGB") for b in bilder] or [Image.new("RGB", (1080, 1350), (20, 12, 40))]
+    breite = 1000
+    folien = [f.resize((breite, int(f.height * breite / f.width)), Image.LANCZOS) for f in folien]
+    mitte_y = 880                                        # etwas ueber der Mitte (unten liegen die Knoepfe der Apps)
+    starts = [i * (DIA_FOLIE - DIA_UEBERGANG) for i in range(len(folien))]
+    dauer = starts[-1] + DIA_LETZTE
+    n = int(round(dauer * FPS))
+    grund = medien._verlauf_hintergrund(W, H, st["palette"]).convert("RGB")
+    medien.sterne(grund, W, H, seed, True)
+    staub = _staub(seed, 40)
+    rand = Image.new("RGBA", (breite + 24, folien[0].height + 24), (0, 0, 0, 0))
+    ImageDraw.Draw(rand).rounded_rectangle([0, 0, rand.width - 1, rand.height - 1], radius=26,
+                                           outline=tuple(medien.PALETTEN[st["palette"]]["akzent"]) + (120,), width=2)
+    ffmpeg = ffmpeg_pfad()
+    ton = os.path.join(os.path.dirname(os.path.abspath(ziel)) or ".", f".dia-{os.getpid()}-{seed}.raw")
+    with open(ton, "wb") as f:
+        f.write(klang(dauer + 0.5, starts, seed).tobytes())
+    befehl = [ffmpeg, "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS),
+              "-i", "-", "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", ton, "-shortest", "-map", "0:v", "-map", "1:a",
+              "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-profile:v", "high",
+              "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", ziel]
+    proz = subprocess.Popen(befehl, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        for i in range(n):
+            t = i / FPS
+            bild = grund.copy()
+            dd = ImageDraw.Draw(bild, "RGBA")
+            _staub_malen(dd, staub, t, 0.8, (233, 207, 156))
+            for k, (folie, s0) in enumerate(zip(folien, starts)):
+                ende = s0 + (DIA_LETZTE if k == len(folien) - 1 else DIA_FOLIE)
+                if not (s0 - 0.01 <= t <= ende):
+                    continue
+                rein = 1.0 if k == 0 else _weich((t - s0) / DIA_UEBERGANG)
+                zoom = 1.0 + 0.035 * (t - s0) / (ende - s0)
+                f = folie if zoom < 1.002 else folie.resize((int(folie.width * zoom), int(folie.height * zoom)), Image.BILINEAR)
+                ebene = f.convert("RGBA")
+                medien.aufkleben(bild, _mit_alpha(rand, rein), (W / 2 - rand.width / 2, mitte_y - rand.height / 2))
+                medien.aufkleben(bild, _mit_alpha(ebene, rein), (W / 2 - f.width / 2, mitte_y - f.height / 2))
+            proz.stdin.write(np.asarray(bild, dtype=np.uint8).tobytes())
+        proz.stdin.close()
+        fehler = proz.stderr.read().decode("utf-8", "replace")
+        if proz.wait(timeout=120) != 0:
+            raise RuntimeError(f"ffmpeg: {fehler[-400:]}")
+    except Exception:
+        proz.kill()
+        raise
+    finally:
+        try:
+            os.remove(ton)
+        except OSError:
+            pass
+    return {"sekunden": round(dauer, 1), "bilder": n}
+
+
+def diashow_bytes(post: dict, bilder: list[bytes]) -> bytes:
+    with tempfile.TemporaryDirectory() as ordner:
+        ziel = os.path.join(ordner, "dia.mp4")
+        diashow(post, bilder, ziel)
+        with open(ziel, "rb") as f:
+            return f.read()
