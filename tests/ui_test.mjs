@@ -284,7 +284,10 @@ await page.click('.tab[data-tab="posten"]'); await wait(900);
 check("Posten: standardmäßig aus", !(await page.isChecked("#postAuto")) && (await page.textContent("#postInfo")).startsWith("Aus:"), await page.textContent("#postInfo"));
 check("Posten: ohne Meta-App Hinweis auf Railway-Variablen", (await page.textContent("#verbindungen")).includes("META_APP_ID") && (await page.$$("#verbindungen a.knopf:not(.hide)")).length === 0, "");
 check("Posten: Rückruf-Adresse angezeigt", (await page.textContent("#verbindungen")).includes("/meta/rueckruf/facebook"), "");
-check("Posten: vier Verbindungen (Facebook, Instagram, TikTok, LinkedIn)", (await page.$$eval("#verbindungen .verbindung", (x) => x.length)) === 4, "");
+{ const t0 = await page.textContent("#verbindungen");
+check("Posten: fünf Verbindungen (Facebook, Instagram, TikTok, LinkedIn, Pinterest)", (await page.$$eval("#verbindungen .verbindung", (x) => x.length)) === 5, "");
+check("Posten: Pinterest-Einrichtung mit Rückruf und Sandbox", ["developers.pinterest.com", "/pinterest/rueckruf", "PINTEREST_APP_ID", "PINTEREST_SANDBOX", "Standard access"].every((w) => t0.includes(w)), "");
+}
 { const t = await page.textContent("#verbindungen");
   check("Posten: TikTok-Einrichtung mit Produkten, Rechten und Rückruf", ["Login Kit", "Content Posting API", "user.info.basic", "video.upload", "video.publish", "Sandbox", "/tiktok/rueckruf", "TIKTOK_CLIENT_KEY"].every((w) => t.includes(w)), "");
   check("Posten: LinkedIn-Einrichtung mit Seite, Produkten und Rückruf", ["Unternehmensseite", "Share on LinkedIn", "OpenID Connect", "/linkedin/rueckruf", "LINKEDIN_CLIENT_ID"].every((w) => t.includes(w)), "");

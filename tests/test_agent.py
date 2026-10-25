@@ -2118,6 +2118,54 @@ def test_instagram_diashow_an_reel_tagen(monkeypatch):
     assert gesendet["art"] == "reel" and "-diashow-" in gesendet["url"] and gesendet["url"].endswith(".mp4")
 
 
+def test_pinterest_verbinden_und_pin(monkeypatch, frische_db):
+    import pinterest
+    monkeypatch.setenv("PINTEREST_APP_ID", "pid"); monkeypatch.setenv("PINTEREST_APP_SECRET", "psec")
+    monkeypatch.setenv("PINTEREST_SANDBOX", "1")
+    gesendet = []
+
+    def fake_post(url, data=None, json=None, headers=None, timeout=None):
+        gesendet.append((url, data or json))
+        if url.endswith("/oauth/token"):
+            assert headers["Authorization"].startswith("Basic ")
+            return SimpleNamespace(status_code=200, content=b"1", text="", json=lambda: {
+                "access_token": "tok", "refresh_token": "ref", "expires_in": 2592000, "refresh_token_expires_in": 31536000,
+                "scope": "boards:read,pins:write"})
+        if url.endswith("/boards"):
+            return SimpleNamespace(status_code=201, content=b"1", text="", json=lambda: {"id": "B1"})
+        if url.endswith("/pins"):
+            return SimpleNamespace(status_code=201, content=b"1", text="", json=lambda: {"id": "P9"})
+        raise AssertionError(url)
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        if url.endswith("/user_account"):
+            return SimpleNamespace(status_code=200, content=b"1", text="", json=lambda: {"username": "soraya_astro", "account_type": "BUSINESS"})
+        if url.endswith("/boards"):
+            return SimpleNamespace(status_code=200, content=b"1", text="", json=lambda: {"items": []})
+        raise AssertionError(url)
+    monkeypatch.setattr(pinterest.requests, "post", fake_post)
+    monkeypatch.setattr(pinterest.requests, "get", fake_get)
+    r = client.get("/pinterest/verbinden", headers=AUTH, follow_redirects=False)
+    assert r.headers["location"].startswith("https://www.pinterest.com/oauth/?") and "pins%3Awrite" in r.headers["location"]
+    state = _pq(_up(r.headers["location"]).query)["state"][0]
+    r = client.get(f"/pinterest/rueckruf?code=abc&state={state}", headers=AUTH, follow_redirects=False)
+    assert "verbunden=pinterest" in r.headers["location"]
+    v = client.get("/posten", headers=AUTH).json()["verbindungen"]["pinterest"]
+    assert v["verbunden"] and v["name"] == "soraya_astro" and v["sandbox"] and v["selbst_verlaengert"]
+    assert posten.passt("pinterest", "post") and posten.passt("pinterest", "story") and not posten.passt("pinterest", "reel")
+    # Pin: Titelbild, Link auf die Zeichen-Seite, Text ohne "Link in Bio"
+    post = {"id": 5, "art": "post", "sprache": "hu", "titel": "Skorpió: mélyebb beszélgetések", "untertitel": "U",
+            "text": "A Skorpió-szezon őszinteséget kér.\n\nLink a bióban.", "hashtags": "#asztrologia #skorpio", "meta": {}}
+    monkeypatch.setattr(posten.paket, "hole_bild", lambda p, f="feed": b"jpg")
+    out = posten.veroeffentliche({"plattform": "pinterest"}, post)
+    assert out == {"id": "P9", "url": None}
+    pin = gesendet[-1][1]
+    assert gesendet[-1][0] == "https://api-sandbox.pinterest.com/v5/pins" and pin["board_id"] == "B1"
+    assert pin["link"].endswith("/hu/csillagjegyek/skorpio?q=p5&lang=hu") and "bió" not in pin["description"]
+    assert pin["media_source"]["source_type"] == "image_base64" and pin["title"].startswith("Skorpió")
+    assert ("pinterest_zugang" and (pinterest.zugang() or {}).get("pinnwaende") == {"hu": "B1"})
+
+
 def test_plattformen_verbunden_auch_ohne_zahlen():
     import auswertung
     tage = [HEUTE - timedelta(days=i) for i in range(6, -1, -1)]
