@@ -2088,6 +2088,19 @@ def test_facebook_zahlen_ersatzabfrage_und_meldung(monkeypatch, frische_db):
     assert client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()["abruf"]["facebook"]["fehler"] == 1
 
 
+def test_tiktok_text_zum_kopieren(frische_db):
+    p = db.speichere_posts([{"art": "reel", "titel": "Tomorrow's Moon has a history", "sprache": "en",
+                             "text": "The Hunter's Moon rises tomorrow.\n\nIt has guided people for centuries.\n\nLink in bio for your free horoscope.",
+                             "hashtags": "#astrology #fullmoon #moon #horoscope #zodiac #extra"}], quelle="tagesplan", geplant_fuer=HEUTE)[0]
+    t = posten.text_fuer(p, "tiktok")
+    assert t.startswith("Tomorrow's Moon has a history\n\nThe Hunter's Moon")
+    assert t.endswith("#astrology #fullmoon #moon #horoscope #zodiac") and redaktion.hat_kommentar_frage(t)
+    zid = db.plane_veroeffentlichung(p["id"], "tiktok", datetime.now(himmel.WIEN), zurueckgeben=True)
+    db.setze_veroeffentlichung(zid, "fertig", extern_id="pub1")
+    d = client.get("/posten/tiktok-texte", headers=AUTH).json()["texte"]
+    assert [x["post_id"] for x in d] == [p["id"]] and d[0]["text"] == t and d[0]["zuordnet"] is False
+
+
 def test_plattformen_verbunden_auch_ohne_zahlen():
     import auswertung
     tage = [HEUTE - timedelta(days=i) for i in range(6, -1, -1)]

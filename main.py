@@ -359,6 +359,12 @@ def wochenpaket_datei(job_id: str):
 
 
 # ---------------------------------------------------------------- Automatisch posten
+@app.get("/posten/tiktok-texte")
+def posten_tiktok_texte(tage: int = 3):
+    """Texte fuer die TikTok-Entwuerfe (TikTok uebernimmt bei Entwuerfen keinen Text)."""
+    return {"texte": posten.tiktok_texte(max(1, min(tage, 14)))}
+
+
 @app.get("/posten")
 def posten_ansehen():
     try:
