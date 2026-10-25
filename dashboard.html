@@ -394,6 +394,10 @@
   .cockpit .kachel b{font-size:19px}
   .cockpit .kachel.achtung{border-color:var(--gelb-rand);background:linear-gradient(180deg,rgba(250,178,25,.08),var(--panel))}
 
+  .tt-texte .tt-zeile{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(231,211,161,.12)}
+  .tt-texte .tt-zeile>div{min-width:0}
+  .tt-vorschau{margin:6px 0 0;font-size:13px;color:var(--mist-dim,#9a93b5);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .tt-texte button{flex:0 0 auto}
   /* Heute geht raus */
   .raus{list-style:none;margin:0;padding:0}
   .raus>li{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:var(--s2) var(--s4);align-items:center;
@@ -984,6 +988,7 @@
       <ol class="raus" id="raus" aria-label="Zeitplan für heute"><li class="raus-leer"><span class="spin"></span>Wird geladen …</li></ol>
       <div class="kurzwirkung hide" id="kurzWirkung"></div>
     </div>
+    <div id="tiktokTexte"></div>
 
     <div class="panel tagesplan-panel">
       <div class="himmel">
@@ -1920,6 +1925,20 @@ $('cockpit').addEventListener('click', (ev) => {
   $('planAuto').closest('.panel').scrollIntoView({behavior: 'smooth', block: 'start'});
 });
 let heuteNr = 0;
+// TikTok-Entwuerfe: TikTok setzt keinen Text -- hier der fertige Text zum Kopieren und Einfuegen
+let TT_TEXTE = [];
+async function ladeTikTokTexte(){
+  const box = $('tiktokTexte'); if(!box) return;
+  try{ TT_TEXTE = (await api('/posten/tiktok-texte?tage=3')).texte || []; }catch(e){ TT_TEXTE = []; }
+  if(!TT_TEXTE.length){ box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="panel tt-texte"><h2>${IKON.tiktok} Text für TikTok</h2>
+    <p class="hint">${kurzMehr('Entwurf in der TikTok-App öffnen → Weiter → hier „Text kopieren“ → in die Beschreibung einfügen → Veröffentlichen.', 'Bei Entwürfen übernimmt TikTok den Text nicht von selbst. Der Titel steht vorne – so findet Soraya das Video später wieder und zählt seine Aufrufe.')}</p>
+    ${TT_TEXTE.slice(0, 4).map((x, i) => `<div class="tt-zeile">
+      <div><b>${esc(x.titel || 'Reel ' + x.post_id)}</b><span class="meta"> · ${esc(x.gepostet ? tagName(x.gepostet) + ' ' + uhr(x.gepostet) : '')}${x.zuordnet ? ' · ✓ auf TikTok gefunden' : ''}</span>
+        <p class="tt-vorschau">${esc(x.text).replace(/\n/g, '<br>')}</p></div>
+      <button class="ghost klein" data-tt-kopie="${i}">Text kopieren</button></div>`).join('')}</div>`;
+}
+document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-tt-kopie]'); if(b) kopiere(b, (TT_TEXTE[+b.dataset.ttKopie] || {}).text || ''); });
 async function ladeHeute(){
   clearTimeout(heuteTimer);
   const nr = ++heuteNr;
@@ -1935,6 +1954,7 @@ async function ladeHeute(){
     $('laeufe').innerHTML = ''; $('btnPlanJetzt').disabled = $('btnPlanNeu').disabled = true; return; }
   zeigeCockpit(d, ps);
   zeigeRaus(d, ps, morgen);
+  ladeTikTokTexte();
   // Wird automatisch gepostet, zeigt "Heute" zuerst die Posting-Sprache
   if(!heuteGewaehlt && ps && ps.einstellungen.an && ps.einstellungen.sprache !== 'alle' && d.sprachen.includes(ps.einstellungen.sprache)) heuteSprache = ps.einstellungen.sprache;
   const stand = Object.fromEntries((d.laeufe || []).map(l => [l.sprache, l]));

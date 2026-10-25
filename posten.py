@@ -317,7 +317,47 @@ def linkedin_text(post: dict) -> str:
     return text
 
 
+TIKTOK_TEXT_MAX = 420
+
+
+def tiktok_text(post: dict) -> str:
+    """Beschreibung fuer TikTok: Reel-Titel vorn (damit Soraya das Video spaeter zuordnet), kurzer Text mit
+    einer Kommentar-Frage, 5 Hashtags. Bei Entwuerfen setzt TikTok keinen Text -- Attila kopiert ihn im Studio."""
+    sprache = post.get("sprache") or "en"
+    titel = (post.get("titel") or "").strip()
+    text = redaktion.mit_kommentar_frage(post.get("text") or "", sprache, f"p{post.get('id')}", 0)
+    absaetze = [a.strip() for a in _luftig(text).split("\n\n") if a.strip()]
+    kurz = []
+    for a in absaetze:
+        if kurz and len("\n\n".join(kurz + [a])) > TIKTOK_TEXT_MAX:
+            break
+        kurz.append(a)
+    if absaetze and absaetze[-1] not in kurz and redaktion.hat_kommentar_frage(absaetze[-1]):
+        kurz.append(absaetze[-1])                       # die Kommentar-Frage bleibt immer dabei
+    teile = [] if not titel or (kurz and kurz[0].lower().startswith(titel.lower()[:30])) else [titel]
+    teile += kurz
+    tags = (post.get("hashtags") or "").split()[:HASHTAGS_MAX]
+    if tags:
+        teile.append(" ".join(tags))
+    return "\n\n".join(teile)
+
+
+def tiktok_texte(tage: int = 3) -> list[dict]:
+    """Reels, die an TikTok gingen (neueste zuerst), mit dem fertigen Text zum Kopieren."""
+    seit = datetime.now(himmel.WIEN) - timedelta(days=tage)
+    out = []
+    for z in db.lade_gemerkte_zahlen("tiktok", seit, limit=12):
+        post = db.lade_post(z["post_id"])
+        if post:
+            out.append({"post_id": post["id"], "titel": post.get("titel"), "sprache": post.get("sprache"),
+                        "gepostet": z.get("gepostet"), "zuordnet": z.get("zahlen_am") is not None,
+                        "text": tiktok_text(post)})
+    return out
+
+
 def text_fuer(post: dict, plattform: str) -> str:
+    if plattform == "tiktok":
+        return tiktok_text(post)
     if plattform == "linkedin":
         sprache = post.get("sprache") or "en"
         teile = [linkedin_text(post), f"{LI_LINK.get(sprache, LI_LINK['en'])}: {link_basis()}?q=p{post['id']}&lang={sprache}"]
