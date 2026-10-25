@@ -318,6 +318,9 @@ def linkedin_text(post: dict) -> str:
 
 
 TIKTOK_TEXT_MAX = 420
+# Grund zum Folgen (auf TikTok schauen viele das Video, gehen aber nicht aufs Profil)
+TIKTOK_FOLGEN = {"de": "Folge Soraya für deinen täglichen Mond 🌙", "en": "Follow for your daily moon 🌙",
+                 "hu": "Kövess a napi Holdért 🌙", "it": "Segui per la tua luna di ogni giorno 🌙"}
 
 
 def tiktok_text(post: dict) -> str:
@@ -337,6 +340,7 @@ def tiktok_text(post: dict) -> str:
         kurz.append(absaetze[-1])                       # die Kommentar-Frage bleibt immer dabei
     teile = [] if not titel or (kurz and kurz[0].lower().startswith(titel.lower()[:30])) else [titel]
     teile += kurz
+    teile.append(TIKTOK_FOLGEN.get(sprache, TIKTOK_FOLGEN["en"]))
     teile.append(f"🔮 {paket.medien.LINK_IN_BIO.get(sprache, paket.medien.LINK_IN_BIO['en'])}: sorayaluxuryastroguide.com")
     tags = (post.get("hashtags") or "").split()[:HASHTAGS_MAX]
     if tags:

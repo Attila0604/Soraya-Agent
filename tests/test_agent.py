@@ -2095,8 +2095,9 @@ def test_tiktok_text_zum_kopieren(frische_db):
                              "hashtags": "#astrology #fullmoon #moon #horoscope #zodiac #extra"}], quelle="tagesplan", geplant_fuer=HEUTE)[0]
     t = posten.text_fuer(p, "tiktok")
     assert t.startswith("Tomorrow's Moon has a history\n\nThe Hunter's Moon")
-    assert t.endswith("🔮 Your free horoscope: sorayaluxuryastroguide.com\n\n#astrology #fullmoon #moon #horoscope #zodiac")
-    assert redaktion.hat_kommentar_frage(t) and "bio" not in t.lower()
+    assert t.endswith("Follow for your daily moon 🌙\n\n🔮 Your free horoscope: sorayaluxuryastroguide.com\n\n"
+                      "#astrology #fullmoon #moon #horoscope #zodiac")
+    assert "Type 🌙 if you felt this today." in t and "bio" not in t.lower()       # Kommentar-Frage bleibt dabei
     zid = db.plane_veroeffentlichung(p["id"], "tiktok", datetime.now(himmel.WIEN), zurueckgeben=True)
     db.setze_veroeffentlichung(zid, "fertig", extern_id="pub1")
     d = client.get("/posten/tiktok-texte", headers=AUTH).json()["texte"]
