@@ -326,7 +326,8 @@ def tiktok_text(post: dict) -> str:
     sprache = post.get("sprache") or "en"
     titel = (post.get("titel") or "").strip()
     text = redaktion.mit_kommentar_frage(post.get("text") or "", sprache, f"p{post.get('id')}", 0)
-    absaetze = [a.strip() for a in _luftig(text).split("\n\n") if a.strip()]
+    # "Link in Bio" ist auf TikTok (unter 1000 Followern) nicht antippbar -> stattdessen die kurze Adresse zum Lesen
+    absaetze = [a.strip() for a in _luftig(text).split("\n\n") if a.strip() and not _BIO.search(a)]
     kurz = []
     for a in absaetze:
         if kurz and len("\n\n".join(kurz + [a])) > TIKTOK_TEXT_MAX:
@@ -336,6 +337,7 @@ def tiktok_text(post: dict) -> str:
         kurz.append(absaetze[-1])                       # die Kommentar-Frage bleibt immer dabei
     teile = [] if not titel or (kurz and kurz[0].lower().startswith(titel.lower()[:30])) else [titel]
     teile += kurz
+    teile.append(f"🔮 {paket.medien.LINK_IN_BIO.get(sprache, paket.medien.LINK_IN_BIO['en'])}: sorayaluxuryastroguide.com")
     tags = (post.get("hashtags") or "").split()[:HASHTAGS_MAX]
     if tags:
         teile.append(" ".join(tags))
