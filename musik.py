@@ -40,7 +40,6 @@ MOLL_FOLGEN = [
 ]
 MODI = {"dorisch": [0, 2, 3, 5, 7, 9, 10], "phrygisch": [0, 1, 3, 5, 7, 8, 10], "aeolisch": [0, 2, 3, 5, 7, 8, 10],
         "pentatonik": [0, 3, 5, 7, 10]}
-GRUNDTOENE = {"C": 130.81, "D": 146.83, "Eb": 155.56, "E": 164.81, "F": 174.61, "G": 196.0, "A": 220.0, "Bb": 233.08}
 STIL_NACH_THEMA = {"Liebe & Beziehung": "romantisch", "Ritual": "mystisch", "Mitmachen": "lofi",
                    "Rückblick & Vorschau": "lofi", "Deine Woche": "himmlisch", "Astro-Wissen": "himmlisch",
                    "Sternzeichen im Fokus": "himmlisch"}
@@ -52,10 +51,6 @@ def stil_fuer(meta: dict | None) -> str:
     if thema.startswith("Großes Ereignis"):
         return "mystisch"
     return STIL_NACH_THEMA.get(thema, "himmlisch")
-
-
-def _hz(grund: float, halbton: float) -> float:
-    return grund * 2 ** (halbton / 12)
 
 
 # ---------------------------------------------------------------------------
@@ -101,83 +96,8 @@ def _platz(buf: np.ndarray, start: float, ton: np.ndarray, pan: float, gain: flo
 
 
 # ---------------------------------------------------------------------------
-# Instrumente (je ein Ton als float32-Spur)
+# Erzeugte Klaenge fuer Bass und Beat (je ein Ton als float32-Spur)
 # ---------------------------------------------------------------------------
-def harfe(f: float, dauer: float = 2.6) -> np.ndarray:
-    """Gezupft: Obertoene, hohe klingen schneller ab, weicher Anschlag."""
-    t = np.arange(int(dauer * RATE)) / RATE
-    ton = np.zeros_like(t)
-    for k in range(1, 9):
-        if f * k > 9000:
-            break
-        ton += np.sin(2 * np.pi * f * k * t + k) * np.exp(-t * (1.6 + 1.1 * k)) / k ** 1.15
-    ton *= np.minimum(1, t / 0.004)
-    return ton.astype(np.float32)
-
-
-def klavier(f: float, dauer: float = 3.5, staerke: float = 1.0) -> np.ndarray:
-    """Weiches Klavier: leicht verstimmte Obertoene (wie Saiten), Hammer-Anschlag, langes Ausklingen."""
-    t = np.arange(int(dauer * RATE)) / RATE
-    ton = np.zeros_like(t)
-    b = 0.0004
-    for k in range(1, 11):
-        fk = f * k * np.sqrt(1 + b * k * k)
-        if fk > 10000:
-            break
-        amp = (1 / k ** 1.4) * (0.6 + 0.4 * staerke)
-        ton += amp * np.sin(2 * np.pi * fk * t) * np.exp(-t * (0.9 + 0.55 * k))
-    ton += 0.4 * np.sin(2 * np.pi * f * 1.002 * t) * np.exp(-t * 0.7)            # Schwebung zweier Saiten
-    ton *= np.minimum(1, t / 0.003) * (1 - np.exp(-(dauer - t) * 12))
-    return ton.astype(np.float32)
-
-
-def epiano(f: float, dauer: float = 2.8) -> np.ndarray:
-    """FM-E-Piano (wie ein Rhodes): Glocke im Anschlag, warmer Ton danach."""
-    t = np.arange(int(dauer * RATE)) / RATE
-    index = 2.2 * np.exp(-t * 6) + 0.25
-    ton = np.sin(2 * np.pi * f * t + index * np.sin(2 * np.pi * f * t)) * np.exp(-t * 1.3)
-    ton += 0.25 * np.sin(2 * np.pi * f * 14 * t) * np.exp(-t * 25)                  # "Tine"-Klick
-    ton *= np.minimum(1, t / 0.002) * (1 - np.exp(-(dauer - t) * 10))
-    return ton.astype(np.float32)
-
-
-def glocke(f: float, dauer: float = 3.0) -> np.ndarray:
-    t = np.arange(int(dauer * RATE)) / RATE
-    ton = sum(a * np.sin(2 * np.pi * f * r * t) * np.exp(-t * d) for r, a, d in
-              ((1, 1.0, 1.4), (2.0, 0.5, 2.2), (2.76, 0.35, 3.0), (5.4, 0.18, 5.0), (8.9, 0.08, 7.0)))
-    return (ton * np.minimum(1, t / 0.002)).astype(np.float32)
-
-
-def handpan(f: float, dauer: float = 3.2) -> np.ndarray:
-    """Weich angeschlagenes Metall: Grundton, Oktave, Quinte darueber; runder als eine Glocke."""
-    t = np.arange(int(dauer * RATE)) / RATE
-    ton = (np.sin(2 * np.pi * f * t) * np.exp(-t * 1.1) + 0.45 * np.sin(2 * np.pi * f * 2 * t) * np.exp(-t * 1.8)
-           + 0.25 * np.sin(2 * np.pi * f * 3 * t) * np.exp(-t * 2.6) + 0.12 * np.sin(2 * np.pi * f * 4.2 * t) * np.exp(-t * 4))
-    ton *= np.minimum(1, t / 0.012)
-    return ton.astype(np.float32)
-
-
-def flaeche(freqs: list[float], dauer: float, rng, hell: float = 1600) -> np.ndarray:
-    """Warme Flaeche (Streicher/Synth): mehrere leicht verstimmte Saegezaehne je Ton, gefiltert, Stereo."""
-    n = int(dauer * RATE)
-    t = np.arange(n) / RATE
-    aus = np.zeros((n, 2), np.float32)
-    for f in freqs:
-        for seite, verst in ((0, -0.08), (1, 0.08), (0, 0.03), (1, -0.03)):
-            ff = f * 2 ** (verst / 12)
-            vib = 0.0025 * np.sin(2 * np.pi * (4.5 + rng.random()) * t + rng.random() * 6)
-            phase = 2 * np.pi * ff * t + vib * 40                                # leichtes Vibrato ueber die Phase
-            welle = np.zeros(n, np.float32)
-            for k in range(1, 12):
-                if ff * k > 8000:
-                    break
-                welle += np.sin(k * phase) / k
-            aus[:, seite] += welle
-    aus = _tiefpass(aus, hell, 1.5)
-    huelle = np.minimum(1, t / 1.4) * np.minimum(1, (dauer - t) / 1.2)
-    return (aus * np.clip(huelle, 0, 1)[:, None] / max(1, len(freqs))).astype(np.float32)
-
-
 def bass(f: float, dauer: float) -> np.ndarray:
     t = np.arange(int(dauer * RATE)) / RATE
     ton = np.sin(2 * np.pi * f * t) + 0.25 * np.sin(2 * np.pi * f * 2 * t)
@@ -188,12 +108,6 @@ def kick(dauer: float = 0.45) -> np.ndarray:
     t = np.arange(int(dauer * RATE)) / RATE
     f = 45 + 75 * np.exp(-t * 30)
     return (np.sin(2 * np.pi * np.cumsum(f) / RATE) * np.exp(-t * 9)).astype(np.float32)
-
-
-def hihat(rng, dauer: float = 0.08) -> np.ndarray:
-    x = rng.standard_normal(int(dauer * RATE)).astype(np.float32)
-    x = _tiefpass(_hochpass(x, 6000), 10000, 1.5)          # weich, nicht zischend
-    return x * np.exp(-np.arange(len(x)) / RATE * 70)
 
 
 def snare(rng, dauer: float = 0.25) -> np.ndarray:
@@ -244,10 +158,6 @@ def ton(instrument: str, midi: float, dauer: float | None = None, ausklang: floa
         k = min(len(roh), int(ausklang * RATE))
         roh[-k:] *= np.linspace(1, 0, k) ** 1.5
     return roh
-
-
-def _hz_midi(grund_midi: float, halbton: float) -> float:
-    return grund_midi + halbton
 
 
 def _lage(ton_h: int, tief: float, hoch: float, grund: float) -> float:
