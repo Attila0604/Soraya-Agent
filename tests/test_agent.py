@@ -1212,7 +1212,35 @@ def test_reel_klang():
     assert abs(int(k[0, 0])) < 200 and abs(int(k[-1, 0])) < 200   # sanft rein und raus
 
 
-FOLIEN = [{"titel": "Scorpio", "text": "Say the honest thing first."}, {"titel": "Taurus", "text": "Slow is fine today."},
+def test_musik_echte_instrumente():
+    import numpy as np
+    import musik
+    import reel
+    assert musik.bereit()
+    assert musik.stil_fuer({"thema": "Liebe & Beziehung"}) == "romantisch"
+    assert musik.stil_fuer({"thema": "Großes Ereignis: Vollmond"}) == "mystisch"
+    assert musik.stil_fuer(None) == "himmlisch"
+    # ein Ton: richtige Tonhoehe auch zwischen zwei Aufnahmen
+    t = musik.ton("harfe", 69, 1.0).astype(np.float64)
+    spek = np.abs(np.fft.rfft(t[2400:2400 + 16384] * np.hanning(16384)))
+    f = np.fft.rfftfreq(16384, 1 / musik.RATE)
+    assert abs(f[np.argmax(spek)] - 440) < 8
+    stuecke = {}
+    for stil in musik.STILE:
+        k = musik.stueck(8.0, [0.2, 3.0], seed=5, stil=stil)
+        assert k.shape == (8 * 48000, 2) and k.dtype == np.int16
+        x = k.astype(np.float64) / 32767
+        rms = np.sqrt(np.mean(x ** 2))
+        assert 0.1 < rms < 0.2 and np.abs(x).max() < 0.9          # hoerbar, ohne Uebersteuern
+        assert abs(x[0]).max() < 0.01 and abs(x[-1]).max() < 0.01  # sanft rein und raus
+        stuecke[stil] = k
+    assert (musik.stueck(8.0, [0.2, 3.0], seed=5, stil="lofi") == stuecke["lofi"]).all()      # gleich je Post
+    assert not (musik.stueck(8.0, [0.2, 3.0], seed=6, stil="lofi") == stuecke["lofi"]).all()  # anders je Post
+    m = reel.musik_fuer({"meta": {"thema": "Ritual"}}, 6.0, [0.0], 3)
+    assert m.shape == (6 * 48000, 2)
+
+
+FOLIEN =[{"titel": "Scorpio", "text": "Say the honest thing first."}, {"titel": "Taurus", "text": "Slow is fine today."},
           {"titel": "Cancer", "text": "Trust the quiet feeling."}]
 
 

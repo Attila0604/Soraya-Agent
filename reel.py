@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-11"
+VERSION = "reel-12"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -362,6 +362,17 @@ def zeitplan(zeilen: list[str], ende_s: float = 3.2) -> tuple[list[tuple[float, 
     return plan, ende, ende + ende_s
 
 
+def musik_fuer(post: dict, dauer: float, einsaetze: list[float], seed: int) -> np.ndarray:
+    """Musik mit echten Instrumenten (musik.py), Stil nach Format; ohne Klang-Bank die alte Klangflaeche."""
+    try:
+        import musik
+        if musik.bereit():
+            return musik.stueck(dauer, einsaetze, seed, musik.stil_fuer(post.get("meta")))
+    except Exception:
+        pass
+    return klang(dauer, einsaetze, seed)
+
+
 def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     """Rendert das Reel nach `ziel` (MP4). tiktok=True: kurze Fassung ohne Klangflaeche.
     Rueckgabe: {"sekunden", "bilder"}."""
@@ -439,13 +450,13 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
         if tiktok:      # Stille (eine Tonspur bleibt drin, manche Apps erwarten sie)
             f.write(np.zeros((int((dauer + 0.5) * 48000), 2), dtype=np.int16).tobytes())
         else:
-            f.write(klang(dauer + 0.5, [max(0.0, s) for s, _ in plan] + [end_start], int(seed)).tobytes())
+            f.write(musik_fuer(post, dauer + 0.5, [max(0.0, s) for s, _ in plan] + [end_start], int(seed)).tobytes())
     befehl = [ffmpeg, "-y", "-loglevel", "error",
               "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
               "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", ton,
               "-shortest", "-map", "0:v", "-map", "1:a",
               "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-profile:v", "high",
-              "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", ziel]
+              "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", ziel]
     proz = subprocess.Popen(befehl, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         for i in range(n):
@@ -568,11 +579,11 @@ def diashow(post: dict, bilder: list[bytes], ziel: str) -> dict:
     ffmpeg = ffmpeg_pfad()
     ton = os.path.join(os.path.dirname(os.path.abspath(ziel)) or ".", f".dia-{os.getpid()}-{seed}.raw")
     with open(ton, "wb") as f:
-        f.write(klang(dauer + 0.5, starts, seed).tobytes())
+        f.write(musik_fuer(post, dauer + 0.5, starts, seed).tobytes())
     befehl = [ffmpeg, "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS),
               "-i", "-", "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", ton, "-shortest", "-map", "0:v", "-map", "1:a",
               "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-profile:v", "high",
-              "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", ziel]
+              "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", ziel]
     proz = subprocess.Popen(befehl, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         for i in range(n):
