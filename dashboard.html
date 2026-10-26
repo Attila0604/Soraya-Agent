@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Soraya · Content Studio</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0B0E1A">
+<link rel="icon" href="/studio-icon-192.png">
+<link rel="apple-touch-icon" href="/studio-icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Content Studio">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -398,6 +404,8 @@
   .tt-texte .tt-zeile>div{min-width:0}
   .tt-vorschau{margin:6px 0 0;font-size:13px;color:var(--mist-dim,#9a93b5);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   .tt-texte button{flex:0 0 auto}
+  .app-install{margin-left:12px;vertical-align:middle}
+  @media (display-mode: standalone){ .app-install{display:none} }
   /* Heute geht raus */
   .raus{list-style:none;margin:0;padding:0}
   .raus>li{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:var(--s2) var(--s4);align-items:center;
@@ -966,7 +974,8 @@
 <div class="wrap">
   <header class="kopfzeile">
     <div class="marke"><span class="star" aria-hidden="true">&#10022;</span>
-      <h1>Soraya<small>Content Studio</small></h1></div>
+      <h1>Soraya<small>Content Studio</small></h1>
+      <button type="button" class="ghost klein app-install" id="appInstall" hidden>📲 Als App installieren</button></div>
   <nav class="tabs" aria-label="Bereiche">
     <button type="button" class="tab on" data-tab="heute">Heute</button>
     <button type="button" class="tab" data-tab="plan">Plan</button>
@@ -1479,6 +1488,14 @@ function liste(box, posts, leer, opts){
   box.innerHTML = posts.length ? posts.map(p => karte(p, opts)).join('')
     : `<div class="empty">${leer}</div>`;
 }
+// Content Studio als App: Service Worker anmelden und den Installieren-Knopf zeigen, wenn der Browser es anbietet
+let appAngebot = null;
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/studio-sw.js').catch(() => {});
+window.addEventListener('beforeinstallprompt', (ev) => { ev.preventDefault(); appAngebot = ev; $('appInstall').hidden = false; });
+window.addEventListener('appinstalled', () => { $('appInstall').hidden = true; melde('Content Studio ist installiert ✓ – du findest es jetzt auf deinem Startbildschirm.'); });
+$('appInstall').addEventListener('click', async () => {
+  if(appAngebot){ appAngebot.prompt(); await appAngebot.userChoice.catch(() => null); appAngebot = null; $('appInstall').hidden = true; }
+});
 async function kopiere(btn, text){
   try{ await navigator.clipboard.writeText(text); const a = btn.textContent; btn.textContent = 'Kopiert ✓';
        setTimeout(() => btn.textContent = a, 1400); }
@@ -3276,7 +3293,7 @@ $('postSpeichern').onclick = async () => {
       tiktok_modus: $('tiktokModus').value,
       plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked, tiktok: $('plTiktok').checked,
                     linkedin: $('plLinkedin').checked, pinterest: $('plPinterest').checked}})});
-    melde('Gespeichert ✓ (gilt für neue Termine)'); $('postUngespeichert').hidden = true; ladePosten();
+    melde('Gespeichert ✓ – auch schon geplante Termine bekommen die neuen Uhrzeiten'); $('postUngespeichert').hidden = true; ladePosten();
   }catch(e){ melde('Fehler: ' + e.message); }
 };
 $('view-posten').addEventListener('click', async (ev) => {

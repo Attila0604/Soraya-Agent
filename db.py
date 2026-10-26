@@ -219,6 +219,21 @@ def plane_veroeffentlichung(post_id: int, plattform: str, geplant_um, *, zurueck
         return zid
 
 
+def lade_geplante_termine(ab) -> list[dict]:
+    """Noch nicht gepostete Termine ab einem Zeitpunkt (zum Verschieben auf neue Uhrzeiten)."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("select v.id, v.geplant_um, p.art, p.meta from soraya_veroeffentlichungen v "
+                    "join soraya_posts p on p.id = v.post_id where v.status = 'geplant' and v.geplant_um >= %s;", (ab,))
+        return cur.fetchall()
+
+
+def verschiebe_termin(termin_id: int, geplant_um) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_veroeffentlichungen set geplant_um = %s where id = %s and status = 'geplant';",
+                    (geplant_um, termin_id))
+        conn.commit()
+
+
 def faellige_veroeffentlichungen(jetzt, max_versuche: int = 3) -> list[dict]:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(

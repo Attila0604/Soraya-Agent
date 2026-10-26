@@ -116,7 +116,41 @@ def speichere_einstellungen(neu: dict) -> dict:
         if p in PLATTFORMEN:
             e["plattformen"][p] = bool(an)
     db.setze_einstellung("posten", e)
+    if neu.get("zeiten"):
+        try:
+            zeiten_anwenden(e["zeiten"])
+        except Exception as ex:  # noqa: BLE001 -- neue Termine bekommen die Zeiten ohnehin
+            print(f"[Posten] Geplante Termine nicht verschoben: {ex}", flush=True)
     return e
+
+
+def zeiten_anwenden(zeiten: dict, jetzt: datetime | None = None) -> int:
+    """Noch nicht gepostete Termine (Zukunft) auf die neuen Uhrzeiten legen -- gleicher Tag, neue Zeit.
+    Laege die neue Zeit heute schon in der Vergangenheit, bleibt der Termin, wie er ist."""
+    jetzt = jetzt or datetime.now(himmel.WIEN)
+    n = 0
+    for z in db.lade_geplante_termine(jetzt):
+        platz_ = platz({"art": z["art"], "meta": z.get("meta") or {}})
+        zeit = zeiten.get(platz_)
+        if not zeit:
+            continue
+        neu = termin(z["geplant_um"].astimezone(himmel.WIEN).date(), zeit)
+        if neu > jetzt and neu != z["geplant_um"]:
+            db.verschiebe_termin(z["id"], neu)
+            n += 1
+    return n
+
+
+# Wunsch von Attila (26.10.): Story und erstes Reel 05:00, Feed-Post 12:00, zweites Reel 21:00 -- einmalig setzen
+WUNSCH_ZEITEN = {"story": "05:00", "reel": "05:00", "post": "12:00", "reel2": "21:00"}
+
+
+def wunsch_zeiten_einmal() -> bool:
+    if db.lade_einstellung("zeiten_wunsch_2610", None):
+        return False
+    speichere_einstellungen({"zeiten": WUNSCH_ZEITEN})
+    db.setze_einstellung("zeiten_wunsch_2610", {"gesetzt": datetime.now(himmel.WIEN).isoformat(timespec="minutes")})
+    return True
 
 
 def termin(tag: date, zeit: str) -> datetime:

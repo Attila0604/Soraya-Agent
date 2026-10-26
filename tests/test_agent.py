@@ -2166,6 +2166,28 @@ def test_pinterest_verbinden_und_pin(monkeypatch, frische_db):
     assert ("pinterest_zugang" and (pinterest.zugang() or {}).get("pinnwaende") == {"hu": "B1"})
 
 
+def test_wunsch_zeiten_und_termine_verschieben(frische_db):
+    morgen = HEUTE + timedelta(days=1)
+    p = db.speichere_posts([{"art": "reel", "titel": "R2", "text": "x"}], quelle="tagesplan", geplant_fuer=morgen,
+                           meta={"reel_nr": 2})[0]
+    alt = datetime.combine(morgen, _time(19, 30), tzinfo=himmel.WIEN)
+    db.plane_veroeffentlichung(p["id"], "instagram", alt)
+    assert posten.wunsch_zeiten_einmal() is True and posten.wunsch_zeiten_einmal() is False     # nur einmal
+    assert posten.einstellungen()["zeiten"] == {"story": "05:00", "reel": "05:00", "post": "12:00", "reel2": "21:00"}
+    t = db.lade_geplante_termine(datetime.now(himmel.WIEN))
+    assert [x["geplant_um"].astimezone(himmel.WIEN).strftime("%H:%M") for x in t] == ["21:00"]   # zweites Reel verschoben
+
+
+def test_studio_als_app_ohne_anmeldung():
+    m = client.get("/manifest.webmanifest")
+    assert m.status_code == 200 and m.json()["display"] == "standalone" and m.json()["start_url"] == "/"
+    i = client.get("/studio-icon-192.png")
+    assert i.status_code == 200 and i.content[:8] == b"\x89PNG\r\n\x1a\n"
+    assert "fetch" in client.get("/studio-sw.js").text
+    assert client.get("/").status_code == 401                                 # das Studio selbst bleibt geschuetzt
+    assert 'rel="manifest"' in client.get("/", headers=AUTH).text
+
+
 def test_plattformen_verbunden_auch_ohne_zahlen():
     import auswertung
     tage = [HEUTE - timedelta(days=i) for i in range(6, -1, -1)]
