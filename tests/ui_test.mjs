@@ -300,7 +300,8 @@ check("Posten: Einrichtung zeigt Schritt 1 mit Kopier-Adressen", await page.isVi
   && (await page.$eval("#einrichtungSchritte li.jetzt", (l) => l.textContent)).includes("datenschutz.html") && (await page.$$("#einrichtungSchritte [data-kopie]")).length === 3, "");
 check("Posten: Testpost-Knöpfe ohne Verbindung gesperrt", (await page.$$("#testposts button[data-jetzt]")).length > 0
   && (await page.$$eval("#testposts button[data-jetzt]", (b) => b.every((x) => x.disabled))), await page.textContent("#testposts"));
-check("Posten: Standard EN, Zeiten (mit 2. Reel)", (await page.inputValue("#postSprache")) === "en" && (await page.inputValue("#zReel")) === "19:00" && (await page.inputValue("#zReel2")) === "19:30", "");
+// Beim Start einmal gesetzt (Wunsch 26.10.): Story + Reel 05:00, Feed 12:00, 2. Reel 21:00
+check("Posten: EN, Wunsch-Zeiten (mit 2. Reel)", (await page.inputValue("#postSprache")) === "en" && (await page.inputValue("#zReel")) === "05:00" && (await page.inputValue("#zPost")) === "12:00" && (await page.inputValue("#zReel2")) === "21:00", "");
 await page.check("#postAuto"); await wait(900);
 check("Posten: einschalten mit Rückfrage", await page.isChecked("#postAuto") && (await page.textContent("#postInfo")).startsWith("An: EN"), await page.textContent("#postInfo"));
 check("Posten: Warnung ohne Verbindung und ohne Tagesplan-Automatik", (await page.textContent("#postWarnung")).includes("keine Plattform") && (await page.textContent("#postWarnung")).includes("Tagesplan"), await page.textContent("#postWarnung"));

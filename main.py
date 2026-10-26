@@ -54,7 +54,8 @@ app = FastAPI(title="Soraya-Agent", version="0.6")
 
 # Ohne Anmeldung erreichbar (Railway-Healthcheck) -- und die signierten Medien,
 # die Instagram beim Posten selbst abholt (ohne gueltige Signatur: 404).
-OFFENE_PFADE = {"/health"}
+# Die App-Dateien (Manifest, Symbole, Service Worker) laedt der Browser ohne Anmeldung -- sie enthalten nichts Vertrauliches
+OFFENE_PFADE = {"/health", "/manifest.webmanifest", "/studio-sw.js", "/studio-icon-192.png", "/studio-icon-512.png"}
 OFFENE_PRAEFIXE = ("/oeffentlich/medien/",)
 
 
@@ -149,6 +150,11 @@ def beim_start():
         init_db()
     except Exception as e:
         print(f"[Start] Datenbank noch nicht bereit: {e}")
+    try:
+        if posten.wunsch_zeiten_einmal():
+            print("[Start] Posting-Zeiten einmalig gesetzt: 05:00 / 12:00 / 21:00", flush=True)
+    except Exception as e:  # noqa: BLE001
+        print(f"[Start] Posting-Zeiten nicht gesetzt: {e}", flush=True)
     posten.zeitplan_starten()
     print(f"[Start] Automatisch posten ist {'AN' if posten.einstellungen()['an'] else 'AUS'}", flush=True)
     if tagesplan.gesperrt():
@@ -158,6 +164,61 @@ def beim_start():
     tagesplan.zeitplan_starten()
     print(f"[Start] Tagesplan-Automatik ist {'AN' if tagesplan.automatisch() else 'AUS'} "
           f"(ab {tagesplan.startstunde()} Uhr: {', '.join(tagesplan.sprachen())})", flush=True)
+
+
+# ---------------------------------------------------------------------------
+# Content Studio als App (PWA): am Handy "Zum Startbildschirm" / "App installieren"
+# ---------------------------------------------------------------------------
+_SYMBOLE: dict = {}
+
+
+def _studio_symbol(groesse: int) -> bytes:
+    if groesse not in _SYMBOLE:
+        import io
+        from PIL import Image, ImageDraw
+        import medien
+        bild = Image.new("RGB", (groesse, groesse), (11, 14, 26))
+        schein = medien.radial(groesse, groesse, groesse / 2, groesse * 0.45, 0, groesse / 2, groesse * 0.45, groesse * 0.55,
+                               [(0, "#2a1650", 1.0), (1, "#0b0e1a", 1.0)])
+        bild.paste(schein.convert("RGB"))
+        z = medien.portal(int(groesse * 0.52))
+        bild.paste(z, (int((groesse - z.width) / 2), int(groesse * 0.42 - z.height / 2)), z)
+        # "STUDIO" darunter -- damit es am Handy nicht mit der Soraya-App verwechselt wird
+        medien.gesperrt(ImageDraw.Draw(bild), "STUDIO", groesse / 2, groesse * 0.8, medien.schrift("cinzel", groesse * 0.085),
+                        groesse * 0.02, (231, 211, 161))
+        puffer = io.BytesIO()
+        bild.save(puffer, "PNG")
+        _SYMBOLE[groesse] = puffer.getvalue()
+    return _SYMBOLE[groesse]
+
+
+@app.get("/studio-icon-192.png")
+def studio_icon_192():
+    return Response(_studio_symbol(192), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/studio-icon-512.png")
+def studio_icon_512():
+    return Response(_studio_symbol(512), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/manifest.webmanifest")
+def studio_manifest():
+    return JSONResponse({
+        "name": "Soraya Content Studio", "short_name": "Content Studio", "id": "/", "start_url": "/", "scope": "/",
+        "display": "standalone", "background_color": "#0B0E1A", "theme_color": "#0B0E1A", "lang": "de",
+        "icons": [{"src": "/studio-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                  {"src": "/studio-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]},
+        media_type="application/manifest+json")
+
+
+@app.get("/studio-sw.js")
+def studio_sw():
+    # bewusst ohne Zwischenspeicher: immer der aktuelle Stand vom Server (nur damit sich die App installieren laesst)
+    js = ("self.addEventListener('install', e => self.skipWaiting());\n"
+          "self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));\n"
+          "self.addEventListener('fetch', e => {});\n")
+    return Response(js, media_type="application/javascript", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/", response_class=HTMLResponse)
