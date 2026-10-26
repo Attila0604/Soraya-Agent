@@ -249,7 +249,7 @@
   .pruefhinweis.leicht b{color:var(--champagne)}
   .pruefhinweis span{display:block;color:var(--mist-dim);font-size:12px;margin-top:3px}
   .st.gestoppt{color:#f0c4bc;background:rgba(208,59,59,.12)}
-  @media (max-width:560px){ .zeiten{grid-template-columns:repeat(2,minmax(0,1fr))} .termine .pl{display:none} }
+  @media (max-width:560px){ .zeiten{grid-template-columns:repeat(2,minmax(0,1fr))} .termine th.pl{display:none} }
   .ladebalken{height:6px;border-radius:99px;background:rgba(201,162,75,.15);overflow:hidden;margin:10px 0 6px}
   .ladebalken i{display:block;height:100%;width:0;background:var(--gold);transition:width .4s}
   .paket-optionen{display:grid;gap:12px;margin:6px 0 14px}
@@ -406,6 +406,10 @@
   .tt-texte button{flex:0 0 auto}
   .app-install{margin-left:12px;vertical-align:middle}
   @media (display-mode: standalone){ .app-install{display:none} }
+  .plk-reihe{display:inline-flex;flex-wrap:wrap;gap:4px}
+  .plk-link,.termine a.plk-link{text-decoration:none;border-bottom:0!important}
+  .termine .plk.st-fertig{border-color:rgba(12,163,12,.5)} .termine .plk.st-fehler{border-color:rgba(208,59,59,.7)}
+  .termine .plk.st-geplant{opacity:.75}
   /* Heute geht raus */
   .raus{list-style:none;margin:0;padding:0}
   .raus>li{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:var(--s2) var(--s4);align-items:center;
@@ -549,7 +553,7 @@
     .termine td{border:0;padding:0}
     .termine td:nth-child(1){grid-column:1;grid-row:1}
     .termine td:nth-child(4){grid-column:2;grid-row:1;justify-self:end}
-    .termine td:nth-child(2),.termine td:nth-child(5){grid-column:1 / -1}
+    .termine td:nth-child(2),.termine td:nth-child(3),.termine td:nth-child(5){grid-column:1 / -1}
     .termine td:nth-child(5):empty{display:none}
   }
 
@@ -3137,18 +3141,27 @@ async function ladePosten(){
   zeigeTestposts(d);
 
   const termine = d.termine || [];
-  $('termine').innerHTML = termine.length ? `<table class="termine"><thead><tr><th>Wann</th><th>Was</th><th class="pl">Wo</th><th>Stand</th><th></th></tr></thead><tbody>
-    ${termine.map(t => {
+  // je Post eine Zeile (statt einer Zeile je Plattform): Plattformen als kleine Marken mit ihrem Stand
+  const gruppen = [];
+  const nachPost = new Map();
+  termine.forEach(t => { let g = nachPost.get(t.post_id); if(!g){ g = {post: t, liste: []}; nachPost.set(t.post_id, g); gruppen.push(g); } g.liste.push(t); });
+  const RANG = {fehler: 4, laeuft: 3, geplant: 2, verpasst: 1, fertig: 0};
+  $('termine').innerHTML = gruppen.length ? `<table class="termine"><thead><tr><th>Wann</th><th>Was</th><th class="pl">Wo</th><th>Stand</th><th></th></tr></thead><tbody>
+    ${gruppen.map(({post: t, liste}) => {
       const gestoppt = t.post_status === 'gestoppt';
-      const offen = ['geplant', 'fehler'].includes(t.status);
-      const aktion = t.status === 'fertig' ? (t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">ansehen</a>` : '')
-        : gestoppt ? `<button class="ghost klein" data-weiter="${t.post_id}">Wieder posten</button>`
-        : offen ? `<button class="ghost klein" data-stopp="${t.post_id}">Stoppen</button> <button class="ghost klein" data-jetzt="${t.post_id}" data-pl="${t.plattform}">Jetzt posten</button>` : '';
-      const st = gestoppt && offen ? 'abgebrochen' : t.status;
-      return `<tr><td class="t">${tagName(t.geplant_um)} ${uhr(t.geplant_um)}</td>
-        <td>${esc(ART[platzVon(t)] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>
-          ${t.fehler && t.status !== 'fertig' ? `<div class="fehl">${esc(t.fehler)}${t.status === 'fehler' ? ` (Versuch ${t.versuche} von 3)` : ''}</div>` : ''}</td>
-        <td class="pl">${plIkon(t.plattform)}</td>
+      const offenListe = liste.filter(x => ['geplant', 'fehler'].includes(x.status));
+      const zuerst = liste.reduce((m, x) => String(x.geplant_um) < String(m.geplant_um) ? x : m, liste[0]);
+      const st0 = liste.map(x => x.status).sort((x, y) => (RANG[y] ?? 0) - (RANG[x] ?? 0))[0];
+      const st = gestoppt && offenListe.length ? 'abgebrochen' : st0;
+      const marken = liste.map(x => { const m = plIkon(x.plattform, 'st-' + x.status, VS_NAME[x.status] || x.status);
+        return x.status === 'fertig' && x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener" class="plk-link">${m}</a>` : m; }).join(' ');
+      const fehler = liste.filter(x => x.fehler && x.status !== 'fertig')
+        .map(x => `<div class="fehl">${esc(PL_NAME[x.plattform] || x.plattform)}: ${esc(x.fehler)}${x.status === 'fehler' ? ` (Versuch ${x.versuche} von 3)` : ''}</div>`).join('');
+      const aktion = gestoppt ? `<button class="ghost klein" data-weiter="${t.post_id}">Wieder posten</button>`
+        : offenListe.length ? `<button class="ghost klein" data-stopp="${t.post_id}">Stoppen</button> ${offenListe.map(x => `<button class="ghost klein" data-jetzt="${t.post_id}" data-pl="${x.plattform}">Jetzt: ${esc(PL_NAME[x.plattform] || x.plattform)}</button>`).join(' ')}` : '';
+      return `<tr><td class="t">${tagName(zuerst.geplant_um)} ${uhr(zuerst.geplant_um)}</td>
+        <td>${esc(ART[platzVon(t)] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>${fehler}</td>
+        <td class="pl"><span class="plk-reihe">${marken}</span></td>
         <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}</td></tr>`;
     }).join('')}</tbody></table>`
     : `<div class="empty">Keine Termine.<span>${e.an ? 'Sie entstehen, sobald es Posts gibt und eine Plattform verbunden ist.' : 'Sie entstehen, wenn „Automatisch posten“ an ist.'}</span></div>`;
