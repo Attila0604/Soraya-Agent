@@ -176,6 +176,104 @@ def beitraege(zeilen: list[dict], quellen: dict | None = None) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Besucher: woher, wann, wie viele (aus den Link-Kennungen der Landingpage)
+# ---------------------------------------------------------------------------
+KANAELE = {"instagram": "Instagram", "tiktok": "TikTok", "facebook": "Facebook", "pinterest": "Pinterest",
+           "linkedin": "LinkedIn", "google": "Google-Suche", "suche": "Andere Suchmaschinen", "geteilt": "Geteilt & Einladungen",
+           "chat": "WhatsApp & Chats", "x": "X", "posts": "Post-Links", "direkt": "Direkt", "andere": "Andere Webseiten"}
+_KURZ = {"ig": "instagram", "insta": "instagram", "instagram": "instagram", "tt": "tiktok", "tiktok": "tiktok",
+         "fb": "facebook", "facebook": "facebook", "pin": "pinterest", "pinterest": "pinterest", "li": "linkedin",
+         "linkedin": "linkedin", "google": "google", "suche": "suche", "chat": "chat", "x": "x", "andere": "andere"}
+_KLICKBAR = ("facebook", "pinterest", "linkedin")    # dort ist der Link im Post-Text antippbar
+WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+
+def kanal(code: str, post_plattformen=None) -> str:
+    """Link-Kennung -> Kanal. bio-ig / ref-ig: Instagram, seo-widder: Google, p123: wo der Post-Link klickbar war."""
+    c = (code or "").lower()
+    for vorne in ("bio-", "ref-"):
+        if c.startswith(vorne):
+            return _KURZ.get(c[len(vorne):], "andere")
+    if c in _KURZ:
+        return _KURZ[c]
+    if c.startswith("seo-"):
+        return "google"
+    if c.startswith(("teilen", "einlad", "invite")):
+        return "geteilt"
+    if c == "direkt":
+        return "direkt"
+    if c[:1] == "p" and c[1:].isdigit():
+        return next((pl for pl in _KLICKBAR if pl in (post_plattformen or ())), "posts")
+    return "andere"
+
+
+def _code_name(code: str, posts: dict) -> str:
+    c = code.lower()
+    if c[:1] == "p" and c[1:].isdigit():
+        p = posts.get(int(c[1:]))
+        return f"Post: {p['titel']}" if p and p.get("titel") else f"Post {c[1:]}"
+    if c.startswith("seo-"):
+        return "Sternzeichen-Seite " + c[4:].replace("-", " ").title()
+    if c.startswith("bio-"):
+        return "Link im Profil"
+    if c.startswith("ref-") or c == "direkt":
+        return {"direkt": "Adresse eingetippt oder Lesezeichen", "ref-google": "Google-Suche (Startseite)",
+                "ref-andere": "Andere Webseiten"}.get(c, "Ohne unseren Link (z. B. aus der App)")
+    if c.startswith("teilen"):
+        return "Teilen-Bild aus der App"
+    return c
+
+
+def besucher(quellen: dict | None, posts: list[dict], tage: list[date], vor_tage: list[date],
+             stunden: dict | None = None) -> dict:
+    nach_id = {p["id"]: p for p in posts}
+    tage_iso, vor_iso = [d.isoformat() for d in tage], {d.isoformat() for d in vor_tage}
+    je: dict = {}
+    for code, q in (quellen or {}).items():
+        p = nach_id.get(int(code[1:])) if code[:1] == "p" and code[1:].isdigit() else None
+        k = kanal(code, (p or {}).get("plattformen"))
+        e = je.setdefault(k, {"schluessel": k, "name": KANAELE[k], "besuche": 0, "vorher": 0,
+                              "tage": dict.fromkeys(tage_iso, 0), "codes": {}})
+        for d, n in (q.get("tage") or {}).items():
+            d, n = str(d)[:10], int(n or 0)
+            if d in e["tage"]:
+                e["tage"][d] += n
+                e["besuche"] += n
+                e["codes"][code] = e["codes"].get(code, 0) + n
+            elif d in vor_iso:
+                e["vorher"] += n
+    gesamt = sum(e["besuche"] for e in je.values())
+    vorher = sum(e["vorher"] for e in je.values())
+    liste = []
+    for e in sorted(je.values(), key=lambda e: (-e["besuche"], -e["vorher"])):
+        if not e["besuche"] and not e["vorher"]:
+            continue
+        liste.append({"schluessel": e["schluessel"], "name": e["name"], "besuche": e["besuche"], "vorher": e["vorher"],
+                      "anteil": round(e["besuche"] / gesamt * 100, 1) if gesamt else 0,
+                      "tage": [e["tage"][d] for d in tage_iso],
+                      "details": [{"name": _code_name(c, nach_id), "besuche": n}
+                                  for c, n in sorted(e["codes"].items(), key=lambda x: -x[1])[:5]]})
+    je_tag = [sum(k["tage"][i] for k in liste) for i in range(len(tage_iso))]
+    wochentage = [0] * 7
+    for d, n in zip(tage, je_tag):
+        wochentage[d.weekday()] += n
+    uhr = [0] * 24
+    gemessen = False
+    for d in tage_iso:
+        for h, n in ((stunden or {}).get(d) or {}).items():
+            if str(h).isdigit() and 0 <= int(h) < 24:
+                uhr[int(h)] += int(n or 0)
+                gemessen = True
+    beste_stunde = max(range(24), key=lambda h: uhr[h]) if gemessen and any(uhr) else None
+    bester_tag = max(range(7), key=lambda i: wochentage[i]) if any(wochentage) else None
+    return {"gesamt": gesamt, "vorher": vorher, "aenderung": aenderung(gesamt, vorher) if vorher >= 10 else None,
+            "kanaele": liste, "je_tag": je_tag, "tage": tage_iso, "wochentage": wochentage, "stunden": uhr if gemessen else None,
+            "bester_tag": WOCHENTAGE[bester_tag] if bester_tag is not None else None,
+            "beste_stunde": beste_stunde,
+            "top": liste[0]["schluessel"] if liste and liste[0]["besuche"] else None}
+
+
+# ---------------------------------------------------------------------------
 # Trichter und Lernen
 # ---------------------------------------------------------------------------
 TRICHTER_TIPP = {
@@ -409,6 +507,7 @@ def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bo
         "analyse": analyse, "zeiten": zeiten,
         "lernen": lern_saetze(bewertet),
         "verlauf": verlauf,
+        "besucher": besucher((stat or {}).get("quellen"), posts, tage, vor_tage, (stat or {}).get("stunden")),
         "beitraege": [oeffentlich(p) for p in im_zeitraum] if mit_tabelle else [],
         "zahlen_stand": stand.isoformat() if stand else None,
         "abruf": _abruf(),

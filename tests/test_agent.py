@@ -2348,3 +2348,25 @@ def test_auswertung_wenig_daten_ehrlich():
     assert all(not g["genug"] for g in a["arten"]) and a["zeiten"]["beste"] == []
     leer = _auswerten([])
     assert leer["erkennt"][0]["detail"].startswith("0 gemessene Posts") and leer["arten"] == [] and leer["formate"] == []
+
+
+def test_besucher_woher_und_wann():
+    from datetime import date
+    import cockpit
+    assert cockpit.kanal("bio-ig") == cockpit.kanal("ref-ig") == "instagram"
+    assert cockpit.kanal("seo-widder") == cockpit.kanal("ref-google") == "google"
+    assert cockpit.kanal("p5", {"instagram": {}, "facebook": {}}) == "facebook"
+    assert cockpit.kanal("p5", {"instagram": {}}) == "posts"
+    assert cockpit.kanal("direkt") == "direkt" and cockpit.kanal("teilen-trio") == "geteilt" and cockpit.kanal("xyz") == "andere"
+    tage = [date(2026, 10, 20), date(2026, 10, 21)]
+    vor = [date(2026, 10, 18), date(2026, 10, 19)]
+    quellen = {"bio-ig": {"tage": {"2026-10-20": 4, "2026-10-21": 6, "2026-10-19": 2}},
+               "seo-widder": {"tage": {"2026-10-21": 3}}, "p7": {"tage": {"2026-10-20": 1}}}
+    posts = [{"id": 7, "titel": "Vollmond", "plattformen": {"facebook": {}}}]
+    b = cockpit.besucher(quellen, posts, tage, vor, {"2026-10-21": {"20": 5, "09": 1}})
+    assert b["gesamt"] == 14 and b["vorher"] == 2 and b["aenderung"] is None      # zu wenig davor fuer Prozente
+    assert [k["schluessel"] for k in b["kanaele"]] == ["instagram", "google", "facebook"]
+    assert b["kanaele"][0]["tage"] == [4, 6] and b["je_tag"] == [5, 9]
+    assert b["kanaele"][2]["details"][0]["name"] == "Post: Vollmond"
+    assert b["wochentage"][1:3] == [5, 9] and b["beste_stunde"] == 20 and b["stunden"][9] == 1 and b["bester_tag"] == "Mi"
+    assert cockpit.besucher({}, [], tage, vor)["stunden"] is None

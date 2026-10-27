@@ -405,6 +405,8 @@
   .tt-vorschau{margin:6px 0 0;font-size:13px;color:var(--mist-dim,#9a93b5);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   .tt-texte button{flex:0 0 auto}
   .app-install{margin-left:12px;vertical-align:middle}
+  /* neben allen Reitern ist auf dem PC nur fuers Symbol Platz (sonst schiebt es "Heute" weg) */
+  @media (min-width:821px) and (max-width:1600px){ .app-install .ai-text{display:none} .app-install{padding:0 10px} }
   @media (display-mode: standalone){ .app-install{display:none} }
   .plk-reihe{display:inline-flex;flex-wrap:wrap;gap:4px}
   .plk-link,.termine a.plk-link{text-decoration:none;border-bottom:0!important}
@@ -971,6 +973,48 @@
   ol.sd-zeit b{display:block;color:#F4EEDD;font-weight:500}
   .sd-mini{display:inline-flex;align-items:flex-end;gap:2px;height:24px;margin:4px 8px 0 0;vertical-align:bottom}
   .sd-mini i{width:6px;background:var(--viz-violet);border-radius:2px 2px 0 0}
+  /* Besucher: woher, wann, wie viele */
+  :root{--k-google:#4FAE7F;--k-pinterest:#E07A4F;--k-direkt:#8A8FA6;--k-weitere:#454B6B;--k-a:#5FB3C9;--k-b:#C27FD6;--k-c:#7FA0D6}
+  .wz-woher{margin:0 0 var(--s4);padding:var(--s3) var(--s4);border:1px solid var(--line-soft);border-radius:14px;background:var(--panel)}
+  .wh-kopf{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);margin:-6px 0 var(--s2)}
+  .wh-streifen{display:flex;gap:2px;height:12px;border-radius:6px;overflow:hidden}
+  .wh-streifen i{min-width:3px}
+  ul.wh-leg{list-style:none;margin:var(--s2) 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px var(--s4);font-size:12.5px;color:var(--mist)}
+  ul.wh-leg li{display:inline-flex;align-items:center;gap:6px}
+  ul.wh-leg i{width:9px;height:9px;border-radius:2px;display:inline-block}
+  ul.wh-leg b{color:#F4EEDD;font-weight:600;font-variant-numeric:tabular-nums}
+  .wb-kopf .wb-zahl{display:flex;align-items:baseline;gap:var(--s3);flex-wrap:wrap}
+  .wb-kopf .wb-zahl b{font-size:40px;line-height:1.05;color:#F4EEDD;font-weight:600;font-variant-numeric:tabular-nums}
+  .wb-satz{margin:var(--s1) 0 var(--s3);color:var(--mist);font-size:14.5px}
+  .wb-satz b{color:var(--champagne);font-weight:600}
+  .wb-diagramm{position:relative;margin:0 -4px}
+  .wb-diagramm .tip{position:absolute;top:0}
+  ul.wk-liste{list-style:none;margin:0 0 var(--s3);padding:0}
+  ul.wk-liste>li{border-top:1px solid var(--line-soft)}
+  ul.wk-liste>li:first-child{border-top:0}
+  ul.wk-liste summary{list-style:none;display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px var(--s2);align-items:center;padding:10px 0;cursor:pointer}
+  ul.wk-liste summary::-webkit-details-marker{display:none}
+  ul.wk-liste summary::before,ul.wk-liste details[open] summary::before,ul.wk-liste details.ohne summary::after{content:none}
+  ul.wk-liste details>summary::after{grid-column:1;grid-row:2;margin:0;justify-self:center;font-size:12px;line-height:6px}
+  ul.wk-liste summary{text-transform:none;letter-spacing:0;font-size:inherit;color:inherit}
+  @media (hover:hover){ ul.wk-liste details:not(.ohne) summary:hover .wk-n{color:var(--champagne)} }
+  ul.wk-liste details.ohne summary{cursor:default}
+  .wk-ikon{width:18px;height:18px;display:grid;place-items:center}
+  .wk-ikon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .wk-n{color:#F4EEDD;font-size:14.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wk-w{display:flex;gap:8px;align-items:baseline;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .wk-w b{color:#F4EEDD;font-weight:600;font-size:15px}
+  .wk-w small{font-size:12px;color:var(--mist-dim)}
+  .wk-w small.plus{color:var(--gruen)} .wk-w small.minus{color:#e88a7a}
+  .wk-spur{grid-column:2/-1;height:6px;border-radius:3px;background:rgba(195,199,214,.06);position:relative}
+  .wk-spur i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+  ul.wk-details{list-style:none;margin:0 0 10px 30px;padding:0;font-size:13px}
+  ul.wk-details li{display:flex;justify-content:space-between;gap:var(--s3);padding:3px 0;color:var(--mist)}
+  ul.wk-details b{color:#F4EEDD;font-weight:600;font-variant-numeric:tabular-nums}
+  .wb-h3{font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mist-dim);font-weight:500;margin:var(--s2) 0 var(--s1)}
+  .wb-balken{min-height:20px}
+  .wb-tipp{margin:var(--s3) 0 0;padding:var(--s3);border-radius:10px;background:rgba(201,162,75,.07);border:1px solid rgba(201,162,75,.22);font-size:13.5px;color:var(--mist)}
+  .wb-tipp b{color:var(--champagne)}
   @media (max-width:820px){ .wz-zwei{grid-template-columns:1fr} .pv{grid-template-columns:1fr;gap:var(--s4)} }
   @media (max-width:560px){
     .wz-leiste{padding:var(--s2) 16px;margin-left:-16px;margin-right:-16px}
@@ -995,7 +1039,7 @@
   <header class="kopfzeile">
     <div class="marke"><span class="star" aria-hidden="true">&#10022;</span>
       <h1>Soraya<small>Content Studio</small></h1>
-      <button type="button" class="ghost klein app-install" id="appInstall" hidden>📲 Als App installieren</button></div>
+      <button type="button" class="ghost klein app-install" id="appInstall" hidden aria-label="Als App installieren" title="Als App installieren">📲<span class="ai-text"> Als App installieren</span></button></div>
   <nav class="tabs" aria-label="Bereiche">
     <button type="button" class="tab on" data-tab="heute"><svg class="tab-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="tab-lang">Heute</span><span class="tab-kurz" aria-hidden="true">Heute</span></button>
     <button type="button" class="tab" data-tab="plan"><svg class="tab-ikon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg><span class="tab-lang">Plan</span><span class="tab-kurz" aria-hidden="true">Plan</span></button>
@@ -1247,6 +1291,7 @@
     <div class="wz-leiste" id="wzLeiste">
       <div class="segment wz-reiter" id="wReiter" role="tablist" aria-label="Bereiche der Wirkung">
         <button type="button" role="tab" id="wr-ueberblick" data-wr="ueberblick" aria-selected="true" aria-controls="wCockpit">Überblick</button>
+        <button type="button" role="tab" id="wr-besucher" data-wr="besucher" aria-selected="false" aria-controls="wCockpit" tabindex="-1">Besucher</button>
         <button type="button" role="tab" id="wr-posts" data-wr="posts" aria-selected="false" aria-controls="wCockpit" tabindex="-1">Posts</button>
         <button type="button" role="tab" id="wr-plattformen" data-wr="plattformen" aria-selected="false" aria-controls="wCockpit" tabindex="-1">Plattformen</button>
         <button type="button" role="tab" id="wr-lernen" data-wr="lernen" aria-selected="false" aria-controls="wCockpit" tabindex="-1">Lernen</button>
@@ -2628,7 +2673,7 @@ window.addEventListener('resize', () => { if(aktiv === 'wirkung'){ zeichneVerlau
 LADER.wirkung = ladeCockpit;
 /* ---------- Zahlen-Cockpit "Wirkung": ein Aufruf /wirkung/cockpit, vier Unterreiter ---------- */
 let W_TAGE = 7, cockpitDaten = null, wDetailsTage = null, cockpitNr = 0;
-const W_REITER = ['ueberblick', 'posts', 'plattformen', 'lernen'];
+const W_REITER = ['ueberblick', 'besucher', 'posts', 'plattformen', 'lernen'];
 const merkLesen = (k) => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
 const merkSchreiben = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} };
 let wReiter = W_REITER.includes(merkLesen('soraya.wirkung.reiter')) ? merkLesen('soraya.wirkung.reiter') : 'ueberblick';
@@ -2645,6 +2690,9 @@ function trend(k){
   if(k.wert == null) return '<span class="trend neutral">ohne Statistik</span>';
   if(k.aenderung == null) return `<span class="trend neutral">– <span class="vgl">kein Vergleich</span></span>`;
   const r = k.aenderung > 0 ? 'auf' : k.aenderung < 0 ? 'ab' : 'neutral';
+  // kleine Ausgangszahl: "davor 44" statt "+5 227 %" (sagt mehr und uebertreibt nicht)
+  if(k.vorher != null && (k.vorher < 10 || Math.abs(k.aenderung) > 300))
+    return `<span class="trend ${r}"><span aria-hidden="true">${k.aenderung > 0 ? '↑' : k.aenderung < 0 ? '↓' : '→'}</span> <span class="vgl">davor</span> ${zahl(k.vorher)}</span>`;
   return `<span class="trend ${r}"><span aria-hidden="true">${k.aenderung > 0 ? '↑' : k.aenderung < 0 ? '↓' : '→'}</span> ${zahl(Math.abs(k.aenderung))} %<span class="sr"> ${k.aenderung >= 0 ? 'mehr' : 'weniger'}</span> <span class="vgl">als davor</span></span>`;
 }
 function daumenKlein(p){
@@ -2667,7 +2715,7 @@ function zeigeCockpitW(){
   });
   box.setAttribute('aria-labelledby', 'wr-' + wReiter);
   box.dataset.reiter = wReiter;
-  box.innerHTML = ({ueberblick: htmlUeberblick, posts: htmlPosts, plattformen: htmlPlattformen, lernen: htmlLernen})[wReiter](d);
+  box.innerHTML = ({ueberblick: htmlUeberblick, besucher: htmlBesucher, posts: htmlPosts, plattformen: htmlPlattformen, lernen: htmlLernen})[wReiter](d);
   $('wDetails').hidden = wReiter !== 'plattformen';
   if(wReiter === 'posts') zeigePostTabelle();
   zeichneWirkung();
@@ -2675,6 +2723,7 @@ function zeigeCockpitW(){
 function zeichneWirkung(){
   if(!cockpitDaten) return;
   if(wReiter === 'plattformen'){ zeichneReichweite(); zeichneFollower(); }
+  if(wReiter === 'besucher') zeichneBesucher();
 }
 function waehleReiter(r, fokus){
   if(!W_REITER.includes(r)) return;
@@ -2711,7 +2760,8 @@ function htmlTrichter(d){
   const breite = [100, 80, 62, 46];
   const stufen = t.stufen.map((s, i) => {
     const vq = (v[i] || {}).quote, q = s.quote;
-    const vgl = i && q != null && vq != null ? (q > vq ? `<span class="trend auf"><span aria-hidden="true">↑</span> davor ${prozent(vq)}</span>` : q < vq ? `<span class="trend ab"><span aria-hidden="true">↓</span> davor ${prozent(vq)}</span>` : `<span class="trend neutral">wie davor</span>`) : '';
+    const genugDavor = i && ((v[i - 1] || {}).wert || 0) >= 30;   // sonst schwankt die Quote zu stark
+    const vgl = genugDavor && q != null && vq != null ? (q > vq ? `<span class="trend auf"><span aria-hidden="true">↑</span> davor ${prozent(vq)}</span>` : q < vq ? `<span class="trend ab"><span aria-hidden="true">↓</span> davor ${prozent(vq)}</span>` : `<span class="trend neutral">wie davor</span>`) : '';
     return `${i ? `<div class="tr-schritt${s.schwach ? ' schwach' : ''}"><span aria-hidden="true">↓</span> <b>${prozent(q)}</b> kommen weiter ${vgl}${s.schwach ? ' <span class="tr-marke">schwächster Schritt</span>' : ''}</div>` : ''}
       <div class="tr-stufe${s.schwach ? ' schwach' : ''}" role="listitem" style="--b:${breite[i]}%;--a:${(0.17 - i * 0.03).toFixed(2)}"><b>${s.wert == null ? '–' : zahl(s.wert)}</b><span>${esc(s.name)}</span></div>`;
   }).join('');
@@ -2735,11 +2785,116 @@ function htmlUeberblick(d){
     ${d.statistik !== 'ok' ? `<p class="wz-hinweis">${d.statistik === 'nicht_verbunden' ? 'Besuche und neue Konten fehlen: Die Statistik ist noch nicht verbunden.' : 'Die App-Statistik ist gerade nicht erreichbar.'}
       <button class="textlink" data-oeffne-details="1">Anleitung ›</button></p>` : ''}
     ${fol ? `<div class="wz-follower"><span class="wz-label">Follower</span>${fol}</div>` : ''}
+    ${htmlWoherKurz(d)}
     ${htmlErkennt(d)}
     <div class="wz-zwei">${htmlTrichter(d)}
       <div class="panel wz-top"><h2>Beste Posts</h2>${top}</div></div>
     <div class="panel wz-lernt"><h2>Soraya lernt</h2><dl class="lernt">${lernt}</dl>
       ${d.lernen.duenn ? '' : `<p class="meta">Aus ${mehrzahl(d.lernen.gemessen, 'gemessenen Post', 'gemessenen Posts')} der letzten 30 Tage.</p>`}</div>`;
+}
+
+/* --- Besucher: woher, wann, wie viele --- */
+const KANAL_FARBE = {instagram: 'var(--pl-instagram)', tiktok: 'var(--pl-tiktok)', facebook: 'var(--pl-facebook)', google: 'var(--k-google)',
+  pinterest: 'var(--k-pinterest)', geteilt: 'var(--viz-violet)', direkt: 'var(--k-direkt)'};
+const KANAL_IKON = {google: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></svg>',
+  direkt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6"/></svg>',
+  geteilt: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.9l7.6-3.8M8.2 13.1l7.6 3.8"/></svg>'};
+const WEITERE_FARBE = 'var(--k-weitere)', WTAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+// hoechstens 6 Farben im Diagramm: die 5 groessten Kanaele + "Weitere" (grau)
+function kanalFarben(b){
+  const f = {}; let n = 0;
+  (b.kanaele || []).forEach(k => { if(k.besuche && n < 5){ f[k.schluessel] = KANAL_FARBE[k.schluessel] || ['var(--k-a)', 'var(--k-b)', 'var(--k-c)'][n % 3]; n++; } });
+  return f;
+}
+const kanalIkon = (k) => IKON[k] || KANAL_IKON[k] || '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/></svg>';
+function htmlWoherKurz(d){
+  const b = d.besucher; if(!b || !b.gesamt) return '';
+  const f = kanalFarben(b), oben = b.kanaele.filter(k => f[k.schluessel]), rest = b.gesamt - oben.reduce((s, k) => s + k.besuche, 0);
+  const teile = [...oben.map(k => ({n: k.name, w: k.besuche, f: f[k.schluessel]})), ...(rest > 0 ? [{n: 'Weitere', w: rest, f: WEITERE_FARBE}] : [])];
+  return `<div class="wz-woher"><div class="wh-kopf"><span class="wz-label">Woher die Besucher kommen</span>
+      <button class="textlink" data-geh-reiter="besucher">Besucher ›</button></div>
+    <div class="wh-streifen" role="img" aria-label="${esc(teile.map(t => `${t.n} ${Math.round(t.w / b.gesamt * 100)} %`).join(', '))}">${teile.map(t => `<i style="flex:${t.w};background:${t.f}"></i>`).join('')}</div>
+    <ul class="wh-leg">${teile.map(t => `<li><i style="background:${t.f}"></i>${esc(t.n)} <b>${Math.round(t.w / b.gesamt * 100)} %</b></li>`).join('')}</ul></div>`;
+}
+function htmlBesucher(d){
+  const b = d.besucher || {};
+  if(d.statistik !== 'ok') return `<div class="panel">${leer('Besucher noch nicht messbar', 'Dafür muss die App-Statistik verbunden sein (siehe Plattformen → Rohdaten).')}</div>`;
+  if(!b.gesamt && !b.vorher) return `<div class="panel">${leer('Noch keine Besucher gezählt', 'Sobald jemand die Landingpage öffnet, siehst du hier woher und wann.')}</div>`;
+  const f = kanalFarben(b), top = b.kanaele[0];
+  const tr = b.aenderung != null ? trend({wert: b.gesamt, vorher: b.vorher, aenderung: b.aenderung})
+    : b.vorher ? `<span class="trend neutral"><span class="vgl">davor</span> ${zahl(b.vorher)}</span>` : '<span class="trend neutral">– <span class="vgl">kein Vergleich</span></span>';
+  const satz = [top && top.besuche ? `Die meisten kommen über <b>${esc(top.name)}</b> (${Math.round(top.anteil)} %)` : '',
+    b.bester_tag ? `am stärksten am <b>${esc(WTAGE[['Mo','Di','Mi','Do','Fr','Sa','So'].indexOf(b.bester_tag)])}</b>${b.beste_stunde != null ? ` gegen <b>${b.beste_stunde} Uhr</b>` : ''}` : ''].filter(Boolean).join(', ');
+  const zeile = (k) => {
+    const farbe = f[k.schluessel] || WEITERE_FARBE, max = b.kanaele[0].besuche || 1;
+    const vgl = k.vorher >= 10 ? Math.round((k.besuche - k.vorher) / k.vorher * 100) : null;
+    return `<li><details${k.details.length > 1 ? '' : ' class="ohne"'}><summary>
+      <span class="wk-ikon" style="color:${farbe}">${kanalIkon(k.schluessel)}</span><span class="wk-n">${esc(k.name)}</span>
+      <span class="wk-w"><b>${zahl(k.besuche)}</b><small>${Math.round(k.anteil)} %</small>${vgl != null && vgl !== 0 ? `<small class="${vgl > 0 ? 'plus' : 'minus'}">${vgl > 0 ? '↑' : '↓'} ${Math.abs(vgl)} %</small>` : ''}</span>
+      <span class="wk-spur"><i style="width:${Math.max(2, k.besuche / max * 100)}%;background:${farbe}"></i></span></summary>
+      ${k.details.length ? `<ul class="wk-details">${k.details.map(x => `<li><span>${esc(x.name)}</span><b>${zahl(x.besuche)}</b></li>`).join('')}</ul>` : ''}</details></li>`; };
+  return `
+    <div class="panel wb-kopf"><div class="wb-zahl"><span class="wz-label">Besucher</span><b>${zahl(b.gesamt)}</b>${tr}</div>
+      ${satz ? `<p class="wb-satz">${satz}.</p>` : ''}
+      <div class="wb-diagramm" id="wbTage"></div>
+      <ul class="wh-leg">${[...b.kanaele.filter(k => f[k.schluessel]).map(k => [k.name, f[k.schluessel]]), ...(b.kanaele.some(k => !f[k.schluessel] && k.besuche) ? [['Weitere', WEITERE_FARBE]] : [])].map(([n, c]) => `<li><i style="background:${c}"></i>${esc(n)}</li>`).join('')}</ul></div>
+    <div class="wz-zwei">
+      <div class="panel wb-woher"><h2>Woher</h2><ul class="wk-liste">${b.kanaele.filter(k => k.besuche).map(zeile).join('')}</ul>
+        <p class="meta">Tippe auf einen Kanal, um zu sehen, welche Posts oder Seiten die Besucher gebracht haben.</p></div>
+      <div class="panel wb-wann"><h2>Wann</h2>
+        <h3 class="wb-h3">Nach Wochentag</h3><div class="wb-balken" id="wbWoche"></div>
+        <h3 class="wb-h3">Nach Uhrzeit</h3><div class="wb-balken" id="wbUhr"></div>
+        ${b.stunden ? (b.beste_stunde != null ? `<p class="wb-tipp">Die meisten kommen gegen <b>${b.beste_stunde} Uhr</b>. Posts, die 1–2 Stunden vorher rausgehen, haben dann schon Schwung.</p>` : '')
+          : '<p class="meta">Die Uhrzeit wird ab jetzt mitgezählt – in ein paar Tagen erscheint hier die Kurve.</p>'}</div>
+    </div>`;
+}
+function saeulen(box, werte, namen, opt){
+  if(!box) return;
+  const W = Math.max(260, box.clientWidth), H = opt.h || 120, T = 18, U = 20, max = Math.max(1, ...werte), n = werte.length;
+  const band = W / n, bw = Math.min(opt.breit || 30, band - (n > 12 ? 2 : 6)), bester = werte.indexOf(Math.max(...werte));
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(opt.label)}"><line x1="0" x2="${W}" y1="${H - U}" y2="${H - U}" stroke="var(--viz-axis)"/>`;
+  werte.forEach((w, i) => {
+    const h = w / max * (H - T - U), x = band * i + (band - bw) / 2, y = H - U - h, r = Math.min(3, h, bw / 2), an = w && i === bester;
+    if(w) s += `<path d="M${x},${H - U} V${y + r} Q${x},${y} ${x + r},${y} H${x + bw - r} Q${x + bw},${y} ${x + bw},${y + r} V${H - U} Z" fill="${an ? 'var(--champagne)' : 'var(--viz-gold)'}" opacity="${an ? 1 : .55}"><title>${esc(namen[i])}: ${w}</title></path>`;
+    if(an) s += `<text x="${x + bw / 2}" y="${y - 5}" text-anchor="middle" font-size="11" fill="#E7D3A1">${zahl(w)}</text>`;
+    if(!opt.jeder || i % opt.jeder === 0) s += `<text x="${band * i + band / 2}" y="${H - 5}" text-anchor="middle" font-size="11" fill="${an ? '#E7D3A1' : '#8A8FA6'}">${esc(opt.kurz ? opt.kurz[i] : namen[i])}</text>`;
+  });
+  box.innerHTML = s + '</svg>';
+}
+function zeichneBesucher(){
+  const b = (cockpitDaten || {}).besucher, box = $('wbTage'); if(!b || !box) return;
+  const f = kanalFarben(b), reihen = b.kanaele.filter(k => f[k.schluessel]);
+  const weitere = b.tage.map((_, i) => b.je_tag[i] - reihen.reduce((s, k) => s + k.tage[i], 0));
+  const schichten = [...reihen.map(k => ({n: k.name, f: f[k.schluessel], w: k.tage})), ...(weitere.some(x => x > 0) ? [{n: 'Weitere', f: WEITERE_FARBE, w: weitere}] : [])];
+  const W = Math.max(300, box.clientWidth), L = 34, R = 6, T = 12, h = matchMedia('(max-width:560px)').matches ? 170 : 220, U = 24, H = T + h + U;
+  const n = b.tage.length, pw = W - L - R, band = pw / Math.max(1, n), bw = Math.min(26, Math.max(2, band - (n > 40 ? 1 : 4)));
+  const max = runde(Math.max(1, ...b.je_tag)), jeder = Math.ceil(n / Math.max(1, Math.floor(pw / 56)));
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Besucher pro Tag nach Herkunft">`;
+  [0, .5, 1].forEach(a => { const y = T + h - a * h;
+    s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="${a ? 'var(--viz-grid)' : 'var(--viz-axis)'}"/>`;
+    if(!a || Number.isInteger(max * a)) s += `<text x="${L - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(max * a)}</text>`; });
+  for(let i = 0; i < n; i++){
+    const cx = L + band * i + band / 2; let basis = T + h;
+    const teile = schichten.filter(x => x.w[i] > 0);
+    teile.forEach((x, j) => {
+      const hh = x.w[i] / max * h, oben = j === teile.length - 1, r = oben ? Math.min(3, hh, bw / 2) : 0, top = basis - hh + (oben ? 0 : 1.5);
+      s += `<path d="M${cx - bw / 2},${basis} V${top + r} Q${cx - bw / 2},${top} ${cx - bw / 2 + r},${top} H${cx + bw / 2 - r} Q${cx + bw / 2},${top} ${cx + bw / 2},${top + r} V${basis} Z" fill="${x.f}"/>`;
+      basis -= hh;
+    });
+    if((n - 1 - i) % jeder === 0) s += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#8A8FA6">${datumKurz(b.tage[i])}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${h}" fill="transparent" tabindex="0" aria-label="${esc(kurzIso(b.tage[i]))}: ${b.je_tag[i]} Besucher"/>`;
+  }
+  box.innerHTML = s + '</svg><div class="tip hide" id="wbTip"></div>' + (b.gesamt ? '' : '<div class="viz-leer">Keine Besucher in diesem Zeitraum</div>');
+  const tip = $('wbTip');
+  const zeig = (el) => { const i = +el.dataset.i;
+    tipZeigen(box, tip, +el.getAttribute('x') + band / 2, `<strong>${esc(datumLang(b.tage[i]))}</strong>${mehrzahl(b.je_tag[i], 'Besucher', 'Besucher')}
+      ${schichten.filter(x => x.w[i]).map(x => `<br><span class="key" style="background:${x.f}"></span>${esc(x.n)}: ${x.w[i]}`).join('')}`, W);
+    box.querySelectorAll('.hit').forEach(r => r.setAttribute('fill', 'transparent')); el.setAttribute('fill', 'rgba(231,211,161,.06)'); };
+  box.querySelectorAll('.hit').forEach(el => { el.addEventListener('pointermove', () => zeig(el)); el.addEventListener('focus', () => zeig(el)); el.addEventListener('click', () => zeig(el)); });
+  box.addEventListener('pointerleave', () => { tip.classList.add('hide'); box.querySelectorAll('.hit').forEach(r => r.setAttribute('fill', 'transparent')); });
+  saeulen($('wbWoche'), b.wochentage, WTAGE, {label: 'Besucher nach Wochentag', kurz: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], h: 120});
+  if(b.stunden) saeulen($('wbUhr'), b.stunden, b.stunden.map((_, i) => `${i} Uhr`), {label: 'Besucher nach Uhrzeit', kurz: b.stunden.map((_, i) => String(i)), jeder: 3, breit: 14, h: 120});
+  else $('wbUhr').innerHTML = '';
 }
 
 /* --- Posts: Tabelle + Details-Schublade --- */
