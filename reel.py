@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-12"
+VERSION = "reel-13"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -143,6 +143,10 @@ def _zuschneiden(ebene: Image.Image, x0=0, y0=0):
     return ebene.crop(box), (x0 + box[0], y0 + box[1])
 
 
+FOLGEN = {"de": "Folge Soraya – jeden Tag neu", "en": "Follow Soraya – new every day",
+          "hu": "Kövesd Sorayát – minden nap új", "it": "Segui Soraya – novità ogni giorno"}
+
+
 def _endkarte(post: dict) -> Image.Image:
     """Schlussbild: grosses Soraya-Zeichen, Marke, Schlusssatz, Link-Knopf (als Ebene)."""
     m = 2
@@ -163,6 +167,10 @@ def _endkarte(post: dict) -> Image.Image:
         y += 20
     # "Link in Bio"-Knopf, gleiche Form wie auf den Bildern
     medien._cta(d, ebene, W, y - 100, True, post.get("sprache") or "de", m, "voll")
+    # darunter leise: folgen (aus Zuschauern werden Follower)
+    f = medien.messe_text(FOLGEN.get((post.get("sprache") or "en")[:2], FOLGEN["en"]), breite=W - 240, groesse=32,
+                          name="inter500", zeilenhoehe=1.3, max_zeilen=2, min_groesse=24)
+    medien.zeichne_text(d, f, W / 2, y + 78 + 34, "#CDB98C", m)
     return ebene.resize((W, H), Image.LANCZOS)
 
 
