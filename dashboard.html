@@ -405,8 +405,8 @@
   .tt-vorschau{margin:6px 0 0;font-size:13px;color:var(--mist-dim,#9a93b5);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   .tt-texte button{flex:0 0 auto}
   .app-install{margin-left:12px;vertical-align:middle}
-  /* neben allen Reitern ist auf dem PC nur fuers Symbol Platz (sonst schiebt es "Heute" weg) */
-  @media (min-width:821px) and (max-width:1600px){ .app-install .ai-text{display:none} .app-install{padding:0 10px} }
+  /* neben allen Reitern ist auf dem PC nur fuers Symbol Platz (sonst schiebt es "Heute" weg; die Seite ist nie breiter) */
+  @media (min-width:821px){ .app-install .ai-text{display:none} .app-install{padding:0 10px} }
   @media (display-mode: standalone){ .app-install{display:none} }
   .plk-reihe{display:inline-flex;flex-wrap:wrap;gap:4px}
   .plk-link,.termine a.plk-link{text-decoration:none;border-bottom:0!important}
