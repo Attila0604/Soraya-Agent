@@ -62,6 +62,20 @@ def fake_get(url, params=None, headers=None, timeout=None):
                                "tage": {H.isoformat(): 20, (H - timedelta(days=1)).isoformat(): 14}},
                         "bio-ig": {"schritte": {"besuch": 51, "store_klick": 12}, "konten": 1,
                                    "tage": {(H - timedelta(days=2)).isoformat(): 51}}}, "gesamt": {"konten": 11, "profile": 8, "einladungslinks": 3, "einladungs_nutzungen": 4}}
+    # Besuche ohne Post-Link (Herkunft aus der vorherigen Seite) und je Uhrzeit
+    for code, basis in (("ref-ig", 5), ("bio-ig", 3), ("ref-tt", 4), ("bio-tt", 2), ("ref-google", 3), ("seo-skorpion", 2),
+                        ("seo-widder", 1), ("direkt", 3), ("ref-fb", 1), ("teilen-trio", 1), ("ref-chat", 1), ("ref-andere", 1)):
+        t = {}
+        for i in range(int(params["tage"])):
+            d = H - timedelta(days=i)
+            n = max(0, basis + (wert(i * 31 + len(code), 0, basis * 2) - basis) + (2 if d.weekday() in (5, 6) else 0))
+            if n:
+                t[d.isoformat()] = n
+        alt = data["quellen"].get(code, {"schritte": {}, "konten": 0, "tage": {}})
+        data["quellen"][code] = {**alt, "tage": {**alt["tage"], **t}, "schritte": {**alt["schritte"], "besuch": sum(t.values())}}
+    gewicht = [0, 0, 0, 0, 0, 0, 1, 2, 3, 2, 2, 2, 4, 3, 2, 2, 3, 4, 5, 6, 7, 6, 4, 1]
+    data["stunden"] = {(H - timedelta(days=i)).isoformat(): {f"{h:02d}": g + wert(i + h, 0, 2) for h, g in enumerate(gewicht) if g}
+                       for i in range(min(5, int(params["tage"])))}
     grenze = H - timedelta(days=int(params["tage"]) - 1)
     for code, q in DEMO_QUELLEN.items():
         t = {d: n for d, n in q["tage"].items() if d >= grenze.isoformat()}
