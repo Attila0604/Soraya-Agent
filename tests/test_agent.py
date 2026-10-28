@@ -2154,6 +2154,8 @@ def test_pinterest_verbinden_und_pin(monkeypatch, frische_db):
 
     def fake_post(url, data=None, json=None, headers=None, timeout=None):
         gesendet.append((url, data or json))
+        if url.endswith("/pins") or url.endswith("/boards"):
+            assert headers["Authorization"] == "Bearer stok"          # Sandbox nur mit dem Sandbox-Schluessel
         if url.endswith("/oauth/token"):
             assert headers["Authorization"].startswith("Basic ")
             return SimpleNamespace(status_code=200, content=b"1", text="", json=lambda: {
@@ -2185,13 +2187,17 @@ def test_pinterest_verbinden_und_pin(monkeypatch, frische_db):
     post = {"id": 5, "art": "post", "sprache": "hu", "titel": "Skorpió: mélyebb beszélgetések", "untertitel": "U",
             "text": "A Skorpió-szezon őszinteséget kér.\n\nLink a bióban.", "hashtags": "#asztrologia #skorpio", "meta": {}}
     monkeypatch.setattr(posten.paket, "hole_bild", lambda p, f="feed": b"jpg")
+    with pytest.raises(Exception, match="Sandbox-Schlüssel"):        # Testmodus ohne eigenen Schluessel
+        posten.veroeffentliche({"plattform": "pinterest"}, post)
+    assert client.get("/posten", headers=AUTH).json()["verbindungen"]["pinterest"]["sandbox_schluessel"] is False
+    monkeypatch.setenv("PINTEREST_SANDBOX_TOKEN", "stok")
     out = posten.veroeffentliche({"plattform": "pinterest"}, post)
     assert out == {"id": "P9", "url": None}
     pin = gesendet[-1][1]
     assert gesendet[-1][0] == "https://api-sandbox.pinterest.com/v5/pins" and pin["board_id"] == "B1"
     assert pin["link"].endswith("/hu/csillagjegyek/skorpio?q=p5&lang=hu") and "bió" not in pin["description"]
     assert pin["media_source"]["source_type"] == "image_base64" and pin["title"].startswith("Skorpió")
-    assert ("pinterest_zugang" and (pinterest.zugang() or {}).get("pinnwaende") == {"hu": "B1"})
+    assert (pinterest.zugang() or {}).get("pinnwaende_sandbox") == {"hu": "B1"} and not (pinterest.zugang() or {}).get("pinnwaende")
 
 
 def test_wunsch_zeiten_und_termine_verschieben(frische_db):

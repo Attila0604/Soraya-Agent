@@ -3395,7 +3395,7 @@ function verbindungsZeile(p, x, e){
   if(p === 'tiktok' && x.verbunden) zusatz.push(e.plattformen.tiktok
     ? `Ein · ${e.tiktok_modus === 'direkt' ? 'veröffentlicht direkt' : 'Reels kommen als Entwurf in deine TikTok-App'}` : 'Aus – es geht nichts auf TikTok (unten bei Einstellungen einschalten)');
   if(p === 'pinterest' && x.verbunden) zusatz.push((e.plattformen.pinterest ? 'Ein · Feed-Posts und Storys werden zu Pins (je Sprache eine Pinnwand), Link direkt auf die Landingpage bzw. Sternzeichen-Seite'
-    : 'Aus – es geht nichts auf Pinterest (unten bei Einstellungen einschalten)') + (x.sandbox ? ' · <b>Sandbox</b>: Pins sind noch nicht öffentlich' : ''));
+    : 'Aus – es geht nichts auf Pinterest (unten bei Einstellungen einschalten)') + (x.sandbox ? (x.sandbox_schluessel === false ? ' · <b>⚠ Testmodus: Sandbox-Schlüssel fehlt</b> (developers.pinterest.com → App → „Generate token“ mit „Sandbox“ → in Railway als PINTEREST_SANDBOX_TOKEN)' : ' · <b>Sandbox</b>: Pins sind noch nicht öffentlich') : ''));
   if(p === 'linkedin' && x.verbunden) zusatz.push(e.plattformen.linkedin ? 'Ein · Feed-Posts und Reels (keine Storys), sachlicher Text mit Link'
     : 'Aus – es geht nichts auf LinkedIn (unten bei Einstellungen einschalten)');
   const neu = (p === 'instagram' && x.verbunden && x.zahlen === false)
