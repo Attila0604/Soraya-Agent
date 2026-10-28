@@ -21,6 +21,7 @@ import claude
 import content_agent
 import db
 import himmel
+import lektorat
 import main
 import research_agent
 import tagesplan
@@ -83,6 +84,7 @@ def frische_db(monkeypatch):
                 "content_ideen": [], "worauf_achten": [], "luecke_am_markt": [], "unsicher": [], "antwort_auf_frage": ""}
     for modul in (tagesplan, content_agent, research_agent):
         monkeypatch.setattr(modul, "frage_json", fake_frage)
+    monkeypatch.setattr(lektorat, "frage_json", lambda *a, **k: {"korrekturen": []})
     monkeypatch.setattr(himmel, "hole_himmel", lambda tag=None: SKY)
     yield aufrufe
 
@@ -2443,3 +2445,36 @@ def test_neu_erstellen_postet_nicht_doppelt(fake_meta, frische_db):
     with psycopg.connect(os.environ["DATABASE_URL"]) as c:
         n = c.execute("select count(*) from soraya_veroeffentlichungen where post_id = %s", (neue_story["id"],)).fetchone()[0]
     assert n == 0                                            # die neue Story geht dort nicht ein zweites Mal raus
+
+
+# ---------------------------------------------------------------- Sprach-Lektorat
+def test_lektorat_korrigiert_ungarisch_und_merkt_es(monkeypatch):
+    posts = [{"art": "post", "titel": "Esti szívritule mára", "text": "Ma este szívritule. Te melyik jegy vagy? 👇",
+              "_folien": [{"titel": "Esti szívritule", "text": "x"}], "hashtags": ["#horoszkop"]},
+             {"art": "story", "titel": "Telihold", "text": "Szép estét"}]
+    gesehen = {}
+
+    def fake(system, frage, schema, **kw):
+        gesehen["system"], gesehen["frage"] = system, frage
+        return {"korrekturen": [{"alt": "szívritule", "neu": "szívrituálé"}, {"alt": "nicht im Text", "neu": "x"},
+                                {"alt": "Szép", "neu": "Ein sehr langer neuer Text " * 10}]}
+    monkeypatch.setattr(lektorat, "frage_json", fake)
+    erledigt = lektorat.pruefen(posts, "hu")
+    assert erledigt == ["szívritule → szívrituálé"]
+    assert posts[0]["titel"] == "Esti szívrituálé mára" and posts[0]["_folien"][0]["titel"] == "Esti szívrituálé"
+    assert posts[0]["text"].startswith("Ma este szívrituálé.")
+    assert posts[0]["_lektorat"] == ["szívritule → szívrituálé"] and "_lektorat" not in posts[1]
+    assert posts[1]["text"] == "Szép estét"            # zu lange "Korrektur" wird nicht eingesetzt
+    assert "Hungarian" in gesehen["system"] and "Esti szívritule mára" in gesehen["frage"]
+
+
+def test_lektorat_nur_fuer_gewaehlte_sprachen_und_fehlerfest(monkeypatch):
+    aufrufe = []
+    monkeypatch.setattr(lektorat, "frage_json", lambda *a, **k: aufrufe.append(1) or {"korrekturen": []})
+    assert lektorat.pruefen([{"art": "post", "text": "Hello"}], "en") == [] and not aufrufe
+    monkeypatch.setenv("LEKTORAT_SPRACHEN", "hu,it")
+    lektorat.pruefen([{"art": "post", "text": "Ciao"}], "it")
+    assert aufrufe == [1]
+    monkeypatch.setattr(lektorat, "frage_json", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("weg")))
+    posts = [{"art": "post", "text": "Szia"}]
+    assert lektorat.pruefen(posts, "hu") == [] and posts == [{"art": "post", "text": "Szia"}]
