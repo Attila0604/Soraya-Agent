@@ -133,12 +133,38 @@ def speichere_einstellungen(neu: dict) -> dict:
         if p in PLATTFORMEN:
             e["plattformen"][p] = bool(an)
     db.setze_einstellung("posten", e)
+    if isinstance(neu.get("sprache_pl"), dict) or neu.get("sprache"):
+        try:
+            sprache_anwenden(e)
+        except Exception as ex:  # noqa: BLE001 -- beim Posten wird die Sprache ohnehin noch einmal geprueft
+            print(f"[Posten] Termine nicht an die Sprache angepasst: {ex}", flush=True)
     if neu.get("zeiten"):
         try:
             zeiten_anwenden(e["zeiten"])
         except Exception as ex:  # noqa: BLE001 -- neue Termine bekommen die Zeiten ohnehin
             print(f"[Posten] Geplante Termine nicht verschoben: {ex}", flush=True)
     return e
+
+
+def sprache_passt(post: dict, plattform: str, e: dict) -> bool:
+    """Gehoert dieser Post (Sprache) nach den jetzigen Einstellungen auf diese Plattform?"""
+    tag = post.get("geplant_fuer")
+    if not tag:
+        return True
+    return post.get("sprache") == sprache_fuer(tag, platz(post), e, plattform)
+
+
+def sprache_anwenden(e: dict, jetzt: datetime | None = None) -> int:
+    """Nach einer Sprach-Umstellung: schon geplante Termine in der falschen Sprache fallen weg, die richtigen entstehen neu."""
+    jetzt = jetzt or datetime.now(himmel.WIEN)
+    weg = 0
+    for z in db.lade_geplante_termine(jetzt - timedelta(hours=12)):     # auch schon faellige, noch nicht gepostete
+        if not sprache_passt({"art": z["art"], "meta": z.get("meta") or {}, "sprache": z.get("sprache"),
+                              "geplant_fuer": z.get("geplant_fuer")}, z["plattform"], e):
+            db.setze_veroeffentlichung(z["id"], "abgebrochen", fehler="Sprache der Plattform geändert – geht nicht raus.")
+            weg += 1
+    planen(e, jetzt)
+    return weg
 
 
 def zeiten_anwenden(zeiten: dict, jetzt: datetime | None = None) -> int:
@@ -613,6 +639,9 @@ def fuehre_aus(jetzt: datetime | None = None, e: dict | None = None) -> list[dic
             continue
         if jetzt - zeile["geplant_um"] > timedelta(hours=12):
             db.setze_veroeffentlichung(zeile["id"], "verpasst", fehler="Mehr als 12 Stunden zu spät – nicht nachgeholt.")
+            continue
+        if not sprache_passt(post, zeile["plattform"], e):
+            db.setze_veroeffentlichung(zeile["id"], "abgebrochen", fehler="Sprache der Plattform geändert – geht nicht raus.")
             continue
         ok, grund = _freigegeben(post, e)
         if not ok:

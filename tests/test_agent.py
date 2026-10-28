@@ -1101,8 +1101,9 @@ def test_planen_mit_rotation(monkeypatch, frische_db):
     e = posten.speichere_einstellungen({"sprache": "alle"})
     assert e["sprache"] == "alle"
     jetzt = datetime.now(himmel.WIEN).replace(hour=6, minute=0)
-    assert posten.planen(e, jetzt) == 3
+    posten.planen(e, jetzt)                       # das Speichern der Sprache plant schon selbst mit
     termine = client.get("/posten", headers=AUTH).json()
+    assert len(termine["termine"]) == 3
     heute = {t["art"]: t["sprache"] for t in termine["termine"]}
     assert heute == {k: v for k, v in termine["sprachen_heute"].items() if k != "reel2"} and len(set(heute.values())) == 3
     assert set(termine["sprachen_heute"]) == {"story", "post", "reel", "reel2"}
@@ -2404,3 +2405,22 @@ def test_sprache_je_plattform(frische_db):
     t = posten.text_fuer({"id": 3, "art": "post", "sprache": "hu", "text": "Hook.\n\nMehr Text.", "hashtags": "#a #b", "meta": {}}, "facebook")
     teile = t.split("\n\n")
     assert teile[0] == "Hook." and "?q=p3&lang=hu" in teile[1] and any("Kövesd az oldalt" in x for x in teile)
+
+
+def test_sprachwechsel_entfernt_alte_termine(fake_meta, frische_db):
+    _verbinde("facebook")
+    _verbinde("instagram")
+    posten.speichere_einstellungen({"sprache": "en", "plattformen": {"facebook": True, "instagram": True}})
+    tagesplan.erstelle("en")
+    tagesplan.erstelle("hu")
+    posten.planen(jetzt=datetime.combine(HEUTE, datetime.min.time()).replace(hour=0, minute=1, tzinfo=himmel.WIEN))
+    def fb_sprachen():
+        with psycopg.connect(os.environ["DATABASE_URL"]) as c:
+            return {r[0] for r in c.execute("select p.sprache from soraya_veroeffentlichungen v join soraya_posts p on p.id = v.post_id "
+                                            "where v.plattform = 'facebook' and v.status = 'geplant'")}
+    assert fb_sprachen() == {"en"}
+    posten.speichere_einstellungen({"sprache_pl": {"facebook": "hu"}})
+    assert fb_sprachen() == {"hu"}                                        # alte EN-Termine fallen weg, HU entstehen
+    ig = posten.einstellungen()
+    assert posten.sprache_passt({"art": "post", "sprache": "en", "geplant_fuer": HEUTE}, "instagram", ig)
+    assert not posten.sprache_passt({"art": "post", "sprache": "en", "geplant_fuer": HEUTE}, "facebook", ig)
