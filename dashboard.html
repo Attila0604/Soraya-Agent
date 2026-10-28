@@ -450,6 +450,25 @@
   .daumen .play::before{content:"";width:26px;height:26px;border-radius:50%;background:rgba(7,4,15,.65);border:1px solid rgba(231,211,161,.7)}
   .daumen .play::after{content:"";position:absolute;border-left:9px solid var(--champagne);border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:3px}
   .raus .mehr-bilder{font-size:11px;color:var(--mist-dim);align-self:center}
+  .raus>li.slot{grid-template-columns:76px minmax(0,1fr);align-items:start}
+  .raus>li.slot .wann{padding-top:8px}
+  .raus .ok-marke{display:block;font-style:normal;font-family:'Inter',sans-serif;font-size:11px;color:var(--gruen);margin-top:6px;letter-spacing:.02em}
+  .slot-zeilen{min-width:0}
+  .sl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;align-items:start;padding:8px 0;border-top:1px dashed var(--line-soft)}
+  .sl:first-child{border-top:0}
+  .sl .sp{margin-top:4px}
+  .sl-was{min-width:0;display:grid;gap:6px}
+  .sl .tz{all:unset;cursor:pointer;font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:#F4EEDD;line-height:1.2;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:100%}
+  .sl.fertig .tz{font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--mist)}
+  .sl.fertig .wo .plk{font-size:12px;padding:2px 8px}
+  .raus>li.slot.fertig{opacity:.85}
+  .sl details.kurz summary{display:block;text-transform:none;letter-spacing:0;font-size:var(--t-klein);color:var(--mist-dim);line-height:1.45}
+  .sl details.kurz summary b{display:inline}
+  .sl details.kurz summary::after{margin-left:4px}
+  .sl details.kurz summary::before{content:none}
+  .sl details.kurz[open]{color:var(--mist-dim)}
+  .sl .knoepfe button{min-height:38px}
   .raus-leer{color:var(--mist-dim);font-size:14px;padding:var(--s3) 0}
   .achtung-box{border:1px solid var(--gelb-rand);background:var(--gelb-bg);border-radius:12px;padding:var(--s3) var(--s4);margin:0 0 var(--s4)}
   .achtung-box h3{margin:0 0 6px;font-family:'Inter',sans-serif;font-size:14.5px;font-weight:600;color:#FFE2A6}
@@ -527,7 +546,8 @@
 
   @media (max-width:700px){
     .raus>li{grid-template-columns:66px minmax(0,1fr);gap:var(--s2) var(--s3)}
-    .raus .bilder{grid-column:2;justify-content:flex-start}
+    .raus>li:not(.slot) .bilder{grid-column:2;justify-content:flex-start}
+    .sl .daumen.feed{width:40px;height:50px} .sl .daumen.hoch{width:34px;height:60px} .sl .bilder .daumen:nth-child(n+2),.sl .mehr-bilder{display:none}
     .raus .wann{font-size:21px}
   }
   @media (max-width:560px){
@@ -1959,17 +1979,26 @@ function zeigeRaus(d, ps, morgen){
   const eigenHinweis = leerEigen.length ? (() => { const sp = [...new Set(leerEigen.map(x => x.sprache))], pls = [...new Set(leerEigen.flatMap(x => x.pls))];
     return `<li class="raus-leer raus-aktion"><span><b>${esc(pls.map(pl => PL_NAME[pl] || pl).join(', '))} auf ${esc(sp.map(x => SPRACHE_NAME[x] || x.toUpperCase()).join(', '))}:</b> für heute gibt es noch keine Posts in dieser Sprache.</span>
       <button class="klein" data-sprachen-dazu="${esc(sp.join(','))}" data-sprachen-jetzt="${esc((ps.tagesplan_sprachen || []).join(','))}">Jetzt erstellen</button></li>`; })() : '';
-  box.innerHTML = eigenHinweis + zeilenSicht.map(({art, sprache, p, zeit, wo, z}) => `<li${p ? ` data-id="${esc(p.id)}"` : ''}>
-    <div class="wann">${esc(zeit)}<small>${esc(ART[art])}</small></div>
-    <div class="was">
-      <div class="titelzeile">${p ? `<button class="tz" data-aktion="zeigen" title="Zum Post springen">${esc(p.titel || (p.text || '').slice(0, 60))}</button>` : '<span class="leer-titel">Noch kein Post</span>'}<span class="sp">${esc(String(sprache || '').toUpperCase())}</span></div>
-      <div class="wo">${wo.length ? wo.map(w => w.url && w.st === 'fertig'
-          ? `<a class="plk fertig" href="${esc(w.url)}" target="_blank" rel="noopener" title="Auf ${esc(PL_NAME[w.pl])} ansehen">${IKON[w.pl] || ''}${esc(PL_NAME[w.pl])} ✓</a>`
-          : plIkon(w.pl, w.st, w.st === 'nicht' ? 'nicht verbunden' : VS_NAME[w.st] || w.st)).join('') : '<span class="meta">Keine Plattform eingeschaltet</span>'}</div>
-      <div class="zustand ${z.cls}"><b>${esc(z.text)}</b>${z.sub ? ' · ' + esc(z.sub) : ''}</div>
-      ${z.freigeben ? `<div class="knoepfe"><button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button></div>` : ''}
-    </div>
-    <div class="bilder">${p ? daumen(p) : ''}</div></li>`).join('')
+  // eine Karte je Uhrzeit, darin je Sprache eine Zeile; Gepostetes klein, was noch kommt oder dich braucht groß
+  const slots = [];
+  zeilenSicht.forEach(x => { let sl = slots.find(y => y.art === x.art); if(!sl){ sl = {art: x.art, zeit: x.zeit, zeilen: []}; slots.push(sl); } sl.zeilen.push(x); });
+  const chips = (wo) => wo.length ? wo.map(w => w.url && w.st === 'fertig'
+      ? `<a class="plk fertig" href="${esc(w.url)}" target="_blank" rel="noopener" title="Auf ${esc(PL_NAME[w.pl])} ansehen">${IKON[w.pl] || ''}${esc(PL_NAME[w.pl])} ✓</a>`
+      : plIkon(w.pl, w.st, w.st === 'nicht' ? 'nicht verbunden' : VS_NAME[w.st] || w.st)).join('') : '<span class="meta">Keine Plattform eingeschaltet</span>';
+  const linie = ({sprache, p, wo, z}) => { const ok = z.cls === 'ok';
+    return `<div class="sl${ok ? ' fertig' : ''}"${p ? ` data-id="${esc(p.id)}"` : ''}>
+      <span class="sp">${esc(String(sprache || '').toUpperCase())}</span>
+      <div class="sl-was">${p ? `<button class="tz" data-aktion="zeigen" title="Zum Post springen">${esc(p.titel || (p.text || '').slice(0, 60))}</button>` : '<span class="leer-titel">Noch kein Post</span>'}
+        <div class="wo">${chips(wo)}</div>
+        ${ok ? '' : z.freigeben ? `<details class="zustand ${z.cls} kurz"><summary><b>Wartet auf dich</b> – bitte kurz prüfen</summary>${esc(z.sub)}</details>`
+          : z.cls === 'bad' ? `<details class="zustand bad kurz"><summary><b>Fehler beim Posten</b> – Soraya versucht es nochmal</summary>${esc(z.sub)}</details>`
+          : `<div class="zustand ${z.cls}"><b>${esc(z.text)}</b>${z.sub ? ' · ' + esc(z.sub) : ''}</div>`}
+        ${z.freigeben ? `<div class="knoepfe"><button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Bearbeiten</button></div>` : ''}
+      </div>
+      ${p && !ok ? `<div class="bilder">${daumen(p)}</div>` : ''}</div>`; };
+  box.innerHTML = eigenHinweis + slots.map(sl => { const alleOk = sl.zeilen.every(x => x.z.cls === 'ok');
+    return `<li class="slot${alleOk ? ' fertig' : ''}"><div class="wann">${esc(sl.zeit)}<small>${esc(ART[sl.art])}</small>${alleOk ? '<em class="ok-marke">✓ gepostet</em>' : ''}</div>
+      <div class="slot-zeilen">${sl.zeilen.map(linie).join('')}</div></li>`; }).join('')
     // fehlt etwas, gibt es EINEN Knopf statt drei gleicher
     + (zeilenSicht.some(x => !x.p && !x.alt) ? `<li class="raus-leer raus-aktion"><span>${zeilen.every(x => !x.p) ? 'Für heute gibt es noch keine Posts' : 'Ein Teil der Posts für heute fehlt noch'} – das Erstellen dauert etwa 1–2 Minuten.</span>
         <button class="klein" data-raus-plan="1">Tagesplan jetzt erstellen</button></li>` : '');
@@ -1978,12 +2007,12 @@ function zeigeRaus(d, ps, morgen){
         fertig = zeilen.filter(x => x.z.cls === 'ok').length;
   $('rausZusammen').textContent = !e.an ? 'Automatisch posten ist aus'
     : [fertig && `${fertig} gepostet`, raus && `${raus} geplant`, warten && `${warten} ${warten === 1 ? 'wartet' : 'warten'} auf dich`,
-       zeilen.filter(x => x.z.cls === 'bad').length && 'Fehler', 'Sprache: ' + sprachText(ps)].filter(Boolean).join(' · ');
+       zeilen.filter(x => x.z.cls === 'bad').length && 'Fehler'].filter(Boolean).join(' · ') || 'Heute noch nichts';
   const offen = [];
   // ohne verbundene Plattform kann nichts rausgehen: einmal sagen, nicht "Nichts zu tun"
   if(zeilen.some(x => x.p && x.z.text === 'Keine Plattform verbunden'))
     offen.push({tag: 'Heute', z: {text: 'Keine Plattform verbunden', sub: 'Automatisch posten ist an, aber es kann nichts rausgehen.'}, ziel: 'Zu den Verbindungen'});
-  zeilen.forEach(x => { if(x.z.freigeben || x.z.cls === 'bad') offen.push({tag: 'Heute', p: x.p, z: x.z}); });
+  // was heute dich braucht, steht direkt in der Liste darunter (nicht doppelt)
   if(e.an && morgen && morgen.posts){
     const mTag = String(morgen.datum).slice(0, 10);
     ARTEN_POSTEN.forEach(art => {
@@ -2005,6 +2034,7 @@ function zeigeRaus(d, ps, morgen){
         <span class="warum">${esc(o.z.text)}${o.z.sub ? ' – ' + esc(o.z.sub) : ''}</span></div>
         <div class="gruppe">${o.z.freigeben ? '<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button><button class="ghost klein" data-aktion="bearbeiten">Ansehen &amp; bearbeiten</button>'
           : '<button class="ghost klein" data-ziel-tab="posten">Zu den Terminen</button>'}</div></div>`).join('')}</div>`
+    : zeilen.some(x => x.z.freigeben || x.z.cls === 'bad') ? ''
     : '<p class="alles-gut">Nichts zu tun – alles Geplante geht von selbst raus.</p>';
 }
 // Klick auf den Titel: zur vollen Karte unten springen (Sprache wird umgestellt)
