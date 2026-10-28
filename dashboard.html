@@ -1620,6 +1620,7 @@ function karte(p, {datum = true} = {}){
       <span class="rest" hidden> Geht beim automatischen Posten erst raus, wenn du ihn freigibst (oder nach dem Bearbeiten nichts mehr auffällt).</span></div>`
       : `<div class="pruefhinweis leicht" role="note"><b>${m.pruefung.length === 1 ? '1 Hinweis' : m.pruefung.length + ' Hinweise'}</b><span class="rest" hidden>${esc(m.pruefung.join(' · '))}
       – nur Kleinigkeiten, geht trotzdem automatisch raus.</span></div>`) : ''}
+    ${(m.lektorat || []).length ? `<div class="pruefhinweis leicht" role="note"><b>✓ Sprache geprüft · ${m.lektorat.length === 1 ? '1 Korrektur' : m.lektorat.length + ' Korrekturen'}</b><span class="rest" hidden>${esc(m.lektorat.join(' · '))}</span></div>` : ''}
     ${streifen}
     <div class="langtext${lang ? ' zu' : ''}">
     <p class="txt">${esc(p.text)}</p>
