@@ -336,6 +336,9 @@
   .statusleiste .aus{color:var(--mist-dim)}
   .statusleiste .aus::before{content:"○ "}
   .statusleiste .linie{flex:1;min-width:24px;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+  details.sprache-pl{margin:12px 0 0;border-top:1px solid var(--line-soft);padding-top:10px}
+  details.sprache-pl summary{text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--champagne)}
+  .sprache-pl-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 12px;margin-top:8px}
   .testpost{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line-soft)}
   .testpost:first-of-type{border-top:0}
   .testpost .titel{margin:0;font-size:15px}
@@ -1278,6 +1281,10 @@
         <label class="imtp"><input type="checkbox" id="plLinkedin"> LinkedIn (dein Profil, ohne Storys)</label>
         <label class="imtp"><input type="checkbox" id="plPinterest"> Pinterest (Bilder als Pins)</label>
       </div>
+      <details class="sprache-pl" id="spracheJePl"><summary>Eigene Sprache für eine Plattform</summary>
+        <p class="hint">Zum Beispiel Facebook auf Ungarisch für deine ungarischen Freunde, Instagram und TikTok bleiben Englisch. Der Tagesplan muss die Sprache dann mitschreiben (Reiter „Heute“ → Sprachen).</p>
+        <div class="sprache-pl-liste"><div><label for="spl-facebook">Facebook</label><select id="spl-facebook" data-spl="facebook"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div><div><label for="spl-instagram">Instagram</label><select id="spl-instagram" data-spl="instagram"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div><div><label for="spl-tiktok">TikTok</label><select id="spl-tiktok" data-spl="tiktok"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div><div><label for="spl-pinterest">Pinterest</label><select id="spl-pinterest" data-spl="pinterest"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div><div><label for="spl-linkedin">LinkedIn</label><select id="spl-linkedin" data-spl="linkedin"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div></div>
+      </details>
       <div class="row" id="tiktokZeile" style="margin-top:10px">
         <div><label for="tiktokModus">So kommt das Reel zu TikTok</label>
           <select id="tiktokModus"><option value="entwurf">Als Entwurf in meine TikTok-App (ich poste selbst, mit Sound)</option>
@@ -1884,7 +1891,7 @@ document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-
 // (das zweite Reel bekommt die vierte Sprache des Tages)
 const ROTATION = ['en', 'de', 'hu', 'it'], ARTEN_POSTEN = ['story', 'post', 'reel', 'reel2'];
 const ordinal = (isoTag) => { const [y, m, t] = String(isoTag).slice(0, 10).split('-').map(Number); return Date.UTC(y, m - 1, t) / 864e5 + 719163; };
-const spracheFuer = (isoTag, art, e) => e.sprache !== 'alle' ? e.sprache : ROTATION[(ordinal(isoTag) * 3 + ARTEN_POSTEN.indexOf(art)) % 4];
+const spracheFuer = (isoTag, art, e, pl) => (pl && (e.sprache_pl || {})[pl]) || (e.sprache !== 'alle' ? e.sprache : ROTATION[(ordinal(isoTag) * 3 + ARTEN_POSTEN.indexOf(art)) % 4]);
 function daumen(p, klein = true){
   const v = esc(p.aktualisiert || p.created_at || ''), n = folienAnzahl(p);
   if(p.art === 'reel') return `<button class="daumen hoch" data-aktion="film" aria-label="Reel-Video ansehen"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=story&klein=1&v=${v}"><span class="play" aria-hidden="true"></span></button>`;
@@ -1920,15 +1927,22 @@ function zeigeRaus(d, ps, morgen){
   if(!ps || !ps.einstellungen){ box.innerHTML = ladeFehler('Der Stand zum Posten', 'Uhrzeiten und Plattformen fehlen gerade.', 'li'); $('rausZusammen').textContent = ''; $('achtung').innerHTML = ''; return; }
   const e = ps.einstellungen, v = ps.verbindungen || {}, tag = String(d.datum).slice(0, 10);
   const termineHeute = (ps.termine || []).filter(t => String(t.geplant_fuer || '').slice(0, 10) === tag);
-  const zeilen = ARTEN_POSTEN.slice().sort((a, b) => String(e.zeiten[a]).localeCompare(String(e.zeiten[b]))).map(art => {
-    const sprache = e.sprache === 'alle' ? ((ps.sprachen_heute || {})[art] || spracheFuer(tag, art, e)) : e.sprache;
+  const grund = (art) => e.sprache === 'alle' ? ((ps.sprachen_heute || {})[art] || spracheFuer(tag, art, e)) : e.sprache;
+  // eine Plattform mit eigener Sprache (z. B. Facebook Ungarisch) bekommt eine eigene Zeile
+  const plaetze = [];
+  ARTEN_POSTEN.forEach(art => {
+    const pls = PLATTFORMEN.filter(pl => e.plattformen[pl] && passtPl(pl, art));
+    const spr = [...new Set([grund(art), ...pls.map(pl => (e.sprache_pl || {})[pl] || grund(art))])]
+      .filter(sp => sp === grund(art) || pls.some(pl => (e.sprache_pl || {})[pl] === sp));
+    spr.forEach(sp => plaetze.push({art, sprache: sp, pls: pls.filter(pl => ((e.sprache_pl || {})[pl] || grund(art)) === sp)}));
+  });
+  const zeilen = plaetze.sort((a, b) => String(e.zeiten[a.art]).localeCompare(String(e.zeiten[b.art]))).map(({art, sprache, pls}) => {
     const p = (d.posts || []).find(x => platzVon(x) === art && x.sprache === sprache);
     if(p) POSTS.set(String(p.id), p);
     const tt = p ? termineHeute.filter(t => t.post_id === p.id) : [];
     const zeit = tt[0] ? uhr(tt[0].geplant_um) : e.zeiten[art];
     const wo = tt.length ? tt.map(t => ({pl: t.plattform, st: t.status, url: t.url}))
-      : PLATTFORMEN.filter(pl => e.plattformen[pl] && passtPl(pl, art))
-          .map(pl => ({pl, st: v[pl] && v[pl].verbunden ? 'geplant' : 'nicht'}));
+      : pls.map(pl => ({pl, st: v[pl] && v[pl].verbunden ? 'geplant' : 'nicht'}));
     // Tagesplan von vor der Umstellung: es gibt ein Reel, aber noch kein zweites -> kein Grund zur Sorge
     const alt = !p && art === 'reel2' && (d.posts || []).some(x => x.art === 'reel' && x.sprache === sprache);
     const z = alt ? {cls: 'aus', text: 'Kommt ab dem nächsten Tagesplan', sub: 'Dieser Tagesplan wurde noch mit einem Reel geschrieben.'}
@@ -1963,10 +1977,13 @@ function zeigeRaus(d, ps, morgen){
   if(e.an && morgen && morgen.posts){
     const mTag = String(morgen.datum).slice(0, 10);
     ARTEN_POSTEN.forEach(art => {
-      const p = morgen.posts.find(x => platzVon(x) === art && x.sprache === spracheFuer(mTag, art, e));
-      if(!p) return; POSTS.set(String(p.id), p);
-      const z = rausZustand(p, [], [{st: 'geplant'}], e, art, e.zeiten[art]);
-      if(z.freigeben) offen.push({tag: 'Morgen', p, z});
+      const spr = new Set([spracheFuer(mTag, art, e), ...PLATTFORMEN.filter(pl => e.plattformen[pl] && passtPl(pl, art)).map(pl => spracheFuer(mTag, art, e, pl))]);
+      spr.forEach(sp => {
+        const p = morgen.posts.find(x => platzVon(x) === art && x.sprache === sp);
+        if(!p) return; POSTS.set(String(p.id), p);
+        const z = rausZustand(p, [], [{st: 'geplant'}], e, art, e.zeiten[art]);
+        if(z.freigeben) offen.push({tag: 'Morgen', p, z});
+      });
     });
   }
   const k3 = $('cockpit').querySelector('.kachel:last-child');
@@ -3330,6 +3347,8 @@ async function ladePosten(){
   $('plTiktok').checked = !!e.plattformen.tiktok; $('tiktokModus').value = e.tiktok_modus || 'entwurf';
   $('plLinkedin').checked = !!e.plattformen.linkedin;
   $('plPinterest').checked = !!e.plattformen.pinterest;
+  document.querySelectorAll('[data-spl]').forEach(x => { x.value = (e.sprache_pl || {})[x.dataset.spl] || ''; });
+  $('spracheJePl').open = Object.keys(e.sprache_pl || {}).length > 0;
   $('tiktokZeile').hidden = !$('plTiktok').checked;
   document.querySelectorAll('.zeiten input.vorschlag').forEach(f => f.classList.remove('vorschlag'));
   }
@@ -3439,9 +3458,10 @@ function zeigeEinrichtung(d){
 // "EN" oder bei Wechsel "heute: Story HU, Feed IT, Reel EN"
 function sprachText(d){
   const e = d.einstellungen;
-  if(e.sprache !== 'alle') return e.sprache.toUpperCase();
+  const eigen = Object.entries(e.sprache_pl || {}).filter(([pl]) => e.plattformen[pl]).map(([pl, sp]) => `${PL_NAME[pl] || pl} ${sp.toUpperCase()}`).join(', ');
   const h = d.sprachen_heute || {};
-  return 'alle 4 im Wechsel, heute: ' + ARTEN_POSTEN.map(a => `${ART[a]} ${(h[a] || '').toUpperCase()}`).join(', ');
+  const basis = e.sprache !== 'alle' ? e.sprache.toUpperCase() : 'alle 4 im Wechsel, heute: ' + ARTEN_POSTEN.map(a => `${ART[a]} ${(h[a] || '').toUpperCase()}`).join(', ');
+  return basis + (eigen ? ` · eigene Sprache: ${eigen}` : '');
 }
 // Testpost: Posts von heute in der Posting-Sprache sofort posten (auch bei ausgeschaltetem Hauptschalter)
 async function zeigeTestposts(d){
@@ -3449,14 +3469,16 @@ async function zeigeTestposts(d){
   const verbunden = PLATTFORMEN.filter(p => v[p] && v[p].verbunden);
   const fertig = (id, pl) => (d.termine || []).find(t => t.post_id === id && t.plattform === pl && t.status === 'fertig');
   let posts = [];
-  const passt = (p) => e.sprache === 'alle' ? (d.sprachen_heute || {})[platzVon(p)] === p.sprache : p.sprache === e.sprache;
+  const spracheAuf = (p, pl) => (e.sprache_pl || {})[pl] || (e.sprache === 'alle' ? (d.sprachen_heute || {})[platzVon(p)] : e.sprache);
+  const plFuer = (p) => PLATTFORMEN.filter(pl => spracheAuf(p, pl) === p.sprache);
+  const passt = (p) => plFuer(p).length > 0;
   try{ posts = ((await api('/tagesplan')).posts || []).filter(p => passt(p) && p.status !== 'gestoppt').sort(ordne); }catch(err){}
   $('testpostInfo').innerHTML = verbunden.length
     ? kurzMehr(`Ein Post von heute sofort posten (${esc(sprachText(d))}).`, 'Geht auch, wenn „Automatisch posten“ aus ist.')
     : kurzMehr('Geht, sobald Facebook oder Instagram verbunden ist.', 'Dann kannst du hier einen Post von heute sofort posten – auch wenn „Automatisch posten“ aus ist.');
   $('testposts').innerHTML = posts.length ? posts.map(p => `<div class="testpost"><div><span class="tag">${esc(ART[platzVon(p)] || 'Post')}</span>
       <p class="titel">${esc(p.titel || p.text.slice(0, 60))}</p></div>
-      <div class="row">${PLATTFORMEN.filter(pl => passtPl(pl, p.art) && (['facebook', 'instagram'].includes(pl) || (v[pl] && v[pl].verbunden))).map(pl => { const f = fertig(p.id, pl);
+      <div class="row">${plFuer(p).filter(pl => passtPl(pl, p.art) && (['facebook', 'instagram'].includes(pl) || (v[pl] && v[pl].verbunden))).map(pl => { const f = fertig(p.id, pl);
         if(f && pl === 'tiktok') return `<span class="fertig">✓ an TikTok geschickt</span>`;
         return f ? `<a class="fertig" href="${esc(f.url || '#')}" target="_blank" rel="noopener">✓ auf ${PL_NAME[pl]} ansehen</a>` : `<button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}"${v[pl].verbunden ? '' : ' disabled title="Noch nicht verbunden"'}>Jetzt auf ${PL_NAME[pl]}</button>`; }).join('')}</div></div>`).join('')
     : `<div class="empty">Heute gibt es noch keine Posts (${esc(sprachText(d))}).<span>${(d.benoetigt || [e.sprache]).every(s => d.tagesplan_sprachen.includes(s))
@@ -3484,6 +3506,7 @@ $('postSpeichern').onclick = async () => {
     await api('/posten/einstellungen', {method: 'PUT', body: JSON.stringify({sprache: $('postSprache').value, modus: $('postModus').value,
       zeiten: {story: $('zStory').value, post: $('zPost').value, reel: $('zReel').value, reel2: $('zReel2').value},
       tiktok_modus: $('tiktokModus').value,
+      sprache_pl: Object.fromEntries([...document.querySelectorAll('[data-spl]')].map(x => [x.dataset.spl, x.value])),
       plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked, tiktok: $('plTiktok').checked,
                     linkedin: $('plLinkedin').checked, pinterest: $('plPinterest').checked}})});
     melde('Gespeichert ✓ – auch schon geplante Termine bekommen die neuen Uhrzeiten'); $('postUngespeichert').hidden = true; ladePosten();
