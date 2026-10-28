@@ -194,6 +194,20 @@ def lade_posts_zeitraum(von: date, bis: date, *, sprachen: list[str] | None = No
         return cur.fetchall()
 
 
+def platz_belegt(post_id: int, plattform: str) -> bool:
+    """Hat diese Plattform fuer denselben Tag, dieselbe Sprache und denselben Platz (Story, Feed-Post, Reel, 2. Reel)
+    schon einen anderen Post (gepostet, laeuft oder geplant)? Dann kein zweiter -- z. B. nach "Neu erstellen"."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select 1 from soraya_posts neu join soraya_posts alt on alt.geplant_fuer = neu.geplant_fuer "
+            " and alt.sprache = neu.sprache and alt.art = neu.art and alt.id <> neu.id "
+            " and coalesce(alt.meta->>'reel_nr', '1') = coalesce(neu.meta->>'reel_nr', '1') "
+            "join soraya_veroeffentlichungen v on v.post_id = alt.id and v.plattform = %s "
+            " and v.status in ('fertig', 'laeuft', 'geplant') "
+            "where neu.id = %s limit 1;", (plattform, post_id))
+        return cur.fetchone() is not None
+
+
 def plane_veroeffentlichung(post_id: int, plattform: str, geplant_um, *, zurueckgeben: bool = False):
     """Termin anlegen. Normal: bestehende bleiben unveraendert (Rueckgabe 1 = neu, 0 = gab es schon).
     zurueckgeben=True ("Jetzt posten"): Termin auf jetzt setzen und die id liefern."""
