@@ -263,15 +263,22 @@ def poste_video(video: bytes, titel: str, modus: str = "entwurf", warten_s: int 
         raise TikTokFehler("TikTok hat keine Upload-Adresse geliefert.")
     _hochladen(d["upload_url"], video)
     pid = d.get("publish_id")
-    ergebnis = {"id": pid, "url": None}
+    ergebnis = {"id": pid, "url": None, "stand": "PROCESSING_UPLOAD"}
     if pid and warten_s:
         st = warte_auf_status(token, pid, warten_s)
+        ergebnis["stand"] = st.get("status") or "PROCESSING_UPLOAD"
         oeffentlich = st.get("publicaly_available_post_id") or st.get("publicly_available_post_id") or []
         if oeffentlich:
             vid = str(oeffentlich[0])
             name = (zugang() or {}).get("name")
-            ergebnis = {"id": vid, "url": f"https://www.tiktok.com/@{name}/video/{vid}" if name else None}
+            ergebnis = {"id": vid, "url": f"https://www.tiktok.com/@{name}/video/{vid}" if name else None,
+                        "stand": ergebnis["stand"]}
     return ergebnis
+
+
+def status(publish_id: str) -> dict:
+    """Stand eines Uploads bei TikTok (PROCESSING_UPLOAD, SEND_TO_USER_INBOX, PUBLISH_COMPLETE, FAILED ...)."""
+    return _post_mit(gueltiger_token(), "/post/publish/status/fetch/", {"publish_id": publish_id}).get("data") or {}
 
 
 # ---------------------------------------------------------------------------

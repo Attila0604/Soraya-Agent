@@ -1557,7 +1557,8 @@ def test_tiktok_status_zahlen_und_fehler(fake_meta, monkeypatch, frische_db):
         tiktok.poste_video(b"video", "T", "entwurf")
     # direkt veroeffentlicht: TikTok nennt die Video-ID
     f.status = [{"status": "PUBLISH_COMPLETE", "publicaly_available_post_id": [7444]}]
-    assert tiktok.poste_video(b"video", "T", "direkt") == {"id": "7444", "url": "https://www.tiktok.com/@Soraya/video/7444"}
+    assert tiktok.poste_video(b"video", "T", "direkt") == {"id": "7444", "url": "https://www.tiktok.com/@Soraya/video/7444",
+                                                           "stand": "PUBLISH_COMPLETE"}
     # verstaendliche Fehlermeldung
     with pytest.raises(tiktok.TikTokFehler, match="5 Entwürfe"):
         tiktok._antwort(SimpleNamespace(status_code=403, json=lambda: {"error": {"code": "spam_risk_too_many_pending_share",
@@ -2445,6 +2446,40 @@ def test_neu_erstellen_postet_nicht_doppelt(fake_meta, frische_db):
     with psycopg.connect(os.environ["DATABASE_URL"]) as c:
         n = c.execute("select count(*) from soraya_veroeffentlichungen where post_id = %s", (neue_story["id"],)).fetchone()[0]
     assert n == 0                                            # die neue Story geht dort nicht ein zweites Mal raus
+
+
+def test_tiktok_nachpruefen_nach_dem_hochladen(fake_meta, monkeypatch, frische_db):
+    """Nach dem Hochladen fragt Soraya spaeter noch einmal nach: im Posteingang -> fertig, abgelehnt -> Fehler + neuer Versuch."""
+    import tiktok
+    p, p2 = db.speichere_posts([{"art": "reel", "titel": "R", "text": "t"}, {"art": "reel", "titel": "R2", "text": "t"}],
+                               quelle="tagesplan", geplant_fuer=date.today())
+    jetzt = datetime.now(himmel.WIEN)
+    z1 = db.plane_veroeffentlichung(p["id"], "tiktok", jetzt, zurueckgeben=True)
+    z2 = db.plane_veroeffentlichung(p2["id"], "tiktok", jetzt, zurueckgeben=True)
+    db.setze_veroeffentlichung(z1, "fertig", extern_id="v_inbox_file~1", extern_stand="PROCESSING_UPLOAD")
+    db.setze_veroeffentlichung(z2, "fertig", extern_id="v_inbox_file~2")          # aelterer Termin ohne Stand
+    gefragt, antworten = [], {"v_inbox_file~2": {"status": "PROCESSING_DOWNLOAD"}}
+    monkeypatch.setattr(tiktok, "status", lambda pid: gefragt.append(pid) or antworten[pid])
+    assert posten.tiktok_nachpruefen() == 1 and gefragt == ["v_inbox_file~2"]     # frisch hochgeladen: erst nach 5 Min.
+    db.setze_veroeffentlichung(z2, "fertig", extern_id="v_inbox_file~2")
+    with db._verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_veroeffentlichungen set extern_geprueft = now() - interval '6 minutes' where id = %s;", (z1,))
+        conn.commit()
+    antworten.update({"v_inbox_file~1": {"status": "SEND_TO_USER_INBOX"},
+                      "v_inbox_file~2": {"status": "FAILED", "fail_reason": "video_pull_failed"}})
+    gefragt.clear()
+    assert posten.tiktok_nachpruefen() == 2
+    t = {x["post_id"]: x for x in db.lade_veroeffentlichungen(jetzt - timedelta(days=1), jetzt + timedelta(days=1))}
+    assert t[p["id"]]["status"] == "fertig" and t[p["id"]]["extern_stand"] == "SEND_TO_USER_INBOX"
+    assert t[p2["id"]]["status"] == "fehler" and "video_pull_failed" in t[p2["id"]]["fehler"]
+    # fertige werden nicht mehr gefragt, und nicht oefter als alle 5 Minuten
+    gefragt.clear()
+    assert posten.tiktok_nachpruefen() == 0 and gefragt == []
+    # der abgelehnte ist wieder faellig (neuer Versuch nach 15 Minuten)
+    with db._verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_veroeffentlichungen set aktualisiert = now() - interval '20 minutes' where id = %s;", (z2,))
+        conn.commit()
+    assert z2 in [x["id"] for x in db.faellige_veroeffentlichungen(jetzt)]
 
 
 # ---------------------------------------------------------------- Sprach-Lektorat

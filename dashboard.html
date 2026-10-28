@@ -433,6 +433,9 @@
   .plk .ikon{width:14px;height:14px}
   .plk.fertig{color:#0d2a0d;background:var(--gruen);border-color:var(--gruen)}
   .plk.fehler{color:#fff;background:var(--bad);border-color:var(--bad)}
+  .plk.tiktok_wartet{color:#1A140A;background:var(--warn);border-color:var(--warn)}
+  .vs.tiktok_wartet{color:#1A140A;background:var(--warn)}
+  .termine .plk.st-tiktok_wartet{border-color:var(--warn)}
   .plk.nicht{color:var(--mist-dim);border-style:dashed}
   .plk.verpasst,.plk.abgebrochen{color:var(--mist-dim)}
   a.plk:hover{filter:brightness(1.1)}
@@ -1557,12 +1560,18 @@ function neuLaden(){ if(LADER[aktiv]) LADER[aktiv](); }
 
 /* ---------- Post-Karte (in allen Ansichten gleich) ---------- */
 const POSTS = new Map();
+// TikTok: hochgeladen, aber TikTok verarbeitet noch (Soraya fragt alle 5 Minuten nach) -> nicht als „gepostet“ zeigen
+function tiktokStand(t){
+  if(t && t.plattform === 'tiktok' && t.status === 'fertig' && /^PROCESSING/.test(t.extern_stand || '')) t.status = 'tiktok_wartet';
+  return t;
+}
 const TERMINE = new Map();            // post_id -> Posting-Termine (Facebook/Instagram)
 let POSTEN_STAND = null;
 async function ladeTermine(){
   try{ POSTEN_STAND = await api('/posten'); }catch(e){ POSTEN_STAND = null; }
   TERMINE.clear();
   ((POSTEN_STAND && POSTEN_STAND.termine) || []).forEach(t => {
+    tiktokStand(t);
     const k = String(t.post_id); if(!TERMINE.has(k)) TERMINE.set(k, []); TERMINE.get(k).push(t); });
   return POSTEN_STAND;
 }
@@ -1578,7 +1587,7 @@ function karte(p, {datum = true} = {}){
   const m = p.meta || {};
   const termine = TERMINE.get(String(p.id)) || [];
   const termin = termine.length ? `<div class="termin"><span>${p.status === 'gepostet' ? 'Gepostet:' : 'Postet automatisch:'}</span>
-      ${termine.map(t => `<span class="vs ${esc(t.status)}">${uhr(t.geplant_um)} ${esc(PL_NAME[t.plattform] || t.plattform)}${t.status === 'fertig' ? ' ✓' : t.status === 'fehler' ? ' ⚠' : ''}</span>`).join('')}</div>` : '';
+      ${termine.map(t => `<span class="vs ${esc(t.status)}">${uhr(t.geplant_um)} ${esc(PL_NAME[t.plattform] || t.plattform)}${t.status === 'fertig' ? ' ✓' : t.status === 'fehler' ? ' ⚠' : t.status === 'tiktok_wartet' ? ' · TikTok prüft noch …' : ''}</span>`).join('')}</div>` : '';
   const schnell = st === 'entwurf' ? `<button class="klein freigeben" data-schnell="freigegeben">✓ Freigeben</button>`
     : st === 'freigegeben' ? `<button class="ghost klein" data-schnell="entwurf">Freigabe zurücknehmen</button>` : '';
   const stopp = ['entwurf', 'freigegeben'].includes(st) && p.quelle === 'himmel' ? `<button class="ghost klein" data-schnell="gestoppt" title="Wird dann nicht automatisch gepostet">Nicht posten</button>` : '';
@@ -2033,6 +2042,7 @@ function zeigeRaus(d, ps, morgen){
   zeilenSicht.forEach(x => { let sl = slots.find(y => y.art === x.art); if(!sl){ sl = {art: x.art, zeit: x.zeit, zeilen: []}; slots.push(sl); } sl.zeilen.push(x); });
   const chips = (wo) => wo.length ? wo.map(w => w.url && w.st === 'fertig'
       ? `<a class="plk fertig" href="${esc(w.url)}" target="_blank" rel="noopener" title="Auf ${esc(PL_NAME[w.pl])} ansehen">${IKON[w.pl] || ''}${esc(PL_NAME[w.pl])} ✓</a>`
+      : w.st === 'tiktok_wartet' ? `<span class="plk tiktok_wartet" title="Hochgeladen – TikTok verarbeitet das Video noch. Soraya fragt alle 5 Minuten nach.">${IKON.tiktok || ''}TikTok · prüft noch …</span>`
       : plIkon(w.pl, w.st, w.st === 'nicht' ? 'nicht verbunden' : VS_NAME[w.st] || w.st)).join('') : '<span class="meta">Keine Plattform eingeschaltet</span>';
   const linie = ({sprache, p, wo, z}) => { const ok = z.cls === 'ok';
     return `<div class="sl${ok ? ' fertig' : ''}"${p ? ` data-id="${esc(p.id)}"` : ''}>
@@ -3408,7 +3418,7 @@ document.addEventListener('click', async (ev) => {
 
 /* ---------- POSTEN ---------- */
 const PL_NAME = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn', pinterest: 'Pinterest'};
-const VS_NAME = {geplant: 'geplant', laeuft: 'wird gepostet', fertig: 'gepostet', fehler: 'Fehler', abgebrochen: 'gestoppt', verpasst: 'verpasst'};
+const VS_NAME = {geplant: 'geplant', laeuft: 'wird gepostet', fertig: 'gepostet', fehler: 'Fehler', abgebrochen: 'gestoppt', verpasst: 'verpasst', tiktok_wartet: 'TikTok verarbeitet noch'};
 let postDaten = null, postTimer = null;
 const uhr = (iso) => new Date(iso).toLocaleTimeString('de-AT', {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna'});
 const tagName = (iso) => {
@@ -3463,14 +3473,14 @@ async function ladePosten(){
   zeigeTestposts(d);
 
   const vonSelbstWeg = (t) => t.status === 'abgebrochen' && /^(Sprache der Plattform|Für diesen Platz)/.test(t.fehler || '');
-  const termine = (d.termine || []).filter(t => !vonSelbstWeg(t));
+  const termine = (d.termine || []).map(tiktokStand).filter(t => !vonSelbstWeg(t));
   // je Post eine Zeile (statt einer Zeile je Plattform): Plattformen als kleine Marken mit ihrem Stand
   const gruppen = [];
   const nachPost = new Map();
   termine.forEach(t => { let g = nachPost.get(t.post_id); if(!g){ g = {post: t, liste: []}; nachPost.set(t.post_id, g); gruppen.push(g); } g.liste.push(t); });
   const RANG = {fehler: 4, laeuft: 3, geplant: 2, verpasst: 1, fertig: 0};
   const erstes = (g) => g.liste.reduce((m, x) => String(x.geplant_um) < String(m.geplant_um) ? x : m, g.liste[0]).geplant_um;
-  const istOffen = (g) => g.liste.some(x => ['geplant', 'laeuft', 'fehler'].includes(x.status));
+  const istOffen = (g) => g.liste.some(x => ['geplant', 'laeuft', 'fehler', 'tiktok_wartet'].includes(x.status));
   // was noch kommt zuerst (früheste oben), schon Erledigtes eingeklappt darunter (neueste oben)
   const offenG = gruppen.filter(istOffen).sort((a, b) => String(erstes(a)).localeCompare(String(erstes(b))));
   const fertigG = gruppen.filter(g => !istOffen(g)).sort((a, b) => String(erstes(b)).localeCompare(String(erstes(a))));
