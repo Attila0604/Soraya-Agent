@@ -222,7 +222,7 @@ def plane_veroeffentlichung(post_id: int, plattform: str, geplant_um, *, zurueck
 def lade_geplante_termine(ab) -> list[dict]:
     """Noch nicht gepostete Termine ab einem Zeitpunkt (zum Verschieben auf neue Uhrzeiten)."""
     with _verbindung() as conn, conn.cursor() as cur:
-        cur.execute("select v.id, v.geplant_um, p.art, p.meta from soraya_veroeffentlichungen v "
+        cur.execute("select v.id, v.geplant_um, v.plattform, p.art, p.meta, p.sprache, p.geplant_fuer from soraya_veroeffentlichungen v "
                     "join soraya_posts p on p.id = v.post_id where v.status = 'geplant' and v.geplant_um >= %s;", (ab,))
         return cur.fetchall()
 

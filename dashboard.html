@@ -1944,7 +1944,7 @@ function zeigeRaus(d, ps, morgen){
   const zeilen = plaetze.sort((a, b) => String(e.zeiten[a.art]).localeCompare(String(e.zeiten[b.art]))).map(({art, sprache, pls}) => {
     const p = (d.posts || []).find(x => platzVon(x) === art && x.sprache === sprache);
     if(p) POSTS.set(String(p.id), p);
-    const tt = p ? termineHeute.filter(t => t.post_id === p.id) : [];
+    const tt = p ? termineHeute.filter(t => t.post_id === p.id && !(t.status === 'abgebrochen' && !pls.includes(t.plattform))) : [];
     const zeit = tt[0] ? uhr(tt[0].geplant_um) : e.zeiten[art];
     const wo = tt.length ? tt.map(t => ({pl: t.plattform, st: t.status, url: t.url}))
       : pls.map(pl => ({pl, st: v[pl] && v[pl].verbunden ? 'geplant' : 'nicht'}));
@@ -2123,6 +2123,18 @@ $('planSprachen').addEventListener('change', async () => {
        melde('Tagesplan-Sprachen: ' + sprachen.map(s => s.toUpperCase()).join(', ') + ' ✓'); }
   catch(e){ melde('Fehler: ' + e.message); }
   ladeHeute();
+});
+document.addEventListener('click', async (ev) => {
+  const b = ev.target.closest('[data-sprachen-dazu]'); if(!b) return;
+  const dazu = b.dataset.sprachenDazu.split(',').filter(Boolean);
+  busy(b, true, 'Wird erstellt …');
+  try{
+    const jetzt = (b.dataset.sprachenJetzt || '').split(',').filter(Boolean);
+    await api('/tagesplan/sprachen', {method: 'PUT', body: JSON.stringify({sprachen: [...new Set([...jetzt, ...dazu])]})});
+    await api('/tagesplan', {method: 'POST', body: JSON.stringify({sprachen: dazu})});
+    melde(`${dazu.map(s => s.toUpperCase()).join(', ')} hinzugefügt ✓ – die Posts entstehen jetzt (1–2 Minuten).`);
+    setTimeout(() => { ladePosten(); ladeHeute(); }, 1500);
+  }catch(e){ melde('Fehler: ' + e.message); busy(b, false); }
 });
 $('btnPlanJetzt').onclick = () => starteTagesplan(false);
 $('btnPlanNeu').onclick = () => starteTagesplan(true);
@@ -3306,11 +3318,13 @@ async function ladePosten(){
   if(e.an && !verbunden.length) warn.push('Es ist noch keine Plattform verbunden – siehe „Verbindungen“.');
   if(e.an && !d.tagesplan_auto) warn.push('Der Tagesplan erstellt nicht automatisch (Reiter „Heute“). Ohne neue Posts gibt es nichts zu posten.');
   const fehlen = (d.benoetigt || []).filter(s => !d.tagesplan_sprachen.includes(s));
-  if(e.an && fehlen.length) warn.push(`Der Tagesplan erstellt keine Posts auf ${fehlen.map(s => s.toUpperCase()).join(', ')} – im Reiter „Heute“ bei „Sprachen“ anhaken.`);
+  if(e.an && fehlen.length) warn.push({text: `Der Tagesplan schreibt noch keine Posts auf ${fehlen.map(s => s.toUpperCase()).join(', ')}.`,
+    knopf: `<button class="klein" data-sprachen-dazu="${esc(fehlen.join(','))}" data-sprachen-jetzt="${esc((d.tagesplan_sprachen || []).join(','))}">${esc(fehlen.map(s => SPRACHE_NAME[s] || s.toUpperCase()).join(' + '))} hinzufügen &amp; heutige Posts erstellen</button>`});
   const li = v.linkedin || {};
   if(e.plattformen.linkedin && li.abgelaufen) warn.push('Der LinkedIn-Zugang ist abgelaufen (60 Tage) – bei „Verbindungen“ auf „LinkedIn neu verbinden“ tippen.');
   else if(e.plattformen.linkedin && li.bald_ablaufend) warn.push(`Der LinkedIn-Zugang läuft am ${new Date(li.laeuft_ab * 1000).toLocaleDateString('de-AT')} ab – bei „Verbindungen“ auf „LinkedIn neu verbinden“ tippen.`);
-  $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => `<div class="eintrag">${esc(w)}</div>`).join('');
+  $('postWarnung').classList.toggle('hide', !warn.length); $('postWarnung').innerHTML = warn.map(w => typeof w === 'string' ? `<div class="eintrag">${esc(w)}</div>`
+    : `<div class="eintrag">${esc(w.text)}<div style="margin-top:10px">${w.knopf}</div></div>`).join('');
   zeigeZeitTipp();
 
   $('verbindungen').innerHTML = PLATTFORMEN.map(p => verbindungsZeile(p, v[p] || {}, e)).join('');
