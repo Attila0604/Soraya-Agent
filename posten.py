@@ -158,7 +158,7 @@ def sprache_anwenden(e: dict, jetzt: datetime | None = None) -> int:
     """Nach einer Sprach-Umstellung: schon geplante Termine in der falschen Sprache fallen weg, die richtigen entstehen neu."""
     jetzt = jetzt or datetime.now(himmel.WIEN)
     weg = 0
-    for z in db.lade_geplante_termine(jetzt - timedelta(hours=12)):     # auch schon faellige, noch nicht gepostete
+    for z in db.lade_geplante_termine(jetzt - timedelta(days=2)):       # auch schon faellige, noch nicht gepostete
         if not sprache_passt({"art": z["art"], "meta": z.get("meta") or {}, "sprache": z.get("sprache"),
                               "geplant_fuer": z.get("geplant_fuer")}, z["plattform"], e):
             db.setze_veroeffentlichung(z["id"], "abgebrochen", fehler="Sprache der Plattform geändert – geht nicht raus.")
@@ -656,7 +656,8 @@ def fuehre_aus(jetzt: datetime | None = None, e: dict | None = None) -> list[dic
         db.setze_veroeffentlichung(zeile["id"], "laeuft", versuch=True)
         try:
             r = veroeffentliche(zeile, post, e)
-            db.setze_veroeffentlichung(zeile["id"], "fertig", extern_id=r.get("id"), url=r.get("url"))
+            db.setze_veroeffentlichung(zeile["id"], "fertig", extern_id=r.get("id"), url=r.get("url"),
+                                       extern_stand=r.get("stand"))
             ergebnisse.append({"id": zeile["id"], "status": "fertig"})
         except Exception as ex:  # noqa: BLE001 -- landet im Protokoll
             db.setze_veroeffentlichung(zeile["id"], "fehler", fehler=str(ex)[:400])
@@ -886,6 +887,32 @@ def aktualisiere_zahlen(erzwingen: bool = False) -> int:
     return n
 
 
+def tiktok_nachpruefen() -> int:
+    """Nach dem Hochladen fragt Soraya alle 5 Minuten (bis 48 h) bei TikTok nach, bis das Video im Posteingang
+    bzw. veroeffentlicht ist. Lehnt TikTok es spaeter ab, wird der Termin ein Fehler und noch einmal versucht."""
+    n = 0
+    for z in db.tiktok_nachzupruefen():
+        if str(z["extern_id"] or "").isdigit():         # schon als oeffentliches Video zugeordnet
+            db.setze_extern_stand(z["id"], "PUBLISH_COMPLETE")
+            continue
+        try:
+            d = tiktok.status(z["extern_id"])
+        except Exception as ex:  # noqa: BLE001 -- naechstes Mal wieder
+            db.setze_extern_stand(z["id"], z.get("extern_stand") or "PROCESSING_UPLOAD")
+            print(f"[Posten] TikTok-Stand für Post {z['post_id']} nicht geholt: {ex}", flush=True)
+            continue
+        st = d.get("status") or "PROCESSING_UPLOAD"
+        if st == "FAILED":
+            grund = d.get("fail_reason") or "unbekannt"
+            db.setze_veroeffentlichung(z["id"], "fehler",
+                                       fehler=f"TikTok hat das Video nachträglich abgelehnt ({grund}) – Soraya versucht es nochmal.")
+            print(f"[Posten] TikTok Post {z['post_id']}: abgelehnt ({grund})", flush=True)
+        else:
+            db.setze_extern_stand(z["id"], st)
+        n += 1
+    return n
+
+
 def durchlauf(jetzt: datetime | None = None) -> dict:
     """Ein Durchlauf des Zeitplans (auch fuer Tests)."""
     if not _SPERRE.acquire(blocking=False):
@@ -908,6 +935,10 @@ def durchlauf(jetzt: datetime | None = None) -> dict:
             miss_storys(jetzt)
         except Exception as ex:  # noqa: BLE001
             print(f"[Posten] Story-Zahlen nicht geholt: {ex}", flush=True)
+        try:
+            tiktok_nachpruefen()
+        except Exception as ex:  # noqa: BLE001
+            print(f"[Posten] TikTok-Stand nicht geprüft: {ex}", flush=True)
         if not e["an"]:
             return {"an": False}
         return {"an": True, "geplant": planen(e, jetzt), "ausgefuehrt": fuehre_aus(jetzt, e)}
@@ -932,7 +963,7 @@ def jetzt_posten(post_id: int, plattform: str) -> dict:
     except Exception as ex:
         db.setze_veroeffentlichung(zid, "fehler", fehler=str(ex)[:400])
         raise
-    db.setze_veroeffentlichung(zid, "fertig", extern_id=r.get("id"), url=r.get("url"))
+    db.setze_veroeffentlichung(zid, "fertig", extern_id=r.get("id"), url=r.get("url"), extern_stand=r.get("stand"))
     if db.alle_veroeffentlicht(post_id):
         db.aendere_post(post_id, {"status": "gepostet"})
     return r

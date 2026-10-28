@@ -113,7 +113,7 @@ def init_db():
         cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
         # gespeichert (Instagram "Speichern") und aufrufe (Instagram/TikTok "Aufrufe") seit Version 0.13
         for spalte in ("reaktionen int", "kommentare int", "geteilt int", "zahlen_am timestamptz", "reichweite int",
-                       "gespeichert int", "aufrufe int"):
+                       "gespeichert int", "aufrufe int", "extern_stand text", "extern_geprueft timestamptz"):
             cur.execute(f"alter table soraya_veroeffentlichungen add column if not exists {spalte};")
         cur.execute(
             """
@@ -262,14 +262,36 @@ def faellige_veroeffentlichungen(jetzt, max_versuche: int = 3) -> list[dict]:
 
 
 def setze_veroeffentlichung(zid: int, status: str, *, fehler: str | None = None, extern_id: str | None = None,
-                            url: str | None = None, versuch: bool = False) -> None:
+                            url: str | None = None, versuch: bool = False, extern_stand: str | None = None) -> None:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
             "update soraya_veroeffentlichungen set status = %s, fehler = %s, "
             "extern_id = coalesce(%s, extern_id), url = coalesce(%s, url), "
+            "extern_stand = %s, extern_geprueft = case when %s::text is null then null else now() end, "
             "versuche = versuche + %s, aktualisiert = now() where id = %s;",
-            (status, fehler, extern_id, url, 1 if versuch else 0, zid),
+            (status, fehler, extern_id, url, extern_stand, extern_stand, 1 if versuch else 0, zid),
         )
+        conn.commit()
+
+
+def tiktok_nachzupruefen(stunden: int = 48, alle_min: int = 5) -> list[dict]:
+    """TikTok-Uploads, deren Verarbeitung noch nicht als fertig gemeldet ist (aeltere Termine ohne Stand:
+    publish_id beginnt mit "v_")."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select id, post_id, extern_id, extern_stand, aktualisiert from soraya_veroeffentlichungen "
+            "where plattform = 'tiktok' and status = 'fertig' and (extern_stand is not null or extern_id like 'v\\_%%') "
+            "and coalesce(extern_stand, '') not in ('SEND_TO_USER_INBOX', 'PUBLISH_COMPLETE') "
+            "and aktualisiert > now() - make_interval(hours => %s) "
+            "and (extern_geprueft is null or extern_geprueft < now() - make_interval(mins => %s)) "
+            "order by id limit 10;", (stunden, alle_min))
+        return cur.fetchall()
+
+
+def setze_extern_stand(zid: int, stand: str) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_veroeffentlichungen set extern_stand = %s, extern_geprueft = now() where id = %s;",
+                    (stand, zid))
         conn.commit()
 
 
