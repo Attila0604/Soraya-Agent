@@ -1859,8 +1859,10 @@ def test_kommentar_frage_beim_posten(monkeypatch):
          "meta": {"thema": "Mitmachen", "bild_punkte": ["Sì", "No", "Forse"]}}
     ig = posten.text_fuer(p, "instagram")
     teile = ig.split("\n\n")
-    assert teile[2] == "A, B o C? Scrivi la tua lettera nei commenti 👇"
-    assert teile[3].startswith("Il tuo oroscopo gratis: link in bio 👉 @soraya.astroguide") and teile[-1] == "#astrologia #luna #oroscopo"
+    # Hook, gleich danach der Bio-Hinweis mit @Profil, dann der Text, die Frage, Speichern + Adresse, Hashtags
+    assert teile[0] == "La Luna è in Scorpione." and teile[1].startswith("Il tuo oroscopo gratis: link in bio 👉 @soraya.astroguide")
+    assert teile[3] == "A, B o C? Scrivi la tua lettera nei commenti 👇" and teile[4].startswith("🔖 Salvalo per dopo")
+    assert teile[-1] == "#astrologia #luna #oroscopo"
     fb = posten.text_fuer(p, "facebook")
     assert fb.count("Scrivi la tua lettera") == 1 and fb.index("?q=p7") < fb.index("Scrivi la tua")   # Link gleich nach dem Hook
     assert "link in bio" not in fb.lower() and "qui sotto" not in fb and fb.split("\n\n")[0] == "La Luna è in Scorpione."
@@ -2379,6 +2381,14 @@ def test_besucher_woher_und_wann():
     assert b["kanaele"][2]["details"][0]["name"] == "Post: Vollmond"
     assert b["wochentage"][1:3] == [5, 9] and b["beste_stunde"] == 20 and b["stunden"][9] == 1 and b["bester_tag"] == "Mi"
     assert cockpit.besucher({}, [], tage, vor)["stunden"] is None
+
+
+def test_pinterest_titel_und_text():
+    p = {"id": 4, "art": "post", "sprache": "de", "titel": "Vollmond im Stier", "text": "Heute wird es ruhig.\n\nLink in Bio", "hashtags": "#a #b"}
+    assert posten.pin_titel(p) == "Vollmond im Stier – Horoskop & Astrologie"
+    assert posten.pin_titel({**p, "titel": "Dein Horoskop heute"}) == "Dein Horoskop heute"     # Stichwort schon drin
+    t = posten.pinterest_text(p)
+    assert "Bio" not in t and "tippe auf den Pin" in t and t.endswith("#a #b") and len(t) <= 500
 
 
 def test_sprache_je_plattform(frische_db):
