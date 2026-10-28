@@ -562,6 +562,11 @@
   .kpi{border-radius:14px}
   .kpi .v{font-variant-numeric:tabular-nums}
   .termine td .plk{margin-top:1px}
+  .termin-kopf{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:var(--s2) 0 0;font-weight:600}
+  .termin-kopf span{display:inline-block;min-width:20px;text-align:center;border-radius:999px;background:rgba(201,162,75,.14);color:var(--champagne);
+                    padding:1px 7px;margin-left:6px;letter-spacing:0}
+  details.termin-fertig{margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)}
+  details.termin-fertig>summary{font-size:14px;color:var(--mist)}
 
   .card.blitz{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,75,.25)}
   .card{transition:box-shadow .4s,border-color .4s}
@@ -579,6 +584,11 @@
     .raus>li:not(.slot) .bilder{grid-column:2;justify-content:flex-start}
     .sl .daumen.feed{width:40px;height:50px} .sl .daumen.hoch{width:34px;height:60px} .sl .bilder .daumen:nth-child(n+2),.sl .mehr-bilder{display:none}
     .raus .wann{font-size:21px}
+    /* Handy: drei kleine Status-Kacheln nebeneinander */
+    .cockpit{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .cockpit .kachel{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 10px;border-radius:14px;min-width:0}
+    .cockpit .kachel b{font-family:Inter,sans-serif;font-size:12.5px;line-height:1.25;white-space:normal;display:flex;align-items:center;gap:6px}
+    .cockpit .kachel .kd{font-size:11.5px;line-height:1.35;color:var(--mist-dim);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   }
   @media (max-width:560px){
     .wrap{padding:0 16px 96px}
@@ -980,6 +990,12 @@
   ul.fol-liste{list-style:none;padding:0;margin:0}
   ul.fol-liste li{display:flex;gap:var(--s1) var(--s3);align-items:baseline;flex-wrap:wrap;padding:var(--s2) 0;border-top:1px solid var(--line-soft)}
   ul.fol-liste li:first-child{border-top:0}
+  .fol-kacheln{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:var(--s2);margin-bottom:var(--s3)}
+  .fol-k{border:1px solid var(--line-soft);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;
+         border-top:3px solid var(--pl)}
+  .fol-k .fk-name{font-size:12.5px;color:var(--mist-dim)}
+  .fol-k b{font-size:26px;font-weight:600;color:#F4EEDD;font-variant-numeric:tabular-nums;line-height:1.15}
+  .fol-k .plus{color:#7fd27f;font-weight:600} .fol-k .minus{color:#f0a49a;font-weight:600} .fol-k .gleich{color:var(--mist-dim)}
   ul.fol-liste b{color:#F4EEDD;font-size:17px;font-weight:600}
   .wz-fol .legende{margin:var(--s2) 0 0}
   .hm-rahmen{overflow-x:auto}
@@ -1077,7 +1093,8 @@
   @media (max-width:560px){
     .wz-leiste{padding:var(--s2) 16px;margin-left:-16px;margin-right:-16px}
     .wz-reiter{display:flex;width:100%}
-    .wz-reiter button{flex:1 1 auto;justify-content:center;padding:0 8px;font-size:13px}
+    .wz-reiter{overflow-x:auto;scrollbar-width:none} .wz-reiter::-webkit-scrollbar{display:none}
+    .wz-reiter button{flex:1 0 auto;justify-content:center;padding:0 9px;font-size:clamp(11.5px,3.2vw,13px)}
     .wz-zeit{width:100%;justify-content:space-between;gap:var(--s2)}
     #wZeitraumText{font-size:12px}
     .wz-zeit .segment button{padding:0 11px;min-height:32px;font-size:12.5px}
@@ -2089,16 +2106,16 @@ function zeigeCockpit(d, ps){
     && new Date(t.geplant_um).getTime() > jetzt).sort((a, b) => new Date(a.geplant_um) - new Date(b.geplant_um))[0];
   const punkt = (an) => `<span class="punkt ${an ? 'ok' : ''}"></span>`;
   $('cockpit').innerHTML = `
-    <button class="kachel${!d.automatisch && e && e.an ? ' achtung' : ''}" data-ziel="tagesplan"><b>${punkt(d.automatisch)}Tagesplan ${d.automatisch ? 'an' : 'aus'}</b>
-      ${!d.automatisch && e && e.an ? 'Posten ist an, aber ohne Tagesplan-Automatik entstehen keine neuen Posts · ' : ''}Heute ${fertig} von ${d.sprachen.length} Sprachen fertig</button>
-    <button class="kachel" data-ziel="posten"><b>${punkt(e && e.an && verbunden.length)}Posten ${e && e.an ? 'an' : 'aus'}</b>
-      ${verbunden.length ? 'Verbunden: ' + verbunden.join(' + ') : 'Noch keine Plattform verbunden'}</button>
-    ${v && !verbunden.length ? `<button class="kachel" data-ziel="posten"><b>Nächster Schritt</b>
-      ${v.facebook.eingerichtet ? 'Facebook &amp; Instagram verbinden' : 'Meta-App einrichten'} – Anleitung unter „Posten“</button>`
-    : statistikVerbunden === false ? `<button class="kachel" data-ziel="wirkung"><b>Nächster Schritt</b>
-      Statistik verbinden, damit Soraya aus Besuchen lernt – Anleitung unter „Wirkung“</button>` : `<button class="kachel" data-ziel="posten"><b>Nächster Post</b>
+    <button class="kachel${!d.automatisch && e && e.an ? ' achtung' : ''}" data-ziel="tagesplan"><b>${punkt(d.automatisch)}Tagesplan ${d.automatisch ? 'an' : 'aus'}</b><span class="kd">
+      ${!d.automatisch && e && e.an ? 'Posten ist an, aber ohne Tagesplan-Automatik entstehen keine neuen Posts · ' : ''}Heute ${fertig} von ${d.sprachen.length} Sprachen fertig</span></button>
+    <button class="kachel" data-ziel="posten"><b>${punkt(e && e.an && verbunden.length)}Posten ${e && e.an ? 'an' : 'aus'}</b><span class="kd">
+      ${verbunden.length ? 'Verbunden: ' + verbunden.map(n => n.split(' ')[0]).join(', ') : 'Noch keine Plattform verbunden'}</span></button>
+    ${v && !verbunden.length ? `<button class="kachel" data-ziel="posten"><b>Nächster Schritt</b><span class="kd">
+      ${v.facebook.eingerichtet ? 'Facebook &amp; Instagram verbinden' : 'Meta-App einrichten'} – Anleitung unter „Posten“</span></button>`
+    : statistikVerbunden === false ? `<button class="kachel" data-ziel="wirkung"><b>Nächster Schritt</b><span class="kd">
+      Statistik verbinden, damit Soraya aus Besuchen lernt – Anleitung unter „Wirkung“</span></button>` : `<button class="kachel" data-ziel="posten"><b>Nächster Post</b><span class="kd">
       ${naechster ? `${esc(ART[platzVon(naechster)] || naechster.art)} · ${tagName(naechster.geplant_um)} ${uhr(naechster.geplant_um)} · ${esc(PL_NAME[naechster.plattform])}`
-        : (e && e.an ? 'Nichts geplant' : 'Automatisches Posten ist aus')}</button>`}`;
+        : (e && e.an ? 'Nichts geplant' : 'Automatisches Posten ist aus')}</span></button>`}`;
 }
 $('cockpit').addEventListener('click', (ev) => {
   const k = ev.target.closest('.kachel'); if(!k) return;
@@ -3256,7 +3273,16 @@ function zeichneFollower(){
   }
   const tage = cockpitDaten.analyse.plattform_tage.map(t => t.datum), idx = Object.fromEntries(tage.map((t, i) => [t, i]));
   const reihen = kurven.map(k => { const start = k.start ?? k.punkte[0].follower;
-    return {pl: k.plattform, start, pkt: k.punkte.map(p => ({i: idx[p.datum] ?? 0, d: p.follower - start, f: p.follower, datum: p.datum}))}; });
+    return {pl: k.plattform, start, pkt: k.punkte.filter(p => p.datum in idx).map(p => ({i: idx[p.datum], d: p.follower - start, f: p.follower, datum: p.datum}))}; })
+    .filter(r => r.pkt.length);
+  // bei kleinen Zahlen sagt eine Kurve nichts (0 → +1 → 0 sieht wie ein Ausschlag aus): klare Kacheln statt Linien
+  if(Math.max(0, ...reihen.flatMap(r => r.pkt.map(p => Math.abs(p.d)))) < 5){
+    const plus = (d) => d > 0 ? `<span class="plus">+${zahl(d)}</span>` : d < 0 ? `<span class="minus">−${zahl(-d)}</span>` : '<span class="gleich">±0</span>';
+    box.innerHTML = `<div class="fol-kacheln">${reihen.map(r => { const e = r.pkt[r.pkt.length - 1];
+      return `<div class="fol-k" style="--pl:${PL_FARBE[r.pl]}"><span class="fk-name">${plName(r.pl)}</span><b>${zahl(e.f)}</b><span class="meta">Follower</span>${plus(e.d)}</div>`; }).join('')}</div>
+      <p class="meta">Veränderung seit ${esc(kurzIso(tage[0]))}. Die Kurve erscheint, sobald es mehr Bewegung gibt.</p>`;
+    return;
+  }
   const W = Math.max(300, box.clientWidth), L = 40, R = 64, T = 12, ph = 150, B = 26, H = T + ph + B, pw = W - L - R;
   const alle = reihen.flatMap(r => r.pkt.map(p => p.d)), maxD = Math.max(0, ...alle), minD = Math.min(0, ...alle);
   const oben = runde(Math.max(1, maxD)), unten = minD < 0 ? -runde(-minD) : 0;
@@ -3266,12 +3292,15 @@ function zeichneFollower(){
     s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'var(--viz-axis)' : 'var(--viz-grid)'}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${v > 0 ? '+' : ''}${zahl(v)}</text>`; });
   const jeder = Math.ceil(tage.length / Math.max(1, Math.floor(pw / 52)));
   tage.forEach((t, i) => { if((tage.length - 1 - i) % jeder === 0) s += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#8A8FA6">${datumKurz(t)}</text>`; });
-  const endY = [];
+  // Beschriftungen am Ende: von oben nach unten mit Abstand, nie unter die Achse
+  const marken = reihen.map(r => ({r, y: y(r.pkt[r.pkt.length - 1].d)})).sort((p, q) => p.y - q.y);
+  marken.forEach((m, i) => { m.ly = Math.max(m.y, i ? marken[i - 1].ly + 15 : T + 4); });
+  const ueber = marken.length ? marken[marken.length - 1].ly - (T + ph - 2) : 0;
+  if(ueber > 0) marken.forEach(m => { m.ly = Math.max(T + 4, m.ly - ueber); });
   reihen.forEach(r => {
     if(r.pkt.length >= 2) s += `<polyline fill="none" stroke="${PL_FARBE[r.pl]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${r.pkt.map(p => `${x(p.i)},${y(p.d)}`).join(' ')}"/>`;
     if(r.pkt.length <= 12) r.pkt.forEach(p => { s += `<circle cx="${x(p.i)}" cy="${y(p.d)}" r="3.5" fill="${PL_FARBE[r.pl]}" stroke="#12162A" stroke-width="2"/>`; });
-    const e = r.pkt[r.pkt.length - 1]; let ey = y(e.d);
-    endY.forEach(v => { if(Math.abs(v - ey) < 14) ey = v + (ey >= v ? 14 : -14); }); endY.push(ey);
+    const e = r.pkt[r.pkt.length - 1], ey = marken.find(m => m.r === r).ly;
     s += `<circle cx="${x(e.i)}" cy="${y(e.d)}" r="4" fill="${PL_FARBE[r.pl]}" stroke="#12162A" stroke-width="2"/><text x="${x(e.i) + 8}" y="${ey + 4}" font-size="12" fill="#E4E6EF">${e.d > 0 ? '+' : e.d < 0 ? '−' : '±'}${zahl(Math.abs(e.d))} ${PL_KURZ[r.pl]}</text>`;
   });
   s += `<line class="kreuz" x1="0" x2="0" y1="${T}" y2="${T + ph}" stroke="var(--viz-axis)" visibility="hidden"/><rect class="flaeche" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent" tabindex="0" aria-label="${esc(reihen.map(r => `${PL_KURZ[r.pl]}: ${r.pkt[r.pkt.length - 1].f} Follower, ${r.pkt[r.pkt.length - 1].d >= 0 ? '+' : ''}${r.pkt[r.pkt.length - 1].d} im Zeitraum`).join('; '))}"/>`;
@@ -3439,8 +3468,13 @@ async function ladePosten(){
   const nachPost = new Map();
   termine.forEach(t => { let g = nachPost.get(t.post_id); if(!g){ g = {post: t, liste: []}; nachPost.set(t.post_id, g); gruppen.push(g); } g.liste.push(t); });
   const RANG = {fehler: 4, laeuft: 3, geplant: 2, verpasst: 1, fertig: 0};
-  $('termine').innerHTML = gruppen.length ? `<table class="termine"><thead><tr><th>Wann</th><th>Was</th><th class="pl">Wo</th><th>Stand</th><th></th></tr></thead><tbody>
-    ${gruppen.map(({post: t, liste}) => {
+  const erstes = (g) => g.liste.reduce((m, x) => String(x.geplant_um) < String(m.geplant_um) ? x : m, g.liste[0]).geplant_um;
+  const istOffen = (g) => g.liste.some(x => ['geplant', 'laeuft', 'fehler'].includes(x.status));
+  // was noch kommt zuerst (früheste oben), schon Erledigtes eingeklappt darunter (neueste oben)
+  const offenG = gruppen.filter(istOffen).sort((a, b) => String(erstes(a)).localeCompare(String(erstes(b))));
+  const fertigG = gruppen.filter(g => !istOffen(g)).sort((a, b) => String(erstes(b)).localeCompare(String(erstes(a))));
+  const tabelle = (liste) => `<table class="termine"><thead><tr><th>Wann</th><th>Was</th><th class="pl">Wo</th><th>Stand</th><th></th></tr></thead><tbody>
+    ${liste.map(({post: t, liste}) => {
       const gestoppt = t.post_status === 'gestoppt';
       const offenListe = liste.filter(x => ['geplant', 'fehler'].includes(x.status));
       const zuerst = liste.reduce((m, x) => String(x.geplant_um) < String(m.geplant_um) ? x : m, liste[0]);
@@ -3456,7 +3490,10 @@ async function ladePosten(){
         <td>${esc(ART[platzVon(t)] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>${fehler}</td>
         <td class="pl"><span class="plk-reihe">${marken}</span></td>
         <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}</td></tr>`;
-    }).join('')}</tbody></table>`
+    }).join('')}</tbody></table>`;
+  $('termine').innerHTML = gruppen.length
+    ? `${offenG.length ? `<h4 class="termin-kopf">Kommt noch <span>${offenG.length}</span></h4>${tabelle(offenG)}` : '<p class="meta">Gerade ist nichts geplant.</p>'}
+      ${fertigG.length ? `<details class="termin-fertig"${offenG.length ? '' : ' open'}><summary>Schon erledigt (${fertigG.length})</summary>${tabelle(fertigG)}</details>` : ''}`
     : `<div class="empty">Keine Termine.<span>${e.an ? 'Sie entstehen, sobald es Posts gibt und eine Plattform verbunden ist.' : 'Sie entstehen, wenn „Automatisch posten“ an ist.'}</span></div>`;
 
   // ungespeicherte Eingaben (auch ein übernommener Vorschlag) beim Nachladen nicht überschreiben
