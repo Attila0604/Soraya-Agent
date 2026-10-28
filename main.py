@@ -448,6 +448,7 @@ class PostenEinstellungen(BaseModel):
     tiktok_modus: Optional[str] = None
     zeiten: Optional[dict] = None
     plattformen: Optional[dict] = None
+    sprache_pl: Optional[dict] = None
 
 
 @app.put("/posten/einstellungen")

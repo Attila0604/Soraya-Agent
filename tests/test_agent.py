@@ -1035,9 +1035,11 @@ def test_claude_ohne_schluessel(monkeypatch):
 def test_facebook_text_ohne_bio():
     p = {"id": 7, "art": "post", "sprache": "en", "text": "Your chart awaits. Link in bio ✨", "hashtags": "#astro"}
     fb = posten.text_fuer(p, "facebook")
-    assert "Link below" in fb and "bio" not in fb.lower() and "?q=p7&lang=en" in fb
+    assert "bio" not in fb.lower() and "?q=p7&lang=en" in fb          # die Bio-Zeile weicht dem echten Link oben
     assert "Link in bio" in posten.text_fuer(p, "instagram")
-    assert "Link unten" in posten.text_fuer({**p, "sprache": "de", "text": "Dein Horoskop: Link in Bio"}, "facebook")
+    de = posten.text_fuer({**p, "sprache": "de", "text": "Neumond im Skorpion.\n\nDein Horoskop: Link in Bio"}, "facebook")
+    assert "Bio" not in de and de.startswith("Neumond im Skorpion.\n\n🔗") and "?q=p7&lang=de" in de
+    assert "Link unten" in posten._ohne_bio("Dein Horoskop: Link in Bio", "de")     # mitten im Satz: ersetzt
     viele = {**p, "hashtags": "#a1 #b2 #c3 #d4 #e5"}
     assert "#c3" in posten.text_fuer(viele, "facebook") and "#d4" not in posten.text_fuer(viele, "facebook")
     assert "#e5" in posten.text_fuer(viele, "instagram")
@@ -1860,7 +1862,8 @@ def test_kommentar_frage_beim_posten(monkeypatch):
     assert teile[2] == "A, B o C? Scrivi la tua lettera nei commenti 👇"
     assert teile[3].startswith("Il tuo oroscopo gratis: link in bio 👉 @soraya.astroguide") and teile[-1] == "#astrologia #luna #oroscopo"
     fb = posten.text_fuer(p, "facebook")
-    assert fb.count("Scrivi la tua lettera") == 1 and fb.index("Scrivi la tua") < fb.index("?q=p7")
+    assert fb.count("Scrivi la tua lettera") == 1 and fb.index("?q=p7") < fb.index("Scrivi la tua")   # Link gleich nach dem Hook
+    assert "link in bio" not in fb.lower() and "qui sotto" not in fb and fb.split("\n\n")[0] == "La Luna è in Scorpione."
     story = {**p, "art": "story", "text": "Come dormi? Rispondi con 🌙", "meta": {}}
     assert "commenti" not in posten.text_fuer(story, "instagram")
     reel = {"id": 8, "art": "reel", "sprache": "de", "text": "Zwei Nächte bis Vollmond.", "hashtags": "#a #b #c"}
@@ -2376,3 +2379,18 @@ def test_besucher_woher_und_wann():
     assert b["kanaele"][2]["details"][0]["name"] == "Post: Vollmond"
     assert b["wochentage"][1:3] == [5, 9] and b["beste_stunde"] == 20 and b["stunden"][9] == 1 and b["bester_tag"] == "Mi"
     assert cockpit.besucher({}, [], tage, vor)["stunden"] is None
+
+
+def test_sprache_je_plattform(frische_db):
+    e = posten.speichere_einstellungen({"sprache": "en", "sprache_pl": {"facebook": "hu", "instagram": "", "xyz": "hu"}})
+    assert e["sprache_pl"] == {"facebook": "hu"}
+    assert posten.sprache_fuer(HEUTE, "post", e, "facebook") == "hu" and posten.sprache_fuer(HEUTE, "post", e, "instagram") == "en"
+    assert posten.benoetigte_sprachen(e, [HEUTE]) == ["en", "hu"]
+    r = client.put("/posten/einstellungen", json={"sprache_pl": {"facebook": "hu"}}, headers=AUTH).json()
+    assert r["einstellungen"]["sprache_pl"] == {"facebook": "hu"}            # auch ueber die Schnittstelle
+    e2 = posten.speichere_einstellungen({"sprache_pl": {"facebook": ""}})
+    assert e2["sprache_pl"] == {} and posten.benoetigte_sprachen(e2, [HEUTE]) == ["en"]
+    # Facebook-Text: Link gleich nach dem Hook, Folgen-Zeile am Ende
+    t = posten.text_fuer({"id": 3, "art": "post", "sprache": "hu", "text": "Hook.\n\nMehr Text.", "hashtags": "#a #b", "meta": {}}, "facebook")
+    teile = t.split("\n\n")
+    assert teile[0] == "Hook." and "?q=p3&lang=hu" in teile[1] and any("Kövesd az oldalt" in x for x in teile)

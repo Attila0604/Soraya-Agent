@@ -32,7 +32,7 @@ import tiktok
 from claude import frage_json
 from wirkung import link_basis
 
-STANDARD = {"an": False, "sprache": "en", "modus": "auto", "tiktok_modus": "entwurf",
+STANDARD = {"an": False, "sprache": "en", "sprache_pl": {}, "modus": "auto", "tiktok_modus": "entwurf",
             "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"},
             "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False, "pinterest": False}}
 PLATTFORMEN = ("facebook", "instagram", "tiktok", "linkedin", "pinterest")
@@ -71,18 +71,26 @@ ROTATION = ("en", "de", "hu", "it")
 ARTEN = ("story", "post", "reel", "reel2")
 
 
-def sprache_fuer(tag: date, art: str, e: dict) -> str:
-    """art: Termin-Platz (story, post, reel, reel2). Das Dashboard rechnet das in spracheFuer() nach."""
+SPRACHEN_POSTEN = ("de", "en", "hu", "it")
+
+
+def sprache_fuer(tag: date, art: str, e: dict, plattform: str | None = None) -> str:
+    """art: Termin-Platz (story, post, reel, reel2). Das Dashboard rechnet das in spracheFuer() nach.
+    Eine Plattform kann eine eigene Sprache haben (z. B. Facebook Ungarisch, Instagram Englisch)."""
+    eigen = (e.get("sprache_pl") or {}).get(plattform) if plattform else None
+    if eigen in SPRACHEN_POSTEN:
+        return eigen
     if e.get("sprache") != "alle":
         return e["sprache"]
     return ROTATION[(tag.toordinal() * 3 + ARTEN.index(art if art in ARTEN else "post")) % len(ROTATION)]
 
 
 def benoetigte_sprachen(e: dict, tage: list[date]) -> list[str]:
-    """Welche Sprachen der Tagesplan an diesen Tagen fuers Posten liefern muss."""
+    """Welche Sprachen der Tagesplan an diesen Tagen fuers Posten liefern muss (auch eigene Sprachen eingeschalteter Plattformen)."""
+    eigene = {s for p, s in (e.get("sprache_pl") or {}).items() if s in SPRACHEN_POSTEN and (e.get("plattformen") or {}).get(p)}
     if e.get("sprache") != "alle":
-        return [e["sprache"]]
-    return sorted({sprache_fuer(t, a, e) for t in tage for a in ARTEN}, key=ROTATION.index)
+        return sorted({e["sprache"]} | eigene, key=ROTATION.index)
+    return sorted({sprache_fuer(t, a, e) for t in tage for a in ARTEN} | eigene, key=ROTATION.index)
 MAX_VERSUCHE = 3
 _SPERRE = threading.Lock()
 
@@ -95,6 +103,7 @@ def einstellungen() -> dict:
     e = {**STANDARD, **{k: v for k, v in gespeichert.items() if k in STANDARD}}
     e["zeiten"] = {**STANDARD["zeiten"], **(gespeichert.get("zeiten") or {})}
     e["plattformen"] = {**STANDARD["plattformen"], **(gespeichert.get("plattformen") or {})}
+    e["sprache_pl"] = {p: s for p, s in (gespeichert.get("sprache_pl") or {}).items() if p in PLATTFORMEN and s in SPRACHEN_POSTEN}
     return e
 
 
@@ -104,6 +113,14 @@ def speichere_einstellungen(neu: dict) -> dict:
         e["an"] = bool(neu["an"])
     if neu.get("sprache") in ("de", "en", "hu", "it", "alle"):
         e["sprache"] = neu["sprache"]
+    if isinstance(neu.get("sprache_pl"), dict):        # "" = wie die allgemeine Sprache
+        for p, sp in neu["sprache_pl"].items():
+            if p not in PLATTFORMEN:
+                continue
+            if sp in SPRACHEN_POSTEN:
+                e["sprache_pl"][p] = sp
+            else:
+                e["sprache_pl"].pop(p, None)
     if neu.get("modus") in ("auto", "freigabe"):
         e["modus"] = neu["modus"]
     if neu.get("tiktok_modus") in ("entwurf", "direkt"):
@@ -182,9 +199,9 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
         zeit = e["zeiten"].get(wo)
         if not zeit or post.get("status") == "gestoppt":
             continue
-        if post.get("sprache") != sprache_fuer(post["geplant_fuer"], wo, e):
-            continue
         for p in plattformen:
+            if post.get("sprache") != sprache_fuer(post["geplant_fuer"], wo, e, p):
+                continue
             if not passt(p, post.get("art") or "post") or (wo == "reel2" and p in NUR_ERSTES_REEL):
                 continue
             neu += db.plane_veroeffentlichung(post["id"], p, termin(post["geplant_fuer"], zeit))
@@ -415,6 +432,11 @@ def pinterest_text(post: dict) -> str:
     return text[:500]
 
 
+# Facebook: aus Lesern werden Follower der Seite (die Seite hat noch kaum Follower)
+FB_FOLGEN = {"de": "➕ Folge der Seite – jeden Tag dein Himmel", "en": "➕ Follow the page – your sky, every day",
+             "hu": "➕ Kövesd az oldalt – minden nap a te égboltod", "it": "➕ Segui la pagina – il tuo cielo, ogni giorno"}
+
+
 def text_fuer(post: dict, plattform: str) -> str:
     if plattform == "pinterest":
         return pinterest_text(post)
@@ -434,12 +456,21 @@ def text_fuer(post: dict, plattform: str) -> str:
         text = redaktion.mit_kommentar_frage(text, post.get("sprache") or "en", f"p{post.get('id')}", antworten)
     teile = [_luftig(text)]
     if plattform == "facebook" and post.get("art") != "story":
-        teile[0] = _ohne_bio(teile[0], post.get("sprache") or "de")
+        # eine eigene Zeile "... Link in Bio" faellt weg: der echte Link steht gleich unter dem Hook
+        absaetze = teile[0].split("\n\n")
+        if len(absaetze) > 1:
+            absaetze = [a for i, a in enumerate(absaetze)
+                        if i == 0 or len(a) > 90 or not any(re.search(m, a, re.IGNORECASE) for m, _ in BIO_ERSATZ)]
+        teile[0] = _ohne_bio("\n\n".join(absaetze), post.get("sprache") or "de")
     if plattform == "facebook" and post.get("art") != "story":
-        # auf Facebook ist der Link klickbar; lang= oeffnet Landingpage und App in der Sprache des Posts
+        # auf Facebook ist der Link klickbar; lang= oeffnet Landingpage und App in der Sprache des Posts.
+        # Er steht gleich nach dem Hook -- Facebook kuerzt nach wenigen Zeilen ("Mehr anzeigen"), ganz unten sah ihn kaum jemand
         sprache = post.get("sprache") or "en"
         vorne = IG_HINWEIS.get(sprache, IG_HINWEIS["en"]).split(":")[0]
-        teile.append(f"{vorne} 👉 {link_basis()}?q=p{post['id']}&lang={sprache}")
+        link = f"{vorne} 👉 {link_basis()}?q=p{post['id']}&lang={sprache}"
+        absaetze = teile[0].split("\n\n", 1)
+        teile[0] = "\n\n".join([absaetze[0], link] + absaetze[1:])
+        teile.append(FB_FOLGEN.get(sprache, FB_FOLGEN["en"]))
     if plattform == "instagram" and post.get("art") != "story":
         teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en")
     if post.get("hashtags"):
