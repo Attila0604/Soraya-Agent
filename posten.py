@@ -300,20 +300,27 @@ def _instagram_name() -> str | None:
         return None
 
 
-def _mit_bio_hinweis(text: str, sprache: str) -> str:
-    """Schlusszeile mit 'Link in Bio' und dem Profil (@name ist auf Instagram antippbar)."""
+IG_SPEICHERN = {"de": "🔖 Speichern – für später", "en": "🔖 Save this for later", "hu": "🔖 Mentsd el későbbre",
+                "it": "🔖 Salvalo per dopo"}
+
+
+def _mit_bio_hinweis(text: str, sprache: str, speichern: bool = False) -> str:
+    """'Link in Bio' mit dem Profil (@name ist auf Instagram antippbar) gleich nach dem Hook -- Instagram kuerzt
+    nach zwei Zeilen ("... mehr"), ganz unten las das kaum jemand. speichern: Bitte ums Speichern (staerkstes Signal)."""
     name = _instagram_name()
-    zeilen = []
+    zeilen = [IG_SPEICHERN.get(sprache, IG_SPEICHERN["en"])] if speichern else []
+    absaetze = text.split("\n\n")
     if not (name and f"@{name}".lower() in text.lower()):
-        absaetze = text.split("\n\n")
         mit_bio = [i for i, a in enumerate(absaetze) if _BIO.search(a)]
-        if mit_bio and name:
+        if mit_bio:
+            bio = absaetze.pop(mit_bio[-1]).rstrip()
             # "@name" direkt hinter "Link in Bio" (eine Aufforderung statt zwei Zeilen)
-            absaetze[mit_bio[-1]] = f"{absaetze[mit_bio[-1]].rstrip()} 👉 @{name}"
-            text = "\n\n".join(absaetze)
-        elif not mit_bio:
+            bio = f"{bio} 👉 @{name}" if name else bio
+        else:
             zeile = IG_HINWEIS.get(sprache, IG_HINWEIS["en"])
-            zeilen.append(f"{zeile} 👉 @{name}" if name else zeile)
+            bio = f"{zeile} 👉 @{name}" if name else zeile
+        absaetze.insert(1 if len(absaetze) > 1 else len(absaetze), bio)
+        text = "\n\n".join(absaetze)
     # Die Adresse der Landingpage zum Abtippen (im Instagram-Text nicht klickbar)
     adresse = re.sub(r"^https?://(www\.)?", "", link_basis()).rstrip("/")
     if adresse.lower() not in text.lower():
@@ -418,6 +425,25 @@ def tiktok_texte(tage: int = 3) -> list[dict]:
     return out
 
 
+# Pinterest ist eine Suchmaschine: ein Stichwort im Titel hilft, gefunden zu werden
+PIN_STICHWORT = {"de": "Horoskop & Astrologie", "en": "Horoscope & Astrology", "hu": "Horoszkóp és asztrológia",
+                 "it": "Oroscopo e astrologia"}
+PIN_AUFRUF = {"de": "✨ Dein persönliches Horoskop gratis – tippe auf den Pin.",
+              "en": "✨ Your personal horoscope, free – tap the Pin.",
+              "hu": "✨ Személyes horoszkópod ingyen – koppints a pinre.",
+              "it": "✨ Il tuo oroscopo personale gratis – tocca il Pin."}
+
+
+def pin_titel(post: dict) -> str:
+    sprache = (post.get("sprache") or "en")[:2]
+    titel = (post.get("titel") or "Soraya").strip()
+    stichwort = PIN_STICHWORT.get(sprache, PIN_STICHWORT["en"])
+    erstes = stichwort.split()[0].lower()
+    if erstes not in titel.lower() and len(titel) + 3 + len(stichwort) <= 100:
+        titel = f"{titel} – {stichwort}"
+    return titel[:100]
+
+
 def pinterest_text(post: dict) -> str:
     """Pin-Beschreibung: Pinterest ist eine Suche -- klare Saetze mit Stichworten statt Plaudern, ohne "Link in Bio"
     (der Pin selbst verlinkt), hoechstens 500 Zeichen, ein paar Hashtags am Ende."""
@@ -428,7 +454,10 @@ def pinterest_text(post: dict) -> str:
             break
         kurz.append(a)
     tags = " ".join((post.get("hashtags") or "").split()[:4])
-    text = "\n\n".join(kurz + ([tags] if tags else []))
+    aufruf = PIN_AUFRUF.get((post.get("sprache") or "en")[:2], PIN_AUFRUF["en"])
+    while kurz and len("\n\n".join(kurz + [aufruf, tags])) > 500:
+        kurz.pop()
+    text = "\n\n".join(kurz + [aufruf] + ([tags] if tags else []))
     return text[:500]
 
 
@@ -472,7 +501,7 @@ def text_fuer(post: dict, plattform: str) -> str:
         teile[0] = "\n\n".join([absaetze[0], link] + absaetze[1:])
         teile.append(FB_FOLGEN.get(sprache, FB_FOLGEN["en"]))
     if plattform == "instagram" and post.get("art") != "story":
-        teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en")
+        teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en", speichern=True)
     if post.get("hashtags"):
         tags = post["hashtags"].split()
         # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur die ersten drei; Instagram nimmt
@@ -543,7 +572,7 @@ def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
     text = text_fuer(post, p)
     if p == "pinterest":
         bild = paket.hole_bild(post, "story" if art == "story" else "feed")
-        return pinterest.poste_pin(bild, post.get("titel") or "Soraya", text, pinterest.ziel_link(post, link_basis()),
+        return pinterest.poste_pin(bild, pin_titel(post), text, pinterest.ziel_link(post, link_basis()),
                                    post.get("sprache") or "en", alt=post.get("untertitel") or post.get("titel"))
     if p == "tiktok":
         return tiktok.poste_video(paket.rendere_tiktok(post), text, (e or einstellungen()).get("tiktok_modus", "entwurf"))
