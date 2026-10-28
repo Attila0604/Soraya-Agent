@@ -336,9 +336,13 @@
   .statusleiste .aus{color:var(--mist-dim)}
   .statusleiste .aus::before{content:"○ "}
   .statusleiste .linie{flex:1;min-width:24px;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
-  details.sprache-pl{margin:12px 0 0;border-top:1px solid var(--line-soft);padding-top:10px}
-  details.sprache-pl summary{text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--champagne)}
-  .sprache-pl-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 12px;margin-top:8px}
+  .pl-liste{display:grid;gap:0;margin-top:4px;border-top:1px solid var(--line-soft)}
+  .pl-zeile{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);min-height:52px}
+  .pl-zeile .imtp{font-size:15px;color:#F4EEDD;flex:1;min-width:0}
+  .pl-zeile .imtp input{width:20px;height:20px;flex:none}
+  .pl-zeile .imtp span{display:flex;flex-direction:column;min-width:0}
+  .pl-zeile .imtp small{font-size:12px;color:var(--mist-dim)}
+  .pl-zeile select{width:132px;flex:none;font-size:13.5px;min-height:40px;padding:6px 10px}
   .testpost{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line-soft)}
   .testpost:first-of-type{border-top:0}
   .testpost .titel{margin:0;font-size:15px}
@@ -1273,22 +1277,23 @@
         <div><label for="zReel2">2. Reel</label><input type="time" id="zReel2"></div>
       </div>
       <p class="lernhinweis" id="zeitTipp" hidden></p>
-      <label style="margin-top:16px">Wohin posten</label>
-      <div class="chips">
-        <label class="imtp"><input type="checkbox" id="plFacebook"> Facebook-Seite</label>
-        <label class="imtp"><input type="checkbox" id="plInstagram"> Instagram</label>
-        <label class="imtp"><input type="checkbox" id="plTiktok"> TikTok (nur Reels)</label>
-        <label class="imtp"><input type="checkbox" id="plLinkedin"> LinkedIn (dein Profil, ohne Storys)</label>
-        <label class="imtp"><input type="checkbox" id="plPinterest"> Pinterest (Bilder als Pins)</label>
+      <label style="margin-top:16px">Wohin posten<span class="meta" style="text-transform:none;letter-spacing:0;margin-left:8px">· je Plattform auch eine eigene Sprache, z. B. Facebook Magyar</span></label>
+      <div class="pl-liste">
+        <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plFacebook"> <span>Facebook-Seite</span></label>
+          <label class="sr" for="spl-facebook">Sprache für Facebook-Seite</label><select id="spl-facebook" data-spl="facebook"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
+        <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plInstagram"> <span>Instagram</span></label>
+          <label class="sr" for="spl-instagram">Sprache für Instagram</label><select id="spl-instagram" data-spl="instagram"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
+        <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plTiktok"> <span>TikTok<small>nur Reels</small></span></label>
+          <label class="sr" for="spl-tiktok">Sprache für TikTok</label><select id="spl-tiktok" data-spl="tiktok"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
+        <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plLinkedin"> <span>LinkedIn<small>dein Profil, ohne Storys</small></span></label>
+          <label class="sr" for="spl-linkedin">Sprache für LinkedIn</label><select id="spl-linkedin" data-spl="linkedin"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
+        <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plPinterest"> <span>Pinterest<small>Bilder als Pins</small></span></label>
+          <label class="sr" for="spl-pinterest">Sprache für Pinterest</label><select id="spl-pinterest" data-spl="pinterest"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
       </div>
-      <details class="sprache-pl" id="spracheJePl"><summary>Eigene Sprache für eine Plattform</summary>
-        <p class="hint">Zum Beispiel Facebook auf Ungarisch für deine ungarischen Freunde, Instagram und TikTok bleiben Englisch. Der Tagesplan muss die Sprache dann mitschreiben (Reiter „Heute“ → Sprachen).</p>
-        <div class="sprache-pl-liste"><div><label for="spl-facebook">Facebook</label><select id="spl-facebook" data-spl="facebook"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div><div><label for="spl-instagram">Instagram</label><select id="spl-instagram" data-spl="instagram"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div><div><label for="spl-tiktok">TikTok</label><select id="spl-tiktok" data-spl="tiktok"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div><div><label for="spl-pinterest">Pinterest</label><select id="spl-pinterest" data-spl="pinterest"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div><div><label for="spl-linkedin">LinkedIn</label><select id="spl-linkedin" data-spl="linkedin"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div></div>
-      </details>
       <div class="row" id="tiktokZeile" style="margin-top:10px">
         <div><label for="tiktokModus">So kommt das Reel zu TikTok</label>
-          <select id="tiktokModus"><option value="entwurf">Als Entwurf in meine TikTok-App (ich poste selbst, mit Sound)</option>
-            <option value="direkt">Direkt veröffentlichen (erst nach TikTok-Prüfung öffentlich)</option></select></div>
+          <select id="tiktokModus"><option value="entwurf">Entwurf – ich poste mit Sound</option>
+            <option value="direkt">Direkt – öffentlich erst nach TikTok-Prüfung</option></select></div>
       </div>
       <div class="row" style="margin-top:14px"><button id="postSpeichern">Speichern</button><span class="ungespeichert" id="postUngespeichert" hidden>Noch nicht gespeichert</span></div>
     </details>
@@ -3348,7 +3353,6 @@ async function ladePosten(){
   $('plLinkedin').checked = !!e.plattformen.linkedin;
   $('plPinterest').checked = !!e.plattformen.pinterest;
   document.querySelectorAll('[data-spl]').forEach(x => { x.value = (e.sprache_pl || {})[x.dataset.spl] || ''; });
-  $('spracheJePl').open = Object.keys(e.sprache_pl || {}).length > 0;
   $('tiktokZeile').hidden = !$('plTiktok').checked;
   document.querySelectorAll('.zeiten input.vorschlag').forEach(f => f.classList.remove('vorschlag'));
   }
