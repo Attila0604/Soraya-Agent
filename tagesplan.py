@@ -21,6 +21,7 @@ from datetime import date, timedelta
 
 import db
 import himmel
+import lektorat
 import redaktion
 from claude import frage_json
 from sprachen import LINK_IN_BIO, SPRACHEN, norm, sprach_anweisung
@@ -323,6 +324,9 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
             befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if not posts:
         raise RuntimeError("Claude hat keine Posts geliefert.")
+    # Muttersprachliches Lektorat (Standard: Ungarisch) -- danach Pruefung neu, falls Texte sich geaendert haben
+    if lektorat.pruefen(posts, sprache):
+        befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     for i, p in enumerate(posts):
         p["_pruefung"] = befunde.get(i) or []
         p["_thema"] = thema["name"]
@@ -375,6 +379,9 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             meta = himmel.bild_meta(info) | {"thema": p.pop("_thema"), "pruefung": p.pop("_pruefung"),
                                              "hook_stil": thema["hook_stil"]["schluessel"],
                                              "aufforderung": thema["aufforderung"]["schluessel"]}
+            korrigiert = p.pop("_lektorat", [])
+            if korrigiert:
+                meta["lektorat"] = korrigiert   # vom Sprach-Lektorat geaendert (alt → neu)
             punkte = p.pop("_bild_punkte", [])
             if punkte:
                 meta["bild_punkte"] = punkte
