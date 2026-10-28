@@ -225,7 +225,8 @@ def studio_sw():
 def dashboard():
     """Liest die Oberflaeche aus dashboard.html."""
     pfad = Path(__file__).parent / "dashboard.html"
-    return pfad.read_text(encoding="utf-8")
+    # nie aus dem Zwischenspeicher: nach einem Update sieht man sofort die neue Oberflaeche (auch als installierte App)
+    return HTMLResponse(pfad.read_text(encoding="utf-8"), headers={"Cache-Control": "no-cache, must-revalidate"})
 
 
 @app.get("/health")
