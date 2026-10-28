@@ -14,6 +14,8 @@ Zugang: 30 Tage, verlaengert sich selbst mit dem Refresh-Token (1 Jahr).
 
 Railway-Variablen (nie in den Chat kopieren):
   PINTEREST_APP_ID, PINTEREST_APP_SECRET, optional PINTEREST_SANDBOX=1
+  Im Testmodus nimmt die Sandbox den Zugang aus "Verbinden" nicht an ("Authentication failed"): dafuer auf
+  developers.pinterest.com bei der App "Generate token" mit "Sandbox" erzeugen -> PINTEREST_SANDBOX_TOKEN.
 Rueckruf-Adresse: <Agent>/pinterest/rueckruf
 """
 
@@ -66,6 +68,15 @@ def sandbox() -> bool:
     return (os.environ.get("PINTEREST_SANDBOX") or "").strip() in ("1", "ja", "true")
 
 
+def sandbox_token() -> str:
+    return (os.environ.get("PINTEREST_SANDBOX_TOKEN") or "").strip()
+
+
+def _pinnwand_schluessel() -> str:
+    # Pinnwaende der Sandbox gibt es im echten Pinterest nicht (und umgekehrt)
+    return "pinnwaende_sandbox" if sandbox() else "pinnwaende"
+
+
 def api() -> str:
     return "https://api-sandbox.pinterest.com/v5" if sandbox() else "https://api.pinterest.com/v5"
 
@@ -82,7 +93,10 @@ def _antwort(r: requests.Response) -> dict:
     if r.status_code >= 400:
         text = (daten.get("message") or daten.get("error_description") or daten.get("error")
                 or (r.text or "")[:300]) if isinstance(daten, dict) else (r.text or "")[:300]
-        if r.status_code == 401:
+        if r.status_code == 401 and sandbox():
+            text = ("Der Testmodus braucht einen eigenen Sandbox-Schlüssel: auf developers.pinterest.com bei der App "
+                    "„Generate token“ mit „Sandbox“ erzeugen und in Railway als PINTEREST_SANDBOX_TOKEN eintragen. (" + str(text) + ")")
+        elif r.status_code == 401:
             text = "Zugang abgelaufen oder entzogen – bitte im Dashboard „Pinterest neu verbinden“. (" + str(text) + ")"
         elif r.status_code == 403 and not sandbox():
             text = ("Pinterest erlaubt das (noch) nicht – hat die App schon „Standard access“? Bis dahin in Railway "
@@ -125,7 +139,7 @@ def verbinde(code: str) -> dict:
          "refresh": t.get("refresh_token"), "refresh_ab": jetzt + int(t.get("refresh_token_expires_in") or 31536000),
          "verbunden": jetzt, "rechte": str(t.get("scope") or "").replace(",", " ").split() or None, "pinnwaende": {}}
     try:
-        ich = _get("/user_account", z["token"])
+        ich = _get("/user_account", z["token"], basis="https://api.pinterest.com/v5")   # Lesen geht auch im Testmodus
         z["name"] = ich.get("username") or ich.get("business_name")
         z["konto_art"] = ich.get("account_type")
     except PinterestFehler:
@@ -152,13 +166,19 @@ def verbindung() -> dict:
     abgelaufen = bool(z.get("token")) and z.get("laeuft_ab", 0) < time.time() and not refresh_ok
     return {"eingerichtet": eingerichtet(), "verbunden": bool(z.get("token")) and not abgelaufen,
             "name": z.get("name"), "konto_art": z.get("konto_art"), "laeuft_ab": z.get("refresh_ab") if refresh_ok else z.get("laeuft_ab"),
-            "rueckruf_url": rueckruf_url(), "abgelaufen": abgelaufen, "sandbox": sandbox(), "selbst_verlaengert": refresh_ok}
+            "rueckruf_url": rueckruf_url(), "abgelaufen": abgelaufen, "sandbox": sandbox(), "selbst_verlaengert": refresh_ok,
+            "sandbox_schluessel": bool(sandbox_token()) if sandbox() else None}
 
 
 def gueltiger_token() -> str:
     z = zugang()
     if not z or not z.get("token"):
         raise PinterestFehler("Pinterest ist nicht verbunden.")
+    if sandbox():
+        if not sandbox_token():
+            raise PinterestFehler("Pinterest-Testmodus: Es fehlt der Sandbox-Schlüssel – auf developers.pinterest.com bei der App "
+                                  "„Generate token“ mit „Sandbox“ erzeugen und in Railway als PINTEREST_SANDBOX_TOKEN eintragen.")
+        return sandbox_token()
     if z.get("laeuft_ab", 0) - time.time() < 86400 and z.get("refresh") and z.get("refresh_ab", 0) > time.time():
         t = _token({"grant_type": "refresh_token", "refresh_token": z["refresh"]})
         jetzt = int(time.time())
@@ -169,8 +189,8 @@ def gueltiger_token() -> str:
     return z["token"]
 
 
-def _get(pfad: str, token: str, **params) -> dict:
-    return _antwort(requests.get(api() + pfad, params=params, timeout=TIMEOUT, headers={"Authorization": f"Bearer {token}"}))
+def _get(pfad: str, token: str, basis: str | None = None, **params) -> dict:
+    return _antwort(requests.get((basis or api()) + pfad, params=params, timeout=TIMEOUT, headers={"Authorization": f"Bearer {token}"}))
 
 
 def _post(pfad: str, token: str, daten: dict) -> dict:
@@ -185,7 +205,7 @@ def pinnwand(sprache: str, token: str | None = None) -> str:
     """ID der Pinnwand fuer die Sprache -- vorhandene (gleicher Name) nutzen, sonst anlegen und merken."""
     token = token or gueltiger_token()
     z = zugang() or {}
-    gemerkt = (z.get("pinnwaende") or {}).get(sprache)
+    gemerkt = (z.get(_pinnwand_schluessel()) or {}).get(sprache)
     if gemerkt:
         return gemerkt
     name = PINNWAENDE.get(sprache, PINNWAENDE["en"])
@@ -193,7 +213,7 @@ def pinnwand(sprache: str, token: str | None = None) -> str:
     bid = (vorhanden or _post("/boards", token, {"name": name, "description": PINNWAND_TEXT.get(sprache, PINNWAND_TEXT["en"]),
                                                  "privacy": "PUBLIC"}))["id"]
     z = zugang() or {}
-    z.setdefault("pinnwaende", {})[sprache] = bid
+    z.setdefault(_pinnwand_schluessel(), {})[sprache] = bid
     db.setze_einstellung(SCHLUESSEL, z)
     return bid
 
