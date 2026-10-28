@@ -49,7 +49,7 @@ check("Karte: Status 'Nicht posten' wählbar", (await page.$$eval('#heuteListe .
 check("Heute: Fortschritt 0 von 16", /Heute: 0 von 16 gepostet · 0 freigegeben/.test(await page.textContent("#fortschritt")), await page.textContent("#fortschritt"));
 check("Heute: 4 Karten auf Deutsch (Post, Reel, 2. Reel, Story)", JSON.stringify(await page.$$eval("#heuteListe .card .kopf .tag:first-child", (x) => x.map((e) => e.textContent))) === JSON.stringify(["Feed-Post", "Reel", "2. Reel", "Story"]), JSON.stringify(await page.$$eval("#heuteListe .card .kopf .tag:first-child", (x) => x.map((e) => e.textContent))));
 check("Heute: Kommentar-Frage vor der Handlungsaufforderung ergänzt", /👇|🌙|✨|\?/.test((await page.textContent("#heuteListe .card:first-child")).split("Link in Bio")[0].slice(-120)), "");
-check("Heute geht raus: vier Zeilen mit 2. Reel", (await page.$$eval("#raus > li[data-id]", (l) => l.length)) === 4 && (await page.textContent("#raus")).includes("2. Reel"), await page.textContent("#raus"));
+check("Heute geht raus: vier Plätze mit 2. Reel", (await page.$$eval("#raus .sl", (l) => l.length)) === 4 && (await page.textContent("#raus")).includes("2. Reel"), await page.textContent("#raus"));
 for (let i = 0; i < 20 && !(await page.textContent("#heuteListe .card:first-child .wirk")); i++) await wait(250);
 check("Karte: Zahlen über den Post-Link", /34 Besuche.*9 Schnellstarts.*3 × Registrieren.*2 neue Konten/.test(await page.textContent("#heuteListe .card:first-child .wirk")), await page.textContent("#heuteListe .card:first-child .wirk"));
 check("Karte ohne Link-Daten: keine leere Zeile", !(await page.isVisible("#heuteListe .card:nth-child(2) .wirk")), "");
@@ -143,12 +143,12 @@ check("Bearbeiten: Titel gespeichert", (await page.textContent("#heuteListe .car
 
 // Plan
 await page.click('.tab[data-tab="plan"]'); await wait(900);
-check("Plan: heutiger Tag markiert", (await page.$$eval(".tag-kopf.heute", (x) => x.length)) === 1, "");
+check("Plan: heutiger Tag markiert", (await page.$$eval(".ptag.heute", (x) => x.length)) === 1, "");
 check("Plan: 16 Posts geplant", /16\s*geplant/.test(await page.textContent("#planZaehler")), await page.textContent("#planZaehler"));
-check("Plan: kompakte Zeilen, zugeklappt", (await page.$$eval("#planListe > details.pz", (x) => x.length)) === 16 && (await page.$$eval("#planListe > details.pz[open]", (x) => x.length)) === 0, "");
-check("Plan: Tagesstand je Sprache am heutigen Tag", (await page.$$eval(".tag-kopf.heute .tagstand .fertig", (x) => x.length)) === 4, "");
+check("Plan: kompakte Zeilen, zugeklappt", (await page.$$eval("#planListe details.pz", (x) => x.length)) === 16 && (await page.$$eval("#planListe details.pz[open]", (x) => x.length)) === 0, "");
+check("Plan: Tagesstand je Sprache am heutigen Tag", (await page.$$eval(".ptag.heute .tagstand .fertig", (x) => x.length)) === 4, "");
 await page.click("#btnAufklappen"); await wait(200);
-check("Plan: Alle aufklappen", (await page.$$eval("#planListe > details.pz[open]", (x) => x.length)) === 16, "");
+check("Plan: Alle aufklappen", (await page.$$eval("#planListe details.pz[open]", (x) => x.length)) === 16, "");
 await page.click("#btnAufklappen"); await wait(200);
 // Wochenpaket
 await page.click("#btnPaket"); await wait(300);
@@ -164,8 +164,8 @@ const [zdl] = await Promise.all([page.waitForEvent("download"), page.click("#pLa
 check("Paket: ZIP herunterladen", /^Soraya-Woche_\d{4}-\d\d-\d\d_bis_\d{4}-\d\d-\d\d\.zip$/.test(zdl.suggestedFilename()), zdl.suggestedFilename());
 if (OUT) await zdl.saveAs(OUT + "/wochenpaket.zip");
 await page.click("#pZu");
-await page.locator("#planListe > details.pz summary").first().click(); await wait(200);
-check("Plan: eine Zeile aufklappen zeigt die Karte", await page.locator("#planListe > details.pz").first().locator(".card .txt").isVisible(), "");
+await page.locator("#planListe details.pz summary").first().click(); await wait(200);
+check("Plan: eine Zeile aufklappen zeigt die Karte", await page.locator("#planListe details.pz").first().locator(".card .txt").isVisible(), "");
 await page.selectOption("#planSprache", "it"); await wait(700);
 check("Plan: Filter Italienisch", (await page.$$eval("#planListe .card", (x) => x.length)) === 4, "");
 await page.selectOption("#planSprache", ""); await page.selectOption("#planStatus", "freigegeben"); await wait(700);
@@ -173,7 +173,7 @@ check("Plan: Filter Freigegeben", (await page.$$eval("#planListe .card", (x) => 
 await page.selectOption("#planStatus", ""); await wait(500);
 // Datum verschieben auf morgen
 const morgen = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 1); return iso(d); });
-const offeneId = await page.locator("#planListe > details.pz[open]").first().getAttribute("data-pz");
+const offeneId = await page.locator("#planListe details.pz[open]").first().getAttribute("data-pz");
 await page.fill(`#planListe details[data-pz="${offeneId}"] [data-aktion="datum"]`, morgen);
 await page.$eval(`#planListe details[data-pz="${offeneId}"] [data-aktion="datum"]`, (e) => e.dispatchEvent(new Event("change", { bubbles: true }))); await wait(800);
 const morgenAnzahl = await page.evaluate((m) => [...document.querySelectorAll("#planListe .card")].filter((c) => c.querySelector('[data-aktion="datum"]').value === m).length, morgen);
@@ -184,7 +184,7 @@ await page.click("#wocheZurueck"); await wait(600);
 if (OUT) await page.screenshot({ path: OUT + "/ui-plan.png", fullPage: false });
 // Loeschen (im Bearbeiten-Dialog)
 const vorher = await page.$$eval("#planListe .card", (x) => x.length);
-const letzte = page.locator("#planListe > details.pz").last();
+const letzte = page.locator("#planListe details.pz").last();
 await letzte.evaluate((d) => { d.open = true; }); await letzte.locator('[data-aktion="bearbeiten"]').click(); await page.click("#eLoeschen"); await wait(800);
 check("Plan: Löschen über Bearbeiten", (await page.$$eval("#planListe .card", (x) => x.length)) === vorher - 1, "");
 
@@ -194,7 +194,7 @@ check("Vorplanen: Stand wird angezeigt", /Vorplanen/.test(await page.textContent
 for (let i = 0; i < 60; i++) { if (/abgeschlossen/.test(await page.textContent("#vorplanStand"))) break; await wait(1000); }
 check("Vorplanen: 28 von 28 fertig", /abgeschlossen: 28 von 28 fertig/.test(await page.textContent("#vorplanStand")), await page.textContent("#vorplanStand"));
 await page.click("#wocheVor"); await wait(800);
-const tageMitPlan = await page.$$eval(".tag-kopf", (k) => k.filter((x) => x.querySelectorAll(".tagstand .fertig").length === 4).length);
+const tageMitPlan = await page.$$eval(".ptag-kopf", (k) => k.filter((x) => x.querySelectorAll(".tagstand .fertig").length === 4).length);
 check("Vorplanen: nächste Woche hat vorgeplante Tage", tageMitPlan >= 1, tageMitPlan);
 await page.click("#wocheZurueck"); await wait(600);
 if (OUT) await page.screenshot({ path: OUT + "/ui-plan-kompakt.png", fullPage: false });
@@ -212,7 +212,7 @@ check("Plan: Ideen ohne Datum eingeklappt unten", /Ideen ohne Datum \(3\)/.test(
 
 // Wirkung: vier Unterreiter (Überblick, Posts, Plattformen, Lernen), Rohdaten unter Plattformen
 await page.click('.tab[data-tab="wirkung"]'); await wait(1500);
-check("Wirkung: 4 Unterreiter, Überblick zuerst", JSON.stringify(await page.$$eval("#wReiter [role=tab]", (x) => x.map((e) => e.textContent))) === JSON.stringify(["Überblick", "Posts", "Plattformen", "Lernen"])
+check("Wirkung: 4 Unterreiter, Überblick zuerst", JSON.stringify(await page.$$eval("#wReiter [role=tab]", (x) => x.map((e) => e.textContent))) === JSON.stringify(["Überblick", "Besucher", "Posts", "Plattformen", "Lernen"])
   && (await page.getAttribute('[data-wr="ueberblick"]', "aria-selected")) === "true", "");
 check("Cockpit: 4 Kacheln (Erreicht, Reaktionen, Besuche, Neue Konten)", JSON.stringify(await page.$$eval(".wz-kpi .l", (x) => x.map((e) => e.firstChild.textContent.trim()))) === JSON.stringify(["Erreicht", "Reaktionen", "Besuche", "Neue Konten"]), await page.textContent(".wz-kpis"));
 check("Cockpit: Vergleich neutral ohne Vordaten", (await page.textContent(".wz-kpi:first-child .trend")).includes("kein Vergleich"), await page.textContent(".wz-kpi:first-child .trend"));

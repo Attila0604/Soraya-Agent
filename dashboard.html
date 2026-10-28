@@ -118,7 +118,6 @@
   .termin{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px;color:var(--mist);margin:0 0 12px}
   .termin .vs{font-size:11px}
   button.freigeben{padding:7px 14px;font-size:13px}
-  details.pz summary .mini{width:30px;height:38px;border-radius:5px;object-fit:cover;border:1px solid var(--line-soft);flex:none}
   details.pz summary .zeit{font-size:12px;color:var(--champagne);flex:none;font-variant-numeric:tabular-nums}
   .cockpit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 16px}
   .cockpit .kachel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;
@@ -174,16 +173,50 @@
   .plan-knoepfe{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
   .vorplan{font-size:13px;color:var(--mist);margin-top:10px}
   /* kompakte Zeile pro Post, Klick klappt die volle Karte auf */
-  details.pz{border:1px solid var(--line-soft);border-radius:12px;background:var(--panel);margin-bottom:8px}
-  details.pz[open]{border-color:var(--line)}
-  details.pz>summary{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;list-style:none;
-                     text-transform:none;letter-spacing:0;font-size:14px;color:var(--mist)}
-  #planListe details.pz>summary::before{content:"›";color:var(--gold);font-weight:600;transition:transform .15s;display:inline-block;width:10px}
-  #planListe details.pz[open]>summary::before{content:"›";transform:rotate(90deg)}
-  details.pz>summary .pt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                         font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#F4EEDD}
-  details.pz>summary .st{margin-left:0;flex:none}
-  details.pz>summary .tag{flex:none}
+  /* ein Tag = eine Karte, darin Posts nach Uhrzeit */
+  .ptag{border:1px solid var(--line-soft);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));
+        padding:14px 16px 6px;margin:0 0 12px}
+  .ptag.heute{border-color:rgba(201,162,75,.55);box-shadow:0 0 0 1px rgba(201,162,75,.15) inset}
+  .ptag-kopf{display:flex;align-items:center;gap:14px;padding-bottom:10px}
+  .pdatum{width:46px;height:50px;border-radius:12px;background:rgba(201,162,75,.08);border:1px solid var(--line-soft);
+          display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;line-height:1}
+  .pdatum b{font-size:21px;font-weight:600;color:#F4EEDD;font-variant-numeric:tabular-nums}
+  .pdatum span{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist-dim);margin-top:4px}
+  .ptag.heute .pdatum{background:var(--gold);border-color:var(--gold)} .ptag.heute .pdatum b,.ptag.heute .pdatum span{color:#1A140A}
+  .ptag-name{min-width:0}
+  .ptag-name h4{margin:0;font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:var(--champagne);line-height:1.15}
+  .ptag-name h4 em{font-style:normal;font-family:Inter,sans-serif;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+                   color:var(--gold);margin-left:8px;vertical-align:3px}
+  .ptag-name .meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--mist-dim);margin-top:3px}
+  .pgrp{display:grid;grid-template-columns:58px minmax(0,1fr);gap:0 12px;border-top:1px solid var(--line-soft);padding:8px 0}
+  .pgrp-zeit{font-size:15px;font-weight:600;color:#F4EEDD;font-variant-numeric:tabular-nums;padding-top:12px}
+  .pgrp-zeit.leise{color:var(--mist-dim);font-weight:500}
+  .pgrp-liste{min-width:0;display:flex;flex-direction:column;gap:2px}
+  .pleer{display:flex;justify-content:space-between;gap:10px;padding:10px 16px;margin:0 0 12px;border:1px dashed var(--line-soft);
+         border-radius:14px;font-size:13px;color:var(--mist-dim)}
+  .pleer span{font-style:italic}
+  details.pz{border-radius:12px;margin:0}
+  details.pz[open]{background:var(--panel);border:1px solid var(--line);margin:4px 0}
+  details.pz>summary{display:flex;align-items:center;gap:12px;padding:8px 8px;cursor:pointer;list-style:none;border-radius:12px;
+                     text-transform:none;letter-spacing:0;font-size:14px;color:var(--mist);transition:background .15s}
+  details.pz>summary:hover{background:rgba(255,255,255,.035)}
+  details.pz>summary::after{content:"";width:7px;height:7px;border-right:1.5px solid var(--mist-dim);border-bottom:1.5px solid var(--mist-dim);
+                            transform:rotate(-45deg);flex:none;margin:0 4px 0 2px;transition:transform .15s}
+  details.pz[open]>summary::after{transform:rotate(45deg)}
+  details.pz>summary::before,details.pz[open]>summary::before{content:none}
+  details.pz summary .mini{width:40px;height:40px;border-radius:9px;object-fit:cover;border:1px solid var(--line-soft);flex:none;background:#07040f}
+  details.pz summary .mini.hoch{width:30px;height:48px;margin:0 5px}
+  .pz-mitte{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .pz-oben{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+  .pz-oben .art{color:var(--gold);font-weight:600}
+  .pz-oben .spr{color:var(--mist-dim);border:1px solid var(--line-soft);border-radius:6px;padding:1px 6px;letter-spacing:.08em}
+  .pz-oben .wo{display:inline-flex;gap:4px;color:var(--mist-dim)}
+  .pz-oben .wo .ikon{width:13px;height:13px} .pz-oben .wo .ikon.fertig{color:var(--gruen)}
+  details.pz .pt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#F4EEDD;line-height:1.2}
+  details.pz>summary .st{margin-left:0;flex:none;display:inline-flex;align-items:center;gap:6px;background:none;padding:0;font-weight:500;font-size:12px}
+  details.pz>summary .st::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+  details.pz>summary .st.entwurf{color:var(--mist-dim)} details.pz>summary .st.freigegeben{color:var(--champagne)}
+  details.pz>summary .st.gepostet{color:#7fd27f} details.pz>summary .st.gestoppt{color:#f0a49a}
   details.pz .card{border:0;border-radius:0 0 12px 12px;margin:0;border-top:1px solid var(--line-soft)}
   details.pz .card::before{display:none}
   .tagstand{display:inline-flex;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--mist-dim)}
@@ -192,6 +225,8 @@
   .tagstand .fertig i{background:var(--ok)} .tagstand .laeuft i{background:var(--warn)} .tagstand .fehler i{background:var(--bad)}
   details.ideen{margin-top:26px} details.ideen>summary{font-size:13px}
   .zaehler b{color:#F4EEDD;font-size:15px}
+  .zaehler [class^="z-"]::before{content:"";width:8px;height:8px;border-radius:50%;align-self:center;background:var(--mist-dim)}
+  .zaehler .z-freigegeben::before{background:var(--champagne)} .zaehler .z-gepostet::before{background:#7fd27f} .zaehler .z-gestoppt::before{background:#f0a49a}
 
   /* ---------- Dialog / Bild ---------- */
   dialog{background:var(--panel);color:var(--mist);border:1px solid var(--line);border-radius:16px;
@@ -519,11 +554,6 @@
   /* Plan */
   .plan-kopf{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--s3) var(--s4);flex-wrap:wrap}
   .zaehler span{display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;border:1px solid var(--line-soft);border-radius:999px}
-  details.pz>summary{gap:var(--s2);min-height:52px}
-  details.pz summary .mini{background:#07040f}
-  details.pz summary .wo{display:inline-flex;gap:3px;color:var(--mist-dim);flex:none}
-  details.pz summary .wo .ikon{width:13px;height:13px}
-  details.pz summary .wo .ikon.fertig{color:var(--gruen)}
   .tag-kopf h4{font-size:20px}
 
   /* Wirkung */
@@ -567,12 +597,13 @@
     .kpi .v{font-size:26px}
     .schalter{width:100%}
     #status{bottom:var(--s4)}
-    details.pz>summary{flex-wrap:wrap;row-gap:4px;padding:10px 12px}
-    details.pz>summary .pt{flex:1 1 100%;order:10;padding-left:56px;font-size:17px}
-    details.pz>summary .st{margin-left:auto}
-    details.pz summary .mini{order:-1}
-    #planListe details.pz>summary::before{order:-2}
     .tag-kopf{flex-wrap:wrap;gap:4px 10px}
+    .ptag{padding:12px 12px 4px;border-radius:14px}
+    .pgrp{grid-template-columns:44px minmax(0,1fr);gap:0 8px}
+    .pgrp-zeit{font-size:13.5px}
+    details.pz>summary{gap:10px;padding:8px 4px}
+    details.pz>summary .st{font-size:0;gap:0} details.pz>summary .st::before{width:9px;height:9px}
+    details.pz .pt{font-size:16.5px}
     .tag-kopf .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .zaehler{gap:6px}
     .zaehler span{padding:3px 8px;font-size:12.5px}
@@ -2193,15 +2224,35 @@ $('planSprache').onchange = () => ladePlan();
 $('planStatus').onchange = () => ladePlan();
 const OFFEN = new Set();                       // aufgeklappte Posts bleiben nach dem Neuladen offen
 let planAlleOffen = false, planTimer = null, vorplanBis = null;
+const REIHE_PLATZ = ['story', 'reel', 'post', 'reel2'];
+// Uhrzeit eines Posts: der fruehste echte Termin, sonst die eingestellte Uhrzeit seines Platzes
+function planZeit(p){
+  const tt = (TERMINE.get(String(p.id)) || []).slice().sort((a, b) => String(a.geplant_um).localeCompare(String(b.geplant_um)));
+  if(tt[0]) return {zeit: uhr(tt[0].geplant_um), termin: true};
+  const z = ((POSTEN_STAND && POSTEN_STAND.einstellungen) || {}).zeiten || {};
+  return {zeit: z[platzVon(p)] || '', termin: false};
+}
+const nachZeit = (a, b) => String(planZeit(a).zeit || '99').localeCompare(String(planZeit(b).zeit || '99'))
+  || (REIHE_PLATZ.indexOf(platzVon(a)) - REIHE_PLATZ.indexOf(platzVon(b)))
+  || (REIHE_SPRACHE.indexOf(a.sprache) - REIHE_SPRACHE.indexOf(b.sprache)) || (a.id - b.id);
 function zeile(p){
-  const st = p.status || 'entwurf';
+  const st = p.status || 'entwurf', tt = TERMINE.get(String(p.id)) || [];
+  const wo = tt.length ? `<span class="wo" aria-label="Plattformen">${tt.map(t =>
+    (IKON[t.plattform] || '').replace('class="ikon" aria-hidden="true"', `class="ikon${t.status === 'fertig' ? ' fertig' : ''}" title="${esc(PL_NAME[t.plattform] + ': ' + (VS_NAME[t.status] || t.status))}"`)).join('')}</span>` : '';
   return `<details class="pz" data-pz="${esc(p.id)}"${OFFEN.has(String(p.id)) || planAlleOffen ? ' open' : ''}>
-    <summary><img class="mini" loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${p.art === 'post' ? 'feed' : 'story'}&klein=1&v=${esc(p.aktualisiert || p.created_at || '')}">
-      ${(TERMINE.get(String(p.id)) || [])[0] ? `<span class="zeit">${uhr(TERMINE.get(String(p.id))[0].geplant_um)}</span><span class="wo" aria-label="Plattformen">${TERMINE.get(String(p.id)).map(t =>
-        (IKON[t.plattform] || '').replace('class="ikon" aria-hidden="true"', `class="ikon${t.status === 'fertig' ? ' fertig' : ''}" title="${esc(PL_NAME[t.plattform] + ': ' + (VS_NAME[t.status] || t.status))}"`)).join('')}</span>` : ''}
-      <span class="tag">${esc(ART[platzVon(p)] || 'Post')}</span><span class="tag leise">${esc((p.sprache || 'de').toUpperCase())}</span>
-      <span class="pt">${esc(p.titel || (p.text || '').slice(0, 60))}</span><span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span></summary>
+    <summary><img class="mini${p.art === 'post' ? '' : ' hoch'}" loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${p.art === 'post' ? 'feed' : 'story'}&klein=1&v=${esc(p.aktualisiert || p.created_at || '')}">
+      <span class="pz-mitte"><span class="pz-oben"><span class="art">${esc(ART[platzVon(p)] || 'Post')}</span><span class="spr">${esc((p.sprache || 'de').toUpperCase())}</span>${wo}</span>
+        <span class="pt">${esc(p.titel || (p.text || '').slice(0, 60))}</span></span>
+      <span class="st ${esc(st)}">${esc(STATUS[st] || st)}</span></summary>
     ${karte(p)}</details>`;
+}
+// Posts eines Tages, gruppiert nach Uhrzeit
+function planTag(tagPosts){
+  const gruppen = [];
+  tagPosts.forEach(p => { const {zeit, termin} = planZeit(p), g = gruppen[gruppen.length - 1];
+    if(g && g.zeit === zeit){ g.posts.push(p); g.termin = g.termin || termin; } else gruppen.push({zeit, termin, posts: [p]}); });
+  return gruppen.map(g => `<div class="pgrp"><div class="pgrp-zeit${g.termin ? '' : ' leise'}" title="${g.termin ? 'Geplanter Termin' : 'Eingestellte Uhrzeit (noch kein Termin)'}">${esc(g.zeit || '–')}</div>
+    <div class="pgrp-liste">${g.posts.map(zeile).join('')}</div></div>`).join('');
 }
 document.addEventListener('toggle', (ev) => {
   const d = ev.target; if(!d.matches || !d.matches('details.pz')) return;
@@ -2235,26 +2286,35 @@ async function ladePlan(){
     $('planListe').innerHTML = ladeFehler('Der Plan', e); return; }
   const zaehl = (s) => posts.filter(p => p.geplant_fuer && p.status === s).length;
   $('planZaehler').innerHTML = `<span><b>${zahl(posts.filter(p => p.geplant_fuer).length)}</b> geplant</span>
-    <span><b>${zahl(zaehl('entwurf'))}</b> ${zaehl('entwurf') === 1 ? 'Entwurf' : 'Entwürfe'}</span><span><b>${zahl(zaehl('freigegeben'))}</b> freigegeben</span>
-    <span><b>${zahl(zaehl('gepostet'))}</b> gepostet</span>${zaehl('gestoppt') ? `<span><b>${zahl(zaehl('gestoppt'))}</b> nicht posten</span>` : ''}`;
+    <span class="z-entwurf"><b>${zahl(zaehl('entwurf'))}</b> ${zaehl('entwurf') === 1 ? 'Entwurf' : 'Entwürfe'}</span><span class="z-freigegeben"><b>${zahl(zaehl('freigegeben'))}</b> freigegeben</span>
+    <span class="z-gepostet"><b>${zahl(zaehl('gepostet'))}</b> gepostet</span>${zaehl('gestoppt') ? `<span class="z-gestoppt"><b>${zahl(zaehl('gestoppt'))}</b> nicht posten</span>` : ''}`;
   const filter = $('planSprache').value || $('planStatus').value;
   $('planLeer').classList.toggle('hide', posts.some(p => p.geplant_fuer));
   $('planLeer').textContent = filter ? 'Mit diesem Filter gibt es in diesen 7 Tagen keine Posts. Stell Sprache oder Status auf „Alle“.'
     : 'In diesen 7 Tagen ist noch nichts geplant. „Nächste 7 Tage vorplanen“ schreibt die Posts im Voraus – oder erstelle im Reiter „Heute“ den Tagesplan.';
   $('btnAufklappen').disabled = !posts.length;
   const heute = iso(new Date());
-  let html = '';
+  let html = '', leer = [];
+  const leerZeile = () => { if(!leer.length) return;
+    const von = leer[0], bis = leer[leer.length - 1], kz = (t) => `${WOCHENTAGE[(t.getDay() + 6) % 7].slice(0, 2)} ${t.getDate()}.`;
+    html += `<div class="pleer">${leer.length === 1 ? kz(von) : `${kz(von)} – ${kz(bis)}`}<span>nichts geplant</span></div>`; leer = []; };
   for(let i = 0; i < 7; i++){
     const t = plusTage(planStart, i), tIso = iso(t);
-    const tagPosts = posts.filter(p => (p.geplant_fuer || '').slice(0,10) === tIso).sort(ordne);
-    html += `<div class="tag-kopf${tIso === heute ? ' heute' : ''}"><h4>${WOCHENTAGE[(t.getDay() + 6) % 7]}, ${kurz(t)}</h4>
-      <span class="meta">${tagStand(stand.laeufe || [], stand.sprachen || [], tIso)} ${tagPosts.length ? mehrzahl(tagPosts.length, 'Post', 'Posts') : 'nichts geplant'}</span></div>`;
-    html += tagPosts.map(zeile).join('');
+    const tagPosts = posts.filter(p => (p.geplant_fuer || '').slice(0,10) === tIso).sort(nachZeit);
+    const stand1 = tagStand(stand.laeufe || [], stand.sprachen || [], tIso);
+    if(!tagPosts.length && !stand1 && tIso !== heute){ leer.push(t); continue; }
+    leerZeile();
+    html += `<section class="ptag${tIso === heute ? ' heute' : ''}"><header class="ptag-kopf">
+      <div class="pdatum"><b>${t.getDate()}</b><span>${MONATE[t.getMonth()].slice(0, 3)}</span></div>
+      <div class="ptag-name"><h4>${WOCHENTAGE[(t.getDay() + 6) % 7]}${tIso === heute ? '<em>heute</em>' : ''}</h4>
+        <span class="meta">${stand1}<span>${tagPosts.length ? mehrzahl(tagPosts.length, 'Post', 'Posts') : 'nichts geplant'}</span></span></div></header>
+      ${tagPosts.length ? planTag(tagPosts) : ''}</section>`;
   }
+  leerZeile();
   const ohne = posts.filter(p => !p.geplant_fuer);
   if(ohne.length){
     html += `<details class="ideen"><summary>Ideen ohne Datum (${ohne.length}) · Datum setzen zum Einplanen</summary>
-      <div style="margin-top:10px">${ohne.map(zeile).join('')}</div></details>`;
+      <div class="ptag"><div class="pgrp-liste">${ohne.map(zeile).join('')}</div></div></details>`;
   }
   $('planListe').innerHTML = html;
   zeigeVorplanStand();
