@@ -230,6 +230,8 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
                 continue
             if not passt(p, post.get("art") or "post") or (wo == "reel2" and p in NUR_ERSTES_REEL):
                 continue
+            if db.platz_belegt(post["id"], p):          # dieser Platz ist dort heute schon vergeben
+                continue
             neu += db.plane_veroeffentlichung(post["id"], p, termin(post["geplant_fuer"], zeit))
     return neu
 
@@ -642,6 +644,9 @@ def fuehre_aus(jetzt: datetime | None = None, e: dict | None = None) -> list[dic
             continue
         if not sprache_passt(post, zeile["plattform"], e):
             db.setze_veroeffentlichung(zeile["id"], "abgebrochen", fehler="Sprache der Plattform geändert – geht nicht raus.")
+            continue
+        if db.platz_belegt(post["id"], zeile["plattform"]):
+            db.setze_veroeffentlichung(zeile["id"], "abgebrochen", fehler="Für diesen Platz ging heute schon ein Post raus.")
             continue
         ok, grund = _freigegeben(post, e)
         if not ok:

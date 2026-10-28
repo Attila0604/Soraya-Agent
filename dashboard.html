@@ -1954,7 +1954,12 @@ function zeigeRaus(d, ps, morgen){
       : rausZustand(p, tt, wo, e, art, zeit);
     return {art, sprache, p, tt, zeit, wo, z, alt};
   });
-  box.innerHTML = zeilen.map(({art, sprache, p, zeit, wo, z}) => `<li${p ? ` data-id="${esc(p.id)}"` : ''}>
+  const leerEigen = zeilen.filter(x => !x.p && !x.alt && x.sprache !== grund(x.art));
+  const zeilenSicht = leerEigen.length ? zeilen.filter(x => !leerEigen.includes(x)) : zeilen;
+  const eigenHinweis = leerEigen.length ? (() => { const sp = [...new Set(leerEigen.map(x => x.sprache))], pls = [...new Set(leerEigen.flatMap(x => x.pls))];
+    return `<li class="raus-leer raus-aktion"><span><b>${esc(pls.map(pl => PL_NAME[pl] || pl).join(', '))} auf ${esc(sp.map(x => SPRACHE_NAME[x] || x.toUpperCase()).join(', '))}:</b> für heute gibt es noch keine Posts in dieser Sprache.</span>
+      <button class="klein" data-sprachen-dazu="${esc(sp.join(','))}" data-sprachen-jetzt="${esc((ps.tagesplan_sprachen || []).join(','))}">Jetzt erstellen</button></li>`; })() : '';
+  box.innerHTML = eigenHinweis + zeilenSicht.map(({art, sprache, p, zeit, wo, z}) => `<li${p ? ` data-id="${esc(p.id)}"` : ''}>
     <div class="wann">${esc(zeit)}<small>${esc(ART[art])}</small></div>
     <div class="was">
       <div class="titelzeile">${p ? `<button class="tz" data-aktion="zeigen" title="Zum Post springen">${esc(p.titel || (p.text || '').slice(0, 60))}</button>` : '<span class="leer-titel">Noch kein Post</span>'}<span class="sp">${esc(String(sprache || '').toUpperCase())}</span></div>
@@ -1966,7 +1971,7 @@ function zeigeRaus(d, ps, morgen){
     </div>
     <div class="bilder">${p ? daumen(p) : ''}</div></li>`).join('')
     // fehlt etwas, gibt es EINEN Knopf statt drei gleicher
-    + (zeilen.some(x => !x.p && !x.alt) ? `<li class="raus-leer raus-aktion"><span>${zeilen.every(x => !x.p) ? 'Für heute gibt es noch keine Posts' : 'Ein Teil der Posts für heute fehlt noch'} – das Erstellen dauert etwa 1–2 Minuten.</span>
+    + (zeilenSicht.some(x => !x.p && !x.alt) ? `<li class="raus-leer raus-aktion"><span>${zeilen.every(x => !x.p) ? 'Für heute gibt es noch keine Posts' : 'Ein Teil der Posts für heute fehlt noch'} – das Erstellen dauert etwa 1–2 Minuten.</span>
         <button class="klein" data-raus-plan="1">Tagesplan jetzt erstellen</button></li>` : '');
   // Zusammenfassung + was braucht dich (heute und morgen)
   const warten = zeilen.filter(x => x.z.freigeben).length, raus = zeilen.filter(x => x.z.cls === 'plan').length,
@@ -2111,8 +2116,14 @@ async function ladeHeute(){
   else if($('status').textContent.startsWith('Tagesplan wird')) melde(fehler.length ? '' : 'Tagesplan fertig ✓');
 }
 async function starteTagesplan(neu){
-  if(neu && !confirm('Alle Sprachen neu erstellen? Unbearbeitete Entwürfe von heute werden ersetzt.')) return;
-  try{ await api('/tagesplan', {method: 'POST', body: JSON.stringify({neu})}); melde('Tagesplan wird erstellt …');
+  if(neu && !confirm('Alle Sprachen neu erstellen? Unbearbeitete Entwürfe von heute werden ersetzt (schon Gepostetes bleibt und geht nicht doppelt raus).')) return;
+  try{
+    // fehlt eine Sprache, die eine Plattform braucht (z. B. Facebook Ungarisch), kommt sie dazu
+    let sprachen = [];
+    try{ const ps = await api('/posten'); const jetzt = ps.tagesplan_sprachen || [];
+         const fehlt = (ps.benoetigt || []).filter(x => !jetzt.includes(x));
+         if(fehlt.length){ await api('/tagesplan/sprachen', {method: 'PUT', body: JSON.stringify({sprachen: [...jetzt, ...fehlt]})}); sprachen = [...jetzt, ...fehlt]; } }catch(e){}
+    await api('/tagesplan', {method: 'POST', body: JSON.stringify({neu, sprachen})}); melde('Tagesplan wird erstellt …');
        $('btnPlanJetzt').disabled = $('btnPlanNeu').disabled = true; setTimeout(ladeHeute, 800); }
   catch(e){ melde('Fehler: ' + e.message); }
 }
@@ -3331,7 +3342,8 @@ async function ladePosten(){
   zeigeEinrichtung(d);
   zeigeTestposts(d);
 
-  const termine = d.termine || [];
+  const vonSelbstWeg = (t) => t.status === 'abgebrochen' && /^(Sprache der Plattform|Für diesen Platz)/.test(t.fehler || '');
+  const termine = (d.termine || []).filter(t => !vonSelbstWeg(t));
   // je Post eine Zeile (statt einer Zeile je Plattform): Plattformen als kleine Marken mit ihrem Stand
   const gruppen = [];
   const nachPost = new Map();

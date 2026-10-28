@@ -2424,3 +2424,22 @@ def test_sprachwechsel_entfernt_alte_termine(fake_meta, frische_db):
     ig = posten.einstellungen()
     assert posten.sprache_passt({"art": "post", "sprache": "en", "geplant_fuer": HEUTE}, "instagram", ig)
     assert not posten.sprache_passt({"art": "post", "sprache": "en", "geplant_fuer": HEUTE}, "facebook", ig)
+
+
+def test_neu_erstellen_postet_nicht_doppelt(fake_meta, frische_db):
+    _verbinde("instagram")
+    posten.speichere_einstellungen({"sprache": "en", "plattformen": {"facebook": False, "instagram": True}})
+    tagesplan.erstelle("en")
+    frueh = datetime.combine(HEUTE, datetime.min.time()).replace(hour=0, minute=1, tzinfo=himmel.WIEN)
+    posten.planen(jetzt=frueh)
+    story = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "story")
+    with psycopg.connect(os.environ["DATABASE_URL"]) as c:
+        c.execute("update soraya_veroeffentlichungen set status = 'fertig' where post_id = %s", (story["id"],))
+    db.aendere_post(story["id"], {"status": "gepostet"})        # wie nach dem echten Posten
+    tagesplan.erstelle("en", erzwingen=True)                 # "Neu erstellen" nach dem Posten der Story
+    neue_story = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "story" and p["id"] != story["id"])
+    posten.planen(jetzt=frueh)
+    assert db.platz_belegt(neue_story["id"], "instagram")
+    with psycopg.connect(os.environ["DATABASE_URL"]) as c:
+        n = c.execute("select count(*) from soraya_veroeffentlichungen where post_id = %s", (neue_story["id"],)).fetchone()[0]
+    assert n == 0                                            # die neue Story geht dort nicht ein zweites Mal raus
