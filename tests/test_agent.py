@@ -2513,3 +2513,19 @@ def test_lektorat_nur_fuer_gewaehlte_sprachen_und_fehlerfest(monkeypatch):
     monkeypatch.setattr(lektorat, "frage_json", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("weg")))
     posts = [{"art": "post", "text": "Szia"}]
     assert lektorat.pruefen(posts, "hu") == [] and posts == [{"art": "post", "text": "Szia"}]
+
+
+def test_neu_erstellen_behaelt_schon_gepostete_entwuerfe(fake_meta, frische_db):
+    """Per Testpost-Knopf gepostet (Status bleibt "entwurf"): "Neu erstellen" darf ihn nicht loeschen, sonst faellt die
+    Sperre "heute schon gepostet" weg und der neue Post ginge auf derselben Plattform ein zweites Mal raus."""
+    _verbinde("instagram")
+    posten.speichere_einstellungen({"sprache": "en", "plattformen": {"facebook": False, "instagram": True}})
+    tagesplan.erstelle("en")
+    feed = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post")
+    zid = db.plane_veroeffentlichung(feed["id"], "instagram", datetime.now(himmel.WIEN), zurueckgeben=True)
+    db.setze_veroeffentlichung(zid, "fertig", extern_id="ig1")
+    assert db.lade_post(feed["id"])["status"] == "entwurf"
+    tagesplan.erstelle("en", erzwingen=True)
+    assert db.lade_post(feed["id"]) is not None                # bleibt erhalten
+    neu = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post" and p["id"] != feed["id"])
+    assert db.platz_belegt(neu["id"], "instagram")             # der neue geht dort nicht nochmal raus
