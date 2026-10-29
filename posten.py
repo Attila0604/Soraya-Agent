@@ -319,7 +319,7 @@ def _luftig(text: str) -> str:
 
 # Auf Instagram sind Links im Text nicht klickbar: der Weg zur App geht ueber das Profil (Link in Bio)
 IG_HINWEIS = {"de": "🔗 Dein Horoskop gratis: Link in Bio", "en": "🔗 Your free horoscope: link in bio",
-              "hu": "🔗 Ingyenes horoszkóp: link a bióban", "it": "🔗 Il tuo oroscopo gratis: link in bio"}
+              "hu": "🔗 Az ingyenes horoszkópod: link a bióban", "it": "🔗 Il tuo oroscopo gratis: link in bio"}
 
 
 def _instagram_name() -> str | None:
@@ -413,7 +413,7 @@ def linkedin_text(post: dict) -> str:
 TIKTOK_TEXT_MAX = 420
 # Grund zum Folgen (auf TikTok schauen viele das Video, gehen aber nicht aufs Profil)
 TIKTOK_FOLGEN = {"de": "Folge Soraya für deinen täglichen Mond 🌙", "en": "Follow for your daily moon 🌙",
-                 "hu": "Kövess a napi Holdért 🌙", "it": "Segui per la tua luna di ogni giorno 🌙"}
+                 "hu": "Kövess, és minden nap megtudod, mit üzen a Hold 🌙", "it": "Segui per la tua luna di ogni giorno 🌙"}
 
 
 TIKTOK_SUCHE = {"de": "Horoskop & Astrologie für jeden Tag", "en": "Daily horoscope & astrology",
@@ -584,7 +584,7 @@ def pin_fassung(post: dict) -> dict:
 
 # Facebook: aus Lesern werden Follower der Seite (die Seite hat noch kaum Follower)
 FB_FOLGEN = {"de": "➕ Folge der Seite – jeden Tag dein Himmel", "en": "➕ Follow the page – your sky, every day",
-             "hu": "➕ Kövesd az oldalt – minden nap a te égboltod", "it": "➕ Segui la pagina – il tuo cielo, ogni giorno"}
+             "hu": "➕ Kövesd az oldalt – minden nap új üzenet a csillagoktól", "it": "➕ Segui la pagina – il tuo cielo, ogni giorno"}
 
 
 def text_fuer(post: dict, plattform: str) -> str:

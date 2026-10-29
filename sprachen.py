@@ -11,7 +11,11 @@ NAMEN = {"de": "Deutsch", "en": "English", "hu": "Magyar", "it": "Italiano"}
 _ANWEISUNG = {
     "de": "Schreibe alle Texte auf Deutsch (du-Form, österreichischer und deutscher Markt).",
     "en": "Write all texts in natural, idiomatic English (informal 'you'; UK and international market).",
-    "hu": "Minden szöveget természetes, gördülékeny magyar nyelven írj, tegező formában (magyar piac).",
+    "hu": ("Minden szöveget természetes, gördülékeny magyar nyelven írj, tegező formában (magyar piac) – úgy, ahogy "
+           "egy magyar nő írna az Instagramra a barátnőinek. Ne fordíts angolból vagy németből: gondold el magyarul. "
+           "Rövid, hétköznapi mondatok, ismert fordulatok; minden mondatnak legyen értelme önmagában is "
+           "(rossz példa: „Visszaírnál valakinek, akit rég nem akartál?” – jó: „Visszaírnál valakinek, akivel már rég "
+           "nem beszéltél?”). Pontos ékezetek, helyes ragozás."),
     "it": "Scrivi tutti i testi in italiano naturale e scorrevole, dando del tu (mercato italiano).",
 }
 

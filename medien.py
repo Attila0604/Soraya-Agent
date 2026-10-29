@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 SCHRIFTEN = Path(__file__).parent / "fonts"
 # Knopf unten im Bild: passt fuer Instagram (Link in Bio) und Facebook (Link unter dem Text)
-LINK_IN_BIO = {"de": "Dein Horoskop gratis", "en": "Your free horoscope", "hu": "Ingyenes horoszkóp", "it": "Oroscopo gratis"}
+LINK_IN_BIO = {"de": "Dein Horoskop gratis", "en": "Your free horoscope", "hu": "Ingyenes horoszkópod", "it": "Oroscopo gratis"}
 SS = 2  # Zeichen-Massstab (Supersampling)
 
 
@@ -780,10 +780,10 @@ BESCHRIFTUNG = {
     "woche": {"de": "Deine Woche", "en": "Your week", "hu": "A heted", "it": "La tua settimana"},
     "zeichen": {"de": "Sternzeichen im Fokus", "en": "Signs in focus", "hu": "Csillagjegyek fókuszban", "it": "Segni in primo piano"},
     "liebe": {"de": "Liebe & Beziehung", "en": "Love & connection", "hu": "Szerelem és kapcsolat", "it": "Amore e relazioni"},
-    "wissen": {"de": "Astro-Wissen", "en": "Astro knowledge", "hu": "Asztro-tudás", "it": "Astro-sapere"},
+    "wissen": {"de": "Astro-Wissen", "en": "Astro knowledge", "hu": "Asztrológia röviden", "it": "Astro-sapere"},
     "ritual": {"de": "Ritual", "en": "Ritual", "hu": "Rituálé", "it": "Rituale"},
     "mitmachen": {"de": "Mitmachen", "en": "Your turn", "hu": "Te jössz", "it": "Tocca a te"},
-    "rueckblick": {"de": "Rückblick & Vorschau", "en": "Look back & ahead", "hu": "Vissza és előre", "it": "Bilancio e anteprima"},
+    "rueckblick": {"de": "Rückblick & Vorschau", "en": "Look back & ahead", "hu": "Visszatekintő", "it": "Bilancio e anteprima"},
     "ereignis": {"de": "Besonderer Himmel", "en": "Special sky", "hu": "Különleges égbolt", "it": "Cielo speciale"},
 }
 FOLGE = {"de": "Folge {n}", "en": "No. {n}", "hu": "{n}. rész", "it": "N. {n}"}
