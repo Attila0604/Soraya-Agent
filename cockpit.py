@@ -25,11 +25,13 @@ import himmel
 import meta
 import posten
 import redaktion
+import pinterest
 import tiktok
 from wirkung import hole_statistik
 
-PLATTFORMEN = ("facebook", "instagram", "tiktok")
-FOLLOWER_SCHLUESSEL = {"facebook": "facebook_follower", "instagram": "instagram_follower", "tiktok": "tiktok_follower"}
+PLATTFORMEN = ("facebook", "instagram", "tiktok", "pinterest")
+FOLLOWER_SCHLUESSEL = {"facebook": "facebook_follower", "instagram": "instagram_follower", "tiktok": "tiktok_follower",
+                       "pinterest": "pinterest_follower"}
 CACHE_S = 300
 _CACHE: dict = {}
 _SPERRE = threading.Lock()
@@ -375,6 +377,11 @@ def verbunden() -> dict:
         pass
     try:
         out["tiktok"] = bool(tiktok.verbindung()["verbunden"])
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        v = pinterest.verbindung()
+        out["pinterest"] = bool(v["verbunden"]) and not v.get("sandbox")
     except Exception:  # noqa: BLE001
         pass
     return out

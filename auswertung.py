@@ -11,9 +11,9 @@ from datetime import date
 
 import redaktion
 
-PLATTFORMEN = ("facebook", "instagram", "tiktok")
-PL_NAME = {"facebook": "Facebook", "instagram": "Instagram", "tiktok": "TikTok"}
-BIO = {"facebook": "bio-fb", "instagram": "bio-ig", "tiktok": "bio-tt"}
+PLATTFORMEN = ("facebook", "instagram", "tiktok", "pinterest")
+PL_NAME = {"facebook": "Facebook", "instagram": "Instagram", "tiktok": "TikTok", "pinterest": "Pinterest"}
+BIO = {"facebook": "bio-fb", "instagram": "bio-ig", "tiktok": "bio-tt", "pinterest": "bio-pi"}
 PLATZ_NAME = {"post": "Feed-Post", "reel": "Reel", "reel2": "2. Reel", "story": "Story"}
 PLATZ_MEHRZAHL = {"post": "Feed-Posts", "reel": "Reels", "reel2": "Zweite Reels", "story": "Storys"}
 PLAETZE = ("story", "post", "reel", "reel2")
