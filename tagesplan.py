@@ -112,9 +112,14 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
 Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
 - "untertitel": eine kurze Zeile, höchstens 8 Wörter (beim Feed-Post steht sie nicht im Bild).
-- "hashtags": 4 bis 5 Hashtags in der Sprache des Posts, mit # (Instagram nimmt höchstens 5):
-  1 großer (z. B. Astrologie), 2 zum heutigen Thema bzw. Sternzeichen, 1-2 kleine Nischen-Hashtags.
-  Die wichtigsten zuerst (Facebook zeigt nur die ersten 3). Story: 1-3 Hashtags.
+- "hashtags": 5 Hashtags in der Sprache des Posts, mit # (Instagram nimmt höchstens 5), so wie Menschen
+  wirklich suchen – keine erfundenen Wortketten: zuerst die 2 zum heutigen Thema bzw. Sternzeichen
+  (z. B. #scorpioseason, #venusretrograde, #vollmond), dann 1 großer (z. B. #astrology, #horoskop), dann
+  2 Nischen-Hashtags (z. B. #lovehoroscope, #moonritual). Die wichtigsten zuerst (Facebook zeigt nur die
+  ersten 3). Story: 2-3 Hashtags. Soraya ergänzt je Plattform selbst Sternzeichen und Such-Hashtags.
+- Suchwörter (Instagram, TikTok und Pinterest sind auch Suchmaschinen): Der Text nennt natürlich, worum es
+  geht – den Namen des Sternzeichens, „Horoskop“, „Vollmond“, „Venus rückläufig“ usw. –, am besten im Hook
+  oder im zweiten Satz. Nie aufgezählt oder gestopft, es bleibt ein schöner Text.
 - Bei "post" und "story" bleibt "skript" leer: hook "", szenen [], einblendungen [], schluss "".
 - Bei "reel" und "story" ist "folien" []."""
 
