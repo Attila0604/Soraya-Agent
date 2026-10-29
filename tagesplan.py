@@ -67,6 +67,11 @@ Was gute Posts ausmacht:
 - Ein Post – eine Botschaft. Halte dich an das heutige Format und den heutigen Hook-Stil.
 - Keine Links und keine @-Erwähnungen im Text (der Agent fügt den Link selbst an).
 - Wiederhole keine Überschriften der letzten Tage (Liste unten).
+- Wer zuschaut: laut den TikTok-Zahlen überwiegend Frauen (über 80 %). Schreib so, dass sie sich gemeint
+  fühlen – bevorzugt Liebe und Beziehung, Gefühle, Freundschaft, Selbstwert und Selbstfürsorge, Bauchgefühl,
+  Neuanfänge. Ohne Klischees („typisch Frau“), ohne Männer-Bashing, Paare und alle Menschen bleiben mitgemeint.
+- Reels sollen Lust machen, morgen wiederzukommen: ein Thema, das man täglich verfolgen will (das eigene
+  Zeichen, der Mond von heute). Zuschauer sollen merken, dass jeden Tag etwas Neues für sie kommt.
 - Kommt ein Zielgruppen-Profil mit: Greife auf, was diese Menschen beschäftigt und wie sie
   sprechen. Sinngemäß in der Sprache des Posts, nicht wörtlich zitieren, nichts dazuerfinden.
 - Kommen Beispiele mit, die gut angekommen sind: Lerne aus Thema und Ton, kopiere sie nicht.

@@ -889,7 +889,8 @@ def aktualisiere_zahlen(erzwingen: bool = False) -> int:
 
 def tiktok_nachpruefen() -> int:
     """Nach dem Hochladen fragt Soraya alle 5 Minuten (bis 48 h) bei TikTok nach, bis das Video im Posteingang
-    bzw. veroeffentlicht ist. Lehnt TikTok es spaeter ab, wird der Termin ein Fehler und noch einmal versucht."""
+    bzw. veroeffentlicht ist. Meldet TikTok spaeter einen Fehler, wird der Termin ein Fehler -- ohne automatischen
+    neuen Versuch (sonst kaeme das Video womoeglich doppelt an)."""
     n = 0
     for z in db.tiktok_nachzupruefen():
         if str(z["extern_id"] or "").isdigit():         # schon als oeffentliches Video zugeordnet
@@ -904,8 +905,9 @@ def tiktok_nachpruefen() -> int:
         st = d.get("status") or "PROCESSING_UPLOAD"
         if st == "FAILED":
             grund = d.get("fail_reason") or "unbekannt"
-            db.setze_veroeffentlichung(z["id"], "fehler",
-                                       fehler=f"TikTok hat das Video nachträglich abgelehnt ({grund}) – Soraya versucht es nochmal.")
+            # kein automatischer neuer Versuch: manchmal ist das Video trotzdem angekommen -> sonst doppelt
+            db.tiktok_abgelehnt(z["id"], f"TikTok meldet nachträglich einen Fehler ({grund}). Bitte in der TikTok-App "
+                                         f"nachsehen – fehlt das Video dort, mit „Jetzt: TikTok“ neu schicken.", MAX_VERSUCHE)
             print(f"[Posten] TikTok Post {z['post_id']}: abgelehnt ({grund})", flush=True)
         else:
             db.setze_extern_stand(z["id"], st)
