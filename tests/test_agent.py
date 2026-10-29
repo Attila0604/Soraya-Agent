@@ -2529,3 +2529,36 @@ def test_neu_erstellen_behaelt_schon_gepostete_entwuerfe(fake_meta, frische_db):
     assert db.lade_post(feed["id"]) is not None                # bleibt erhalten
     neu = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post" and p["id"] != feed["id"])
     assert db.platz_belegt(neu["id"], "instagram")             # der neue geht dort nicht nochmal raus
+
+
+def test_pinterest_alte_test_pinnwand_wird_ersetzt(monkeypatch, frische_db):
+    """Nach "Standard access": die gemerkte Pinnwand stammt noch aus dem Testmodus -> neue echte anlegen und nochmal."""
+    import pinterest
+    monkeypatch.delenv("PINTEREST_SANDBOX", raising=False)
+    db.setze_einstellung(pinterest.SCHLUESSEL, {"token": "tok", "laeuft_ab": time.time() + 30 * 86400,
+                                                 "pinnwaende": {"en": "ALT"}})
+    pins, boards = [], []
+
+    def fake_post(url, data=None, json=None, headers=None, timeout=None):
+        if url.endswith("/pins"):
+            pins.append(json["board_id"])
+            if json["board_id"] == "ALT":
+                return SimpleNamespace(status_code=400, content=b"1", text="",
+                                       json=lambda: {"message": "Cannot add non-sandbox pins on sandbox boards."})
+            return SimpleNamespace(status_code=201, content=b"1", text="", json=lambda: {"id": "P1"})
+        if url.endswith("/boards"):
+            boards.append(json["name"])
+            return SimpleNamespace(status_code=201, content=b"1", text="", json=lambda: {"id": "NEU"})
+        raise AssertionError(url)
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        if url.endswith("/boards"):     # die alte Pinnwand heisst gleich -> darf nicht wieder genommen werden
+            return SimpleNamespace(status_code=200, content=b"1", text="", json=lambda: {"items": [
+                {"id": "ALT", "name": pinterest.PINNWAENDE["en"]}]})
+        raise AssertionError(url)
+    monkeypatch.setattr(pinterest.requests, "post", fake_post)
+    monkeypatch.setattr(pinterest.requests, "get", fake_get)
+    out = pinterest.poste_pin(b"jpg", "T", "B", "https://x", "en")
+    assert out["id"] == "P1" and pins == ["ALT", "NEU"] and len(boards) == 1
+    assert pinterest.zugang()["pinnwaende"] == {"en": "NEU"}
+    assert pinterest.poste_pin(b"jpg", "T", "B", "https://x", "en")["id"] == "P1" and pins[-1] == "NEU"
