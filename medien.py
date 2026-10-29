@@ -962,12 +962,12 @@ def sterne(bild: Image.Image, W, H, seed, story, m=1.0, helligkeit=None):
         d.ellipse([(x - r) * m, (y - r) * m, (x + r) * m, (y + r) * m], fill=farbe + (int(a * f * 255),))
 
 
-def _cta(draw, bild, W, unten, story, sprache, m, art="link"):
+def _cta(draw, bild, W, unten, story, sprache, m, art="link", text: str | None = None):
     """Knopf unten: "link" (Rand, Text + Stern), "voll" (goldene Flaeche: die eine Hauptaufforderung,
     z. B. auf der Schlussfolie) oder "wischen" (Titelbild des Karussells: Text + Pfeil)."""
     voll = art == "voll"
-    text = (WISCHEN.get(sprache or "de", WISCHEN["en"]).upper() if art == "wischen"
-            else LINK_IN_BIO.get(sprache or "de", LINK_IN_BIO["de"]))
+    text = text or (WISCHEN.get(sprache or "de", WISCHEN["en"]).upper() if art == "wischen"
+                    else LINK_IN_BIO.get(sprache or "de", LINK_IN_BIO["de"]))
     font = schrift("inter600", (34 if story else 30) * m)
     stern_h = (13 if story else 12) * m
     lueck = 16 * m

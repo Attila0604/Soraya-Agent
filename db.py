@@ -288,6 +288,15 @@ def tiktok_nachzupruefen(stunden: int = 48, alle_min: int = 5) -> list[dict]:
         return cur.fetchall()
 
 
+def tiktok_abgelehnt(zid: int, fehler: str, max_versuche: int = 3) -> None:
+    """Fehler ohne automatischen neuen Versuch (Attila entscheidet mit „Jetzt: TikTok“)."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_veroeffentlichungen set status = 'fehler', fehler = %s, extern_stand = 'FAILED', "
+                    "extern_geprueft = now(), versuche = greatest(versuche, %s), aktualisiert = now() where id = %s;",
+                    (fehler, max_versuche, zid))
+        conn.commit()
+
+
 def setze_extern_stand(zid: int, stand: str) -> None:
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute("update soraya_veroeffentlichungen set extern_stand = %s, extern_geprueft = now() where id = %s;",

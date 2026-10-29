@@ -2449,7 +2449,7 @@ def test_neu_erstellen_postet_nicht_doppelt(fake_meta, frische_db):
 
 
 def test_tiktok_nachpruefen_nach_dem_hochladen(fake_meta, monkeypatch, frische_db):
-    """Nach dem Hochladen fragt Soraya spaeter noch einmal nach: im Posteingang -> fertig, abgelehnt -> Fehler + neuer Versuch."""
+    """Nach dem Hochladen fragt Soraya spaeter noch einmal nach: im Posteingang -> fertig, abgelehnt -> Fehler (ohne Automatik)."""
     import tiktok
     p, p2 = db.speichere_posts([{"art": "reel", "titel": "R", "text": "t"}, {"art": "reel", "titel": "R2", "text": "t"}],
                                quelle="tagesplan", geplant_fuer=date.today())
@@ -2475,11 +2475,11 @@ def test_tiktok_nachpruefen_nach_dem_hochladen(fake_meta, monkeypatch, frische_d
     # fertige werden nicht mehr gefragt, und nicht oefter als alle 5 Minuten
     gefragt.clear()
     assert posten.tiktok_nachpruefen() == 0 and gefragt == []
-    # der abgelehnte ist wieder faellig (neuer Versuch nach 15 Minuten)
+    # der abgelehnte wird NICHT von selbst neu geschickt (kaeme sonst womoeglich doppelt an)
     with db._verbindung() as conn, conn.cursor() as cur:
         cur.execute("update soraya_veroeffentlichungen set aktualisiert = now() - interval '20 minutes' where id = %s;", (z2,))
         conn.commit()
-    assert z2 in [x["id"] for x in db.faellige_veroeffentlichungen(jetzt)]
+    assert z2 not in [x["id"] for x in db.faellige_veroeffentlichungen(jetzt)]
 
 
 # ---------------------------------------------------------------- Sprach-Lektorat

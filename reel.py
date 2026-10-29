@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-13"
+VERSION = "reel-14"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -147,8 +147,16 @@ FOLGEN = {"de": "Folge Soraya – jeden Tag neu", "en": "Follow Soraya – new e
           "hu": "Kövesd Sorayát – minden nap új", "it": "Segui Soraya – novità ogni giorno"}
 
 
-def _endkarte(post: dict) -> Image.Image:
-    """Schlussbild: grosses Soraya-Zeichen, Marke, Schlusssatz, Link-Knopf (als Ebene)."""
+# TikTok: der Link in der Bio ist (unter 1000 Followern) nicht antippbar -> die Hauptaufforderung ist Folgen
+FOLGEN_KNOPF = {"de": "Folge – morgen geht's weiter", "en": "Follow for tomorrow", "hu": "Kövess, holnap folytatjuk",
+                "it": "Seguimi, domani si continua"}
+SUCHEN = {"de": "Oder such: Soraya Astro Guide", "en": "Or search: Soraya Astro Guide",
+          "hu": "Vagy keress rá: Soraya Astro Guide", "it": "Oppure cerca: Soraya Astro Guide"}
+
+
+def _endkarte(post: dict, tiktok: bool = False) -> Image.Image:
+    """Schlussbild: grosses Soraya-Zeichen, Marke, Schlusssatz, Link-Knopf (als Ebene).
+    tiktok=True: goldener Folgen-Knopf statt „Link in Bio“, darunter der Name zum Suchen."""
     m = 2
     ebene = Image.new("RGBA", (W * m, H * m), (0, 0, 0, 0))
     z = medien.portal(300 * m)
@@ -165,10 +173,12 @@ def _endkarte(post: dict) -> Image.Image:
         y += b["hoehe"] + 60
     else:
         y += 20
-    # "Link in Bio"-Knopf, gleiche Form wie auf den Bildern
-    medien._cta(d, ebene, W, y - 100, True, post.get("sprache") or "de", m, "voll")
-    # darunter leise: folgen (aus Zuschauern werden Follower)
-    f = medien.messe_text(FOLGEN.get((post.get("sprache") or "en")[:2], FOLGEN["en"]), breite=W - 240, groesse=32,
+    sp = (post.get("sprache") or "en")[:2]
+    # "Link in Bio"-Knopf, gleiche Form wie auf den Bildern (TikTok: "Folge fuer morgen")
+    medien._cta(d, ebene, W, y - 100, True, sp, m, "voll", FOLGEN_KNOPF.get(sp, FOLGEN_KNOPF["en"]) if tiktok else None)
+    # darunter leise: folgen (aus Zuschauern werden Follower) bzw. bei TikTok der Name zum Suchen
+    unten = (SUCHEN if tiktok else FOLGEN)
+    f = medien.messe_text(unten.get(sp, unten["en"]), breite=W - 240, groesse=32,
                           name="inter500", zeilenhoehe=1.3, max_zeilen=2, min_groesse=24)
     medien.zeichne_text(d, f, W / 2, y + 78 + 34, "#CDB98C", m)
     return ebene.resize((W, H), Image.LANCZOS)
@@ -432,7 +442,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     karten = [_textkarte(z_, breite=W - 160, groesse=92 if i == 0 else 78, name="cormorant", farbe="#F6E3B4",
                          max_zeilen=4, akzent=akzent) for i, z_ in enumerate(zeilen)]
     text_mitte = 1270
-    endkarte, end_pos = _zuschneiden(_endkarte(post))
+    endkarte, end_pos = _zuschneiden(_endkarte(post, tiktok))
     # Bildideen (reel-10)
     zeichen = welches_zeichen(post, st)
     sb_kasten = (70, mond_y - 430, W - 140, 860)                    # Sternbild rund um den Mond
