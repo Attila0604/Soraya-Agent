@@ -2548,6 +2548,9 @@ def test_pinterest_alte_test_pinnwand_wird_ersetzt(monkeypatch, frische_db):
             return SimpleNamespace(status_code=201, content=b"1", text="", json=lambda: {"id": "P1"})
         if url.endswith("/boards"):
             boards.append(json["name"])
+            if json["name"] == pinterest.PINNWAENDE["en"]:          # Name noch von der Test-Pinnwand belegt
+                return SimpleNamespace(status_code=400, content=b"1", text="", json=lambda: {
+                    "message": "Try a different name. You already have a board with this name!"})
             return SimpleNamespace(status_code=201, content=b"1", text="", json=lambda: {"id": "NEU"})
         raise AssertionError(url)
 
@@ -2559,6 +2562,7 @@ def test_pinterest_alte_test_pinnwand_wird_ersetzt(monkeypatch, frische_db):
     monkeypatch.setattr(pinterest.requests, "post", fake_post)
     monkeypatch.setattr(pinterest.requests, "get", fake_get)
     out = pinterest.poste_pin(b"jpg", "T", "B", "https://x", "en")
-    assert out["id"] == "P1" and pins == ["ALT", "NEU"] and len(boards) == 1
+    assert out["id"] == "P1" and pins == ["ALT", "NEU"]
+    assert boards == [pinterest.PINNWAENDE["en"], pinterest.PINNWAENDE_AUSWEICH["en"][0]]
     assert pinterest.zugang()["pinnwaende"] == {"en": "NEU"}
     assert pinterest.poste_pin(b"jpg", "T", "B", "https://x", "en")["id"] == "P1" and pins[-1] == "NEU"

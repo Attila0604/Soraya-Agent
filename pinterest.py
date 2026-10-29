@@ -39,6 +39,12 @@ SCOPES = "boards:read,boards:write,pins:read,pins:write,user_accounts:read"
 SCHLUESSEL = "pinterest_zugang"
 PINNWAENDE = {"de": "Astrologie & Horoskop", "en": "Astrology & Horoscope", "hu": "Asztrológia és horoszkóp",
               "it": "Astrologia e oroscopo"}
+# Ausweich-Namen, falls der erste noch belegt ist (z. B. von der alten Pinnwand aus dem Testmodus);
+# Pinterest laesst Sonderzeichen wie "✦" beim Namensvergleich weg -> es braucht echte andere Woerter
+PINNWAENDE_AUSWEICH = {"de": ["Tageshoroskop & Sternzeichen", "Sternzeichen & Mondphasen"],
+                       "en": ["Daily Horoscope & Zodiac Signs", "Zodiac Signs & Moon Phases"],
+                       "hu": ["Napi horoszkóp és csillagjegyek", "Csillagjegyek és holdfázisok"],
+                       "it": ["Oroscopo del giorno e segni zodiacali", "Segni zodiacali e fasi lunari"]}
 PINNWAND_TEXT = {"de": "Tageshoroskop, Mondphasen und Sternzeichen – von Soraya, Luxury Astro Guide.",
                  "en": "Daily horoscope, moon phases and zodiac signs – by Soraya, Luxury Astro Guide.",
                  "hu": "Napi horoszkóp, holdfázisok és csillagjegyek – Soraya, Luxury Astro Guide.",
@@ -215,12 +221,14 @@ def pinnwand(sprache: str, token: str | None = None, ohne: set[str] | None = Non
                       if b.get("name") == name and b.get("id") not in ohne), None)
     if not vorhanden:
         neu = {"name": name, "description": PINNWAND_TEXT.get(sprache, PINNWAND_TEXT["en"]), "privacy": "PUBLIC"}
-        try:
-            vorhanden = _post("/boards", token, neu)
-        except PinterestFehler:
-            if not ohne:
-                raise
-            vorhanden = _post("/boards", token, {**neu, "name": f"{name} ✦"})     # alter Name noch belegt
+        namen = [name] + (PINNWAENDE_AUSWEICH.get(sprache, PINNWAENDE_AUSWEICH["en"]) if ohne else [])
+        for i, n in enumerate(namen):
+            try:
+                vorhanden = _post("/boards", token, {**neu, "name": n})
+                break
+            except PinterestFehler as ex:
+                if i == len(namen) - 1 or "name" not in str(ex).lower():
+                    raise
     bid = vorhanden["id"]
     z = zugang() or {}
     z.setdefault(_pinnwand_schluessel(), {})[sprache] = bid
