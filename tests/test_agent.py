@@ -2406,6 +2406,8 @@ def test_pinterest_titel_und_text():
     # Story als Pin: ohne Antwort-Knoepfe
     st = posten.pin_fassung({"art": "story", "text": "Spürst du es? Antworte mit 🌙 oder ☀️", "meta": {"bild_punkte": ["🌙 Ja", "☀️ Nein"]}})
     assert st["meta"]["bild_punkte"] == [] and "Antworte" not in st["text"]
+    feed = posten.pin_fassung({"art": "post", "text": "x", "meta": {"folien": [{"titel": "A", "text": "B"}]}})
+    assert posten.paket.medien.folien_von(feed) == []          # Feed-Pin ohne „Wischen“
 
 
 def test_sprache_je_plattform(frische_db):
