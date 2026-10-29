@@ -571,7 +571,10 @@ def pinterest_text(post: dict) -> str:
 
 
 def pin_fassung(post: dict) -> dict:
-    """Story als Pin: ohne Antwort-Knoepfe und ohne „Antworte mit …“ (auf Pinterest kann man nicht antworten)."""
+    """Bild fuer den Pin: Story ohne Antwort-Knoepfe und ohne „Antworte mit …“ (auf Pinterest kann man nicht
+    antworten); Feed-Post ohne „Wischen →“ (ein Pin ist nur das Titelbild) -- stattdessen der Knopf zum Horoskop."""
+    if post.get("art") == "post":
+        return {**post, "meta": {**(post.get("meta") or {}), "folien": []}}
     if post.get("art") != "story":
         return post
     meta = {**(post.get("meta") or {}), "bild_punkte": []}
