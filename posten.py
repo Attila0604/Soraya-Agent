@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import re
+import unicodedata
 import threading
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -415,6 +416,10 @@ TIKTOK_FOLGEN = {"de": "Folge Soraya für deinen täglichen Mond 🌙", "en": "F
                  "hu": "Kövess a napi Holdért 🌙", "it": "Segui per la tua luna di ogni giorno 🌙"}
 
 
+TIKTOK_SUCHE = {"de": "Horoskop & Astrologie für jeden Tag", "en": "Daily horoscope & astrology",
+                "hu": "Napi horoszkóp és asztrológia", "it": "Oroscopo e astrologia ogni giorno"}
+
+
 def tiktok_text(post: dict) -> str:
     """Beschreibung fuer TikTok: Reel-Titel vorn (damit Soraya das Video spaeter zuordnet), kurzer Text mit
     einer Kommentar-Frage, 5 Hashtags. Bei Entwuerfen setzt TikTok keinen Text -- Attila kopiert ihn im Studio."""
@@ -434,7 +439,14 @@ def tiktok_text(post: dict) -> str:
     teile += kurz
     teile.append(TIKTOK_FOLGEN.get(sprache, TIKTOK_FOLGEN["en"]))
     teile.append(f"🔮 {paket.medien.LINK_IN_BIO.get(sprache, paket.medien.LINK_IN_BIO['en'])}: sorayaluxuryastroguide.com")
-    tags = (post.get("hashtags") or "").split()[:HASHTAGS_MAX]
+    # TikTok ist auch eine Suche: eine kurze Zeile mit den Suchwoertern (Sternzeichen, Horoskop) vor den Hashtags
+    idx = _zeichen_im(post)
+    such = TIKTOK_SUCHE.get(sprache[:2], TIKTOK_SUCHE["en"])
+    if idx is not None:
+        name = paket.medien.ZEICHEN_NAMEN[idx][_SPRACH_SPALTE.get(sprache[:2], 1)]
+        such = PIN_SEO_ZEICHEN.get(sprache[:2], PIN_SEO_ZEICHEN["en"]).format(z=name[:1].upper() + name[1:]).rstrip(".") + " · " + such
+    teile.insert(len(teile) - 1, such)
+    tags = seo_tags(post, "tiktok")
     if tags:
         teile.append(" ".join(tags))
     return "\n\n".join(teile)
@@ -472,21 +484,99 @@ def pin_titel(post: dict) -> str:
     return titel[:100]
 
 
+# Pinterest ist eine Suchmaschine: Beschreibung mit den Woertern, nach denen gesucht wird, und mehr Hashtags
+PIN_SEO = {"de": "Tageshoroskop, Mondphasen und Sternzeichen erklärt – Astrologie, persönlich gedeutet.",
+           "en": "Daily horoscope, moon phases and zodiac sign meanings – astrology made personal.",
+           "hu": "Napi horoszkóp, holdfázisok és a csillagjegyek jelentése – személyre szabott asztrológia.",
+           "it": "Oroscopo del giorno, fasi lunari e significato dei segni zodiacali – astrologia su misura."}
+PIN_SEO_ZEICHEN = {"de": "{z} Horoskop heute.", "en": "{z} horoscope today.", "hu": "{z} napi horoszkóp.",
+                   "it": "Oroscopo {z} di oggi."}
+PIN_TAGS = {"de": "#horoskop #astrologie #sternzeichen #tageshoroskop #mondphasen #geburtshoroskop #spiritualität",
+            "en": "#horoscope #astrology #zodiacsigns #dailyhoroscope #moonphases #birthchart #spirituality",
+            "hu": "#horoszkóp #asztrológia #csillagjegyek #napihoroszkóp #holdfázisok #születésihoroszkóp #spiritualitás",
+            "it": "#oroscopo #astrologia #segnizodiacali #oroscopodioggi #fasilunari #temanatale #spiritualità"}
+PIN_TAGS_MAX = 10
+_SPRACH_SPALTE = {"de": 0, "en": 1, "hu": 2, "it": 3}
+
+
+HASHTAGS_JE_PLATTFORM = {"instagram": 5, "facebook": 3, "tiktok": 6, "pinterest": PIN_TAGS_MAX, "linkedin": 3}
+
+
+def _tag_schluessel(t: str) -> str:
+    """#Asztrológia und #asztrologia sind derselbe Hashtag (Gross/klein, Akzente)."""
+    roh = unicodedata.normalize("NFKD", t.lstrip("#").lower())
+    return "".join(c for c in roh if not unicodedata.combining(c))
+
+
+def seo_tags(post: dict, plattform: str) -> list[str]:
+    """Hashtags je Plattform: zuerst die vom Tagesplan (Thema), dann das Sternzeichen des Posts und die grossen
+    Such-Hashtags der Sprache (#astrology, #horoscope ...) -- ohne Doppelte, so viele, wie die Plattform mag."""
+    sprache = (post.get("sprache") or "en")[:2]
+    idx = _zeichen_im(post)
+    zeichen = ["#" + paket.medien.ZEICHEN_NAMEN[idx][_SPRACH_SPALTE.get(sprache, 1)]] if idx is not None else []
+    eigene = (post.get("hashtags") or "").split()[:5]
+    gross = PIN_TAGS.get(sprache, PIN_TAGS["en"]).split()
+    n = HASHTAGS_JE_PLATTFORM.get(plattform, HASHTAGS_MAX)
+    reihe = eigene[:n - 1] + zeichen + gross[:1] + eigene[n - 1:] + gross[1:]
+    tags, gesehen = [], set()
+    for t in reihe:
+        k = _tag_schluessel(t)
+        if k and k not in gesehen and re.fullmatch(r"#?\w+", t):
+            gesehen.add(k)
+            tags.append("#" + t.lstrip("#"))
+    return tags[:n]
+
+
+def _zeichen_im(post: dict) -> int | None:
+    """Sternzeichen, um das es im Post geht (Bild-Stil, Anfang des Titels oder ein Zeichen-Name im Titel)."""
+    idx = paket.medien.stil(post).get("zeichen")
+    if idx is None:
+        idx = paket.medien.zeichen_aus_text(post.get("titel"))
+    if idx is None:
+        woerter = set(re.findall(r"\w+", (post.get("titel") or "").lower()))
+        idx = next((i for i, namen in enumerate(paket.medien.ZEICHEN_NAMEN) if woerter & set(namen)), None)
+    return idx
+
+
 def pinterest_text(post: dict) -> str:
-    """Pin-Beschreibung: Pinterest ist eine Suche -- klare Saetze mit Stichworten statt Plaudern, ohne "Link in Bio"
-    (der Pin selbst verlinkt), hoechstens 500 Zeichen, ein paar Hashtags am Ende."""
+    """Pin-Beschreibung (hoechstens 500 Zeichen): Pinterest ist eine Suche -- klare Saetze mit Stichworten statt
+    Plaudern, ohne "Link in Bio" (der Pin selbst verlinkt) und ohne Kommentar-Frage, dann eine Zeile mit den
+    Suchwoertern (Sternzeichen, Tageshoroskop, Mondphasen ...), die Aufforderung und bis zu 10 Hashtags."""
+    sprache = (post.get("sprache") or "en")[:2]
     absaetze = [a.strip() for a in _luftig(post.get("text") or "").split("\n\n") if a.strip() and not _BIO.search(a)]
+    if len(absaetze) > 1 and redaktion.hat_kommentar_frage(absaetze[-1]):
+        absaetze = absaetze[:-1]
+    if post.get("art") == "story":
+        absaetze = [t for t in (paket.medien.ohne_antwort_anleitung(a) for a in absaetze) if t]
+    idx = _zeichen_im(post)
+    seo = PIN_SEO.get(sprache, PIN_SEO["en"])
+    if idx is not None:
+        name = paket.medien.ZEICHEN_NAMEN[idx][_SPRACH_SPALTE.get(sprache, 1)]
+        seo = PIN_SEO_ZEICHEN.get(sprache, PIN_SEO_ZEICHEN["en"]).format(z=name[:1].upper() + name[1:]) + " " + seo
+    aufruf = PIN_AUFRUF.get(sprache, PIN_AUFRUF["en"])
+    tags = seo_tags(post, "pinterest")
     kurz = []
     for a in absaetze:
-        if kurz and len("\n\n".join(kurz + [a])) > 380:
+        if kurz and len("\n\n".join(kurz + [a])) > 260:
             break
         kurz.append(a)
-    tags = " ".join((post.get("hashtags") or "").split()[:4])
-    aufruf = PIN_AUFRUF.get((post.get("sprache") or "en")[:2], PIN_AUFRUF["en"])
-    while kurz and len("\n\n".join(kurz + [aufruf, tags])) > 500:
+
+    def zusammen():
+        return "\n\n".join(kurz + [seo, aufruf] + ([" ".join(tags)] if tags else []))
+    while len(zusammen()) > 500 and len(tags) > 5:
+        tags.pop()
+    while len(zusammen()) > 500 and len(kurz) > 1:
         kurz.pop()
-    text = "\n\n".join(kurz + [aufruf] + ([tags] if tags else []))
-    return text[:500]
+    return zusammen()[:500]
+
+
+def pin_fassung(post: dict) -> dict:
+    """Story als Pin: ohne Antwort-Knoepfe und ohne „Antworte mit …“ (auf Pinterest kann man nicht antworten)."""
+    if post.get("art") != "story":
+        return post
+    meta = {**(post.get("meta") or {}), "bild_punkte": []}
+    text = paket.medien.ohne_antwort_anleitung(post.get("text") or "")
+    return {**post, "meta": meta, "text": text or post.get("text")}
 
 
 # Facebook: aus Lesern werden Follower der Seite (die Seite hat noch kaum Follower)
@@ -503,7 +593,7 @@ def text_fuer(post: dict, plattform: str) -> str:
         sprache = post.get("sprache") or "en"
         teile = [linkedin_text(post), f"{LI_LINK.get(sprache, LI_LINK['en'])}: {link_basis()}?q=p{post['id']}&lang={sprache}"]
         if post.get("hashtags"):
-            teile.append(" ".join(post["hashtags"].split()[:3]))
+            teile.append(" ".join(seo_tags(post, "linkedin")))
         return "\n\n".join(t for t in teile if t)
     text = post.get("text") or ""
     if post.get("art") in ("post", "reel"):
@@ -531,10 +621,9 @@ def text_fuer(post: dict, plattform: str) -> str:
     if plattform == "instagram" and post.get("art") != "story":
         teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en", speichern=True)
     if post.get("hashtags"):
-        tags = post["hashtags"].split()
-        # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur die ersten drei; Instagram nimmt
-        # hoechstens 5 Hashtags je Beitrag (mehr wirken dort auch nicht besser)
-        teile.append(" ".join(tags[:3] if plattform == "facebook" else tags[:HASHTAGS_MAX]))
+        # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur drei; Instagram nimmt hoechstens 5 je Beitrag.
+        # seo_tags: Thema zuerst, dazu das Sternzeichen und ein grosser Such-Hashtag (#astrology ...)
+        teile.append(" ".join(seo_tags(post, plattform if plattform in ("facebook", "instagram") else "instagram")))
     return "\n\n".join(t for t in teile if t)
 
 
@@ -599,7 +688,7 @@ def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
                          "Auf Pinterest gehen nur Bilder (Feed-Posts und Storys)." if p == "pinterest" else "Storys gibt es auf LinkedIn nicht.")
     text = text_fuer(post, p)
     if p == "pinterest":
-        bild = paket.hole_bild(post, "story" if art == "story" else "feed")
+        bild = paket.hole_bild(pin_fassung(post), "story" if art == "story" else "feed")
         return pinterest.poste_pin(bild, pin_titel(post), text, pinterest.ziel_link(post, link_basis()),
                                    post.get("sprache") or "en", alt=post.get("untertitel") or post.get("titel"))
     if p == "tiktok":
