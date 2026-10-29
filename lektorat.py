@@ -23,7 +23,10 @@ _HINWEISE = {
            "in suffixes, definite vs. indefinite conjugation, word order and natural collocations. Use the informal "
            "'te' form throughout. Typical AI mistakes to fix: missing or wrong accents (\"ritule\" -> \"rituálé\"), "
            "word-for-word translations from English/German, invented compound words. Zodiac signs: Kos, Bika, Ikrek, "
-           "Rák, Oroszlán, Szűz, Mérleg, Skorpió, Nyilas, Bak, Vízöntő, Halak; Hold, Nap, Telihold, Újhold."),
+           "Rák, Oroszlán, Szűz, Mérleg, Skorpió, Nyilas, Bak, Vízöntő, Halak; Hold, Nap, Telihold, Újhold. "
+           "Read every sentence as a Hungarian woman on Instagram would: if it is grammatical but strange or illogical "
+           "(e.g. \"Visszaírnál valakinek, akit rég nem akartál?\"), replace the whole sentence with a natural one that keeps "
+           "the meaning (\"Visszaírnál valakinek, akivel már rég nem beszéltél?\")."),
 }
 
 _SCHEMA = {
@@ -52,7 +55,7 @@ def _system(sprache: str) -> str:
         "odd word choices). Do not change content, meaning, tone, emojis, hashtags' meaning or anything that is fine."
         + _HINWEISE.get(sprache, "") +
         "\n\nEvery correction: \"alt\" = the exact passage copied character for character from the texts (2-15 words, "
-        "a single word only if it is unique), \"neu\" = the corrected passage. At most "
+        "a single word only if it is unique; a whole sentence when it must be rewritten), \"neu\" = the corrected passage. At most "
         f"{MAX_KORREKTUREN} corrections; an empty list if everything is fine."
     )
 
@@ -114,7 +117,7 @@ def pruefen(posts: list[dict], sprache: str) -> list[str]:
     for i, p in enumerate(posts, 1):
         bloecke.append(f"--- Post {i} ({p.get('art') or 'post'}) ---\n" + "\n".join(_texte(p)))
     try:
-        antwort = frage_json(_system(sprache), "\n\n".join(bloecke), _SCHEMA, effort="low", max_tokens=4000)
+        antwort = frage_json(_system(sprache), "\n\n".join(bloecke), _SCHEMA, effort="medium", max_tokens=6000)
         return anwenden(posts, antwort.get("korrekturen") or [])
     except Exception as e:   # Lektorat darf den Tagesplan nie aufhalten
         log.warning("Lektorat %s fehlgeschlagen: %s", sprache, e)

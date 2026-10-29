@@ -144,7 +144,7 @@ def _zuschneiden(ebene: Image.Image, x0=0, y0=0):
 
 
 FOLGEN = {"de": "Folge Soraya – jeden Tag neu", "en": "Follow Soraya – new every day",
-          "hu": "Kövesd Sorayát – minden nap új", "it": "Segui Soraya – novità ogni giorno"}
+          "hu": "Kövesd Sorayát – minden nap valami új", "it": "Segui Soraya – novità ogni giorno"}
 
 
 # TikTok: der Link in der Bio ist (unter 1000 Followern) nicht antippbar -> die Hauptaufforderung ist Folgen
