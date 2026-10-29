@@ -266,3 +266,38 @@ def poste_pin(bild: bytes, titel: str, beschreibung: str, link: str, sprache: st
         pin = _post("/pins", token, daten)
     pid = pin.get("id")
     return {"id": pid, "url": f"https://www.pinterest.com/pin/{pid}/" if pid and not sandbox() else None}
+
+
+# ---------------------------------------------------------------------------
+# Zahlen: je Pin Anzeigen, Gespeichert, Klicks (Recht pins:read), Follower (user_accounts:read)
+# ---------------------------------------------------------------------------
+PIN_METRIKEN = ("IMPRESSION", "SAVE", "PIN_CLICK", "OUTBOUND_CLICK")
+
+
+def _summe_metriken(d: dict) -> dict:
+    """Antwort von /pins/{id}/analytics -> {IMPRESSION: n, ...}; summary/lifetime, sonst die Tage aufsummiert."""
+    teil = d.get("all") if isinstance(d.get("all"), dict) else d
+    for k in ("summary_metrics", "lifetime_metrics"):
+        if isinstance(teil.get(k), dict) and teil[k]:
+            return {m: int(teil[k].get(m) or 0) for m in PIN_METRIKEN}
+    out = {m: 0 for m in PIN_METRIKEN}
+    for tag in teil.get("daily_metrics") or []:
+        for m in PIN_METRIKEN:
+            out[m] += int((tag.get("metrics") or {}).get(m) or 0)
+    return out
+
+
+def pin_zahlen(pin_id: str, token: str | None = None, tage: int = 89) -> dict:
+    """Anzeigen, Gespeichert und Klicks eines Pins (Pinterest erlaubt hoechstens 90 Tage zurueck)."""
+    token = token or gueltiger_token()
+    heute = time.strftime("%Y-%m-%d", time.gmtime())
+    von = time.strftime("%Y-%m-%d", time.gmtime(time.time() - tage * 86400))
+    d = _get(f"/pins/{pin_id}/analytics", token, start_date=von, end_date=heute, metric_types=",".join(PIN_METRIKEN))
+    m = _summe_metriken(d)
+    return {"anzeigen": m["IMPRESSION"], "gespeichert": m["SAVE"], "klicks": m["PIN_CLICK"], "link_klicks": m["OUTBOUND_CLICK"]}
+
+
+def follower(token: str | None = None) -> int | None:
+    d = _get("/user_account", token or gueltiger_token())
+    n = d.get("follower_count")
+    return int(n) if n is not None else None

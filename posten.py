@@ -882,6 +882,31 @@ def tiktok_videos() -> list[dict]:
     return sorted(({"id": k, **x} for k, x in v.items()), key=lambda x: x["zeit"])
 
 
+def zahlen_pinterest(seit: datetime) -> list[dict]:
+    """Je Pin der letzten Tage: Anzeigen (= erreicht), Gespeichert, Klicks; dazu die Follower des Kontos.
+    Pins aus dem Testmodus gibt es im echten Pinterest nicht -> die zaehlen still als Fehler."""
+    v = pinterest.verbindung()
+    if not v.get("verbunden") or v.get("sandbox"):
+        return []
+    token = pinterest.gueltiger_token()
+    zeilen, fehler = [], []
+    for z in db.lade_gepostete("pinterest", seit, limit=60):
+        try:
+            m = pinterest.pin_zahlen(z["extern_id"], token)
+        except Exception as ex:  # noqa: BLE001 -- ein Pin ohne Zahlen haelt die anderen nicht auf
+            fehler.append(str(ex)[:200])
+            continue
+        db.speichere_zahlen(z["post_id"], "pinterest", 0, 0, 0, reichweite=m["anzeigen"], gespeichert=m["gespeichert"],
+                            aufrufe=m["klicks"] + m["link_klicks"])
+        zeilen.append({"post_id": z["post_id"], **m})
+    merke_abruf("pinterest", len(zeilen), len(fehler), fehler[0] if fehler and not zeilen else None)
+    try:
+        merke_follower(pinterest.follower(token), schluessel="pinterest_follower")
+    except Exception as ex:  # noqa: BLE001
+        print(f"[Posten] Pinterest-Follower nicht geholt: {ex}", flush=True)
+    return zeilen
+
+
 def zahlen_tiktok(seit: datetime) -> list[dict]:
     """TikTok-Videos (video.list) unseren Reels zuordnen und die Zahlen merken."""
     z = tiktok.zugang() or {}
@@ -952,7 +977,8 @@ def miss_storys(jetzt: datetime | None = None) -> int:
 
 def aktualisiere_zahlen(erzwingen: bool = False) -> int:
     """Reaktionen der Beitraege der letzten 14 Tage holen und merken (fuers Lernen): Facebook, Instagram
-    (mit Insights-Recht auch Reichweite, Aufrufe, Speichern, Teilen) und TikTok (video.list).
+    (mit Insights-Recht auch Reichweite, Aufrufe, Speichern, Teilen), TikTok (video.list) und Pinterest
+    (Anzeigen, Gespeichert, Klicks).
     Laeuft hoechstens alle 6 Stunden; ohne Verbindung passiert auf der Plattform nichts."""
     if not erzwingen and time.time() - _ZAHLEN["zuletzt"] < ZAHLEN_ALLE_S:
         return 0
@@ -976,6 +1002,11 @@ def aktualisiere_zahlen(erzwingen: bool = False) -> int:
         n += len(zahlen_tiktok(seit))
     except Exception as ex:  # noqa: BLE001
         print(f"[Posten] TikTok-Zahlen nicht geholt: {ex}", flush=True)
+    try:
+        n += len(zahlen_pinterest(seit))
+    except Exception as ex:  # noqa: BLE001
+        print(f"[Posten] Pinterest-Zahlen nicht geholt: {ex}", flush=True)
+        merke_abruf("pinterest", 0, 1, str(ex))
     return n
 
 

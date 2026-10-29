@@ -2581,3 +2581,36 @@ def test_pinterest_alte_test_pinnwand_wird_ersetzt(monkeypatch, frische_db):
     assert boards == [pinterest.PINNWAENDE["en"], pinterest.PINNWAENDE_AUSWEICH["en"][0]]
     assert pinterest.zugang()["pinnwaende"] == {"en": "NEU"}
     assert pinterest.poste_pin(b"jpg", "T", "B", "https://x", "en")["id"] == "P1" and pins[-1] == "NEU"
+
+
+def test_pinterest_zahlen_ins_cockpit(monkeypatch, frische_db):
+    """Pinterest: Anzeigen = erreicht, Gespeichert zaehlt als Reaktion, Follower werden gemerkt."""
+    import pinterest, cockpit
+    monkeypatch.delenv("PINTEREST_SANDBOX", raising=False)
+    db.setze_einstellung(pinterest.SCHLUESSEL, {"token": "tok", "laeuft_ab": time.time() + 30 * 86400})
+    p = db.speichere_posts([{"art": "post", "titel": "Pin", "text": "x"}], quelle="tagesplan", geplant_fuer=HEUTE)[0]
+    alt = db.speichere_posts([{"art": "story", "titel": "Alt", "text": "x"}], quelle="tagesplan", geplant_fuer=HEUTE)[0]
+    for post, pid in ((p, "PIN1"), (alt, "SANDBOX9")):
+        zid = db.plane_veroeffentlichung(post["id"], "pinterest", datetime.now(himmel.WIEN), zurueckgeben=True)
+        db.setze_veroeffentlichung(zid, "fertig", extern_id=pid)
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        if url.endswith("/pins/PIN1/analytics"):
+            assert "IMPRESSION" in params["metric_types"]
+            return SimpleNamespace(status_code=200, content=b"1", text="", json=lambda: {"all": {"summary_metrics": {
+                "IMPRESSION": 28, "SAVE": 2, "PIN_CLICK": 3, "OUTBOUND_CLICK": 1}}})
+        if url.endswith("/pins/SANDBOX9/analytics"):            # Pin aus dem Testmodus: gibt es nicht
+            return SimpleNamespace(status_code=404, content=b"1", text="", json=lambda: {"message": "Pin not found."})
+        if url.endswith("/user_account"):
+            return SimpleNamespace(status_code=200, content=b"1", text="", json=lambda: {"follower_count": 4})
+        raise AssertionError(url)
+    monkeypatch.setattr(pinterest.requests, "get", fake_get)
+    z = posten.zahlen_pinterest(datetime.now(himmel.WIEN) - timedelta(days=14))
+    assert [x["anzeigen"] for x in z] == [28]
+    assert posten.follower_stand("pinterest_follower")["follower"] == 4
+    assert posten.abruf_stand()["pinterest"]["ok"] == 1 and posten.abruf_stand()["pinterest"]["fehler"] == 1
+    zeilen = db.lade_cockpit_zeilen(datetime.now(himmel.WIEN) - timedelta(days=1))
+    pin = cockpit.beitraege(zeilen)
+    x = next(b for b in pin if b["id"] == p["id"])["plattformen"]["pinterest"]
+    assert x["erreicht"] == 28 and x["reaktionen"] == 2 and x["aufrufe"] == 4
+    assert cockpit.verbunden()["pinterest"] is True

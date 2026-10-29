@@ -148,6 +148,11 @@ if os.environ.get("DEMO_KANAELE"):
             posten.merke_follower(412 - i * 2 + (i % 3), H - timedelta(days=i), "facebook_follower")
             posten.merke_follower(318 - i * 3, H - timedelta(days=i), "tiktok_follower")
         posten.merke_follower(318, H, "tiktok_follower")
+        for i in range(12, -1, -1):
+            posten.merke_follower(40 - i * 3, H - timedelta(days=i), "pinterest_follower")
+    db.setze_einstellung("pinterest_zugang", {"token": "demo", "laeuft_ab": jetzt + 25 * 86400, "refresh": "r",
+                                              "refresh_ab": jetzt + 300 * 86400, "name": "soraya_astroguide"})
+    os.environ["PINTEREST_APP_ID"] = os.environ["PINTEREST_APP_SECRET"] = "demo"
     # Posts der letzten 30 Tage auf Facebook, Instagram und TikTok mit gemerkten Zahlen
     FORMATE = ["Deine Woche", "Mitmachen", "Ritual", "Astro-Wissen", "Ritual", "Mitmachen", "Rückblick"]
     STILE, AUFF = ["frage", "szene", "geheimnis", "zeichen", "aussage", "zahl"], ["mondzeichen", "partner", "horoskop", "chat"]
@@ -173,6 +178,8 @@ if os.environ.get("DEMO_KANAELE"):
                                    meta={"thema": fm, "hook_stil": stil, "aufforderung": AUFF[k % 4]})[0]
             db.aendere_post(p["id"], {"status": "gepostet"})
             wo = {"post": ["facebook", "instagram"], "reel": ["instagram", "tiktok", "facebook"], "story": ["instagram"]}[art]
+            if art in ("post", "story") and tag <= 12 and not WENIG:
+                wo = wo + ["pinterest"]                   # Pinterest erst seit kurzem dabei
             stunde = {"post": (12, 12, 9, 18)[k % 4], "reel": (19, 19, 9)[k % 3], "story": 9}[art]
             # Rituale und Reels kommen besser an, Rueckblick schwaecher -> "Soraya lernt" hat etwas zu sagen;
             # Reels am Morgen laufen besser als am Abend -> "Soraya erkennt" schlaegt eine Uhrzeit vor
@@ -183,7 +190,7 @@ if os.environ.get("DEMO_KANAELE"):
             for pl in wo:
                 zid = db.plane_veroeffentlichung(p["id"], pl, datetime.combine(d, datetime.min.time()).replace(hour=stunde, tzinfo=himmel.WIEN), zurueckgeben=True)
                 n = 100 + k * 10 + len(pl)
-                ext = {"facebook": f"FB{n}", "instagram": f"IG{n}", "tiktok": f"TT{n}"}[pl]
+                ext = {"facebook": f"FB{n}", "instagram": f"IG{n}", "tiktok": f"TT{n}", "pinterest": f"PI{n}"}[pl]
                 db.setze_veroeffentlichung(zid, "fertig", extern_id=ext, url=f"https://example.com/{ext}")
                 r = int(wert(n, 150, 1300) * faktor)
                 if pl == "facebook":
@@ -191,6 +198,9 @@ if os.environ.get("DEMO_KANAELE"):
                 elif pl == "instagram":
                     db.speichere_zahlen(p["id"], pl, int(wert(n, 8, 70) * faktor), klein(wert(n, 0, 12)), klein(wert(n, 0, 9)), reichweite=r,
                                         gespeichert=int(wert(n, 1, 24) * faktor), aufrufe=r * 3 // 2)
+                elif pl == "pinterest":
+                    db.speichere_zahlen(p["id"], pl, 0, 0, 0, reichweite=int(wert(n, 40, 420) * faktor * (13 - tag) / 6),
+                                        gespeichert=wert(n, 0, 9), aufrufe=wert(n, 1, 25))
                 else:
                     db.speichere_zahlen(p["id"], pl, int(wert(n, 20, 160) * faktor), klein(wert(n, 0, 15)), klein(wert(n, 0, 10)), aufrufe=int(wert(n, 300, 2600) * faktor))
                 um = datetime.combine(d, datetime.min.time()).replace(hour=stunde, minute=k % 50, tzinfo=himmel.WIEN)

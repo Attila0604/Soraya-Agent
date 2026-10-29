@@ -303,6 +303,8 @@
   .legende{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--mist);margin:0 0 10px}
   .legende span{display:inline-flex;align-items:center;gap:6px}
   .legende .sq{width:10px;height:10px;border-radius:2px;background:var(--viz-gold)}
+  .legende .ln{width:16px;height:3px;border-radius:2px;background:var(--viz-gold)}
+  .legende b{color:#F4EEDD;font-weight:600;font-variant-numeric:tabular-nums}
   .legende .dot{width:9px;height:9px;border-radius:50%;background:var(--viz-violet)}
   .tip{position:absolute;pointer-events:none;background:#0A0D1C;border:1px solid var(--line);border-radius:8px;
        padding:7px 10px;font-size:12.5px;color:var(--mist);white-space:nowrap;transform:translate(-50%,-110%);z-index:2}
@@ -896,7 +898,7 @@
     .trend .vgl{display:none}
     .wz-follower{gap:var(--s2) var(--s4);padding:var(--s3)}
     .wz-follower .wz-label{flex-basis:100%}
-    .wz-follower .f{flex-direction:column;gap:0;align-items:flex-start}
+    .wz-follower .f{flex-direction:column;gap:0;align-items:flex-start;flex:1 1 calc(50% - var(--s4));min-width:0}
     .wz-follower .f .ikon{align-self:flex-start;margin-bottom:2px}
     .weg{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s1)}
     .weg .pfeil{display:none}
@@ -923,7 +925,7 @@
   }
   /* ================= Wirkung, Runde 2: Unterreiter, Diagramme, Soraya erkennt ================= */
   /* feste Farbe je Plattform (Validator: dunkel gegen #12162A, alle Paare farbfehlsichtig-sicher) */
-  :root{--pl-facebook:#3987e5;--pl-instagram:#d55181;--pl-tiktok:#AE8B3E}
+  :root{--pl-facebook:#3987e5;--pl-instagram:#d55181;--pl-tiktok:#AE8B3E;--pl-pinterest:#3fb6a8}
   .wz-leiste{position:sticky;top:var(--kopf-h,58px);z-index:4;display:flex;align-items:center;justify-content:space-between;
              gap:var(--s2) var(--s3);flex-wrap:wrap;margin:calc(-1 * var(--s3)) -18px var(--s4);padding:var(--s2) 18px;
              background:rgba(11,14,26,.92);border-bottom:1px solid var(--line-soft);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
@@ -2842,10 +2844,10 @@ const merkSchreiben = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} }
 let wReiter = W_REITER.includes(merkLesen('soraya.wirkung.reiter')) ? merkLesen('soraya.wirkung.reiter') : 'ueberblick';
 if([7, 30, 90].includes(+merkLesen('soraya.wirkung.tage'))) W_TAGE = +merkLesen('soraya.wirkung.tage');
 const wFilter = {pl: 'alle', format: '', sort: 'punkte', alle: false};
-const PL_KURZ = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok'};
-const COCKPIT_PL = ['facebook', 'instagram', 'tiktok'];
+const PL_KURZ = {facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', pinterest: 'Pinterest'};
+const COCKPIT_PL = ['facebook', 'instagram', 'tiktok', 'pinterest'];
 // feste Farbe je Plattform (geprueft gegen #12162A, auch fuer Farbfehlsichtige) -- nie nach Rang vergeben
-const PL_FARBE = {facebook: 'var(--pl-facebook)', instagram: 'var(--pl-instagram)', tiktok: 'var(--pl-tiktok)'};
+const PL_FARBE = {facebook: 'var(--pl-facebook)', instagram: 'var(--pl-instagram)', tiktok: 'var(--pl-tiktok)', pinterest: 'var(--pl-pinterest)'};
 const SPRACHE_NAME = {de: 'Deutsch', en: 'Englisch', hu: 'Ungarisch', it: 'Italienisch'};
 const komma = (x) => x == null ? '–' : (Math.abs(x) >= 10 || Number.isInteger(x) ? zahl(Math.round(x)) : x.toFixed(1).replace('.', ','));
 const prozent = (q) => q == null ? '–' : (q >= 10 || Number.isInteger(q) ? Math.round(q) : String(q).replace('.', ',')) + ' %';
@@ -3211,17 +3213,19 @@ function htmlPlattformen(d){
       ${gruppe('besuche', 'Besuche über den Bio-Link', 'Noch keine Besuche über die Bio-Links.')}</div>
       <p class="meta">${zeilen.filter(z => z.posts || z.videos_extra).map(z => `${PL_KURZ[z.plattform]}: ${mehrzahl(z.posts, 'Post', 'Posts')}${z.videos_extra ? ` + ${mehrzahl(z.videos_extra, 'eigenes Video', 'eigene Videos')}` : ''}${z.schnitt_erreicht != null ? `, Ø ${zahl(Math.round(z.schnitt_erreicht))} erreicht` : ''}`).join(' · ')}${pv.post_link_besuche ? ` · Dazu ${mehrzahl(pv.post_link_besuche, 'Besuch', 'Besuche')} über Post-Links (keiner Plattform zuordenbar).` : ''}</p>
       ${tiktokLeer(zeilen)}${fbAbruf(d)}`
-    : leer('Noch nichts gepostet', 'Sobald Posts auf Facebook, Instagram oder TikTok erscheinen, siehst du hier, welche Plattform am meisten bringt.');
+    : leer('Noch nichts gepostet', 'Sobald Posts auf Facebook, Instagram, TikTok oder Pinterest erscheinen, siehst du hier, welche Plattform am meisten bringt.');
   const pls = COCKPIT_PL.filter(pl => (a.plattform_tage || []).some(t => t[pl]) || (d.verbunden || {})[pl]);
-  const legende = pls.map(pl => `<span><i class="sq" style="background:${PL_FARBE[pl]}"></i>${PL_KURZ[pl]}</span>`).join('');
+  const summe = (pl) => (a.plattform_tage || []).reduce((n, t) => n + (t[pl] || 0), 0);
+  const legende = pls.map(pl => `<span><i class="ln" style="background:${PL_FARBE[pl]}"></i>${PL_KURZ[pl]} <b>${zahl(summe(pl))}</b></span>`).join('');
   return `<div class="panel wz-pv"><h2>Plattformen im Vergleich</h2>${vergleich}</div>
-    <div class="panel wz-tage"><h2>Reichweite ${W_TAGE > 31 ? 'pro Woche' : 'pro Tag'}</h2>
+    <div class="panel wz-tage"><h2>Reichweite je Kanal ${W_TAGE > 31 ? 'pro Woche' : 'pro Tag'}</h2>
       ${pls.length ? `<div class="legende">${legende}<span><i class="sq viol"></i>Besuche</span></div>` : ''}
       <div class="viz" id="wzTage"></div>
-      <p class="meta">Erreicht zählt am Tag, an dem der Post erschien.</p></div>
+      <p class="meta">Erreicht zählt am Tag, an dem der Post erschien${pls.includes('pinterest') ? ' · bei Pinterest die Anzeigen der Pins' : ''}. Tippe ins Diagramm für die Werte eines Tages.</p></div>
     <div class="panel wz-fol"><h2>Follower-Zuwachs</h2><div class="viz" id="wzFollower"></div></div>`;
 }
-// Reichweite je Tag (oder Woche), gestapelt nach Plattform; darunter Besuche (eigene Skala, eigenes Feld)
+// Reichweite je Tag (oder Woche): je Kanal eine Linie (eine Skala), Name + Wert am Linienende;
+// darunter die Besuche als eigenes kleines Feld (andere Groessenordnung -> eigene Skala, kein zweiter y-Achsen-Trick)
 function zeichneReichweite(){
   const box = $('wzTage'), a = (cockpitDaten || {}).analyse; if(!box || !a) return;
   const besuche = Object.fromEntries((cockpitDaten.verlauf || []).map(t => [t.datum, t.besuche]));
@@ -3230,54 +3234,81 @@ function zeichneReichweite(){
   const bins = [];
   a.plattform_tage.forEach((t, i) => {
     const neu = !woche || (a.plattform_tage.length - 1 - i) % 7 === 6 || !bins.length;
-    if(neu) bins.push({von: t.datum, bis: t.datum, facebook: 0, instagram: 0, tiktok: 0, besuche: 0, posts: 0});
+    if(neu) bins.push({von: t.datum, bis: t.datum, besuche: 0, posts: 0, ...Object.fromEntries(COCKPIT_PL.map(pl => [pl, 0]))});
     const b = bins[bins.length - 1]; b.bis = t.datum;
     COCKPIT_PL.forEach(pl => b[pl] += t[pl] || 0); b.posts += t.posts || 0; b.besuche += besuche[t.datum] || 0;
   });
   const pls = COCKPIT_PL.filter(pl => bins.some(b => b[pl]));
-  const W = Math.max(300, box.clientWidth), L = 40, R = 8, T = 10, h1 = 140, gap = 26, h2 = mitBesuch ? 48 : 0, unten = 26;
-  const H = T + h1 + (mitBesuch ? gap + h2 : 0) + unten, pw = W - L - R, band = pw / Math.max(1, bins.length), bw = Math.min(28, Math.max(3, band - 3));
-  const sum = (b) => pls.reduce((s, pl) => s + b[pl], 0);
-  const max1 = runde(Math.max(0, ...bins.map(sum))), max2 = runde(Math.max(0, ...bins.map(b => b.besuche)));
+  const W = Math.max(300, box.clientWidth), L = 44, R = pls.length ? 78 : 12, T = 14, h1 = 170, gap = 30, h2 = mitBesuch ? 44 : 0, unten = 26;
+  const H = T + h1 + (mitBesuch ? gap + h2 : 0) + unten, pw = W - L - R;
+  const max1 = runde(Math.max(1, ...bins.flatMap(b => pls.map(pl => b[pl])))), max2 = runde(Math.max(0, ...bins.map(b => b.besuche)));
   const y1 = T + h1, y2 = T + h1 + gap + h2;
-  const kopf = (cx, top, r) => `M${cx - bw / 2},${top + r} Q${cx - bw / 2},${top} ${cx - bw / 2 + r},${top} H${cx + bw / 2 - r} Q${cx + bw / 2},${top} ${cx + bw / 2},${top + r}`;
-  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Reichweite ${woche ? 'pro Woche' : 'pro Tag'} nach Plattform${mitBesuch ? ' und Besuche' : ''}">`;
-  const achse = (basis, hoehe, max) => `<line x1="${L}" x2="${W - R}" y1="${basis - hoehe}" y2="${basis - hoehe}" stroke="var(--viz-grid)"/><line x1="${L}" x2="${W - R}" y1="${basis - hoehe / 2}" y2="${basis - hoehe / 2}" stroke="var(--viz-grid)"/><line x1="${L}" x2="${W - R}" y1="${basis}" y2="${basis}" stroke="var(--viz-axis)"/>
-    <text x="${L - 6}" y="${basis - hoehe + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(max)}</text>${Number.isInteger(max / 2) ? `<text x="${L - 6}" y="${basis - hoehe / 2 + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(max / 2)}</text>` : ''}<text x="${L - 6}" y="${basis + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">0</text>`;
-  s += achse(y1, h1, max1);
-  if(mitBesuch) s += achse(y2, h2, max2) + `<text x="${L}" y="${y2 - h2 - 8}" font-size="11" fill="#8A8FA6">Besuche</text>`;
-  const jeder = Math.ceil(bins.length / Math.max(1, Math.floor(pw / 48)));
-  bins.forEach((b, i) => {
-    const cx = L + band * i + band / 2; let basis = y1;
-    const teile = pls.filter(pl => b[pl]);
-    teile.forEach((pl, j) => {
-      const h = b[pl] / max1 * h1, top = basis - h, oben = j === teile.length - 1;
-      const hh = Math.max(0, h - (oben ? 0 : 2));     // 2 px Abstand zwischen den Teilen
-      s += oben ? `<path class="seg" d="${kopf(cx, basis - hh, Math.min(3, hh, bw / 2))} V${basis} H${cx - bw / 2} Z" fill="${PL_FARBE[pl]}"/>`
-        : `<rect class="seg" x="${cx - bw / 2}" y="${basis - hh}" width="${bw}" height="${hh}" fill="${PL_FARBE[pl]}"/>`;
-      basis = top;
-    });
-    if(mitBesuch && b.besuche){ const h = b.besuche / max2 * h2, r = Math.min(3, h, bw / 2);
-      s += `<path class="bes" d="${kopf(cx, y2 - h, r)} V${y2} H${cx - bw / 2} Z" fill="var(--viz-violet)"/>`; }
-    if((bins.length - 1 - i) % jeder === 0) s += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#8A8FA6">${datumKurz(b.von)}</text>`;
-    s += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${(mitBesuch ? y2 : y1) - T + 4}" fill="transparent" tabindex="0" aria-label="${esc(woche ? 'Woche ab ' + kurzIso(b.von) : kurzIso(b.von))}: ${zahl(sum(b))} erreicht${mitBesuch ? ', ' + b.besuche + ' Besuche' : ''}"/>`;
-  });
-  const nichts = !bins.some(b => sum(b) || b.besuche);
+  const x = (i) => L + (bins.length > 1 ? i / (bins.length - 1) * pw : pw / 2);
+  const y = (v) => y1 - v / max1 * h1;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" data-punkte="${bins.length}" role="img" aria-label="Reichweite ${woche ? 'pro Woche' : 'pro Tag'} je Kanal${mitBesuch ? ' und Besuche' : ''}"><defs>
+    ${pls.map(pl => `<linearGradient id="wzF-${pl}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${PL_FARBE[pl]}" stop-opacity=".16"/><stop offset="1" stop-color="${PL_FARBE[pl]}" stop-opacity="0"/></linearGradient>`).join('')}</defs>`;
+  [0, .5, 1].forEach(f => { const v = max1 * f;
+    s += `<line x1="${L}" x2="${W - R + 6}" y1="${y(v)}" y2="${y(v)}" stroke="${f ? 'var(--viz-grid)' : 'var(--viz-axis)'}"${f ? ' stroke-dasharray="2 4"' : ''}/>`;
+    if(!f || Number.isInteger(v)) s += `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(v)}</text>`; });
+  const jeder = Math.ceil(bins.length / Math.max(1, Math.floor(pw / 56)));
+  bins.forEach((b, i) => { if((bins.length - 1 - i) % jeder === 0) s += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#8A8FA6">${datumKurz(b.von)}</text>`; });
+  // Flaechen ganz leise, darueber die Linien (2 px, runde Enden)
+  // der heutige Tag ist noch nicht vorbei: das letzte Stueck gestrichelt (sonst sieht es wie ein Absturz aus)
+  const offen = bins.length > 1 && bins[bins.length - 1].bis >= iso(new Date());
+  pls.forEach(pl => { const pkt = bins.map((b, i) => `${x(i).toFixed(1)},${y(b[pl]).toFixed(1)}`);
+    if(bins.length > 1) s += `<path d="M${x(0)},${y1} L${pkt.join(' L')} L${x(bins.length - 1)},${y1} Z" fill="url(#wzF-${pl})"/>`;
+    const fest = offen ? pkt.slice(0, -1) : pkt, linie = (pp, extra = '') => `<polyline fill="none" stroke="${PL_FARBE[pl]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"${extra} points="${pp.join(' ')}"/>`;
+    s += bins.length > 1 ? (fest.length > 1 ? linie(fest) : '') + (offen ? linie(pkt.slice(-2), ' stroke-dasharray="3 5" opacity=".6"') : '')
+      : `<circle cx="${x(0)}" cy="${y(bins[0][pl])}" r="4" fill="${PL_FARBE[pl]}"/>`; });
+  // Name + Wert am Ende jeder Linie, ohne Ueberlappen und nie unter der Achse
+  const letzte = bins[bins.length - 1] || {};
+  const marken = pls.map(pl => ({pl, y: y(letzte[pl] || 0)})).sort((p, q) => p.y - q.y);
+  marken.forEach((m, i) => { m.ly = Math.max(m.y, i ? marken[i - 1].ly + 15 : T + 4); });
+  const ueber = marken.length ? marken[marken.length - 1].ly - (y1 - 2) : 0;
+  if(ueber > 0) marken.forEach(m => { m.ly = Math.max(T + 4, m.ly - ueber); });
+  marken.forEach(m => { const xe = x(bins.length - 1);
+    s += `<circle cx="${xe}" cy="${m.y}" r="4" fill="${PL_FARBE[m.pl]}" stroke="#12162A" stroke-width="2"/>
+      <text x="${xe + 10}" y="${m.ly + 4}" font-size="12" fill="#E4E6EF">${PL_KURZ[m.pl]}</text>`; });
+  if(mitBesuch){
+    s += `<line x1="${L}" x2="${W - R + 6}" y1="${y2}" y2="${y2}" stroke="var(--viz-axis)"/><text x="${L}" y="${y2 - h2 - 8}" font-size="11" fill="#8A8FA6">Besuche</text>
+      <text x="${L - 8}" y="${y2 - h2 + 4}" text-anchor="end" font-size="11" fill="#8A8FA6">${zahl(max2)}</text>`;
+    const bw = Math.min(14, Math.max(3, pw / Math.max(1, bins.length) - 4));
+    bins.forEach((b, i) => { if(!b.besuche) return; const h = b.besuche / Math.max(1, max2) * h2, r = Math.min(3, h, bw / 2), cx = x(i);
+      s += `<path d="M${cx - bw / 2},${y2} V${y2 - h + r} Q${cx - bw / 2},${y2 - h} ${cx - bw / 2 + r},${y2 - h} H${cx + bw / 2 - r} Q${cx + bw / 2},${y2 - h} ${cx + bw / 2},${y2 - h + r} V${y2} Z" fill="var(--viz-violet)"/>`; });
+  }
+  s += `<line class="kreuz" x1="0" x2="0" y1="${T}" y2="${mitBesuch ? y2 : y1}" stroke="var(--viz-axis)" visibility="hidden"/><g class="punkte"></g>
+    <rect class="flaeche" x="${L - 10}" y="${T}" width="${pw + 20}" height="${(mitBesuch ? y2 : y1) - T}" fill="transparent" tabindex="0"
+      aria-label="${esc(pls.map(pl => `${PL_KURZ[pl]}: ${zahl(bins.reduce((n, b) => n + b[pl], 0))} erreicht`).join('; ') || 'Noch keine Reichweite')}"/>`;
+  const nichts = !bins.some(b => pls.some(pl => b[pl]) || b.besuche);
   box.innerHTML = s + '</svg><div class="tip hide" id="wzTip"></div>' + (nichts ? `<div class="viz-leer">Noch keine Reichweite in diesem Zeitraum</div>` : '');
-  const tip = $('wzTip');
-  const zeig = (el) => { const b = bins[+el.dataset.i];
-    tipZeigen(box, tip, +el.getAttribute('x') + band / 2, `<strong>${esc(woche ? kurzIso(b.von) + ' – ' + kurzIso(b.bis) : kurzIso(b.von))}</strong>${zahl(sum(b))} erreicht
-      ${pls.map(pl => `<br><span class="key" style="background:${PL_FARBE[pl]}"></span>${PL_KURZ[pl]}: ${zahl(b[pl])}`).join('')}
-      ${mitBesuch ? `<br><span class="key" style="background:var(--viz-violet)"></span>${mehrzahl(b.besuche, 'Besuch', 'Besuche')}` : ''}${b.posts ? `<br>${mehrzahl(b.posts, 'Post', 'Posts')} gepostet` : ''}`, W);
-    box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); el.setAttribute('fill', 'rgba(231,211,161,.06)'); };
-  box.querySelectorAll('.hit').forEach(el => { el.addEventListener('pointermove', () => zeig(el)); el.addEventListener('focus', () => zeig(el)); el.addEventListener('click', () => zeig(el)); });
-  box.addEventListener('pointerleave', () => { tip.classList.add('hide'); box.querySelectorAll('.hit').forEach(h => h.setAttribute('fill', 'transparent')); });
+  const tip = $('wzTip'), svg = box.querySelector('svg'), kreuz = box.querySelector('.kreuz'), punkte = box.querySelector('.punkte');
+  const zeig = (i) => { const b = bins[i]; if(!b) return;
+    kreuz.setAttribute('x1', x(i)); kreuz.setAttribute('x2', x(i)); kreuz.setAttribute('visibility', 'visible');
+    punkte.innerHTML = pls.map(pl => `<circle cx="${x(i)}" cy="${y(b[pl])}" r="4.5" fill="${PL_FARBE[pl]}" stroke="#12162A" stroke-width="2"/>`).join('');
+    const reihe = [...pls].sort((p, q) => b[q] - b[p]);
+    tipZeigen(box, tip, x(i), `<strong>${esc(woche ? kurzIso(b.von) + ' – ' + kurzIso(b.bis) : kurzIso(b.von))}</strong>${zahl(pls.reduce((n, pl) => n + b[pl], 0))} erreicht
+      ${reihe.map(pl => `<br><span class="key" style="background:${PL_FARBE[pl]}"></span>${PL_KURZ[pl]}: ${zahl(b[pl])}`).join('')}
+      ${mitBesuch ? `<br><span class="key" style="background:var(--viz-violet)"></span>${mehrzahl(b.besuche, 'Besuch', 'Besuche')}` : ''}${b.posts ? `<br>${mehrzahl(b.posts, 'Post', 'Posts')} gepostet` : ''}${offen && i === bins.length - 1 ? '<br><em>heute – noch nicht fertig</em>' : ''}`, W);
+    // neben der Linie statt ueber der Ueberschrift: rechts vom Kreuz, in der rechten Haelfte links davon
+    tip.style.left = x(i) + 'px'; tip.style.top = (T + 4) + 'px';
+    tip.style.transform = x(i) > W / 2 ? 'translate(calc(-100% - 14px), 0)' : 'translate(14px, 0)'; };
+  const index = (ev) => { const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * (W / r.width);
+    return Math.max(0, Math.min(bins.length - 1, Math.round((px - L) / Math.max(1, pw) * (bins.length - 1)))); };
+  let fokus = bins.length - 1;
+  const fl = box.querySelector('.flaeche');
+  fl.addEventListener('pointermove', (ev) => zeig(fokus = index(ev)));
+  fl.addEventListener('click', (ev) => zeig(fokus = index(ev)));
+  fl.addEventListener('focus', () => zeig(fokus));
+  fl.addEventListener('keydown', (ev) => { if(ev.key === 'ArrowLeft' || ev.key === 'ArrowRight'){ ev.preventDefault();
+    fokus = Math.max(0, Math.min(bins.length - 1, fokus + (ev.key === 'ArrowRight' ? 1 : -1))); zeig(fokus); } });
+  const weg = () => { tip.classList.add('hide'); kreuz.setAttribute('visibility', 'hidden'); punkte.innerHTML = ''; };
+  box.addEventListener('pointerleave', weg); fl.addEventListener('blur', weg);
 }
 // Follower-Zuwachs: je Plattform eine Linie ab dem Start des Zeitraums (eine Skala: Zuwachs, nicht Gesamtzahl)
 function zeichneFollower(){
   const box = $('wzFollower'), a = (cockpitDaten || {}).analyse; if(!box || !a) return;
   const kurven = (a.follower || []).filter(k => k.punkte.length >= 1);
-  if(!(a.follower || []).length){ box.innerHTML = leer('Noch keine Plattform verbunden', 'Verbinde Facebook, Instagram oder TikTok unter „Posten“ – dann zeigt Soraya hier, wie deine Follower wachsen.'); return; }
+  if(!(a.follower || []).length){ box.innerHTML = leer('Noch keine Plattform verbunden', 'Verbinde Facebook, Instagram, TikTok oder Pinterest unter „Posten“ – dann zeigt Soraya hier, wie deine Follower wachsen.'); return; }
   if(!kurven.some(k => k.punkte.length >= 2)){
     box.innerHTML = `<ul class="fol-liste">${a.follower.map(k => `<li>${plName(k.plattform)}<b>${k.aktuell == null ? '–' : zahl(k.aktuell)}</b><span class="meta">${k.punkte.length ? 'erst ein Messpunkt – die Kurve entsteht in den nächsten Tagen' : 'noch nicht gemessen'}</span></li>`).join('')}</ul>`;
     return;
@@ -3294,7 +3325,7 @@ function zeichneFollower(){
       <p class="meta">Veränderung seit ${esc(kurzIso(tage[0]))}. Die Kurve erscheint, sobald es mehr Bewegung gibt.</p>`;
     return;
   }
-  const W = Math.max(300, box.clientWidth), L = 40, R = 64, T = 12, ph = 150, B = 26, H = T + ph + B, pw = W - L - R;
+  const W = Math.max(300, box.clientWidth), L = 40, R = 92, T = 12, ph = 150, B = 26, H = T + ph + B, pw = W - L - R;
   const alle = reihen.flatMap(r => r.pkt.map(p => p.d)), maxD = Math.max(0, ...alle), minD = Math.min(0, ...alle);
   const oben = runde(Math.max(1, maxD)), unten = minD < 0 ? -runde(-minD) : 0;
   const x = (i) => L + (tage.length > 1 ? i / (tage.length - 1) * pw : pw / 2), y = (v) => T + ph - (v - unten) / (oben - unten) * ph;

@@ -226,12 +226,12 @@ check("Posts: freundlicher Leerzustand", (await page.textContent("#wzPosts")).in
 await page.click('[data-wr="lernen"]'); await wait(300);
 check("Lernen: Leerzustand ohne Posts", (await page.textContent("#wCockpit")).includes("Noch nichts zum Lernen"), await page.textContent("#wCockpit"));
 await page.click('[data-wr="plattformen"]'); await wait(400);
-check("Plattformen: Standard 7 Tage, 7 Tagesfelder", (await page.getAttribute('#wZeitraum [data-tage="7"]', "aria-pressed")) === "true" && (await page.$$eval("#wzTage .hit", (x) => x.length)) === 7, "");
+check("Plattformen: Standard 7 Tage, 7 Tagespunkte", (await page.getAttribute('#wZeitraum [data-tage="7"]', "aria-pressed")) === "true" && (await page.getAttribute("#wzTage svg", "data-punkte")) === "7", "");
 check("Plattformen: Leerzustände (keine Reichweite, Bio-Link-Besuche, keine Plattform verbunden)", (await page.textContent(".wz-pv")).includes("Noch keine Reichweite gemessen") && (await page.textContent(".wz-pv")).includes("51")
   && (await page.textContent("#wzFollower")).includes("Noch keine Plattform verbunden") && (await page.$$("#wzTage path.bes")).length >= 1, await page.textContent(".wz-pv"));
 check("Plattformen: Rohdaten zugeklappt", !(await page.$eval("#wDetails", (d) => d.hidden)) && !(await page.$eval("#wDetails", (d) => d.open)), "");
 await page.click('#wZeitraum [data-tage="30"]'); await wait(1200);
-check("Cockpit: Zeitraum 30 Tage", (await page.$$eval("#wzTage .hit", (x) => x.length)) === 30 && /\d+\. [A-ZÄÖÜ][a-zä]+ – \d+\. [A-ZÄÖÜ][a-zä]+/.test(await page.textContent("#wZeitraumText")), await page.textContent("#wZeitraumText"));
+check("Cockpit: Zeitraum 30 Tage", (await page.getAttribute("#wzTage svg", "data-punkte")) === "30" && /\d+\. [A-ZÄÖÜ][a-zä]+ – \d+\. [A-ZÄÖÜ][a-zä]+/.test(await page.textContent("#wZeitraumText")), await page.textContent("#wZeitraumText"));
 await page.click("#wDetails > summary"); await wait(1500);
 check("Wirkung: Zeitraum mit deutschem Datum", /\d+\. [A-ZÄÖÜ][a-zä]+ – \d+\. [A-ZÄÖÜ][a-zä]+/.test(await page.textContent("#wirkungInhalt .panel .hint")), await page.textContent("#wirkungInhalt .panel .hint"));
 check("Wirkung: 5 Kennzahl-Kacheln (App)", (await page.$$eval("#wirkungInhalt .kpi", (x) => x.length)) === 5, "");
