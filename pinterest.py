@@ -201,17 +201,27 @@ def _post(pfad: str, token: str, daten: dict) -> dict:
 # ---------------------------------------------------------------------------
 # Pinnwand je Sprache und Pins
 # ---------------------------------------------------------------------------
-def pinnwand(sprache: str, token: str | None = None) -> str:
-    """ID der Pinnwand fuer die Sprache -- vorhandene (gleicher Name) nutzen, sonst anlegen und merken."""
+def pinnwand(sprache: str, token: str | None = None, ohne: set[str] | None = None) -> str:
+    """ID der Pinnwand fuer die Sprache -- vorhandene (gleicher Name) nutzen, sonst anlegen und merken.
+    ohne: Pinnwaende, die nicht gehen (z. B. noch aus dem Testmodus) -> dann eine neue anlegen."""
     token = token or gueltiger_token()
+    ohne = ohne or set()
     z = zugang() or {}
     gemerkt = (z.get(_pinnwand_schluessel()) or {}).get(sprache)
-    if gemerkt:
+    if gemerkt and gemerkt not in ohne:
         return gemerkt
     name = PINNWAENDE.get(sprache, PINNWAENDE["en"])
-    vorhanden = next((b for b in (_get("/boards", token, page_size=100).get("items") or []) if b.get("name") == name), None)
-    bid = (vorhanden or _post("/boards", token, {"name": name, "description": PINNWAND_TEXT.get(sprache, PINNWAND_TEXT["en"]),
-                                                 "privacy": "PUBLIC"}))["id"]
+    vorhanden = next((b for b in (_get("/boards", token, page_size=100).get("items") or [])
+                      if b.get("name") == name and b.get("id") not in ohne), None)
+    if not vorhanden:
+        neu = {"name": name, "description": PINNWAND_TEXT.get(sprache, PINNWAND_TEXT["en"]), "privacy": "PUBLIC"}
+        try:
+            vorhanden = _post("/boards", token, neu)
+        except PinterestFehler:
+            if not ohne:
+                raise
+            vorhanden = _post("/boards", token, {**neu, "name": f"{name} ✦"})     # alter Name noch belegt
+    bid = vorhanden["id"]
     z = zugang() or {}
     z.setdefault(_pinnwand_schluessel(), {})[sprache] = bid
     db.setze_einstellung(SCHLUESSEL, z)
@@ -238,6 +248,13 @@ def poste_pin(bild: bytes, titel: str, beschreibung: str, link: str, sprache: st
              "link": link, "alt_text": (alt or titel or "Soraya")[:500],
              "media_source": {"source_type": "image_base64", "content_type": "image/jpeg",
                               "data": base64.b64encode(bild).decode()}}
-    pin = _post("/pins", token, daten)
+    try:
+        pin = _post("/pins", token, daten)
+    except PinterestFehler as ex:
+        if "sandbox board" not in str(ex).lower():
+            raise
+        # nach "Standard access": die gemerkte Pinnwand stammt noch aus dem Testmodus -> neue echte anlegen, nochmal
+        daten["board_id"] = pinnwand(sprache, token, ohne={daten["board_id"]})
+        pin = _post("/pins", token, daten)
     pid = pin.get("id")
     return {"id": pid, "url": f"https://www.pinterest.com/pin/{pid}/" if pid and not sandbox() else None}
