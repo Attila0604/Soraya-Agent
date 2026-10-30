@@ -909,7 +909,7 @@ def test_looks_je_format():
     assert _medien.stil({"art": "story", "meta": {"thema": "Liebe & Beziehung"}})["aufbau"] == "mond"
     assert _medien.stil({"art": "post", "meta": {"thema": "Großes Ereignis: Vollmond morgen"}})["layout"] == "ereignis"
     assert _medien.stil({"art": "post", "meta": {}}) == {"layout": "mond", "aufbau": "mond", "palette": "nacht",
-                                                         "label": None, "punkte": [], "zeichen": None}
+                                                         "label": None, "punkte": [], "zeichen": None, "symbol": None}
     # eigene Aufbauten je Format: Wochenleiste, Zitat, Umfrage, grosses Zeichen zum Saisonbeginn
     assert _medien.stil({"art": "post", "meta": {"thema": "Deine Woche"}})["aufbau"] == "woche"
     assert _medien.stil({"art": "post", "meta": {"thema": "Rückblick & Vorschau"}})["aufbau"] == "zitat"
@@ -2614,3 +2614,35 @@ def test_pinterest_zahlen_ins_cockpit(monkeypatch, frische_db):
     x = next(b for b in pin if b["id"] == p["id"])["plattformen"]["pinterest"]
     assert x["erreicht"] == 28 and x["reaktionen"] == 2 and x["aufrufe"] == 4
     assert cockpit.verbunden()["pinterest"] is True
+
+
+def test_symbole_und_lebensphasen():
+    """Symbol statt grossem Mond (mit eigener Farbwelt), Claude-Wahl oder Ersatz je Format; zwei Lebensphasen je Tag."""
+    import medien, symbole
+    p = {"id": 3, "art": "post", "sprache": "de", "titel": "Liebe braucht Raum", "text": "x",
+         "meta": {"thema": "Liebe & Beziehung", "motiv": "herz", "phase_index": 4, "beleuchtung": 99}}
+    st = medien.stil(p)
+    assert st["aufbau"] == "symbol" and st["symbol"] == "herz" and st["palette"] == "rose"
+    assert medien.bild(p, "feed").size == (1080, 1350) and medien.bild({**p, "art": "story"}, "story").size == (1080, 1920)
+    assert medien.stil({**p, "meta": {"thema": "Mitmachen", "motiv": "herz", "bild_punkte": ["a", "b"]}})["aufbau"] == "umfrage"
+    assert medien.stil({**p, "meta": {"motiv": "unbekannt"}})["symbol"] is None
+    assert symbole.waehle("kerze", "Ritual", 5, "post") == "kerze"
+    assert symbole.waehle(None, "Ritual", 5, "post") in symbole.NACH_THEMA["Ritual"]
+    assert all(symbole.motiv(m, 64).size == (64, 64) for m in symbole.MOTIVE)
+    a, b = tagesplan.lebensphasen(HEUTE)
+    assert a != b and a in tagesplan.LEBENSPHASEN and b in tagesplan.LEBENSPHASEN
+    assert "motiv" in tagesplan.SCHEMA["properties"]["posts"]["items"]["required"]
+
+
+def test_tagesplan_merkt_symbol_und_lebensphase(frische_db):
+    tagesplan.erstelle("en")
+    frage = next(x["frage"] for x in frische_db if "Lebensphasen heute" in x["frage"])
+    assert "Symbole für" in frage and "herz:" in frage
+    posts = [p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en"]
+    import symbole
+    a, b = tagesplan.lebensphasen(HEUTE)
+    for p in posts:
+        m = p["meta"]
+        assert m["motiv"] in symbole.MOTIVE                      # Ersatz je Format, wenn Claude keins liefert
+        zweite = p["art"] == "story" or m.get("reel_nr") == 2
+        assert m["lebensphase"] == (b if zweite else a)[0]
