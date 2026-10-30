@@ -23,6 +23,7 @@ import db
 import himmel
 import lektorat
 import redaktion
+import symbole
 from claude import frage_json
 from sprachen import LINK_IN_BIO, SPRACHEN, norm, sprach_anweisung
 
@@ -54,6 +55,15 @@ Was gute Posts ausmacht:
   Absätze mit 1–2 Sätzen (höchstens ~200 Zeichen), jeweils durch eine Leerzeile getrennt – gut lesbar
   am Handy. Die Frage zum Kommentieren und die Handlungsaufforderung stehen je als eigener Absatz am
   Ende (zuerst die Frage, dann die Handlungsaufforderung). Höchstens 2 Emojis pro Text, gezielt gesetzt (nicht am Satzanfang, keine Emoji-Ketten).
+- Klug und mit Tiefe: Jeder Feed-Post enthält eine Wissensschicht – ein gesichertes Detail aus der Mythologie
+  (z. B. Venus und Aphrodite, Saturn und die Zeit), der Astronomie (z. B. warum ein Planet rückläufig wirkt) oder
+  der Psychologie des Alltags –, in einem verständlichen Satz und verbunden mit dem Leben der Leserin. Nichts
+  erfinden: keine Zitate, keine Studien, keine Zahlen, die du nicht sicher weißt.
+- Intuitiver Aufbau (Feed-Post): Hook → Einsicht (mit der Wissensschicht) → ein kleiner, konkreter Schritt für
+  heute → die Frage zum Kommentieren → die Handlungsaufforderung.
+- Sei überraschend und kreativ: jeder Tag fühlt sich anders an (Erzählform unten). Sinnliche Details
+  (Licht, Duft, Stoff, ein Geräusch), ein Augenzwinkern in kleiner Dosis, Sätze, die man einer Freundin
+  weiterschickt. Kein Text darf austauschbar wirken.
 - Weniger ist mehr: ein konkreter Gedanke, gut erzählt, statt drei angerissener. Keine Füllsätze
   (keine Einleitungen wie „Heute schauen wir uns … an“, keine Zusammenfassung am Ende, keine
   Wiederholung dessen, was schon im Bild steht). Jeder Satz muss etwas Neues bringen.
@@ -72,6 +82,13 @@ Was gute Posts ausmacht:
   Neuanfänge. Ohne Klischees („typisch Frau“), ohne Männer-Bashing, Paare und alle Menschen bleiben mitgemeint.
 - Reels sollen Lust machen, morgen wiederzukommen: ein Thema, das man täglich verfolgen will (das eigene
   Zeichen, der Mond von heute). Zuschauer sollen merken, dass jeden Tag etwas Neues für sie kommt.
+- Wer liest: rund 90 % Frauen, von Anfang 20 bis über 60. Jeden Tag stehen unten zwei Lebensphasen, die
+  heute besonders angesprochen werden: Feed-Post und erstes Reel sprechen die erste an, Story und zweites Reel
+  die zweite. Schreib so, dass sich Frauen in dieser Phase wiedererkennen – mit einem konkreten Moment aus
+  ihrem Leben –, ohne das Alter zu nennen und ohne die anderen auszuschließen. Klug, warm, auf Augenhöhe:
+  nie belehrend, keine Klischees, keine Altersklischees.
+- "motiv": das Symbol im Bild – eines aus der Liste unten, passend zur Botschaft des Eintrags. Die vier
+  Einträge eines Tages bekommen verschiedene Symbole.
 - Kommt ein Zielgruppen-Profil mit: Greife auf, was diese Menschen beschäftigt und wie sie
   sprechen. Sinngemäß in der Sprache des Posts, nicht wörtlich zitieren, nichts dazuerfinden.
 - Kommen Beispiele mit, die gut angekommen sind: Lerne aus Thema und Ton, kopiere sie nicht.
@@ -111,7 +128,8 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
 
 Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
-- "untertitel": eine kurze Zeile, höchstens 8 Wörter (beim Feed-Post steht sie nicht im Bild).
+- "untertitel": der Kernsatz, höchstens 8 Wörter – steht beim Feed-Post im Bild unter der Überschrift: er
+  ergänzt sie (die Einsicht oder das Versprechen des Posts), wiederholt sie nicht.
 - "hashtags": 5 Hashtags in der Sprache des Posts, mit # (Instagram nimmt höchstens 5), so wie Menschen
   wirklich suchen – keine erfundenen Wortketten: zuerst die 2 zum heutigen Thema bzw. Sternzeichen
   (z. B. #scorpioseason, #venusretrograde, #vollmond), dann 1 großer (z. B. #astrology, #horoskop), dann
@@ -155,9 +173,10 @@ SCHEMA = {
                         "type": "object",
                         "properties": {"titel": {"type": "string"}, "text": {"type": "string"}},
                         "required": ["titel", "text"], "additionalProperties": False}},
+                    "motiv": {"type": "string", "enum": list(symbole.MOTIVE)},
                 },
                 "required": ["art", "platform", "titel", "untertitel", "text", "hashtags", "bild_punkte", "skript",
-                             "folien"],
+                             "folien", "motiv"],
                 "additionalProperties": False,
             },
         },
@@ -265,9 +284,49 @@ def zielgruppen_text(zeile: dict | None) -> str:
     return f"Zielgruppe (Recherche „{zeile.get('bereich')}“):\n" + "\n".join(zeilen)
 
 
+# Erzaehlform des Tages: damit sich jeder Tag anders anfuehlt (Feed-Post und erstes Reel; der Rest frei)
+ERZAEHLFORMEN = [
+    ("geschichte", "Mini-Geschichte: eine kleine Szene mit einer Frau (ohne Namen) in einem konkreten Moment – "
+                   "das Handy in der Hand, der Tee wird kalt –, dann die Wendung, die der Himmel heute bringt."),
+    ("brief", "Brief an dich: wie eine kurze, warme Nachricht an eine Freundin („Liebe Waage, …“ oder „Du, …“), "
+              "persönlich und leise."),
+    ("bild", "Ein starkes Bild: eine einzige Metapher, die den ganzen Text trägt (z. B. der Mond als Lichtschalter, "
+             "die Woche als offenes Fenster) – überraschend, nicht kitschig."),
+    ("fakt", "Überraschender Fakt: ein echtes, wenig bekanntes Detail über Mond, Planeten oder Sternzeichen (nur "
+             "Gesichertes, nichts erfinden) – und was es heute für dich bedeutet."),
+    ("erlaubnis", "Erlaubnis: „Du darfst heute …“ – kleine, befreiende Erlaubnisse, die gut tun."),
+    ("gegensatz", "Gegensatz: „Nicht … – sondern …“: ein verbreiteter Gedanke wird sanft umgedreht."),
+    ("sinne", "Mit allen Sinnen: Licht, Duft, Stoff, Geräusch – der Text lässt den Moment fühlen, bevor er etwas erklärt."),
+]
+
+
+def erzaehlform(tag: date, sprache: str) -> tuple[str, str]:
+    return random.Random(f"form-{tag.isoformat()}-{sprache}").choice(ERZAEHLFORMEN)
+
+
+# Lebensphasen der Leserinnen: jeden Tag zwei im Wechsel (Feed + 1. Reel / Story + 2. Reel)
+LEBENSPHASEN = [
+    ("20er", "Anfang 20 bis Anfang 30: Dating und erste große Liebe, Selbstfindung, Studium oder Berufsstart, Freundinnen, "
+             "der Druck, schon alles wissen zu müssen"),
+    ("30er", "Mitte 30: Partnerschaft oder bewusst allein, Familie gründen oder nicht, Karriere und Balance, "
+             "Selbstwert, wenig Zeit für sich"),
+    ("40er", "Um die 40 und darüber: Neuanfang, Loslassen, Trennung oder neue Liebe, Kinder werden selbstständig, "
+             "endlich die eigenen Wünsche ernst nehmen"),
+    ("50plus", "50 und älter: Gelassenheit und Lebenserfahrung, neue Freiheit, Zeit für sich, Veränderungen des Körpers "
+               "feinfühlig, Enkel, Freundschaften, späte Liebe"),
+]
+
+
+def lebensphasen(tag: date) -> tuple[tuple[str, str], tuple[str, str]]:
+    i = tag.toordinal() % len(LEBENSPHASEN)
+    return LEBENSPHASEN[i], LEBENSPHASEN[(i + 2) % len(LEBENSPHASEN)]
+
+
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
-           vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None) -> str:
+           vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None,
+           phasen: tuple | None = None, form: tuple | None = None) -> str:
     profil = zielgruppen_text(zielgruppe)
+    phasen = phasen or lebensphasen(himmel.heute())
     return (
         "Himmelsdaten für den Tag des Posts (bereits in der Zielsprache benannt):\n"
         f"{himmel.als_text(info)}\n\n"
@@ -280,6 +339,10 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
         + ("\n".join(f"- {t}" for t in bisherige) if bisherige else "- (noch keine)")
         + ("\n\nAnfänge (erste Zeilen) der letzten Tage – nicht ähnlich beginnen:\n"
            + "\n".join(f"- {a}" for a in anfaenge) if anfaenge else "")
+        + f"\n\nErzählform heute (Feed-Post und erstes Reel): {(form or ERZAEHLFORMEN[0])[1]}"
+        + "\n\nLebensphasen heute:\n"
+        + f"1. (Feed-Post, erstes Reel) {phasen[0][1]}\n2. (Story, zweites Reel) {phasen[1][1]}"
+        + "\n\nSymbole für \"motiv\":\n" + "\n".join(f"- {k}: {v}" for k, v in symbole.BEDEUTUNG.items())
         + f"\n\n{sprach_anweisung(sprache)}"
     )
 
@@ -292,7 +355,8 @@ def _aufbereiten(daten: dict, sprache: str, thema_name: str = "") -> list[dict]:
         folien = [{"titel": str(f.get("titel") or "").strip()[:80], "text": str(f.get("text") or "").strip()[:260]}
                   for f in (p.get("folien") or []) if str(f.get("titel") or f.get("text") or "").strip()][:4]
         posts.append({
-            **{k: v for k, v in p.items() if k not in ("bild_punkte", "folien")},
+            **{k: v for k, v in p.items() if k not in ("bild_punkte", "folien", "motiv")},
+            "_motiv": p.get("motiv"),
             "sprache": sprache,
             "skript": skript if p.get("art") == "reel" and (skript.get("hook") or skript.get("szenen")) else None,
             "_bild_punkte": punkte if p.get("art") == "post" else (punkte[:2] if p.get("art") == "story" and len(punkte) >= 2 else []),
@@ -321,7 +385,8 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     tag = date.fromisoformat(info["datum"]) if info.get("datum") else himmel.heute()
     thema = thema or redaktion.wochenthema(tag, info)
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
-    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge)
+    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge, lebensphasen(tag),
+                   erzaehlform(tag, sprache))
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
@@ -384,8 +449,8 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             folge = None if thema["name"].startswith("Großes Ereignis") else db.zaehle_format(sprache, thema["name"], tag) + 1
         except Exception:
             folge = None
-        gespeichert = []
-        for p in posts:
+        gespeichert, phasen = [], lebensphasen(tag)
+        for nr, p in enumerate(posts):
             meta = himmel.bild_meta(info) | {"thema": p.pop("_thema"), "pruefung": p.pop("_pruefung"),
                                              "hook_stil": thema["hook_stil"]["schluessel"],
                                              "aufforderung": thema["aufforderung"]["schluessel"]}
@@ -406,6 +471,11 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
                 meta["variante"] = thema["variante"]
             if zielgruppe:
                 meta["zielgruppe"] = zielgruppe["bereich"]
+            meta["motiv"] = symbole.waehle(p.pop("_motiv", None), meta["thema"], tag.toordinal(), p.get("art"), nr)
+            zweite = p.get("art") == "story" or meta.get("reel_nr") == 2
+            meta["lebensphase"] = phasen[1 if zweite else 0][0]
+            if not zweite and p.get("art") in ("post", "reel"):
+                meta["erzaehlform"] = erzaehlform(tag, sprache)[0]
             gespeichert += db.speichere_posts([p], quelle="himmel", geplant_fuer=tag, meta=meta)
         db.tagesplan_fertig(tag, sprache, info)
         print(f"[Tagesplan] {tag} {sprache}: {len(gespeichert)} Posts", flush=True)

@@ -770,6 +770,10 @@ PALETTEN = {   # Verlauf oben -> Mitte -> unten, Akzent fuer Ringe/Karten
     "ritual": {"verlauf": ("#123f45", "#091f26", "#03090c"), "akzent": (233, 207, 156)},
     "zeichen": {"verlauf": ("#26206a", "#100c33", "#05040f"), "akzent": (233, 207, 156)},
     "mitmachen": {"verlauf": ("#3d1866", "#170a2c", "#07040f"), "akzent": (233, 207, 156)},
+    # fuer die Symbole (symbole.MOTIV_PALETTE): Rose/Pflaume, warmes Bernstein, Amethyst
+    "rose": {"verlauf": ("#5a1d46", "#260c26", "#0b0410"), "akzent": (240, 196, 176)},
+    "amber": {"verlauf": ("#4b2c14", "#1d1009", "#070403"), "akzent": (240, 208, 150)},
+    "amethyst": {"verlauf": ("#3b1b70", "#170b35", "#06040f"), "akzent": (226, 206, 240)},
 }
 THEMEN = {   # Wochenformat (redaktion.py) -> (Layout-Schluessel, Farbwelt)
     "Deine Woche": ("woche", "nacht"), "Sternzeichen im Fokus": ("zeichen", "zeichen"),
@@ -846,12 +850,19 @@ def stil(post: dict) -> dict:
         aufbau = "glyphe"                        # Saisonbeginn: grosses Sternzeichen statt Mond
     else:
         aufbau = "mond"
+    # Symbol (Herz, Kerze, Kristall ...) statt des grossen Mondes -- mit eigener Farbwelt
+    from symbole import MOTIVE, MOTIV_PALETTE
+    symbol = meta.get("motiv") if meta.get("motiv") in MOTIVE else None
+    if symbol and aufbau in ("mond", "liebe"):
+        aufbau, palette = "symbol", MOTIV_PALETTE.get(symbol, palette)
+    else:
+        symbol = None
     sprache = (post.get("sprache") or "de")[:2]
     label = (BESCHRIFTUNG.get(layout) or {}).get(sprache) if layout in BESCHRIFTUNG else None
     if label and meta.get("folge") and layout != "ereignis":     # Serie: "Ritual · Folge 12"
         label = f"{label} · {FOLGE.get(sprache, FOLGE['en']).format(n=int(meta['folge']))}"
     return {"layout": layout, "aufbau": aufbau, "palette": palette, "label": label, "punkte": punkte,
-            "zeichen": ereignis_zeichen}
+            "zeichen": ereignis_zeichen, "symbol": symbol}
 
 
 # Mondphasen ohne Internet (fuer die Wochenleiste): Alter seit einem bekannten Neumond
@@ -1129,6 +1140,25 @@ def _liebe_ringe(d, cx, cy, r, m, akzent):
                   outline=akzent + (120,), width=max(1, int(2.4 * m)))
 
 
+def _symbol_held(leinwand, d, name, cx, cy, r, m, akzent):
+    """Symbol in der Mitte: weicher Lichthof, zwei feine Ringe (wie ein Siegel), darin das goldene Motiv."""
+    from symbole import motiv
+    schein = radial(int(4 * r * m), int(4 * r * m), 2 * r * m, 2 * r * m, r * 0.3 * m, 2 * r * m, 2 * r * m,
+                    2 * r * m, [(0, "#ffe2b0", 0.22), (0.55, "#ffe2b0", 0.06), (1, "#ffe2b0", 0)])
+    aufkleben(leinwand, schein, (cx * m - schein.width / 2, cy * m - schein.height / 2))
+    d.ellipse([(cx - r) * m, (cy - r) * m, (cx + r) * m, (cy + r) * m], fill=akzent + (14,),
+              outline=akzent + (150,), width=max(1, int(2 * m)))
+    ri = r * 0.9
+    d.ellipse([(cx - ri) * m, (cy - ri) * m, (cx + ri) * m, (cy + ri) * m], outline=akzent + (60,), width=max(1, int(1.2 * m)))
+    for w in range(0, 360, 45):          # kleine Punkte auf dem Ring
+        a = math.radians(w)
+        px, py = cx + r * math.cos(a), cy + r * math.sin(a)
+        d.ellipse([(px - 3.2) * m, (py - 3.2) * m, (px + 3.2) * m, (py + 3.2) * m], fill=akzent + (220,))
+    gr = int(r * 1.8 * m)                # die Zeichnungen fuellen ihr Raster nicht ganz -> etwas groesser als der Ring
+    b = motiv(name, gr)
+    aufkleben(leinwand, b, (cx * m - gr / 2, cy * m - gr / 2))
+
+
 def bild(post: dict, format: str = "feed", video: bool = False) -> Image.Image:
     """Das fertige Post-Bild als RGB (1080x1350 oder 1080x1920), Look je nach Wochenformat."""
     story = format == "story"
@@ -1166,9 +1196,10 @@ def bild(post: dict, format: str = "feed", video: bool = False) -> Image.Image:
     titel = messe_text(post.get("titel") or post.get("text") or "", breite=W - 180, groesse=108 if story else 92,
                        name="cormorant", max_zeilen=4 if story else 3, min_groesse=56)
     # Unterzeile nur noch bei Posts ohne Format (Studio); im Tagesplan reicht die Ueberschrift
+    # beim Symbol-Aufbau steht der Kernsatz unter dem Titel (man versteht auf einen Blick, worum es geht)
     unter = messe_text(post["untertitel"], breite=W - 220, groesse=42 if story else 36, name="inter400",
                        zeilenhoehe=1.35, max_zeilen=2, min_groesse=28) \
-        if post.get("untertitel") and not st["label"] and post.get("art") != "story" else None
+        if post.get("untertitel") and (not st["label"] or st["aufbau"] == "symbol") and post.get("art") != "story" else None
     frage_text = post.get("text") if post.get("art") == "story" and post.get("text") and post.get("text") != post.get("titel") else ""
     antworten = st["punkte"][:2] if story and post.get("art") == "story" and len(st["punkte"]) >= 2 else []
     if antworten and frage_text:
@@ -1199,8 +1230,12 @@ def bild(post: dict, format: str = "feed", video: bool = False) -> Image.Image:
     else:
         rest = titel["hoehe"] + (ab_unter + unter["hoehe"] if unter else 0) + (ab_frage + frage["hoehe"] + 2 * pad if frage else 0) \
             + (40 + 96 if antworten else 0)
-        held = st["aufbau"] if st["aufbau"] in ("woche", "zitat", "glyphe") else None
-        held_h = {"woche": 118, "zitat": 130, "glyphe": 2 * (150 if story else 120)}.get(held, 0)
+        held = st["aufbau"] if st["aufbau"] in ("woche", "zitat", "glyphe", "symbol") else None
+        held_h = {"woche": 118, "zitat": 130, "glyphe": 2 * (150 if story else 120),
+                  "symbol": 2 * (175 if story else 150)}.get(held, 0)
+        if held == "symbol":      # Platz sparen, wenn Titel und Frage viel brauchen
+            held_h = max(2 * 92, min(held_h, platz - rest - ab_mond * 0.8))
+        symbol_mond = mit_mond and held == "symbol"
         mit_mond = mit_mond and not held
         r = (150 if story else 105) if mit_mond else 0
         if mit_mond:
@@ -1219,6 +1254,13 @@ def bild(post: dict, format: str = "feed", video: bool = False) -> Image.Image:
             aufkleben(leinwand, schein, (W * m / 2 - schein.width / 2, (y + gr) * m - schein.height / 2))
             _medaillon(d, W / 2, y + gr, gr, m, akzent, glyphe=ZEICHEN_GLYPHE[st["zeichen"]])
             y += held_h + ab_mond * 0.8
+        elif held == "symbol":
+            _symbol_held(leinwand, d, st["symbol"], W / 2, y + held_h / 2, held_h / 2, m, akzent)
+            y += held_h + ab_mond * 0.8
+        if symbol_mond:           # der Mond des Tages bleibt dabei: klein oben rechts
+            mr = 46 if story else 38
+            mb = mond(mr * m, meta.get("phase_index"), meta.get("beleuchtung"))
+            aufkleben(leinwand, mb, ((W - 110) * m - mb.width / 2, (story and 180 or 120) * m - mb.height / 2))
         if mit_mond:
             if st["aufbau"] == "liebe":
                 _liebe_ringe(d, W / 2, y + r, r, m, akzent)
