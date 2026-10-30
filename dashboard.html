@@ -3527,7 +3527,9 @@ async function ladePosten(){
       const fehler = liste.filter(x => x.fehler && x.status !== 'fertig')
         .map(x => `<div class="fehl">${esc(PL_NAME[x.plattform] || x.plattform)}: ${esc(x.fehler)}${x.status === 'fehler' ? ` (Versuch ${x.versuche} von 3)` : ''}</div>`).join('');
       const aktion = gestoppt ? `<button class="ghost klein" data-weiter="${t.post_id}">Wieder posten</button>`
-        : offenListe.length ? `<button class="ghost klein" data-stopp="${t.post_id}">Stoppen</button> ${offenListe.map(x => `<button class="ghost klein" data-jetzt="${t.post_id}" data-pl="${x.plattform}">Jetzt: ${esc(PL_NAME[x.plattform] || x.plattform)}</button>`).join(' ')}` : '';
+        : offenListe.length ? `<button class="ghost klein" data-stopp="${t.post_id}">Stoppen</button> ${offenListe.map(x => `<button class="ghost klein" data-jetzt="${t.post_id}" data-pl="${x.plattform}">Jetzt: ${esc(PL_NAME[x.plattform] || x.plattform)}</button>`).join(' ')}`
+        // laeuft gerade: Stoppen verhindert einen neuen Versuch, falls dieser haengen bleibt (kein "Jetzt", sonst doppelt)
+        : liste.some(x => x.status === 'laeuft') ? `<button class="ghost klein" data-stopp="${t.post_id}" title="Kein neuer Versuch, falls dieser hängen bleibt">Stoppen</button>` : '';
       return `<tr><td class="t">${tagName(zuerst.geplant_um)} ${uhr(zuerst.geplant_um)}</td>
         <td>${esc(ART[platzVon(t)] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>${fehler}</td>
         <td class="pl"><span class="plk-reihe">${marken}</span></td>
