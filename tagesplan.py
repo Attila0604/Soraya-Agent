@@ -55,6 +55,9 @@ Was gute Posts ausmacht:
   Absätze mit 1–2 Sätzen (höchstens ~200 Zeichen), jeweils durch eine Leerzeile getrennt – gut lesbar
   am Handy. Die Frage zum Kommentieren und die Handlungsaufforderung stehen je als eigener Absatz am
   Ende (zuerst die Frage, dann die Handlungsaufforderung). Höchstens 2 Emojis pro Text, gezielt gesetzt (nicht am Satzanfang, keine Emoji-Ketten).
+- Sei überraschend und kreativ: jeder Tag fühlt sich anders an (Erzählform unten). Sinnliche Details
+  (Licht, Duft, Stoff, ein Geräusch), ein Augenzwinkern in kleiner Dosis, Sätze, die man einer Freundin
+  weiterschickt. Kein Text darf austauschbar wirken.
 - Weniger ist mehr: ein konkreter Gedanke, gut erzählt, statt drei angerissener. Keine Füllsätze
   (keine Einleitungen wie „Heute schauen wir uns … an“, keine Zusammenfassung am Ende, keine
   Wiederholung dessen, was schon im Bild steht). Jeder Satz muss etwas Neues bringen.
@@ -274,6 +277,26 @@ def zielgruppen_text(zeile: dict | None) -> str:
     return f"Zielgruppe (Recherche „{zeile.get('bereich')}“):\n" + "\n".join(zeilen)
 
 
+# Erzaehlform des Tages: damit sich jeder Tag anders anfuehlt (Feed-Post und erstes Reel; der Rest frei)
+ERZAEHLFORMEN = [
+    ("geschichte", "Mini-Geschichte: eine kleine Szene mit einer Frau (ohne Namen) in einem konkreten Moment – "
+                   "das Handy in der Hand, der Tee wird kalt –, dann die Wendung, die der Himmel heute bringt."),
+    ("brief", "Brief an dich: wie eine kurze, warme Nachricht an eine Freundin („Liebe Waage, …“ oder „Du, …“), "
+              "persönlich und leise."),
+    ("bild", "Ein starkes Bild: eine einzige Metapher, die den ganzen Text trägt (z. B. der Mond als Lichtschalter, "
+             "die Woche als offenes Fenster) – überraschend, nicht kitschig."),
+    ("fakt", "Überraschender Fakt: ein echtes, wenig bekanntes Detail über Mond, Planeten oder Sternzeichen (nur "
+             "Gesichertes, nichts erfinden) – und was es heute für dich bedeutet."),
+    ("erlaubnis", "Erlaubnis: „Du darfst heute …“ – kleine, befreiende Erlaubnisse, die gut tun."),
+    ("gegensatz", "Gegensatz: „Nicht … – sondern …“: ein verbreiteter Gedanke wird sanft umgedreht."),
+    ("sinne", "Mit allen Sinnen: Licht, Duft, Stoff, Geräusch – der Text lässt den Moment fühlen, bevor er etwas erklärt."),
+]
+
+
+def erzaehlform(tag: date, sprache: str) -> tuple[str, str]:
+    return random.Random(f"form-{tag.isoformat()}-{sprache}").choice(ERZAEHLFORMEN)
+
+
 # Lebensphasen der Leserinnen: jeden Tag zwei im Wechsel (Feed + 1. Reel / Story + 2. Reel)
 LEBENSPHASEN = [
     ("20er", "Anfang 20 bis Anfang 30: Dating und erste große Liebe, Selbstfindung, Studium oder Berufsstart, Freundinnen, "
@@ -294,7 +317,7 @@ def lebensphasen(tag: date) -> tuple[tuple[str, str], tuple[str, str]]:
 
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
            vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None,
-           phasen: tuple | None = None) -> str:
+           phasen: tuple | None = None, form: tuple | None = None) -> str:
     profil = zielgruppen_text(zielgruppe)
     phasen = phasen or lebensphasen(himmel.heute())
     return (
@@ -309,6 +332,7 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
         + ("\n".join(f"- {t}" for t in bisherige) if bisherige else "- (noch keine)")
         + ("\n\nAnfänge (erste Zeilen) der letzten Tage – nicht ähnlich beginnen:\n"
            + "\n".join(f"- {a}" for a in anfaenge) if anfaenge else "")
+        + f"\n\nErzählform heute (Feed-Post und erstes Reel): {(form or ERZAEHLFORMEN[0])[1]}"
         + "\n\nLebensphasen heute:\n"
         + f"1. (Feed-Post, erstes Reel) {phasen[0][1]}\n2. (Story, zweites Reel) {phasen[1][1]}"
         + "\n\nSymbole für \"motiv\":\n" + "\n".join(f"- {k}: {v}" for k, v in symbole.BEDEUTUNG.items())
@@ -354,7 +378,8 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     tag = date.fromisoformat(info["datum"]) if info.get("datum") else himmel.heute()
     thema = thema or redaktion.wochenthema(tag, info)
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
-    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge, lebensphasen(tag))
+    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge, lebensphasen(tag),
+                   erzaehlform(tag, sprache))
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
@@ -442,6 +467,8 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             meta["motiv"] = symbole.waehle(p.pop("_motiv", None), meta["thema"], tag.toordinal(), p.get("art"), nr)
             zweite = p.get("art") == "story" or meta.get("reel_nr") == 2
             meta["lebensphase"] = phasen[1 if zweite else 0][0]
+            if not zweite and p.get("art") in ("post", "reel"):
+                meta["erzaehlform"] = erzaehlform(tag, sprache)[0]
             gespeichert += db.speichere_posts([p], quelle="himmel", geplant_fuer=tag, meta=meta)
         db.tagesplan_fertig(tag, sprache, info)
         print(f"[Tagesplan] {tag} {sprache}: {len(gespeichert)} Posts", flush=True)

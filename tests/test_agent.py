@@ -2637,7 +2637,7 @@ def test_symbole_und_lebensphasen():
 def test_tagesplan_merkt_symbol_und_lebensphase(frische_db):
     tagesplan.erstelle("en")
     frage = next(x["frage"] for x in frische_db if "Lebensphasen heute" in x["frage"])
-    assert "Symbole für" in frage and "herz:" in frage
+    assert "Symbole für" in frage and "herz:" in frage and "Erzählform heute" in frage
     posts = [p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en"]
     import symbole
     a, b = tagesplan.lebensphasen(HEUTE)
@@ -2646,3 +2646,5 @@ def test_tagesplan_merkt_symbol_und_lebensphase(frische_db):
         assert m["motiv"] in symbole.MOTIVE                      # Ersatz je Format, wenn Claude keins liefert
         zweite = p["art"] == "story" or m.get("reel_nr") == 2
         assert m["lebensphase"] == (b if zweite else a)[0]
+        if not zweite and p["art"] in ("post", "reel"):
+            assert m["erzaehlform"] == tagesplan.erzaehlform(HEUTE, "en")[0]

@@ -1154,7 +1154,7 @@ def _symbol_held(leinwand, d, name, cx, cy, r, m, akzent):
         a = math.radians(w)
         px, py = cx + r * math.cos(a), cy + r * math.sin(a)
         d.ellipse([(px - 3.2) * m, (py - 3.2) * m, (px + 3.2) * m, (py + 3.2) * m], fill=akzent + (220,))
-    gr = int(r * 1.35 * m)
+    gr = int(r * 1.8 * m)                # die Zeichnungen fuellen ihr Raster nicht ganz -> etwas groesser als der Ring
     b = motiv(name, gr)
     aufkleben(leinwand, b, (cx * m - gr / 2, cy * m - gr / 2))
 
