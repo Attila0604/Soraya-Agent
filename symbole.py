@@ -21,6 +21,13 @@ MOTIVE = ("herz", "kerze", "kristall", "lotus", "sonne", "sternbild", "schluesse
 MOTIV_PALETTE = {"herz": "rose", "venus": "rose", "kerze": "amber", "sonne": "amber", "sanduhr": "amber",
                  "kristall": "amethyst", "karten": "amethyst", "lotus": "ritual", "auge": "wissen",
                  "sternbild": "wissen", "schluessel": "zeichen"}
+# Farbe der zarten Flaeche je Symbol (innen hell -> aussen satt), damit jedes Symbol eigenes Licht hat
+FLAECHE = {"herz": ("#ffe6ec", "#ff9fb8", "#e0607f"), "venus": ("#ffe6ec", "#f7a8c8", "#c9628f"),
+           "kerze": ("#fff4d6", "#ffc070", "#e8803c"), "sonne": ("#fff6d8", "#ffcf6a", "#f0953a"),
+           "sanduhr": ("#fff2d6", "#f2c68a", "#c98a50"), "kristall": ("#f1e6ff", "#c6a8ff", "#8a63e0"),
+           "karten": ("#f1e6ff", "#cdb0ff", "#9068d8"), "lotus": ("#e6fff6", "#9ee8cf", "#3fb69a"),
+           "auge": ("#e6f2ff", "#9cc8ff", "#4f86e0"), "sternbild": ("#e6f2ff", "#a8ccff", "#5a8ee6"),
+           "schluessel": ("#fff3dc", "#ffcf8f", "#d99a5a")}
 # wofuer ein Motiv passt (fuer Claude und fuer die Auswahl ohne Claude)
 BEDEUTUNG = {
     "herz": "Liebe, Gefühle, Nähe", "venus": "Venus, Anziehung, Weiblichkeit, Selbstwert",
@@ -278,10 +285,10 @@ def motiv(name: str, groesse: int) -> Image.Image:
             staub.ellipse([P(x - q, y - q), P(x + q, y + q)], fill=int(zz.uniform(120, 255)))
     gold = medien.linear(gr, gr, 120 * s, 60 * s, 400 * s, 460 * s,
                          [(0, "#fff7dc", 1), (0.45, "#ecca82", 1), (1, "#b08640", 1)])
-    farbe = medien.radial(gr, gr, 256 * s, 200 * s, 0, 256 * s, 256 * s, 300 * s,
-                          [(0, "#fff3dc", 1), (0.45, "#ffc98f", 1), (1, "#f08f78", 1)])
+    f0, f1, f2 = FLAECHE.get(name, ("#fff3dc", "#ffc98f", "#f08f78"))
+    farbe = medien.radial(gr, gr, 256 * s, 200 * s, 0, 256 * s, 256 * s, 300 * s, [(0, f0, 1), (0.45, f1, 1), (1, f2, 1)])
     bild = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
-    bild.alpha_composite(medien._durch_maske(farbe, flaeche.filter(ImageFilter.GaussianBlur(3 * s)), 0.42))
+    bild.alpha_composite(medien._durch_maske(farbe, flaeche.filter(ImageFilter.GaussianBlur(3 * s)), 0.5))
     schein = linien.filter(ImageFilter.GaussianBlur(16 * s))
     bild.alpha_composite(medien._durch_maske(Image.new("RGBA", (gr, gr), (255, 222, 160, 255)), schein, 0.6))
     bild.alpha_composite(medien._durch_maske(gold, linien))

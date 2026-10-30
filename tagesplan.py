@@ -55,6 +55,12 @@ Was gute Posts ausmacht:
   Absätze mit 1–2 Sätzen (höchstens ~200 Zeichen), jeweils durch eine Leerzeile getrennt – gut lesbar
   am Handy. Die Frage zum Kommentieren und die Handlungsaufforderung stehen je als eigener Absatz am
   Ende (zuerst die Frage, dann die Handlungsaufforderung). Höchstens 2 Emojis pro Text, gezielt gesetzt (nicht am Satzanfang, keine Emoji-Ketten).
+- Klug und mit Tiefe: Jeder Feed-Post enthält eine Wissensschicht – ein gesichertes Detail aus der Mythologie
+  (z. B. Venus und Aphrodite, Saturn und die Zeit), der Astronomie (z. B. warum ein Planet rückläufig wirkt) oder
+  der Psychologie des Alltags –, in einem verständlichen Satz und verbunden mit dem Leben der Leserin. Nichts
+  erfinden: keine Zitate, keine Studien, keine Zahlen, die du nicht sicher weißt.
+- Intuitiver Aufbau (Feed-Post): Hook → Einsicht (mit der Wissensschicht) → ein kleiner, konkreter Schritt für
+  heute → die Frage zum Kommentieren → die Handlungsaufforderung.
 - Sei überraschend und kreativ: jeder Tag fühlt sich anders an (Erzählform unten). Sinnliche Details
   (Licht, Duft, Stoff, ein Geräusch), ein Augenzwinkern in kleiner Dosis, Sätze, die man einer Freundin
   weiterschickt. Kein Text darf austauschbar wirken.
@@ -122,7 +128,8 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
 
 Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
-- "untertitel": eine kurze Zeile, höchstens 8 Wörter (beim Feed-Post steht sie nicht im Bild).
+- "untertitel": der Kernsatz, höchstens 8 Wörter – steht beim Feed-Post im Bild unter der Überschrift: er
+  ergänzt sie (die Einsicht oder das Versprechen des Posts), wiederholt sie nicht.
 - "hashtags": 5 Hashtags in der Sprache des Posts, mit # (Instagram nimmt höchstens 5), so wie Menschen
   wirklich suchen – keine erfundenen Wortketten: zuerst die 2 zum heutigen Thema bzw. Sternzeichen
   (z. B. #scorpioseason, #venusretrograde, #vollmond), dann 1 großer (z. B. #astrology, #horoskop), dann

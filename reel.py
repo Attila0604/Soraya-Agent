@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-14"
+VERSION = "reel-15"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 

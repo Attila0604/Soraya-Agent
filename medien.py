@@ -1196,9 +1196,10 @@ def bild(post: dict, format: str = "feed", video: bool = False) -> Image.Image:
     titel = messe_text(post.get("titel") or post.get("text") or "", breite=W - 180, groesse=108 if story else 92,
                        name="cormorant", max_zeilen=4 if story else 3, min_groesse=56)
     # Unterzeile nur noch bei Posts ohne Format (Studio); im Tagesplan reicht die Ueberschrift
+    # beim Symbol-Aufbau steht der Kernsatz unter dem Titel (man versteht auf einen Blick, worum es geht)
     unter = messe_text(post["untertitel"], breite=W - 220, groesse=42 if story else 36, name="inter400",
                        zeilenhoehe=1.35, max_zeilen=2, min_groesse=28) \
-        if post.get("untertitel") and not st["label"] and post.get("art") != "story" else None
+        if post.get("untertitel") and (not st["label"] or st["aufbau"] == "symbol") and post.get("art") != "story" else None
     frage_text = post.get("text") if post.get("art") == "story" and post.get("text") and post.get("text") != post.get("titel") else ""
     antworten = st["punkte"][:2] if story and post.get("art") == "story" and len(st["punkte"]) >= 2 else []
     if antworten and frage_text:

@@ -37,6 +37,10 @@ def waehle(post: dict, st: dict) -> str:
         motiv = {"mond": "rad", "rad": "mond", "planet": "mond", "venus": "mond", "kerze": "mond", "karten": "rad"}[motiv]
     if motiv == "mond" and meta.get("phase_index") is None:
         motiv = "planet"                             # ohne Mondphase kein echter Mond
+    # das Symbol des Posts (symbole.py), langsam in 3D -- nicht bei grossen Ereignissen (dort Mond/Rad)
+    import symbole
+    if meta.get("motiv") in symbole.MOTIVE and not thema.startswith("Großes Ereignis"):
+        motiv = "symbol:" + meta["motiv"]
     return motiv
 
 
@@ -287,8 +291,75 @@ class Karten(Motiv):
             _kleben(bild, _alpha(kk, sichtbar), self.cx + (i - 1) * abstand, self.cy + schweben)
 
 
+class Symbol(Motiv):
+    """Das Symbol des Posts (symbole.py), langsam in 3D: dreht sich sacht um die senkrechte Achse (mit Goldkante
+    wie eine Muenze), ein Lichtschimmer wandert darueber, der Schein atmet, kleine Sterne kreisen davor und dahinter."""
+    mit_sternbild = False
+
+    def __init__(self, cx, cy, name, akzent, seed, groesse=560):
+        import symbole
+        self.cx, self.cy, self.akzent = cx, cy, tuple(akzent)
+        self.bild = symbole.motiv(name, groesse)
+        a = np.asarray(self.bild.getchannel("A"), np.float32) / 255
+        self.alpha = a
+        kante = Image.new("RGBA", self.bild.size, (150, 108, 52, 0))       # dunkleres Gold fuer die Kante
+        kante.putalpha(self.bild.getchannel("A").point(lambda v: int(v * 0.85)))
+        self.kante = kante
+        self.schein = _glut(int(groesse * 1.25), int(groesse * 1.25), self.akzent, 85)
+        zz = np.random.default_rng(seed)
+        self.sterne = [(zz.uniform(0, 2 * math.pi), zz.uniform(0.75, 1.0), zz.uniform(3, 7), zz.uniform(0.15, 0.35))
+                       for _ in range(7)]
+        self.r = groesse * 0.46
+
+    def _schimmer(self, w, h, u):
+        """Heller Streifen (schraeg), der bei u 0..1 einmal ueber das Symbol wandert -- nur auf dem Gold."""
+        xx = np.linspace(0, 1, w)[None, :] + np.linspace(0, 0.35, h)[:, None]
+        band = np.clip(1 - np.abs(xx - (u * 1.7 - 0.2)) / 0.09, 0, 1) ** 2
+        a = Image.fromarray((band * 140).astype(np.uint8), "L")
+        maske = self.bild.getchannel("A").resize((w, h), Image.BILINEAR)
+        a = Image.fromarray((np.asarray(a, np.float32) * np.asarray(maske, np.float32) / 255).astype(np.uint8), "L")
+        ebene = Image.new("RGBA", (w, h), (255, 250, 230, 0))
+        ebene.putalpha(a)
+        return ebene
+
+    def _sterne(self, bild, t, auf, vorne):
+        d = ImageDraw.Draw(bild, "RGBA")
+        for k, (w0, rr, groesse, tempo) in enumerate(self.sterne):
+            w = w0 + t * tempo
+            z = math.sin(w)                                     # Tiefe: > 0 vorne, < 0 hinten
+            if (z >= 0) != vorne:
+                continue
+            x = self.cx + math.cos(w) * self.r * rr * 1.25
+            y = self.cy + math.sin(w) * self.r * rr * 0.32 - 20
+            g = groesse * (0.75 + 0.35 * z)
+            a = int(255 * auf * (0.45 + 0.55 * (z + 1) / 2) * (0.7 + 0.3 * math.sin(t * 2.3 + k)))
+            d.polygon(medien.stern_punkte(x, y, g * 2.2), fill=(255, 238, 200, a))
+
+    def zeichne(self, bild, t, sichtbar):
+        auf = _weich(t / 1.0) * sichtbar
+        if auf <= 0:
+            return
+        schweben = 10 * math.sin(t * 0.9)
+        cy = self.cy + schweben
+        _kleben(bild, _alpha(self.schein, (0.65 + 0.35 * math.sin(t * 1.2)) * auf), self.cx, cy)
+        self._sterne(bild, t, auf, vorne=False)
+        winkel = 0.62 * math.sin(t * 0.55)                     # langsam hin und her, nie ganz seitlich
+        breite = max(8, int(self.bild.width * (0.30 + 0.70 * abs(math.cos(winkel)))))
+        hoehe = int(self.bild.height * (0.97 + 0.03 * math.cos(winkel)))
+        dicke = 9 * math.sin(winkel)                            # Kante wie bei einer Muenze
+        kante = self.kante.resize((breite, hoehe), Image.BILINEAR)
+        for i in range(1, 6):
+            _kleben(bild, _alpha(kante, auf * 0.55), self.cx - dicke * i / 5, cy)
+        vorder = self.bild.resize((breite, hoehe), Image.BILINEAR)
+        vorder.alpha_composite(self._schimmer(breite, hoehe, (t / 4.5) % 1.0))
+        _kleben(bild, _alpha(vorder, auf), self.cx + dicke * 0.2, cy)
+        self._sterne(bild, t, auf, vorne=True)
+
+
 def baue(motiv: str, cx: float, cy: float, *, zeichen, akzent, seed: int, post: dict) -> Motiv | None:
     """None = der echte Mond (zeichnet reel.py selbst)."""
+    if motiv.startswith("symbol:"):
+        return Symbol(cx, cy, motiv.split(":", 1)[1], akzent, seed)
     if motiv == "rad":
         return Rad(cx, cy, zeichen, akzent)
     if motiv == "planet":
