@@ -1054,7 +1054,7 @@ def test_instagram_bio_hinweis(monkeypatch):
     assert ig.count("bio") == 1 and "👉 @soraya.astroguide" in ig and ig.index("@soraya") < ig.index("#astro")
     reel = posten.text_fuer({**p, "art": "reel", "sprache": "hu", "text": "Mit hoz a hét?"}, "instagram")
     assert "Az ingyenes horoszkópod: link a bióban 👉 @soraya.astroguide" in reel
-    assert ig.count("🌐 sorayaluxuryastroguide.com") == 1 and reel.count("sorayaluxuryastroguide.com") == 1
+    assert "sorayaluxuryastroguide.com" not in ig and "sorayaluxuryastroguide.com" not in reel   # keine Adresse im Text (Reichweite)
     assert "@soraya" not in posten.text_fuer({**p, "art": "story"}, "instagram")
     fb = posten.text_fuer(p, "facebook")
     assert "@soraya" not in fb and "🔗 Your free horoscope 👉 http" in fb and "?q=p7&lang=en" in fb

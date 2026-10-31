@@ -352,10 +352,7 @@ def _mit_bio_hinweis(text: str, sprache: str, speichern: bool = False) -> str:
             bio = f"{zeile} 👉 @{name}" if name else zeile
         absaetze.insert(1 if len(absaetze) > 1 else len(absaetze), bio)
         text = "\n\n".join(absaetze)
-    # Die Adresse der Landingpage zum Abtippen (im Instagram-Text nicht klickbar)
-    adresse = re.sub(r"^https?://(www\.)?", "", link_basis()).rstrip("/")
-    if adresse.lower() not in text.lower():
-        zeilen.append(f"🌐 {adresse}")
+    # keine Web-Adresse im Instagram-Text: Instagram zeigt Posts mit Adressen oft weniger Leuten (der Link steht in der Bio)
     return f"{text}\n\n" + "\n".join(zeilen) if zeilen else text
 
 
