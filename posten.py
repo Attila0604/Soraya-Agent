@@ -44,7 +44,9 @@ NUR_REELS = {"tiktok"}
 # Storys gibt es auf LinkedIn nicht
 OHNE_STORYS = {"linkedin"}
 # Auf dem persoenlichen LinkedIn-Profil waeren zwei Reels am Tag zu viel: automatisch nur das erste
-NUR_ERSTES_REEL = {"linkedin"}
+# das zweite Reel des Tages geht nur auf TikTok (auf Instagram/Facebook lieber eins pro Tag, dafuer staerker)
+NUR_ERSTES_REEL = {"linkedin", "instagram", "facebook"}
+REEL2_NUR = "Zweites Reel geht nur auf TikTok."
 
 
 def platz(post: dict) -> str:
@@ -733,6 +735,9 @@ def fuehre_aus(jetzt: datetime | None = None, e: dict | None = None) -> list[dic
             continue
         if jetzt - zeile["geplant_um"] > timedelta(hours=12):
             db.setze_veroeffentlichung(zeile["id"], "verpasst", fehler="Mehr als 12 Stunden zu spät – nicht nachgeholt.")
+            continue
+        if zeile["plattform"] in NUR_ERSTES_REEL and platz(post) == "reel2":     # schon geplante alte Termine
+            db.setze_veroeffentlichung(zeile["id"], "abgebrochen", fehler=REEL2_NUR)
             continue
         if not sprache_passt(post, zeile["plattform"], e):
             db.setze_veroeffentlichung(zeile["id"], "abgebrochen", fehler="Sprache der Plattform geändert – geht nicht raus.")

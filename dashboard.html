@@ -1426,7 +1426,8 @@ const IKON = {
 // Welche Art geht wohin (wie posten.passt): TikTok nur Reels, LinkedIn ohne Storys
 const PLATTFORMEN = ['facebook', 'instagram', 'tiktok', 'linkedin', 'pinterest'];
 // art darf auch der Termin-Platz sein ('reel2' = zweites Reel): automatisch geht auf LinkedIn nur das erste Reel
-const passtPl = (pl, art) => pl === 'tiktok' ? (art === 'reel' || art === 'reel2') : pl === 'linkedin' ? (art !== 'story' && art !== 'reel2') : pl === 'pinterest' ? (art === 'post' || art === 'story') : true;
+// wie posten.passt + NUR_ERSTES_REEL: das 2. Reel geht nur auf TikTok
+const passtPl = (pl, art) => pl === 'tiktok' ? (art === 'reel' || art === 'reel2') : art === 'reel2' ? false : pl === 'linkedin' ? art !== 'story' : pl === 'pinterest' ? (art === 'post' || art === 'story') : true;
 // wie posten.platz(): story, post, reel oder reel2 (zweites Reel des Tages mit eigener Uhrzeit)
 const platzVon = (p) => p && p.art === 'reel' && (((p.meta || {}).reel_nr === 2) || p.reel_nr === 2) ? 'reel2' : (p && p.art) || 'post';
 const plIkon = (pl, cls = '', zusatz = '') => `<span class="plk ${cls}" title="${esc((PL_NAME[pl] || pl) + (zusatz ? ': ' + zusatz : ''))}">${IKON[pl] || ''}${esc(PL_NAME[pl] || pl)}</span>`;
@@ -3503,7 +3504,7 @@ async function ladePosten(){
   zeigeEinrichtung(d);
   zeigeTestposts(d);
 
-  const vonSelbstWeg = (t) => t.status === 'abgebrochen' && /^(Sprache der Plattform|Für diesen Platz)/.test(t.fehler || '');
+  const vonSelbstWeg = (t) => t.status === 'abgebrochen' && /^(Sprache der Plattform|Für diesen Platz|Zweites Reel geht nur)/.test(t.fehler || '');
   const termine = (d.termine || []).map(tiktokStand).filter(t => !vonSelbstWeg(t));
   // je Post eine Zeile (statt einer Zeile je Plattform): Plattformen als kleine Marken mit ihrem Stand
   const gruppen = [];
