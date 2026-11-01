@@ -83,6 +83,10 @@ def _antwort(r: requests.Response) -> dict:
     if r.status_code >= 400 or (code and code != "ok"):
         text = (fehler.get("message") if isinstance(fehler, dict) else None) or \
             daten.get("error_description") or r.text[:300]
+        if not daten and (r.text or "").lstrip()[:1] == "<":
+            # HTML-Fehlerseite von TikToks Servern (z. B. errors.edgesuite.net) statt einer Antwort: Stoerung bei TikTok
+            text = (f"Die TikTok-Server haben die Anfrage abgelehnt (Störung bei TikTok, Code {r.status_code}). "
+                    "Meist klappt es später wieder – sonst das Video selbst in der TikTok-App posten.")
         if code in ("access_token_invalid", "invalid_grant") or r.status_code == 401:
             text = "Zugang abgelaufen oder entzogen – bitte im Dashboard neu verbinden. (" + str(text) + ")"
         if code in FEHLER_TEXTE:
