@@ -2661,3 +2661,11 @@ def test_zweites_reel_nur_auf_tiktok(fake_meta, frische_db):
     t = next(x for x in db.lade_veroeffentlichungen(datetime.now(himmel.WIEN) - timedelta(days=1), datetime.now(himmel.WIEN) + timedelta(days=1))
              if x["id"] == zid)
     assert t["status"] == "abgebrochen" and t["fehler"] == posten.REEL2_NUR
+
+
+def test_tiktok_html_fehler_verstaendlich():
+    import tiktok
+    html = "<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>An error occurred while processing your request.</BODY></HTML>"
+    with pytest.raises(tiktok.TikTokFehler) as ex:
+        tiktok._antwort(SimpleNamespace(status_code=503, json=lambda: (_ for _ in ()).throw(ValueError()), text=html))
+    assert "Störung bei TikTok" in str(ex.value) and "<HTML>" not in str(ex.value)
