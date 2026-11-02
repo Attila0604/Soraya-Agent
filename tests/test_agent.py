@@ -1047,6 +1047,14 @@ def test_facebook_text_ohne_bio():
     assert posten.text_fuer(viele, "instagram").endswith("#a1 #b2 #c3 #d4 #horoscope")  # 5: max. auf Instagram
 
 
+def test_post_link_mit_sternzeichen():
+    p = {"id": 9, "art": "post", "sprache": "de", "titel": "Skorpion – deine Woche", "text": "Hallo"}
+    assert posten.post_link(p).endswith("?q=p9&lang=de&z=sco")
+    assert "&z=sco" in posten.text_fuer(p, "facebook")
+    ohne = posten.post_link({**p, "titel": "Neumond heute"})
+    assert ohne.endswith("?q=p9&lang=de") and "&z=" not in ohne
+
+
 def test_instagram_bio_hinweis(monkeypatch):
     monkeypatch.setattr(meta, "zugang", lambda d: {"name": "soraya.astroguide"})
     p = {"id": 7, "art": "post", "sprache": "en", "text": "Your chart awaits. Link in bio ✨", "hashtags": "#astro"}
