@@ -33,6 +33,26 @@ import tiktok
 from claude import frage_json
 from wirkung import link_basis
 
+ZEICHEN_KURZ = ["ari", "tau", "gem", "can", "leo", "vir", "lib", "sco", "sag", "cap", "aqu", "pis"]
+
+
+def post_link(post: dict) -> str:
+    """Klickbarer Post-Link zur Landingpage: q=p<id> (Wirkung), lang= (Sprache), bei Posts zu einem Sternzeichen
+    z=<Zeichen> -- die Landingpage oeffnet dann gleich dessen Tageshoroskop, sonst den Gratis-Test."""
+    import medien
+    sprache = (post.get("sprache") or "en")[:2]
+    link = f"{link_basis()}?q=p{post['id']}&lang={sprache}"
+    try:
+        idx = medien.stil(post).get("zeichen")
+        if idx is None:
+            idx = medien.zeichen_aus_text(post.get("titel"))
+    except Exception:
+        idx = None
+    if isinstance(idx, int) and 0 <= idx < 12:
+        link += f"&z={ZEICHEN_KURZ[idx]}"
+    return link
+
+
 STANDARD = {"an": False, "sprache": "en", "sprache_pl": {}, "modus": "auto", "tiktok_modus": "entwurf",
             "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"},
             "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False, "pinterest": False}}
@@ -593,7 +613,7 @@ def text_fuer(post: dict, plattform: str) -> str:
         return tiktok_text(post)
     if plattform == "linkedin":
         sprache = post.get("sprache") or "en"
-        teile = [linkedin_text(post), f"{LI_LINK.get(sprache, LI_LINK['en'])}: {link_basis()}?q=p{post['id']}&lang={sprache}"]
+        teile = [linkedin_text(post), f"{LI_LINK.get(sprache, LI_LINK['en'])}: {post_link(post)}"]
         if post.get("hashtags"):
             teile.append(" ".join(seo_tags(post, "linkedin")))
         return "\n\n".join(t for t in teile if t)
@@ -616,7 +636,7 @@ def text_fuer(post: dict, plattform: str) -> str:
         # Er steht gleich nach dem Hook -- Facebook kuerzt nach wenigen Zeilen ("Mehr anzeigen"), ganz unten sah ihn kaum jemand
         sprache = post.get("sprache") or "en"
         vorne = IG_HINWEIS.get(sprache, IG_HINWEIS["en"]).split(":")[0]
-        link = f"{vorne} 👉 {link_basis()}?q=p{post['id']}&lang={sprache}"
+        link = f"{vorne} 👉 {post_link(post)}"
         absaetze = teile[0].split("\n\n", 1)
         teile[0] = "\n\n".join([absaetze[0], link] + absaetze[1:])
         teile.append(FB_FOLGEN.get(sprache, FB_FOLGEN["en"]))
