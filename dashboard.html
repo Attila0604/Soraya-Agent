@@ -810,6 +810,10 @@
   .wz-kpi{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:var(--s3) var(--s4) var(--s3)}
   .wz-kpi .l{font-size:12.5px;color:var(--mist-dim);display:flex;align-items:center;gap:2px}
   .wz-kpi .v{font-size:28px;font-weight:600;color:#F4EEDD;line-height:1.25;margin:2px 0 2px;font-variant-numeric:tabular-nums}
+  .wz-spark{position:relative;margin:10px 0 0}
+  .wz-spark svg{display:block;width:100%;height:46px;overflow:visible}
+  .wz-spark .spitze{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--champagne);box-shadow:0 0 0 2px var(--panel)}
+  .wz-spark figcaption{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mist-dim);margin-top:3px}
   .trend{font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
   .trend.auf{color:var(--gruen)} .trend.ab{color:#e88a7a} .trend.neutral{color:var(--mist-dim);font-weight:400}
   .trend .vgl{color:var(--mist-dim);font-weight:400}
@@ -2861,6 +2865,24 @@ function trend(k){
     return `<span class="trend ${r}"><span aria-hidden="true">${k.aenderung > 0 ? '↑' : k.aenderung < 0 ? '↓' : '→'}</span> <span class="vgl">davor</span> ${zahl(k.vorher)}</span>`;
   return `<span class="trend ${r}"><span aria-hidden="true">${k.aenderung > 0 ? '↑' : k.aenderung < 0 ? '↓' : '→'}</span> ${zahl(Math.abs(k.aenderung))} %<span class="sr"> ${k.aenderung >= 0 ? 'mehr' : 'weniger'}</span> <span class="vgl">als davor</span></span>`;
 }
+// kleiner Verlauf in der Kachel (eine Reihe, keine Achse): Linie mit leiser Flaeche, hellster Tag als Punkt,
+// darunter Anfang und Ende des Zeitraums; die Werte stehen im Titel (Maus/Lesehilfe)
+function verlaufLinie(verlauf, schluessel, name){
+  const werte = verlauf.map(t => t[schluessel]);
+  if(werte.length < 2 || werte.every(v => v == null) || !werte.some(v => v)) return '';
+  const W = 200, H = 46, max = Math.max(1, ...werte.map(v => v || 0));
+  const x = (i) => (i / (werte.length - 1) * W).toFixed(1), y = (v) => (H - 3 - (v || 0) / max * (H - 8)).toFixed(1);
+  const pkt = werte.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  const spitze = werte.indexOf(Math.max(...werte.map(v => v || 0)));
+  const id = 'wzS-' + schluessel;
+  const titel = `${name}: am meisten am ${kurzIso(verlauf[spitze].datum)} (${zahl(werte[spitze] || 0)})`;
+  return `<figure class="wz-spark" title="${esc(titel)}"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(titel)}">
+    <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--champagne)" stop-opacity=".28"/><stop offset="1" stop-color="var(--champagne)" stop-opacity="0"/></linearGradient></defs>
+    <path d="M0,${H} L${pkt.split(' ').join(' L')} L${W},${H} Z" fill="url(#${id})"/>
+    <polyline points="${pkt}" fill="none" stroke="var(--champagne)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    </svg><i class="spitze" style="left:${(spitze / (werte.length - 1) * 100).toFixed(1)}%;top:${(y(werte[spitze]) / H * 100).toFixed(1)}%"></i>
+    <figcaption><span>${esc(datumKurz(verlauf[0].datum))}</span><span>${esc(datumKurz(verlauf[verlauf.length - 1].datum))}</span></figcaption></figure>`;
+}
 function daumenKlein(p){
   const fmt = p.art === 'post' ? 'feed' : 'story';
   return `<span class="wz-daumen ${fmt}"><img loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${fmt}&klein=1&v=${esc(p.stand || '')}"></span>`;
@@ -2937,7 +2959,7 @@ function htmlTrichter(d){
 function htmlUeberblick(d){
   const hilfeK = 'Erreicht: Reichweite, wenn die Plattform sie liefert, sonst Aufrufe – für die Posts aus diesem Zeitraum, zusammengezählt über Facebook, Instagram und TikTok (dort auch deine eigenen Videos ohne Soraya-Post). Reaktionen: Gefällt mir, Kommentare, Gespeichert, Geteilt. Besuche: über deine Post- und Bio-Links. Neue Konten: neu angelegt in der App.';
   const kacheln = d.kpis.map(k => `<div class="wz-kpi"><div class="l">${esc(k.name)}${k.schluessel === 'erreicht' ? hilfe(hilfeK, 'Was zählt hier?') : ''}</div>
-    <div class="v">${k.wert == null ? '–' : zahl(k.wert)}</div><div class="d">${trend(k)}</div></div>`).join('');
+    <div class="v">${k.wert == null ? '–' : zahl(k.wert)}</div><div class="d">${trend(k)}</div>${verlaufLinie(d.verlauf || [], k.schluessel, k.name)}</div>`).join('');
   const fol = (d.follower || []).map(f => `<span class="f"><span class="ikon" aria-hidden="true">${IKON[f.plattform]}</span><span class="sr">${PL_KURZ[f.plattform]}</span>
       <b>${f.follower == null ? '–' : zahl(f.follower)}</b>${f.zuwachs_7 ? `<small class="${f.zuwachs_7 > 0 ? 'plus' : 'minus'}">${f.zuwachs_7 > 0 ? '+' : '−'}${zahl(Math.abs(f.zuwachs_7))} diese Woche</small>`
       : f.follower == null ? '<small>noch nicht gemessen</small>' : ''}</span>`).join('');
