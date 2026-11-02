@@ -1828,7 +1828,7 @@ def test_zweites_reel_tagesplan_und_posten(monkeypatch, frische_db):
     erstes = {(x["plattform"], x["geplant_um"].astimezone(himmel.WIEN).strftime("%H:%M")) for x in t if x["post_id"] == reels[0]["id"]}
     zweites = {(x["plattform"], x["geplant_um"].astimezone(himmel.WIEN).strftime("%H:%M")) for x in t if x["post_id"] == reels[1]["id"]}
     assert erstes == {("facebook", "09:00"), ("tiktok", "09:00"), ("linkedin", "09:00")}
-    assert zweites == {("tiktok", "19:30")}                         # das 2. Reel nur auf TikTok
+    assert zweites == {("tiktok", "19:30"), ("facebook", "19:30")}  # das 2. Reel auf TikTok und Facebook
     assert {x["reel_nr"] for x in t if x["post_id"] == reels[1]["id"]} == {2}
     assert posten.speichere_einstellungen({"zeiten": {"reel2": "20:45"}})["zeiten"]["reel2"] == "20:45"
     # Wochenpaket: zwei Reels, zwei verschiedene Dateinamen
@@ -2658,12 +2658,12 @@ def test_tagesplan_merkt_symbol_und_lebensphase(frische_db):
             assert m["erzaehlform"] == tagesplan.erzaehlform(HEUTE, "en")[0]
 
 
-def test_zweites_reel_nur_auf_tiktok(fake_meta, frische_db):
-    """Das 2. Reel geht nur auf TikTok; schon geplante alte Instagram-Termine dafuer werden abgebrochen."""
+def test_zweites_reel_nicht_auf_linkedin(fake_meta, frische_db):
+    """Das 2. Reel geht nicht auf LinkedIn; schon geplante alte LinkedIn-Termine dafuer werden abgebrochen."""
     p = db.speichere_posts([{"art": "reel", "titel": "R2", "text": "x"}], quelle="tagesplan", geplant_fuer=HEUTE,
                            meta={"reel_nr": 2})[0]
-    assert posten.platz(p) == "reel2" and "instagram" in posten.NUR_ERSTES_REEL and "tiktok" not in posten.NUR_ERSTES_REEL
-    zid = db.plane_veroeffentlichung(p["id"], "instagram", datetime.now(himmel.WIEN) - timedelta(minutes=5), zurueckgeben=True)
+    assert posten.platz(p) == "reel2" and posten.NUR_ERSTES_REEL == {"linkedin"}
+    zid = db.plane_veroeffentlichung(p["id"], "linkedin", datetime.now(himmel.WIEN) - timedelta(minutes=5), zurueckgeben=True)
     db.aendere_post(p["id"], {"status": "freigegeben"})
     posten.fuehre_aus(e=posten.einstellungen())
     t = next(x for x in db.lade_veroeffentlichungen(datetime.now(himmel.WIEN) - timedelta(days=1), datetime.now(himmel.WIEN) + timedelta(days=1))

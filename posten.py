@@ -64,9 +64,9 @@ NUR_REELS = {"tiktok"}
 # Storys gibt es auf LinkedIn nicht
 OHNE_STORYS = {"linkedin"}
 # Auf dem persoenlichen LinkedIn-Profil waeren zwei Reels am Tag zu viel: automatisch nur das erste
-# das zweite Reel des Tages geht nur auf TikTok (auf Instagram/Facebook lieber eins pro Tag, dafuer staerker)
-NUR_ERSTES_REEL = {"linkedin", "instagram", "facebook"}
-REEL2_NUR = "Zweites Reel geht nur auf TikTok."
+# das zweite Reel des Tages geht auf TikTok, Facebook und Instagram (nur LinkedIn bekommt eins)
+NUR_ERSTES_REEL = {"linkedin"}
+REEL2_NUR = "Zweites Reel geht nicht auf LinkedIn."
 
 
 def platz(post: dict) -> str:
