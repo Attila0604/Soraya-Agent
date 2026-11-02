@@ -473,7 +473,9 @@ def berechne(von: date, bis: date, *, heute: date | None = None, mit_tabelle: bo
         verlauf.append({"datum": d.isoformat(), "erreicht": sum(p["erreicht"] for p in am_tag)
                         + sum(x["erreicht"] for x in extra if x["tag"] == d),
                         "besuche": w.get("besuche", 0) if stat is not None else None,
-                        "konten": w.get("konten", 0) if stat is not None else None, "posts": len(am_tag)})
+                        "konten": w.get("konten", 0) if stat is not None else None, "posts": len(am_tag),
+                        "reaktionen": sum(p["reaktionen_summe"] for p in am_tag)
+                        + sum(x["reaktionen"] for x in extra if x["tag"] == d)})
     try:
         bewertet = redaktion.bewerte(db.lade_post, statistik=stat or {})
     except Exception:  # noqa: BLE001
