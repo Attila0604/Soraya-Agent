@@ -909,7 +909,8 @@ def test_looks_je_format():
     assert _medien.stil({"art": "story", "meta": {"thema": "Liebe & Beziehung"}})["aufbau"] == "mond"
     assert _medien.stil({"art": "post", "meta": {"thema": "Großes Ereignis: Vollmond morgen"}})["layout"] == "ereignis"
     assert _medien.stil({"art": "post", "meta": {}}) == {"layout": "mond", "aufbau": "mond", "palette": "nacht",
-                                                         "label": None, "punkte": [], "zeichen": None, "symbol": None}
+                                                         "label": None, "punkte": [], "zeichen": None, "symbol": None,
+                                                         "rahmen": "siegel"}
     # eigene Aufbauten je Format: Wochenleiste, Zitat, Umfrage, grosses Zeichen zum Saisonbeginn
     assert _medien.stil({"art": "post", "meta": {"thema": "Deine Woche"}})["aufbau"] == "woche"
     assert _medien.stil({"art": "post", "meta": {"thema": "Rückblick & Vorschau"}})["aufbau"] == "zitat"
@@ -2637,6 +2638,13 @@ def test_symbole_und_lebensphasen():
     assert symbole.waehle("kerze", "Ritual", 5, "post") == "kerze"
     assert symbole.waehle(None, "Ritual", 5, "post") in symbole.NACH_THEMA["Ritual"]
     assert all(symbole.motiv(m, 64).size == (64, 64) for m in symbole.MOTIVE)
+    assert len(symbole.MOTIVE) == 22 and set(symbole.MOTIV_PALETTE) == set(symbole.MOTIVE) == set(symbole.BEDEUTUNG)
+    assert all(medien.PALETTEN.get(pal) for pal in symbole.MOTIV_PALETTE.values())
+    # schon vergeben -> anderes Symbol, moeglichst passend zum Format
+    assert symbole.waehle("kerze", "Ritual", 5, "post", meiden={"kerze"}) in set(symbole.NACH_THEMA["Ritual"]) - {"kerze"}
+    assert symbole.waehle(None, "Ritual", 5, "post", meiden=set(symbole.NACH_THEMA["Ritual"])) not in symbole.NACH_THEMA["Ritual"]
+    rahmen = {medien.stil({**p, "id": i})["rahmen"] for i in range(8)}
+    assert rahmen == set(medien.SYMBOL_RAHMEN)
     a, b = tagesplan.lebensphasen(HEUTE)
     assert a != b and a in tagesplan.LEBENSPHASEN and b in tagesplan.LEBENSPHASEN
     assert "motiv" in tagesplan.SCHEMA["properties"]["posts"]["items"]["required"]
@@ -2656,6 +2664,7 @@ def test_tagesplan_merkt_symbol_und_lebensphase(frische_db):
         assert m["lebensphase"] == (b if zweite else a)[0]
         if not zweite and p["art"] in ("post", "reel"):
             assert m["erzaehlform"] == tagesplan.erzaehlform(HEUTE, "en")[0]
+    assert len({p["meta"]["motiv"] for p in posts}) == len(posts)    # jeder Post des Tages ein anderes Symbol
 
 
 def test_zweites_reel_nicht_auf_linkedin(fake_meta, frische_db):

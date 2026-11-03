@@ -324,7 +324,7 @@ def lebensphasen(tag: date) -> tuple[tuple[str, str], tuple[str, str]]:
 
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
            vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None,
-           phasen: tuple | None = None, form: tuple | None = None) -> str:
+           phasen: tuple | None = None, form: tuple | None = None, zuletzt_motive: list[str] | None = None) -> str:
     profil = zielgruppen_text(zielgruppe)
     phasen = phasen or lebensphasen(himmel.heute())
     return (
@@ -342,7 +342,9 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
         + f"\n\nErzählform heute (Feed-Post und erstes Reel): {(form or ERZAEHLFORMEN[0])[1]}"
         + "\n\nLebensphasen heute:\n"
         + f"1. (Feed-Post, erstes Reel) {phasen[0][1]}\n2. (Story, zweites Reel) {phasen[1][1]}"
-        + "\n\nSymbole für \"motiv\":\n" + "\n".join(f"- {k}: {v}" for k, v in symbole.BEDEUTUNG.items())
+        + "\n\nSymbole für \"motiv\" (jeder der Posts bekommt ein ANDERES Symbol; nimm auch gern die selteneren):\n"
+        + "\n".join(f"- {k}: {v}" for k, v in symbole.BEDEUTUNG.items())
+        + (f"\nZuletzt benutzt (diesmal möglichst andere): {', '.join(dict.fromkeys(zuletzt_motive))}" if zuletzt_motive else "")
         + f"\n\n{sprach_anweisung(sprache)}"
     )
 
@@ -379,14 +381,14 @@ def _aufbereiten(daten: dict, sprache: str, thema_name: str = "") -> list[dict]:
 
 def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None = None,
                    thema: dict | None = None, vorbilder: list[str] | None = None, erkenntnis: str = "",
-                   anfaenge: list[str] | None = None) -> list[dict]:
+                   anfaenge: list[str] | None = None, zuletzt_motive: list[str] | None = None) -> list[dict]:
     """Ein Claude-Aufruf: die vier Eintraege des Tages in einer Sprache. Bei schweren Befunden
     der Qualitaetspruefung (z. B. falsche Sprache, heikle Versprechen) genau ein Korrekturdurchgang."""
     tag = date.fromisoformat(info["datum"]) if info.get("datum") else himmel.heute()
     thema = thema or redaktion.wochenthema(tag, info)
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge, lebensphasen(tag),
-                   erzaehlform(tag, sprache))
+                   erzaehlform(tag, sprache), zuletzt_motive)
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
@@ -443,13 +445,19 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             anfaenge = db.letzte_anfaenge(sprache)
         except Exception:
             anfaenge = []
+        try:
+            zuletzt_motive = db.letzte_motive(sprache)
+        except Exception:
+            zuletzt_motive = []
         posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder, erkenntnis,
-                               anfaenge)
+                               anfaenge, zuletzt_motive)
         try:   # Serien-Nummer: der wievielte Post dieses Formats in dieser Sprache (z. B. "Ritual · Folge 12")
             folge = None if thema["name"].startswith("Großes Ereignis") else db.zaehle_format(sprache, thema["name"], tag) + 1
         except Exception:
             folge = None
         gespeichert, phasen = [], lebensphasen(tag)
+        # Symbole: heute jedes nur einmal; die von gestern/vorgestern moeglichst auch nicht (wenn genug andere passen)
+        heute_motive: set[str] = set()
         for nr, p in enumerate(posts):
             meta = himmel.bild_meta(info) | {"thema": p.pop("_thema"), "pruefung": p.pop("_pruefung"),
                                              "hook_stil": thema["hook_stil"]["schluessel"],
@@ -471,7 +479,9 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
                 meta["variante"] = thema["variante"]
             if zielgruppe:
                 meta["zielgruppe"] = zielgruppe["bereich"]
-            meta["motiv"] = symbole.waehle(p.pop("_motiv", None), meta["thema"], tag.toordinal(), p.get("art"), nr)
+            meta["motiv"] = symbole.waehle(p.pop("_motiv", None), meta["thema"], tag.toordinal(), p.get("art"), nr,
+                                           meiden=heute_motive | set(zuletzt_motive[:8]))
+            heute_motive.add(meta["motiv"])
             zweite = p.get("art") == "story" or meta.get("reel_nr") == 2
             meta["lebensphase"] = phasen[1 if zweite else 0][0]
             if not zweite and p.get("art") in ("post", "reel"):
