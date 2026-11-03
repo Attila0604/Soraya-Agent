@@ -30,7 +30,9 @@ _HINWEISE = {
            "calques Hungarians do not say, e.g. \"kivel van ma kémia?\" -> \"Ki felé húz ma a szíved?\", "
            "\"tartsd észben\" -> \"ne feledd\", \"csinálj időt magadnak\" -> \"szánj időt magadra\", "
            "\"vibe\" -> \"hangulat\", \"ez nem egy véletlen\" -> \"ez nem véletlen\", superfluous \"egy\" "
-           "as English 'a/an'."),
+           "as English 'a/an'. Be especially strict with the short on-screen lines (titles, reel lines): they must not "
+           "read like translated English captions, e.g. \"Gyors, de őszinte szerelem\" -> \"Hamar lángra lobban, de "
+           "őszintén szeret\". If in doubt, rewrite the line naturally."),
 }
 
 _SCHEMA = {
