@@ -709,7 +709,7 @@ def test_automatisch_posten(fake_meta, frische_db, monkeypatch):
     fb_fotos = [a for a in neu if a[1].endswith("/123/photos")]
     assert len(fb_fotos) == 2 and any(a[2].get("published") == "false" for a in fb_fotos)
     feed = next(a for a in fb_fotos if "message" in a[2])
-    assert "?q=p" in feed[2]["message"] and feed[2]["access_token"] == "SEITE" and feed[3]["source"][2] == "image/jpeg"
+    assert "http" not in feed[2]["message"] and feed[2]["access_token"] == "SEITE" and feed[3]["source"][2] == "image/jpeg"
     ig = [a for a in neu if a[1].endswith("/1789/media")]
     assert {a[2].get("media_type") for a in ig} == {"STORIES", None}
     bild_url = next(a for a in ig if a[2].get("media_type") is None)[2]["image_url"]
@@ -1038,11 +1038,11 @@ def test_claude_ohne_schluessel(monkeypatch):
 def test_facebook_text_ohne_bio():
     p = {"id": 7, "art": "post", "sprache": "en", "text": "Your chart awaits. Link in bio ✨", "hashtags": "#astro"}
     fb = posten.text_fuer(p, "facebook")
-    assert "bio" not in fb.lower() and "?q=p7&lang=en" in fb          # die Bio-Zeile weicht dem echten Link oben
+    assert "bio" not in fb.lower() and "http" not in fb and "link at the top of our page" in fb   # kein Link im Text
     assert "Link in bio" in posten.text_fuer(p, "instagram")
     de = posten.text_fuer({**p, "sprache": "de", "text": "Neumond im Skorpion.\n\nDein Horoskop: Link in Bio"}, "facebook")
-    assert "Bio" not in de and de.startswith("Neumond im Skorpion.\n\n🔗") and "?q=p7&lang=de" in de
-    assert "Link unten" in posten._ohne_bio("Dein Horoskop: Link in Bio", "de")     # mitten im Satz: ersetzt
+    assert "Bio" not in de and de.count("Link oben auf unserer Seite") == 1 and "http" not in de
+    assert "Link oben auf unserer Seite" in posten._ohne_bio("Dein Horoskop: Link in Bio", "de")   # mitten im Satz: ersetzt
     viele = {**p, "hashtags": "#a1 #b2 #c3 #d4 #e5"}
     assert posten.text_fuer(viele, "facebook").endswith("#a1 #b2 #horoscope")      # 3: Thema + grosser Such-Hashtag
     assert posten.text_fuer(viele, "instagram").endswith("#a1 #b2 #c3 #d4 #horoscope")  # 5: max. auf Instagram
@@ -1051,7 +1051,7 @@ def test_facebook_text_ohne_bio():
 def test_post_link_mit_sternzeichen():
     p = {"id": 9, "art": "post", "sprache": "de", "titel": "Skorpion – deine Woche", "text": "Hallo"}
     assert posten.post_link(p).endswith("?q=p9&lang=de&z=sco")
-    assert "&z=sco" in posten.text_fuer(p, "facebook")
+    assert "http" not in posten.text_fuer(p, "facebook")                 # Facebook: kein Link im Text
     ohne = posten.post_link({**p, "titel": "Neumond heute"})
     assert ohne.endswith("?q=p9&lang=de") and "&z=" not in ohne
 
@@ -1066,8 +1066,8 @@ def test_instagram_bio_hinweis(monkeypatch):
     assert "sorayaluxuryastroguide.com" not in ig and "sorayaluxuryastroguide.com" not in reel   # keine Adresse im Text (Reichweite)
     assert "@soraya" not in posten.text_fuer({**p, "art": "story"}, "instagram")
     fb = posten.text_fuer(p, "facebook")
-    assert "@soraya" not in fb and "🔗 Your free horoscope 👉 http" in fb and "?q=p7&lang=en" in fb
-    assert "🔗 Az ingyenes horoszkópod 👉 http" in posten.text_fuer({**p, "sprache": "hu"}, "facebook")
+    assert "@soraya" not in fb and "🔗 Your free horoscope: link at the top of our page" in fb and "http" not in fb
+    assert "🔗 Az ingyenes horoszkópod: link az oldalunk tetején" in posten.text_fuer({**p, "sprache": "hu"}, "facebook")
     assert posten.text_fuer({**p, "text": "Hi @soraya.astroguide"}, "instagram").count("@soraya") == 1
     monkeypatch.setattr(meta, "zugang", lambda d: None)
     assert "Your free horoscope: link in bio" in posten.text_fuer({**p, "text": "Hello"}, "instagram")
@@ -1294,7 +1294,7 @@ def test_karussell_bilder_und_posten(fake_meta, monkeypatch):
     fotos = [a for a in fake_meta.aufrufe if a[0] == "POST" and a[1].endswith("/photos")]
     beitrag = [a for a in fake_meta.aufrufe if a[0] == "POST" and a[1].endswith("/feed")][-1]
     assert len(fotos) >= 5 and all(f[2].get("published") == "false" for f in fotos[-5:])
-    assert sum(k.startswith("attached_media[") for k in beitrag[2]) == 5 and "?q=p" in beitrag[2]["message"]
+    assert sum(k.startswith("attached_media[") for k in beitrag[2]) == 5 and "http" not in beitrag[2]["message"]
     # oeffentliche Adresse einer Folie (fuer Instagram) liefert das Bild nur mit passender Signatur
     url = posten.medien_url(feed, 3)
     name = url.rsplit("/", 1)[1]
@@ -1877,7 +1877,7 @@ def test_kommentar_frage_beim_posten(monkeypatch):
     assert teile[3] == "A, B o C? Scrivi la tua lettera nei commenti 👇" and teile[4].startswith("🔖 Salvalo per dopo")
     assert teile[-1] == "#astrologia #luna #oroscopo #segnizodiacali #oroscopodioggi"     # + Such-Hashtags
     fb = posten.text_fuer(p, "facebook")
-    assert fb.count("Scrivi la tua lettera") == 1 and fb.index("?q=p7") < fb.index("Scrivi la tua")   # Link gleich nach dem Hook
+    assert fb.count("Scrivi la tua lettera") == 1 and "http" not in fb and "link in cima alla nostra pagina" in fb
     assert "link in bio" not in fb.lower() and "qui sotto" not in fb and fb.split("\n\n")[0] == "La Luna è in Scorpione."
     story = {**p, "art": "story", "text": "Come dormi? Rispondi con 🌙", "meta": {}}
     assert "commenti" not in posten.text_fuer(story, "instagram")
@@ -2453,10 +2453,11 @@ def test_sprache_je_plattform(frische_db):
     assert r["einstellungen"]["sprache_pl"] == {"facebook": "hu"}            # auch ueber die Schnittstelle
     e2 = posten.speichere_einstellungen({"sprache_pl": {"facebook": ""}})
     assert e2["sprache_pl"] == {} and posten.benoetigte_sprachen(e2, [HEUTE]) == ["en"]
-    # Facebook-Text: Link gleich nach dem Hook, Folgen-Zeile am Ende
+    # Facebook-Text: kein Link im Text, Hinweis auf den Link der Seite und Folgen-Zeile am Ende
     t = posten.text_fuer({"id": 3, "art": "post", "sprache": "hu", "text": "Hook.\n\nMehr Text.", "hashtags": "#a #b", "meta": {}}, "facebook")
     teile = t.split("\n\n")
-    assert teile[0] == "Hook." and "?q=p3&lang=hu" in teile[1] and any("Kövesd az oldalt" in x for x in teile)
+    assert teile[0] == "Hook." and "http" not in t and any("az oldalunk tetején" in x for x in teile) \
+        and any("Kövesd az oldalt" in x for x in teile)
 
 
 def test_sprachwechsel_entfernt_alte_termine(fake_meta, frische_db):
