@@ -2135,6 +2135,17 @@ def test_facebook_zahlen_ersatzabfrage_und_meldung(monkeypatch, frische_db):
     assert client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()["abruf"]["facebook"]["fehler"] == 1
 
 
+def test_reel_texte_bearbeiten(frische_db):
+    p = db.speichere_posts([{"art": "reel", "titel": "R", "text": "x", "sprache": "hu",
+                             "skript": {"hook": "Alt", "einblendungen": ["Kos: Gyors, de őszinte szerelem"], "szenen": [], "schluss": "s"}}],
+                           quelle="tagesplan", geplant_fuer=HEUTE)[0]
+    r = client.patch(f"/content/{p['id']}", json={"skript": {**p["skript"], "einblendungen": ["Kos: Hamar lángra lobban, de őszintén szeret"]}},
+                     headers=AUTH)
+    assert r.status_code == 200
+    neu = db.lade_post(p["id"])["skript"]
+    assert neu["einblendungen"] == ["Kos: Hamar lángra lobban, de őszintén szeret"] and neu["hook"] == "Alt" and neu["schluss"] == "s"
+
+
 def test_facebook_ohne_user_content_recht(monkeypatch, frische_db):
     """Live-Modus: alles mit Reaktionen/Kommentaren verlangt pages_read_user_content -> Reaktionen ueber /insights,
     und wenn auch das nicht geht, eine verstaendliche Anleitung statt der englischen Meta-Meldung."""

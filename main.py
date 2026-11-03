@@ -120,6 +120,7 @@ class PostAenderung(BaseModel):
     status: Optional[str] = None
     platform: Optional[str] = None
     geplant_fuer: Optional[date] = None
+    skript: Optional[dict] = None
 
 
 class TagesplanAnfrage(BaseModel):

@@ -465,7 +465,7 @@ def lade_posts(limit: int = 50, *, von: date | None = None, bis: date | None = N
         return cur.fetchall()
 
 
-_AENDERBAR = {"text", "hashtags", "titel", "untertitel", "status", "geplant_fuer", "platform"}
+_AENDERBAR = {"text", "hashtags", "titel", "untertitel", "status", "geplant_fuer", "platform", "skript"}
 
 
 def aendere_post(post_id: int, felder: dict) -> dict | None:
@@ -474,6 +474,10 @@ def aendere_post(post_id: int, felder: dict) -> dict | None:
         raise ValueError("Unbekannter Status.")
     if "hashtags" in felder:
         felder["hashtags"] = _hashtags(felder["hashtags"])
+    if "skript" in felder:          # Reel-Texte (Hook, Einblendungen, Schluss) -- als JSON speichern
+        if not isinstance(felder["skript"], dict):
+            raise ValueError("Skript muss ein Objekt sein.")
+        felder["skript"] = Jsonb(felder["skript"])
     if not felder:
         raise ValueError("Nichts zu ändern.")
     setzen = [f"{k} = %s" for k in felder]
