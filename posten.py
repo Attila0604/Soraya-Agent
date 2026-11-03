@@ -259,13 +259,24 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
     return neu
 
 
-# Auf Facebook gibt es keine Bio: der Link steht direkt unter dem Text
-BIO_ERSATZ = [(r"link in (the )?bio", "link below"), (r"Link in (der )?Bio", "Link unten"),
-              (r"link a bióban", "link lent"), (r"link nella bio|link in bio", "link qui sotto")]
+# Auf Facebook gibt es keine Bio. Links im Text kosten dort Reichweite (Facebook-Tipp) -- deshalb kein Link im Text,
+# sondern ein Hinweis auf den Link oben auf der Seite (Website der Seite, am besten mit ?q=bio-fb)
+BIO_ERSATZ = [(r"link in (the )?bio", "link at the top of our page"), (r"Link in (der )?Bio", "Link oben auf unserer Seite"),
+              (r"link a bióban", "link az oldalunk tetején"), (r"link nella bio|link in bio", "link in cima alla nostra pagina")]
+FB_HINWEIS = {"de": "🔗 Dein Horoskop gratis: Link oben auf unserer Seite",
+              "en": "🔗 Your free horoscope: link at the top of our page",
+              "hu": "🔗 Az ingyenes horoszkópod: link az oldalunk tetején",
+              "it": "🔗 Il tuo oroscopo gratis: link in cima alla nostra pagina"}
 
 
-def _ohne_bio(text: str, sprache: str) -> str:
-    regeln = {"en": BIO_ERSATZ[:1], "de": BIO_ERSATZ[1:2], "hu": BIO_ERSATZ[2:3], "it": BIO_ERSATZ[3:]}.get(sprache, [])
+# LinkedIn: dort steht der echte Link unter dem Text
+BIO_UNTEN = [(r"link in (the )?bio", "link below"), (r"Link in (der )?Bio", "Link unten"),
+             (r"link a bióban", "link lent"), (r"link nella bio|link in bio", "link qui sotto")]
+
+
+def _ohne_bio(text: str, sprache: str, ersatz_liste: list | None = None) -> str:
+    liste = ersatz_liste or BIO_ERSATZ
+    regeln = {"en": liste[:1], "de": liste[1:2], "hu": liste[2:3], "it": liste[3:]}.get(sprache, [])
     for muster, ersatz in regeln:
         text = re.sub(muster, lambda m: ersatz[0].upper() + ersatz[1:] if m.group(0)[0].isupper() else ersatz,
                       text, flags=re.IGNORECASE)
@@ -392,7 +403,7 @@ LI_SYSTEM = ("Du bist Redakteurin für das persönliche LinkedIn-Profil des Grü
 
 def _li_regelbasiert(text: str, sprache: str) -> str:
     """Ohne KI: Emojis und "Link in Bio" raus, Absaetze bleiben."""
-    text = _EMOJI.sub("", _ohne_bio(text, sprache))
+    text = _EMOJI.sub("", _ohne_bio(text, sprache, BIO_UNTEN))
     zeilen = [z for z in text.split("\n") if not _BIO.search(z)]
     text = re.sub(r"[ \t]+", " ", "\n".join(zeilen))
     return re.sub(r"\n{3,}", "\n\n", "\n".join(z.strip() for z in text.split("\n"))).strip()
@@ -625,20 +636,16 @@ def text_fuer(post: dict, plattform: str) -> str:
         text = redaktion.mit_kommentar_frage(text, post.get("sprache") or "en", f"p{post.get('id')}", antworten)
     teile = [_luftig(text)]
     if plattform == "facebook" and post.get("art") != "story":
-        # eine eigene Zeile "... Link in Bio" faellt weg: der echte Link steht gleich unter dem Hook
+        # eine eigene Zeile "... Link in Bio" faellt weg: unten steht ein einheitlicher Hinweis (ohne Link im Text)
         absaetze = teile[0].split("\n\n")
         if len(absaetze) > 1:
             absaetze = [a for i, a in enumerate(absaetze)
                         if i == 0 or len(a) > 90 or not any(re.search(m, a, re.IGNORECASE) for m, _ in BIO_ERSATZ)]
         teile[0] = _ohne_bio("\n\n".join(absaetze), post.get("sprache") or "de")
     if plattform == "facebook" and post.get("art") != "story":
-        # auf Facebook ist der Link klickbar; lang= oeffnet Landingpage und App in der Sprache des Posts.
-        # Er steht gleich nach dem Hook -- Facebook kuerzt nach wenigen Zeilen ("Mehr anzeigen"), ganz unten sah ihn kaum jemand
+        # kein Link im Text (Facebook zeigt Beitraege mit Links weniger Leuten) -- Hinweis auf den Link der Seite
         sprache = post.get("sprache") or "en"
-        vorne = IG_HINWEIS.get(sprache, IG_HINWEIS["en"]).split(":")[0]
-        link = f"{vorne} 👉 {post_link(post)}"
-        absaetze = teile[0].split("\n\n", 1)
-        teile[0] = "\n\n".join([absaetze[0], link] + absaetze[1:])
+        teile.append(FB_HINWEIS.get(sprache, FB_HINWEIS["en"]))
         teile.append(FB_FOLGEN.get(sprache, FB_FOLGEN["en"]))
     if plattform == "instagram" and post.get("art") != "story":
         teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en", speichern=True)
