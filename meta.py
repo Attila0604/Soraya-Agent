@@ -30,7 +30,11 @@ import requests
 import db
 
 TIMEOUT = 60
-FB_SCOPES = "pages_show_list,pages_read_engagement,pages_manage_posts"
+# pages_read_user_content (Gefaellt mir/Kommentare) und read_insights (Reichweite): seit die App im Live-Modus ist,
+# gibt Meta die Zahlen nur noch damit heraus -- fuer die eigene Seite reicht der Standard-Zugriff (keine App-Pruefung).
+FB_SCOPES = "pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content,read_insights"
+FB_RECHTE_HINWEIS = ("Rechte fehlen: „pages_read_user_content“ + „read_insights“ in der Meta-App hinzufügen, "
+                     "dann Facebook neu verbinden.")
 IG_SCOPES = "instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights"
 IG_INSIGHTS_RECHT = "instagram_business_manage_insights"
 
@@ -276,6 +280,20 @@ def poste_facebook(art: str, text: str, bild: bytes | None = None, video: bytes 
 REICHWEITE_METRIKEN = ("post_impressions_unique", "post_media_view")
 
 
+def _fb_insights_reaktionen(oid: str, token: str) -> dict | None:
+    """Reaktionen ueber /insights (Recht read_insights) -- klappt auch ohne pages_read_user_content."""
+    try:
+        d = _get(f"{graph_fb()}/{oid}/insights", metric="post_reactions_by_type_total", access_token=token)
+    except Exception:  # noqa: BLE001
+        return None
+    for eintrag in d.get("data") or []:
+        werte = eintrag.get("values") or []
+        if werte and isinstance(werte[-1].get("value"), dict):
+            return {"reaktionen": int(sum(v for v in werte[-1]["value"].values() if isinstance(v, (int, float)))),
+                    "kommentare": 0, "geteilt": 0}
+    return None
+
+
 def facebook_reichweite(extern_id: str, token: str) -> int | None:
     for metrik in REICHWEITE_METRIKEN:
         try:
@@ -348,6 +366,13 @@ def _fb_zahlen_eines(oid: str, art: str | None, seite: str | None, token: str) -
             if "abgelaufen" in str(ex):
                 raise
             letzter = ex
+    # ohne pages_read_user_content: Reaktionen noch ueber /insights versuchen (braucht read_insights)
+    for k in kandidaten:
+        ersatz = _fb_insights_reaktionen(k, token)
+        if ersatz is not None:
+            return ersatz, k
+    if letzter and "pages_read_user_content" in str(letzter):
+        raise MetaFehler(FB_RECHTE_HINWEIS)
     raise letzter or MetaFehler("Meta: keine Zahlen")
 
 
