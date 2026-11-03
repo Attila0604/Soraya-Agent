@@ -2135,6 +2135,31 @@ def test_facebook_zahlen_ersatzabfrage_und_meldung(monkeypatch, frische_db):
     assert client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()["abruf"]["facebook"]["fehler"] == 1
 
 
+def test_facebook_ohne_user_content_recht(monkeypatch, frische_db):
+    """Live-Modus: alles mit Reaktionen/Kommentaren verlangt pages_read_user_content -> Reaktionen ueber /insights,
+    und wenn auch das nicht geht, eine verstaendliche Anleitung statt der englischen Meta-Meldung."""
+    import meta
+    assert "pages_read_user_content" in meta.FB_SCOPES and "read_insights" in meta.FB_SCOPES
+    db.setze_einstellung("meta_facebook", {"seite_id": "555", "token": "t", "name": "Soraya"})
+    mit_insights = {"an": True}
+
+    def fake_get(url, **params):
+        if url.endswith("/insights"):
+            if not mit_insights["an"]:
+                raise meta.MetaFehler("Meta: (#200) read_insights fehlt")
+            if params.get("metric") == "post_reactions_by_type_total":
+                return {"data": [{"values": [{"value": {"like": 4, "love": 2}}]}]}
+            return {"data": [{"values": [{"value": 321}]}]}
+        raise meta.MetaFehler("Meta: (#10) This endpoint requires the 'pages_read_user_content' permission or the "
+                              "'Page Public Content Access' feature.")
+    monkeypatch.setattr(meta, "_get", fake_get)
+    z = meta.facebook_reaktionen([{"post_id": 1, "extern_id": "p1", "art": "post"}])
+    assert z[0]["reaktionen"] == 6 and z[0]["reichweite"] == 321 and "fehler" not in z[0]
+    mit_insights["an"] = False
+    z = meta.facebook_reaktionen([{"post_id": 1, "extern_id": "p1", "art": "post"}])
+    assert "Facebook neu verbinden" in z[0]["fehler"] and "Page Public Content" not in z[0]["fehler"]
+
+
 def test_tiktok_text_zum_kopieren(frische_db):
     p = db.speichere_posts([{"art": "reel", "titel": "Tomorrow's Moon has a history", "sprache": "en",
                              "text": "The Hunter's Moon rises tomorrow.\n\nIt has guided people for centuries.\n\nLink in bio for your free horoscope.",
