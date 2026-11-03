@@ -774,6 +774,10 @@ PALETTEN = {   # Verlauf oben -> Mitte -> unten, Akzent fuer Ringe/Karten
     "rose": {"verlauf": ("#5a1d46", "#260c26", "#0b0410"), "akzent": (240, 196, 176)},
     "amber": {"verlauf": ("#4b2c14", "#1d1009", "#070403"), "akzent": (240, 208, 150)},
     "amethyst": {"verlauf": ("#3b1b70", "#170b35", "#06040f"), "akzent": (226, 206, 240)},
+    # weitere Farbwelten fuer die neuen Symbole: Ozeanblau, Jade, Koralle
+    "ozean": {"verlauf": ("#0f3d5e", "#081c33", "#03070f"), "akzent": (206, 228, 240)},
+    "jade": {"verlauf": ("#0f4a3e", "#082420", "#030b09"), "akzent": (214, 236, 214)},
+    "koralle": {"verlauf": ("#5c2230", "#27101a", "#0b0408"), "akzent": (246, 200, 186)},
 }
 THEMEN = {   # Wochenformat (redaktion.py) -> (Layout-Schluessel, Farbwelt)
     "Deine Woche": ("woche", "nacht"), "Sternzeichen im Fokus": ("zeichen", "zeichen"),
@@ -861,8 +865,10 @@ def stil(post: dict) -> dict:
     label = (BESCHRIFTUNG.get(layout) or {}).get(sprache) if layout in BESCHRIFTUNG else None
     if label and meta.get("folge") and layout != "ereignis":     # Serie: "Ritual · Folge 12"
         label = f"{label} · {FOLGE.get(sprache, FOLGE['en']).format(n=int(meta['folge']))}"
+    # Rahmen ums Symbol wechselt je Post (Siegel, Umlaufbahn, Strahlenkranz, Mondphasen) -- mehr Abwechslung im Feed
+    rahmen_nr = (int(post.get("id") or 0) + sum(map(ord, symbol or ""))) % len(SYMBOL_RAHMEN) if symbol else 0
     return {"layout": layout, "aufbau": aufbau, "palette": palette, "label": label, "punkte": punkte,
-            "zeichen": ereignis_zeichen, "symbol": symbol}
+            "zeichen": ereignis_zeichen, "symbol": symbol, "rahmen": SYMBOL_RAHMEN[rahmen_nr]}
 
 
 # Mondphasen ohne Internet (fuer die Wochenleiste): Alter seit einem bekannten Neumond
@@ -1140,20 +1146,67 @@ def _liebe_ringe(d, cx, cy, r, m, akzent):
                   outline=akzent + (120,), width=max(1, int(2.4 * m)))
 
 
-def _symbol_held(leinwand, d, name, cx, cy, r, m, akzent):
-    """Symbol in der Mitte: weicher Lichthof, zwei feine Ringe (wie ein Siegel), darin das goldene Motiv."""
+SYMBOL_RAHMEN = ("siegel", "umlauf", "strahlen", "mondbogen")
+
+
+def _symbol_held(leinwand, d, name, cx, cy, r, m, akzent, rahmen="siegel"):
+    """Symbol in der Mitte: weicher Lichthof, ein Rahmen (wechselt je Post), darin das goldene Motiv."""
     from symbole import motiv
     schein = radial(int(4 * r * m), int(4 * r * m), 2 * r * m, 2 * r * m, r * 0.3 * m, 2 * r * m, 2 * r * m,
                     2 * r * m, [(0, "#ffe2b0", 0.22), (0.55, "#ffe2b0", 0.06), (1, "#ffe2b0", 0)])
     aufkleben(leinwand, schein, (cx * m - schein.width / 2, cy * m - schein.height / 2))
-    d.ellipse([(cx - r) * m, (cy - r) * m, (cx + r) * m, (cy + r) * m], fill=akzent + (14,),
-              outline=akzent + (150,), width=max(1, int(2 * m)))
-    ri = r * 0.9
-    d.ellipse([(cx - ri) * m, (cy - ri) * m, (cx + ri) * m, (cy + ri) * m], outline=akzent + (60,), width=max(1, int(1.2 * m)))
-    for w in range(0, 360, 45):          # kleine Punkte auf dem Ring
-        a = math.radians(w)
-        px, py = cx + r * math.cos(a), cy + r * math.sin(a)
-        d.ellipse([(px - 3.2) * m, (py - 3.2) * m, (px + 3.2) * m, (py + 3.2) * m], fill=akzent + (220,))
+    breite = max(1, int(2 * m))
+    if rahmen == "umlauf":
+        # zwei schraege Umlaufbahnen mit kleinen Planeten (wie ein Atom-/Sonnensystem-Zeichen)
+        for neig, rx, ry, a_pl in ((-22, 1.08, 0.42, 0.18), (22, 1.0, 0.36, 0.68)):
+            nw = math.radians(neig)
+            pkt = []
+            for i in range(181):
+                t = 2 * math.pi * i / 180
+                x, y = r * rx * math.cos(t), r * ry * math.sin(t)
+                pkt.append(((cx + x * math.cos(nw) - y * math.sin(nw)) * m, (cy + x * math.sin(nw) + y * math.cos(nw)) * m))
+            d.line(pkt, fill=akzent + (120,), width=max(1, int(1.6 * m)), joint="curve")
+            px, py = pkt[int(a_pl * 180)]
+            d.ellipse([px - 7 * m, py - 7 * m, px + 7 * m, py + 7 * m], fill=akzent + (235,))
+        d.ellipse([(cx - r * 0.86) * m, (cy - r * 0.86) * m, (cx + r * 0.86) * m, (cy + r * 0.86) * m],
+                  fill=akzent + (10,), outline=akzent + (45,), width=max(1, int(1.2 * m)))
+    elif rahmen == "strahlen":
+        # Strahlenkranz: feine Linien rundherum, abwechselnd lang und kurz
+        d.ellipse([(cx - r * 0.84) * m, (cy - r * 0.84) * m, (cx + r * 0.84) * m, (cy + r * 0.84) * m],
+                  fill=akzent + (12,), outline=akzent + (110,), width=breite)
+        for i in range(72):
+            a = 2 * math.pi * i / 72
+            r1, r2 = r * 0.92, r * (1.16 if i % 6 == 0 else 1.05 if i % 2 == 0 else 1.0)
+            d.line([((cx + r1 * math.cos(a)) * m, (cy + r1 * math.sin(a)) * m), ((cx + r2 * math.cos(a)) * m, (cy + r2 * math.sin(a)) * m)],
+                   fill=akzent + (170 if i % 6 == 0 else 90,), width=max(1, int((1.8 if i % 6 == 0 else 1.1) * m)))
+    elif rahmen == "mondbogen":
+        # Bogen aus sieben Mondphasen ueber dem Symbol, darunter ein feiner Kreis
+        d.ellipse([(cx - r * 0.9) * m, (cy - r * 0.9) * m, (cx + r * 0.9) * m, (cy + r * 0.9) * m],
+                  fill=akzent + (12,), outline=akzent + (90,), width=max(1, int(1.4 * m)))
+        rm = r * 0.085
+        for i in range(7):
+            a = math.radians(-160 + i * (140 / 6))
+            px, py = cx + r * 1.1 * math.cos(a), cy + r * 1.1 * math.sin(a)
+            d.ellipse([(px - rm) * m, (py - rm) * m, (px + rm) * m, (py + rm) * m], outline=akzent + (150,), width=max(1, int(1.2 * m)))
+            licht = i / 6                                  # von Neumond (leer) bis Vollmond (voll)
+            if licht > 0:
+                versatz = rm * 2 * (1 - licht)
+                ebene = Image.new("L", (int(2 * rm * m) + 2, int(2 * rm * m) + 2), 0)
+                e = ImageDraw.Draw(ebene)
+                e.ellipse([0, 0, 2 * rm * m, 2 * rm * m], fill=255)
+                if versatz > 0:
+                    e.ellipse([-versatz * m, 0, (2 * rm - versatz) * m, 2 * rm * m], fill=0)
+                farbe = Image.new("RGBA", ebene.size, akzent + (230,))
+                aufkleben(leinwand, _durch_maske(farbe, ebene), ((px - rm) * m, (py - rm) * m))
+    else:
+        d.ellipse([(cx - r) * m, (cy - r) * m, (cx + r) * m, (cy + r) * m], fill=akzent + (14,),
+                  outline=akzent + (150,), width=breite)
+        ri = r * 0.9
+        d.ellipse([(cx - ri) * m, (cy - ri) * m, (cx + ri) * m, (cy + ri) * m], outline=akzent + (60,), width=max(1, int(1.2 * m)))
+        for w in range(0, 360, 45):          # kleine Punkte auf dem Ring
+            a = math.radians(w)
+            px, py = cx + r * math.cos(a), cy + r * math.sin(a)
+            d.ellipse([(px - 3.2) * m, (py - 3.2) * m, (px + 3.2) * m, (py + 3.2) * m], fill=akzent + (220,))
     gr = int(r * 1.8 * m)                # die Zeichnungen fuellen ihr Raster nicht ganz -> etwas groesser als der Ring
     b = motiv(name, gr)
     aufkleben(leinwand, b, (cx * m - gr / 2, cy * m - gr / 2))
@@ -1255,7 +1308,7 @@ def bild(post: dict, format: str = "feed", video: bool = False) -> Image.Image:
             _medaillon(d, W / 2, y + gr, gr, m, akzent, glyphe=ZEICHEN_GLYPHE[st["zeichen"]])
             y += held_h + ab_mond * 0.8
         elif held == "symbol":
-            _symbol_held(leinwand, d, st["symbol"], W / 2, y + held_h / 2, held_h / 2, m, akzent)
+            _symbol_held(leinwand, d, st["symbol"], W / 2, y + held_h / 2, held_h / 2, m, akzent, st.get("rahmen", "siegel"))
             y += held_h + ab_mond * 0.8
         if symbol_mond:           # der Mond des Tages bleibt dabei: klein oben rechts
             mr = 46 if story else 38

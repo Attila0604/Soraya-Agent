@@ -16,18 +16,28 @@ from PIL import Image, ImageDraw, ImageFilter
 
 import medien
 
-MOTIVE = ("herz", "kerze", "kristall", "lotus", "sonne", "sternbild", "schluessel", "sanduhr", "auge", "venus", "karten")
+MOTIVE = ("herz", "kerze", "kristall", "lotus", "sonne", "sternbild", "schluessel", "sanduhr", "auge", "venus", "karten",
+          "mond", "rose", "schmetterling", "feder", "lebensbaum", "galaxie", "saturn", "krone", "unendlich", "kompass", "ringe")
 # Farbwelt je Motiv (Schluessel aus medien.PALETTEN)
 MOTIV_PALETTE = {"herz": "rose", "venus": "rose", "kerze": "amber", "sonne": "amber", "sanduhr": "amber",
                  "kristall": "amethyst", "karten": "amethyst", "lotus": "ritual", "auge": "wissen",
-                 "sternbild": "wissen", "schluessel": "zeichen"}
+                 "sternbild": "wissen", "schluessel": "zeichen",
+                 "mond": "wissen", "rose": "koralle", "schmetterling": "jade", "feder": "amethyst", "lebensbaum": "jade",
+                 "galaxie": "amethyst", "saturn": "ozean", "krone": "amber", "unendlich": "rose", "kompass": "ozean",
+                 "ringe": "koralle"}
 # Farbe der zarten Flaeche je Symbol (innen hell -> aussen satt), damit jedes Symbol eigenes Licht hat
 FLAECHE = {"herz": ("#ffe6ec", "#ff9fb8", "#e0607f"), "venus": ("#ffe6ec", "#f7a8c8", "#c9628f"),
            "kerze": ("#fff4d6", "#ffc070", "#e8803c"), "sonne": ("#fff6d8", "#ffcf6a", "#f0953a"),
            "sanduhr": ("#fff2d6", "#f2c68a", "#c98a50"), "kristall": ("#f1e6ff", "#c6a8ff", "#8a63e0"),
            "karten": ("#f1e6ff", "#cdb0ff", "#9068d8"), "lotus": ("#e6fff6", "#9ee8cf", "#3fb69a"),
            "auge": ("#e6f2ff", "#9cc8ff", "#4f86e0"), "sternbild": ("#e6f2ff", "#a8ccff", "#5a8ee6"),
-           "schluessel": ("#fff3dc", "#ffcf8f", "#d99a5a")}
+           "schluessel": ("#fff3dc", "#ffcf8f", "#d99a5a"),
+           "mond": ("#f4f1ff", "#c9d4ff", "#7b8fe0"), "rose": ("#ffe9e4", "#ffab9c", "#e0605a"),
+           "schmetterling": ("#e6fff3", "#9fe8c8", "#2fae8a"), "feder": ("#f5ecff", "#d4b8ff", "#9a72e8"),
+           "lebensbaum": ("#eafff0", "#a6e8b4", "#3fae6a"), "galaxie": ("#f4e8ff", "#c9a3ff", "#7a4fd8"),
+           "saturn": ("#e6f6ff", "#9fd6f2", "#3f8fc9"), "krone": ("#fff6d6", "#ffd66a", "#e0a03a"),
+           "unendlich": ("#ffe6f2", "#f7a8d0", "#c9629a"), "kompass": ("#e6f6ff", "#a8dcf0", "#4a9ac0"),
+           "ringe": ("#fff0ea", "#ffc0a8", "#e07a62")}
 # wofuer ein Motiv passt (fuer Claude und fuer die Auswahl ohne Claude)
 BEDEUTUNG = {
     "herz": "Liebe, Gefühle, Nähe", "venus": "Venus, Anziehung, Weiblichkeit, Selbstwert",
@@ -36,20 +46,35 @@ BEDEUTUNG = {
     "karten": "Mitmachen, Wahl, Orakel", "lotus": "Selbstfürsorge, innere Ruhe, Heilung",
     "auge": "Intuition, Wissen, Wahrheit", "sternbild": "Sternzeichen, Astro-Wissen",
     "schluessel": "Geheimnis, Antwort, Neues entdecken",
+    "mond": "Mondphase, Gefühle, Rhythmus, Nacht", "rose": "Romantik, Schönheit, Selbstliebe",
+    "schmetterling": "Wandel, Neubeginn, Leichtigkeit", "feder": "Loslassen, Leichtigkeit, Botschaft, Schreiben",
+    "lebensbaum": "Wachstum, Familie, Wurzeln, Verbundenheit", "galaxie": "Großes Ganzes, Kosmos, Staunen",
+    "saturn": "Saturn, Struktur, Verantwortung, Lebenslektion", "krone": "Selbstwert, Erfolg, Löwe, Stärke",
+    "unendlich": "Seelenverbindung, Treue, Kreislauf", "kompass": "Richtung, Entscheidung, Ziel, Reise",
+    "ringe": "Partnerschaft, Bindung, Kompatibilität",
 }
 # ohne passende Wahl von Claude: nach Wochenformat (mehrere -> je Tag ein anderes)
-NACH_THEMA = {"Liebe & Beziehung": ("herz", "venus"), "Ritual": ("kerze", "lotus", "kristall"),
-              "Astro-Wissen": ("auge", "sternbild", "sanduhr"), "Mitmachen": ("karten", "schluessel"),
-              "Deine Woche": ("sonne", "sanduhr", "kristall"), "Sternzeichen im Fokus": ("sternbild", "schluessel"),
-              "Rückblick & Vorschau": ("sanduhr", "lotus")}
+NACH_THEMA = {"Liebe & Beziehung": ("herz", "venus", "rose", "ringe", "unendlich"),
+              "Ritual": ("kerze", "lotus", "kristall", "feder", "mond"),
+              "Astro-Wissen": ("auge", "sternbild", "sanduhr", "saturn", "galaxie"),
+              "Mitmachen": ("karten", "schluessel", "kompass", "krone"),
+              "Deine Woche": ("sonne", "sanduhr", "kristall", "mond", "kompass"),
+              "Sternzeichen im Fokus": ("sternbild", "schluessel", "krone", "galaxie"),
+              "Rückblick & Vorschau": ("sanduhr", "lotus", "schmetterling", "lebensbaum", "feder")}
 
 
-def waehle(vorschlag: str | None, thema: str, tag_nr: int, art: str, nr: int = 0) -> str | None:
-    """Claudes Wahl, wenn gueltig; sonst ein Motiv passend zum Format (je Tag und Post ein anderes)."""
-    if vorschlag in MOTIVE:
+def waehle(vorschlag: str | None, thema: str, tag_nr: int, art: str, nr: int = 0, meiden: set | None = None) -> str | None:
+    """Claudes Wahl, wenn gueltig und nicht schon vergeben; sonst ein Motiv passend zum Format.
+    meiden: heute schon vergebene (und zuletzt benutzte) Symbole -- so sieht nicht jeder Post gleich aus."""
+    meiden = meiden or set()
+    if vorschlag in MOTIVE and vorschlag not in meiden:
         return vorschlag
     reihe = NACH_THEMA.get(thema) or MOTIVE
-    return reihe[(tag_nr + nr) % len(reihe)]
+    for kandidaten in (reihe, MOTIVE):
+        frei = [m for m in kandidaten if m not in meiden]
+        if frei:
+            return frei[(tag_nr + nr) % len(frei)]
+    return vorschlag if vorschlag in MOTIVE else reihe[(tag_nr + nr) % len(reihe)]
 
 
 def _stern(d, P, x, y, h):
@@ -258,12 +283,236 @@ def _karten(L, F, P, s, w):
         _stern(L, P, x, y, 8)
 
 
+def _mond(L, F, P, s, w):
+    F.ellipse([P(150, 130), P(362, 342)], fill=70)                               # Erdschein
+    F.ellipse([P(150, 130), P(362, 342)], fill=255)
+    F.ellipse([P(196, 108), P(398, 310)], fill=60)
+    L.ellipse([P(150, 130), P(362, 342)], fill=255)                              # Sichel
+    L.ellipse([P(190, 110), P(394, 314)], fill=0)
+    L.ellipse([P(150, 130), P(362, 342)], outline=255, width=int(w * 0.22))      # zarter Rest des Mondes
+    for x, y, r in ((300, 200, 9), (320, 262, 6), (276, 288, 5)):               # Krater im Schatten, nur angedeutet
+        L.ellipse([P(x - r, y - r), P(x + r, y + r)], outline=255, width=max(1, int(w * 0.15)))
+    for x, y, h in ((392, 118, 26), (118, 396, 16), (410, 340, 12), (226, 430, 10)):
+        _stern(L, P, x, y, h)
+    L.line([P(256, 342), P(256, 400)], fill=255, width=int(w * 0.2))             # haengender Stern
+    _stern(L, P, 256, 418, 20)
+
+
+def _rose(L, F, P, s, w):
+    cx, cy = 256, 214
+    F.ellipse([P(cx - 112, cy - 104), P(cx + 112, cy + 104)], fill=200)
+    for ring, (n, laenge, breite, drehung, b) in enumerate(((5, 118, 58, 0, 0.8), (5, 84, 44, 36, 0.55), (4, 54, 32, 10, 0.4))):
+        for i in range(n):
+            winkel = drehung + i * 360 / n
+            pkt = _blatt(winkel, laenge, breite, cx, cy)
+            F.polygon([P(*q) for q in pkt], fill=120 + ring * 60)
+            L.line([P(*q) for q in pkt], fill=255, width=int(w * b), joint="curve")
+    spirale = [(cx + 3 * t * math.cos(t * 1.1), cy + 3 * t * math.sin(t * 1.1)) for t in [i / 6 for i in range(0, 60)]]
+    L.line([P(*q) for q in spirale], fill=255, width=int(w * 0.3), joint="curve")
+    stiel = [(256 + 14 * math.sin(i / 20 * math.pi), 318 + i * 7) for i in range(21)]
+    L.line([P(*q) for q in stiel], fill=255, width=int(w * 0.6), joint="curve")
+    for winkel, y in ((-60, 380), (62, 420)):
+        blatt = _blatt(winkel, 70, 24, 258, y)
+        F.polygon([P(*q) for q in blatt], fill=150)
+        L.line([P(*q) for q in blatt], fill=255, width=int(w * 0.4), joint="curve")
+    _stern(L, P, 408, 96, 22); _stern(L, P, 104, 330, 12)
+
+
+def _schmetterling(L, F, P, s, w):
+    fluegel = ((-48, 182, 70, 0.8, 200), (48, 182, 70, 0.8, 200), (-128, 128, 46, 0.6, 140), (128, 128, 46, 0.6, 140))
+    for winkel, laenge, breite, b, a in fluegel:
+        aussen = _blatt(winkel, laenge, breite, 256, 262)
+        F.polygon([P(*q) for q in aussen], fill=a)
+        L.line([P(*q) for q in aussen], fill=255, width=int(w * b), joint="curve")
+        innen = _blatt(winkel, laenge * 0.66, breite * 0.5, 256, 262)
+        L.line([P(*q) for q in innen], fill=255, width=int(w * 0.22), joint="curve")
+        r = math.radians(winkel)                                                  # Punkte auf den Fluegeln
+        for t in (0.78, 0.9):
+            x, y = 256 + math.sin(r) * laenge * t, 262 - math.cos(r) * laenge * t
+            L.ellipse([P(x - 5, y - 5), P(x + 5, y + 5)], fill=255)
+    L.rounded_rectangle([P(246, 196), P(266, 344)], radius=10 * s, fill=255)        # Koerper
+    for vz in (1, -1):                                                            # Fuehler
+        bogen = [(256 + vz * (4 + 40 * t ** 1.3), 196 - 70 * t) for t in [i / 20 for i in range(21)]]
+        L.line([P(*q) for q in bogen], fill=255, width=int(w * 0.25), joint="curve")
+        x, y = bogen[-1]
+        L.ellipse([P(x - 6, y - 6), P(x + 6, y + 6)], fill=255)
+    _stern(L, P, 112, 110, 16); _stern(L, P, 408, 408, 20); _stern(L, P, 400, 120, 9)
+
+
+def _feder(L, F, P, s, w):
+    def punkt(t):                                                                 # geschwungener Kiel
+        x = (1 - t) ** 2 * 170 + 2 * (1 - t) * t * 210 + t ** 2 * 352
+        y = (1 - t) ** 2 * 456 + 2 * (1 - t) * t * 230 + t ** 2 * 70
+        return x, y
+    kiel = [punkt(i / 60) for i in range(61)]
+    links, rechts = [], []
+    for i in range(12, 61):
+        t = i / 60
+        x, y = punkt(t)
+        nx, ny = punkt(min(1, t + 0.01))
+        dx, dy = nx - x, ny - y
+        n = math.hypot(dx, dy) or 1
+        ox, oy = -dy / n, dx / n
+        b = 62 * math.sin(math.pi * (t - 0.2) / 0.8) ** 0.7 if t > 0.2 else 4
+        links.append((x + ox * b, y + oy * b)); rechts.append((x - ox * b * 0.8, y - oy * b * 0.8))
+        if i % 3 == 0 and t > 0.22:                                              # Federaeste
+            L.line([P(x, y), P(x + ox * b * 0.95 + dx * 6, y + oy * b * 0.95 + dy * 6)], fill=255, width=max(1, int(w * 0.14)))
+            L.line([P(x, y), P(x - ox * b * 0.76 + dx * 6, y - oy * b * 0.76 + dy * 6)], fill=255, width=max(1, int(w * 0.14)))
+    F.polygon([P(*q) for q in links + list(reversed(rechts))], fill=170)
+    L.line([P(*q) for q in links], fill=255, width=int(w * 0.45), joint="curve")
+    L.line([P(*q) for q in rechts], fill=255, width=int(w * 0.45), joint="curve")
+    L.line([P(*q) for q in kiel], fill=255, width=int(w * 0.6), joint="curve")
+    _stern(L, P, 120, 120, 22); _stern(L, P, 404, 380, 14); _stern(L, P, 150, 300, 9)
+
+
+def _lebensbaum(L, F, P, s, w):
+    F.ellipse([P(70, 70), P(442, 442)], fill=50)
+    F.ellipse([P(130, 90), P(382, 300)], fill=220)                               # Krone leuchtet
+    L.ellipse([P(70, 70), P(442, 442)], outline=255, width=int(w * 0.7))
+    L.ellipse([P(88, 88), P(424, 424)], outline=255, width=int(w * 0.18))
+    def ast(x, y, winkel, laenge, tiefe):
+        r = math.radians(winkel)
+        x2, y2 = x + laenge * math.sin(r), y - laenge * math.cos(r)
+        L.line([P(x, y), P(x2, y2)], fill=255, width=max(1, int(w * (0.18 + tiefe * 0.14))), joint="curve")
+        if tiefe == 0:
+            L.ellipse([P(x2 - 5, y2 - 5), P(x2 + 5, y2 + 5)], fill=255)
+            return
+        for d in (-33, 33):
+            ast(x2, y2, winkel + d, laenge * 0.74, tiefe - 1)
+    L.line([P(256, 400), P(256, 290)], fill=255, width=int(w * 0.95))
+    ast(256, 290, 0, 58, 4)
+    for winkel in (-150, -125, 125, 150, 180):                                    # Wurzeln
+        r = math.radians(winkel)
+        L.line([P(256, 400), P(256 + 70 * math.sin(r), 400 - 70 * math.cos(r))], fill=255, width=int(w * 0.3))
+
+
+def _galaxie(L, F, P, s, w):
+    F.ellipse([P(150, 150), P(362, 362)], fill=120)
+    F.ellipse([P(212, 212), P(300, 300)], fill=255)
+    for arm in range(3):
+        pkt = []
+        for i in range(90):
+            t = i / 89
+            a = arm * 2 * math.pi / 3 + t * 3.6
+            r = 18 + t * 190
+            pkt.append((256 + r * math.cos(a), 256 + r * math.sin(a) * 0.82))
+        L.line([P(*q) for q in pkt[:60]], fill=255, width=int(w * 0.5), joint="curve")
+        L.line([P(*q) for q in pkt[59:]], fill=255, width=int(w * 0.22), joint="curve")
+        zz = random.Random(arm)
+        for x, y in pkt[10::7]:
+            q = zz.uniform(2, 4.5)
+            x, y = x + zz.uniform(-10, 10), y + zz.uniform(-10, 10)
+            L.ellipse([P(x - q, y - q), P(x + q, y + q)], fill=255)
+    L.ellipse([P(236, 240), P(276, 272)], fill=255)
+    _stern(L, P, 256, 256, 30); _stern(L, P, 420, 110, 14); _stern(L, P, 96, 410, 12)
+
+
+def _saturn(L, F, P, s, w):
+    cx, cy, rp = 256, 256, 88
+    def ring(rx, ry, von=0.0, bis=1.0):
+        neig = math.radians(-18)
+        pkt = []
+        for i in range(121):
+            t = 2 * math.pi * (von + (bis - von) * i / 120)
+            x, y = rx * math.cos(t), ry * math.sin(t)
+            pkt.append((cx + x * math.cos(neig) - y * math.sin(neig), cy + x * math.sin(neig) + y * math.cos(neig)))
+        return pkt
+    F.ellipse([P(cx - rp, cy - rp), P(cx + rp, cy + rp)], fill=230)
+    F.polygon([P(*q) for q in ring(206, 58)], fill=80)
+    for rx, ry, b in ((206, 58, 0.55), (178, 48, 0.3), (226, 66, 0.2)):           # hinterer Teil der Ringe
+        L.line([P(*q) for q in ring(rx, ry, 0.5, 1.0)], fill=255, width=int(w * b), joint="curve")
+    L.ellipse([P(cx - rp, cy - rp), P(cx + rp, cy + rp)], fill=0)                 # Planet verdeckt den Ring
+    L.ellipse([P(cx - rp, cy - rp), P(cx + rp, cy + rp)], outline=255, width=int(w * 0.8))
+    for dy, b in ((-34, 0.2), (-6, 0.3), (26, 0.2)):                              # Wolkenbaender
+        hb = math.sqrt(max(0, rp ** 2 - dy ** 2)) * 0.86
+        L.line([P(cx - hb, cy + dy + 8), P(cx + hb, cy + dy - 8)], fill=255, width=max(1, int(w * b)))
+    for rx, ry, b in ((206, 58, 0.55), (178, 48, 0.3), (226, 66, 0.2)):           # vorderer Teil darueber
+        L.line([P(*q) for q in ring(rx, ry, 0.0, 0.5)], fill=255, width=int(w * b), joint="curve")
+    L.ellipse([P(396, 118), P(420, 142)], fill=255)                               # Mond
+    _stern(L, P, 110, 120, 18); _stern(L, P, 408, 400, 12)
+
+
+def _krone(L, F, P, s, w):
+    spitzen = [(140, 198), (198, 262), (256, 146), (314, 262), (372, 198)]
+    umriss = [(150, 360), (140, 198), (198, 262), (256, 146), (314, 262), (372, 198), (362, 360)]
+    F.polygon([P(*q) for q in umriss], fill=200)
+    L.line([P(*q) for q in umriss + [umriss[0]]], fill=255, width=int(w * 0.85), joint="curve")
+    L.rounded_rectangle([P(140, 352), P(372, 392)], radius=8 * s, outline=255, width=int(w * 0.7))
+    for x in range(168, 360, 34):                                                 # Edelsteine im Band
+        L.ellipse([P(x - 7, 365), P(x + 7, 379)], fill=255)
+    for i, (x, y) in enumerate(spitzen):
+        r = 14 if i == 2 else 10
+        L.ellipse([P(x - r, y - 2 * r), P(x + r, y)], fill=255)
+    _stern(L, P, 256, 290, 30)
+    L.line([P(160, 330), P(352, 330)], fill=255, width=int(w * 0.2))
+    _stern(L, P, 120, 110, 16); _stern(L, P, 400, 104, 22)
+
+
+def _unendlich(L, F, P, s, w):
+    def schleife(a):
+        pkt = []
+        for i in range(201):
+            t = 2 * math.pi * i / 200
+            n = 1 + math.sin(t) ** 2
+            pkt.append((256 + a * math.cos(t) / n, 256 + a * math.sin(t) * math.cos(t) / n * 1.15))
+        return pkt
+    for vz in (1, -1):                                                            # zwei leuchtende Schlaufen
+        F.ellipse([P(256 + vz * 120 - 70, 196), P(256 + vz * 120 + 70, 316)], fill=200)
+    L.line([P(*q) for q in schleife(190)], fill=255, width=int(w), joint="curve")
+    L.line([P(*q) for q in schleife(160)], fill=255, width=int(w * 0.25), joint="curve")
+    for x, y in schleife(175)[::20]:
+        L.ellipse([P(x - 3.5, y - 3.5), P(x + 3.5, y + 3.5)], fill=255)
+    _stern(L, P, 256, 130, 24); _stern(L, P, 256, 392, 14); _stern(L, P, 100, 140, 10); _stern(L, P, 410, 370, 10)
+
+
+def _kompass(L, F, P, s, w):
+    L.ellipse([P(70, 70), P(442, 442)], outline=255, width=int(w * 0.7))
+    L.ellipse([P(96, 96), P(416, 416)], outline=255, width=int(w * 0.2))
+    for i in range(72):                                                           # Skala
+        a = 2 * math.pi * i / 72
+        r1 = 168 if i % 9 == 0 else 176
+        L.line([P(256 + r1 * math.cos(a), 256 + r1 * math.sin(a)), P(256 + 186 * math.cos(a), 256 + 186 * math.sin(a))],
+               fill=255, width=max(1, int(w * (0.3 if i % 9 == 0 else 0.12))))
+    for i in range(8):                                                            # Windrose
+        a = math.radians(i * 45 - 90)
+        lang, breit = (150, 24) if i % 2 == 0 else (96, 18)
+        spitze = (256 + lang * math.cos(a), 256 + lang * math.sin(a))
+        l = (256 + breit * math.cos(a - math.pi / 2), 256 + breit * math.sin(a - math.pi / 2))
+        r = (256 + breit * math.cos(a + math.pi / 2), 256 + breit * math.sin(a + math.pi / 2))
+        F.polygon([P(256, 256), P(*l), P(*spitze)], fill=255 if i % 2 == 0 else 150)
+        F.polygon([P(256, 256), P(*r), P(*spitze)], fill=90)
+        L.polygon([P(256, 256), P(*l), P(*spitze)], fill=255 if i == 0 else 0)
+        L.line([P(*l), P(*spitze), P(*r)], fill=255, width=int(w * (0.45 if i % 2 == 0 else 0.3)), joint="curve")
+        L.line([P(256, 256), P(*spitze)], fill=255, width=max(1, int(w * 0.15)))
+    L.ellipse([P(244, 244), P(268, 268)], fill=255)
+    _stern(L, P, 256, 40, 18)
+
+
+def _ringe(L, F, P, s, w):
+    for cx in (204, 308):
+        F.ellipse([P(cx - 104, 186), P(cx + 104, 394)], fill=90)
+    F.ellipse([P(212, 214), P(300, 366)], fill=255)                              # Schnittmenge leuchtet
+    for cx in (204, 308):
+        L.ellipse([P(cx - 104, 186), P(cx + 104, 394)], outline=255, width=int(w))
+        L.ellipse([P(cx - 88, 202), P(cx + 88, 378)], outline=255, width=int(w * 0.25))
+    # Edelstein auf dem rechten Ring
+    stein = [(308, 120), (338, 150), (308, 190), (278, 150)]
+    F.polygon([P(*q) for q in stein], fill=255)
+    L.line([P(*q) for q in stein + [stein[0]]], fill=255, width=int(w * 0.5), joint="curve")
+    L.line([P(278, 150), P(338, 150)], fill=255, width=int(w * 0.25))
+    for x, y in ((288, 104), (330, 100), (350, 126)):
+        L.line([P(x, y), P(x + (x - 308) * 0.3, y - 14)], fill=255, width=max(1, int(w * 0.18)))
+    _stern(L, P, 120, 120, 20); _stern(L, P, 410, 420, 14); _stern(L, P, 96, 420, 9)
+
+
 _ZEICHNER = {"herz": _herz, "kerze": _kerze, "kristall": _kristall, "lotus": _lotus, "sonne": _sonne,
              "sternbild": _sternbild, "schluessel": _schluessel, "sanduhr": _sanduhr, "auge": _auge,
-             "venus": _venus, "karten": _karten}
+             "venus": _venus, "karten": _karten, "mond": _mond, "rose": _rose, "schmetterling": _schmetterling,
+             "feder": _feder, "lebensbaum": _lebensbaum, "galaxie": _galaxie, "saturn": _saturn, "krone": _krone,
+             "unendlich": _unendlich, "kompass": _kompass, "ringe": _ringe}
 
 
-@lru_cache(maxsize=32)
+@lru_cache(maxsize=64)
 def motiv(name: str, groesse: int) -> Image.Image:
     """Das Motiv als RGBA (groesse x groesse): zarte Farbflaeche mit Licht, Schein, Gold-Linien, Funkeln."""
     k = 2
