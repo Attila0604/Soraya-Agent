@@ -1748,6 +1748,8 @@ function bearbeitenDialog(p){
     <div class="feld"><label for="eUnter">Unterzeile</label><input id="eUnter" value="${esc(p.untertitel || '')}"></div>
     <div class="feld"><label for="eText">Text</label><textarea id="eText" rows="8">${esc(p.text || '')}</textarea></div>
     <div class="feld"><label for="eTags">Hashtags</label><input id="eTags" value="${esc(p.hashtags || '')}"></div>
+    ${p.art === 'reel' ? `<div class="feld"><label for="eHook">Reel: erste Zeile (Hook)</label><input id="eHook" value="${esc((p.skript || {}).hook || '')}"></div>
+    <div class="feld"><label for="eZeilen">Reel: Texte im Video (eine Zeile je Einblendung)</label><textarea id="eZeilen" rows="5">${esc(((p.skript || {}).einblendungen || []).join('\n'))}</textarea></div>` : ''}
     <div class="row" style="margin-top:16px"><button id="eSpeichern">Speichern</button>
       <button class="ghost" id="eAbbrechen">Abbrechen</button>
       <button class="ghost gefahr" id="eLoeschen" style="margin-left:auto">Post löschen</button></div>`;
@@ -1760,8 +1762,15 @@ function bearbeitenDialog(p){
   };
   $('eSpeichern').onclick = async () => {
     try{
-      await aendere(p.id, {titel: $('eTitel').value.trim(), untertitel: $('eUnter').value.trim(),
-                           text: $('eText').value, hashtags: $('eTags').value.trim()});
+      const neu = {titel: $('eTitel').value.trim(), untertitel: $('eUnter').value.trim(),
+                   text: $('eText').value, hashtags: $('eTags').value.trim()};
+      if($('eZeilen')){            // Reel-Texte nur speichern, wenn sie wirklich geaendert wurden
+        const alt = p.skript || {}, hook = $('eHook').value.trim(),
+              zeilen = $('eZeilen').value.split('\n').map(z => z.trim()).filter(Boolean);
+        if(hook !== (alt.hook || '') || JSON.stringify(zeilen) !== JSON.stringify(alt.einblendungen || []))
+          neu.skript = {...alt, hook, einblendungen: zeilen};
+      }
+      await aendere(p.id, neu);
       d.close(); melde('Gespeichert ✓'); neuLaden();
     }catch(e){ melde('Fehler: ' + e.message); }
   };
@@ -3729,7 +3738,8 @@ async function zeigeTestposts(d){
       <p class="titel">${esc(p.titel || p.text.slice(0, 60))}</p></div>
       <div class="row">${plFuer(p).filter(pl => passtPl(pl, p.art) && (['facebook', 'instagram'].includes(pl) || (v[pl] && v[pl].verbunden))).map(pl => { const f = fertig(p.id, pl);
         if(f && pl === 'tiktok') return `<span class="fertig">✓ an TikTok geschickt</span>`;
-        return f ? `<a class="fertig" href="${esc(f.url || '#')}" target="_blank" rel="noopener">✓ auf ${PL_NAME[pl]} ansehen</a>` : `<button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}"${v[pl].verbunden ? '' : ' disabled title="Noch nicht verbunden"'}>Jetzt auf ${PL_NAME[pl]}</button>`; }).join('')}</div></div>`).join('')
+        return f ? `<a class="fertig" href="${esc(f.url || '#')}" target="_blank" rel="noopener">✓ auf ${PL_NAME[pl]} ansehen</a>
+          <button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}" data-erneut="1">Nochmal posten</button>` : `<button class="ghost klein" data-jetzt="${p.id}" data-pl="${pl}"${v[pl].verbunden ? '' : ' disabled title="Noch nicht verbunden"'}>Jetzt auf ${PL_NAME[pl]}</button>`; }).join('')}</div></div>`).join('')
     : `<div class="empty">Heute gibt es noch keine Posts (${esc(sprachText(d))}).<span>${(d.benoetigt || [e.sprache]).every(s => d.tagesplan_sprachen.includes(s))
         ? `<button class="klein" data-plan-erstellen="1" style="margin-top:10px">Posts für heute erstellen</button>`
         : `Der Tagesplan schreibt gerade nicht alle nötigen Sprachen (${esc((d.benoetigt || []).map(s => s.toUpperCase()).join(', '))}) – im Reiter „Heute“ bei „Sprachen“ anhaken.`}</span></div>`;
@@ -3783,7 +3793,9 @@ $('view-posten').addEventListener('click', async (ev) => {
     } else if(b.dataset.weiter){
       await aendere(b.dataset.weiter, {status: 'entwurf'}); melde('Wird wieder gepostet (zum geplanten Termin).');
     } else if(b.dataset.jetzt){
-      if(!confirm(`Diesen Post jetzt sofort auf ${PL_NAME[b.dataset.pl]} posten?`)) return;
+      if(!confirm(b.dataset.erneut
+        ? `Dieser Post ist schon auf ${PL_NAME[b.dataset.pl]}. Den alten Beitrag dort bitte vorher selbst löschen.\n\nJetzt die (bearbeitete) Fassung neu posten?`
+        : `Diesen Post jetzt sofort auf ${PL_NAME[b.dataset.pl]} posten?`)) return;
       busy(b, true, 'Postet …');
       const r = await api('/posten/jetzt', {method: 'POST', body: JSON.stringify({post_id: +b.dataset.jetzt, plattform: b.dataset.pl})});
       melde('Gepostet ✓' + (r.ergebnis && r.ergebnis.url ? ' ' + r.ergebnis.url : ''));
