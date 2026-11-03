@@ -15,7 +15,10 @@ _ANWEISUNG = {
            "egy magyar nő írna az Instagramra a barátnőinek. Ne fordíts angolból vagy németből: gondold el magyarul. "
            "Rövid, hétköznapi mondatok, ismert fordulatok; minden mondatnak legyen értelme önmagában is "
            "(rossz példa: „Visszaírnál valakinek, akit rég nem akartál?” – jó: „Visszaírnál valakinek, akivel már rég "
-           "nem beszéltél?”). Pontos ékezetek, helyes ragozás."),
+           "nem beszéltél?”). Kerüld a tükörfordított angol fordulatokat – magyarul így nem mondjuk: „kivel van ma "
+           "kémia?” (jó: „Ki felé húz ma a szíved?” / „Kivel pattan ma a szikra?”), „tartsd észben” (jó: „ne feledd”), "
+           "„csinálj időt magadnak” (jó: „szánj időt magadra”), „vibe/vibrálás” (jó: „hangulat”), „ez nem egy véletlen” "
+           "(jó: „ez nem véletlen”), „self-care” (jó: „törődj magaddal”). Pontos ékezetek, helyes ragozás."),
     "it": "Scrivi tutti i testi in italiano naturale e scorrevole, dando del tu (mercato italiano).",
 }
 

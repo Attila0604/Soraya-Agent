@@ -26,7 +26,11 @@ _HINWEISE = {
            "Rák, Oroszlán, Szűz, Mérleg, Skorpió, Nyilas, Bak, Vízöntő, Halak; Hold, Nap, Telihold, Újhold. "
            "Read every sentence as a Hungarian woman on Instagram would: if it is grammatical but strange or illogical "
            "(e.g. \"Visszaírnál valakinek, akit rég nem akartál?\"), replace the whole sentence with a natural one that keeps "
-           "the meaning (\"Visszaírnál valakinek, akivel már rég nem beszéltél?\")."),
+           "the meaning (\"Visszaírnál valakinek, akivel már rég nem beszéltél?\"). Replace anglicisms and English "
+           "calques Hungarians do not say, e.g. \"kivel van ma kémia?\" -> \"Ki felé húz ma a szíved?\", "
+           "\"tartsd észben\" -> \"ne feledd\", \"csinálj időt magadnak\" -> \"szánj időt magadra\", "
+           "\"vibe\" -> \"hangulat\", \"ez nem egy véletlen\" -> \"ez nem véletlen\", superfluous \"egy\" "
+           "as English 'a/an'."),
 }
 
 _SCHEMA = {
