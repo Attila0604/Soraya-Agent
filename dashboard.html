@@ -84,6 +84,11 @@
   .hide,[hidden]{display:none!important}
   .note{font-size:12px;color:var(--mist-dim);margin:10px 0 0;line-height:1.5}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .studio-filter{margin:4px 0 14px}
+  .studio-filter .zahl{opacity:.6; font-variant-numeric:tabular-nums; margin-left:2px}
+  .tt-aeltere summary{cursor:pointer; color:var(--champagne); padding:10px 0; font-size:14px}
+  .klapp-stand{margin-left:auto; padding-right:10px; font-size:13px; color:var(--mist, #a9a3c0); white-space:nowrap}
+  .klapp-stand .achtung-punkt{display:inline-block; width:8px; height:8px; border-radius:50%; background:#e7b65c; margin-right:6px; vertical-align:middle}
   .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;
         padding:6px 12px;font-size:13px;color:var(--mist);background:transparent;cursor:pointer;font-weight:500}
   .chip.on{background:rgba(201,162,75,.12);border-color:var(--gold);color:var(--champagne)}
@@ -1237,6 +1242,7 @@
     </div>
     <p class="tpinfo">Gehen erst mit Datum raus.<span class="rest" hidden> Gib einem Post auf der Karte ein Datum – dann steht er im Plan
       (und wird, wenn die Sprache passt, automatisch gepostet). Oder kopiere Text und Bild und poste selbst.</span></p>
+    <div class="chips studio-filter" id="studioFilter" role="group" aria-label="Welche Posts"></div>
     <div id="studioListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
   </section>
 
@@ -1324,13 +1330,13 @@
       <ol class="schritte" id="einrichtungSchritte"></ol>
     </div>
     <div class="panel">
-      <h2>Verbindungen</h2>
-      <div id="verbindungen"></div>
-    </div>
-    <div class="panel">
       <h2>Termine<span data-hilfe="termine"></span></h2>
       <div id="termine"></div>
     </div>
+    <details class="panel klapp" id="verbindungenPanel">
+      <summary><h2>Verbindungen</h2><span class="klapp-stand" id="verbindungenStand"></span></summary>
+      <div id="verbindungen"></div>
+    </details>
     <details class="panel klapp" id="testpostPanel">
       <summary><h2>Testpost</h2></summary>
       <p class="hint" id="testpostInfo"></p>
@@ -2149,10 +2155,14 @@ async function ladeTikTokTexte(){
   if(!TT_TEXTE.length){ box.innerHTML = ''; return; }
   box.innerHTML = `<div class="panel tt-texte"><h2>${IKON.tiktok} Text für TikTok</h2>
     <p class="hint">${kurzMehr('Entwurf in der TikTok-App öffnen → Weiter → hier „Text kopieren“ → in die Beschreibung einfügen → Veröffentlichen.', 'Bei Entwürfen übernimmt TikTok den Text nicht von selbst. Der Titel steht vorne – so findet Soraya das Video später wieder und zählt seine Aufrufe.')}</p>
-    ${TT_TEXTE.slice(0, 4).map((x, i) => `<div class="tt-zeile">
+    ${ttZeile(TT_TEXTE[0], 0)}
+    ${TT_TEXTE.length > 1 ? `<details class="tt-aeltere"><summary>Ältere (${Math.min(TT_TEXTE.length, 4) - 1})</summary>${TT_TEXTE.slice(1, 4).map((x, i) => ttZeile(x, i + 1)).join('')}</details>` : ''}</div>`;
+}
+function ttZeile(x, i){
+  return `<div class="tt-zeile">
       <div><b>${esc(x.titel || 'Reel ' + x.post_id)}</b><span class="meta"> · ${esc(x.gepostet ? tagName(x.gepostet) + ' ' + uhr(x.gepostet) : '')}${x.zuordnet ? ' · ✓ auf TikTok gefunden' : ''}</span>
         <p class="tt-vorschau">${esc(x.text).replace(/\n/g, '<br>')}</p></div>
-      <button class="ghost klein" data-tt-kopie="${i}">Text kopieren</button></div>`).join('')}</div>`;
+      <button class="ghost klein" data-tt-kopie="${i}">Text kopieren</button></div>`;
 }
 document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-tt-kopie]'); if(b) kopiere(b, (TT_TEXTE[+b.dataset.ttKopie] || {}).text || ''); });
 async function ladeHeute(){
@@ -2396,14 +2406,25 @@ LADER.plan = () => { ladePlan(); ladeQuellen(); };
 
 /* ---------- STUDIO ---------- */
 document.querySelectorAll('.sprachwahl').forEach(s => s.innerHTML = SPRACHEN.map(([c, n]) => `<option value="${c}">${n}</option>`).join(''));
-let studioNr = 0;
+let studioNr = 0, studioPosts = [], studioFilter = 'offen';
+// Studio-Liste: zuerst nur, was noch Arbeit braucht (Entwurf/Freigegeben) -- Gepostetes und Gestopptes auf Wunsch
+const STUDIO_FILTER = [['offen', 'Offen', p => p.status === 'entwurf' || p.status === 'freigegeben'],
+  ['gepostet', 'Gepostet', p => p.status === 'gepostet'], ['alle', 'Alle', () => true]];
+function zeigeStudioListe(){
+  const f = STUDIO_FILTER.find(x => x[0] === studioFilter) || STUDIO_FILTER[0];
+  $('studioFilter').innerHTML = studioPosts.length ? STUDIO_FILTER.map(([k, n, t]) => `<button type="button" class="chip${k === studioFilter ? ' on' : ''}" data-studio-filter="${k}" aria-pressed="${k === studioFilter}">${n} <span class="zahl">${studioPosts.filter(t).length}</span></button>`).join('') : '';
+  const leer = !studioPosts.length ? 'Noch keine Posts.<span>Gib oben ein Thema ein und leg los.</span>'
+    : studioFilter === 'offen' ? 'Alles erledigt ✓<span>Keine offenen Entwürfe. Neue Posts erstellst du oben aus einem Thema.</span>' : 'Hier ist gerade nichts.';
+  liste($('studioListe'), studioPosts.filter(f[2]), leer);
+}
+$('studioFilter').addEventListener('click', (ev) => { const b = ev.target.closest('[data-studio-filter]'); if(!b) return; studioFilter = b.dataset.studioFilter; zeigeStudioListe(); });
 async function ladeStudio(){
   const nr = ++studioNr;               // nur die neueste Antwort zeigen (aeltere kommen manchmal spaeter an)
   try{
     const posts = (await api('/content?himmel=false&limit=40')).posts || [];
     if(nr !== studioNr) return;
-    liste($('studioListe'), posts, 'Noch keine Posts.<span>Gib oben ein Thema ein und leg los.</span>');
-  }catch(e){ if(nr !== studioNr) return; $('studioListe').innerHTML = ladeFehler('Die Studio-Posts', e); }
+    studioPosts = posts; zeigeStudioListe();
+  }catch(e){ if(nr !== studioNr) return; $('studioFilter').innerHTML = ''; $('studioListe').innerHTML = ladeFehler('Die Studio-Posts', e); }
 }
 $('btnStudioLaden').onclick = async () => { const b = $('btnStudioLaden'); busy(b, true, 'Lädt …'); await ladeStudio(); busy(b, false); melde('Neu geladen ✓'); };
 $('btnThema').onclick = async () => {
@@ -3523,6 +3544,10 @@ async function ladePosten(){
   zeigeZeitTipp();
 
   $('verbindungen').innerHTML = PLATTFORMEN.map(p => verbindungsZeile(p, v[p] || {}, e)).join('');
+  // Kurzstand im Titel; aufgeklappt nur, wenn etwas zu tun ist (eingeschaltet, aber nicht verbunden, oder Zugang laeuft ab)
+  const vb = PLATTFORMEN.filter(p => v[p] && v[p].verbunden), zuTun = PLATTFORMEN.some(p => e.plattformen[p] && v[p] && (!v[p].verbunden || v[p].bald_ablaufend || v[p].abgelaufen));
+  $('verbindungenStand').innerHTML = zuTun ? '<span class="achtung-punkt"></span>Bitte ansehen' : `${vb.length} von ${PLATTFORMEN.length} verbunden ✓`;
+  if(zuTun) $('verbindungenPanel').open = true;
   zeigeEinrichtung(d);
   zeigeTestposts(d);
 
