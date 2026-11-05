@@ -23,6 +23,7 @@ import os
 import json
 import secrets
 import time
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import requests
@@ -520,6 +521,38 @@ def instagram_zahlen(eintraege: list[dict]) -> dict:
             zeile["fehler"] = str(ex)[:160]
         out.append(zeile)
     return {"beitraege": out, "recht_fehlt": recht_fehlt}
+
+
+def _gleich(a: str | None, b: str | None) -> bool:
+    norm = lambda t: " ".join(str(t or "").split())[:80].lower()     # noqa: E731
+    return bool(norm(a)) and norm(a) == norm(b)
+
+
+def schon_gepostet(plattform: str, text: str, stunden: int = 12) -> dict | None:
+    """Gibt es auf Instagram/Facebook in den letzten Stunden schon einen Beitrag mit diesem Text-Anfang?
+    -> {"id", "url"} des vorhandenen Beitrags, sonst None (auch wenn die Abfrage nicht klappt)."""
+    grenze = datetime.now(timezone.utc) - timedelta(hours=stunden)
+    try:
+        if plattform == "instagram":
+            z = zugang("instagram") or {}
+            d = _get(f"{graph_ig()}/{z['konto_id']}/media", fields="id,caption,timestamp,permalink", limit=12,
+                     access_token=z["token"])
+            felder = ("caption", "timestamp", "permalink")
+        else:
+            z = zugang("facebook") or {}
+            d = _get(f"{graph_fb()}/{z['seite_id']}/posts", fields="id,message,created_time,permalink_url", limit=12,
+                     access_token=z["token"])
+            felder = ("message", "created_time", "permalink_url")
+    except Exception:  # noqa: BLE001 -- im Zweifel normal posten
+        return None
+    for m in d.get("data") or []:
+        try:
+            zeit = datetime.fromisoformat(str(m.get(felder[1])).replace("Z", "+00:00").replace("+0000", "+00:00"))
+        except ValueError:
+            continue
+        if zeit >= grenze and _gleich(m.get(felder[0]), text):
+            return {"id": m.get("id"), "url": m.get(felder[2])}
+    return None
 
 
 def _warte_auf(behaelter: str, token: str, art: str, warten_s: int) -> None:

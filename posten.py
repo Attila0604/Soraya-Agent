@@ -718,6 +718,12 @@ def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
         if paket.medien.anzahl_bilder(post) > 1:
             return linkedin.poste("post", text, bilder=paket.hole_karussell(post), alt=alt)
         return linkedin.poste("post", text, bild=paket.hole_bild(post), alt=alt)
+    # Wiederholung nach einem Fehler: lief der erste Versuch doch durch (z. B. Zeitueberschreitung nach dem
+    # Veroeffentlichen)? Dann nicht noch einmal posten, sondern den vorhandenen Beitrag nehmen.
+    if p in ("instagram", "facebook") and (zeile.get("versuche") or 0) > 0:
+        schon = meta.schon_gepostet(p, text)
+        if schon:
+            return schon
     if p == "facebook":
         if art == "reel":
             return meta.poste_facebook("reel", text, video=paket._rendere_video(post))
@@ -763,7 +769,8 @@ def fuehre_aus(jetzt: datetime | None = None, e: dict | None = None) -> list[dic
             if grund == "gestoppt":
                 db.setze_veroeffentlichung(zeile["id"], "abgebrochen", fehler="Auf „Nicht posten“ gesetzt.")
             continue                                   # "warte": spaeter noch einmal ansehen
-        db.setze_veroeffentlichung(zeile["id"], "laeuft", versuch=True)
+        if not db.beanspruche_veroeffentlichung(zeile):
+            continue                                   # ein anderer Durchlauf (z. B. waehrend eines Deploys) postet schon
         try:
             r = veroeffentliche(zeile, post, e)
             db.setze_veroeffentlichung(zeile["id"], "fertig", extern_id=r.get("id"), url=r.get("url"),
