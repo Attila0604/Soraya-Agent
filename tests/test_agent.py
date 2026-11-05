@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
 os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "postgresql://agent@127.0.0.1:55432/agenttest")
@@ -2130,6 +2130,32 @@ def test_facebook_zahlen_ersatzabfrage_und_meldung(monkeypatch, frische_db):
     cockpit.leeren()
     monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)
     assert client.get("/wirkung/cockpit?tage=7", headers=AUTH).json()["abruf"]["facebook"]["fehler"] == 1
+
+
+def test_kein_doppelter_post_nach_fehler(monkeypatch, fake_meta, frische_db):
+    """Wiederholung nach Fehler: steht der Beitrag schon auf Instagram, wird er nicht noch einmal gepostet.
+    Und ein Termin, den ein anderer Durchlauf schon beansprucht hat, wird uebersprungen."""
+    import meta as _meta
+    p = db.speichere_posts([{"art": "post", "titel": "T", "text": "Hook eins.\n\nMehr.", "sprache": "en"}],
+                           quelle="tagesplan", geplant_fuer=HEUTE)[0]
+    zid = db.plane_veroeffentlichung(p["id"], "instagram", datetime.now(himmel.WIEN) - timedelta(minutes=5), zurueckgeben=True)
+    zeile = next(x for x in db.faellige_veroeffentlichungen(datetime.now(himmel.WIEN)) if x["id"] == zid)
+    assert db.beanspruche_veroeffentlichung(zeile) and not db.beanspruche_veroeffentlichung(zeile)   # nur einmal
+    gepostet, echt = [], _meta.schon_gepostet
+    monkeypatch.setattr(_meta, "schon_gepostet", lambda pl, text: {"id": "IG9", "url": "https://instagram.com/p/x"})
+    monkeypatch.setattr(_meta, "poste_instagram", lambda *a, **k: gepostet.append(a) or {"id": "NEU"})
+    r = posten.veroeffentliche({**zeile, "versuche": 1}, db.lade_post(p["id"]))
+    assert r["id"] == "IG9" and not gepostet
+    monkeypatch.setattr(_meta, "schon_gepostet", lambda pl, text: None)
+    assert posten.veroeffentliche({**zeile, "versuche": 1}, db.lade_post(p["id"]))["id"] == "NEU" and gepostet
+    # Vergleich des Text-Anfangs (Leerzeichen/Gross-Klein egal), alte Beitraege zaehlen nicht
+    jetzt = datetime.now(timezone.utc)
+    monkeypatch.setattr(_meta, "zugang", lambda d: {"konto_id": "1", "token": "t", "seite_id": "5"})
+    monkeypatch.setattr(_meta, "_get", lambda url, **k: {"data": [
+        {"id": "A", "caption": "hook EINS.\n\nMehr.", "timestamp": (jetzt - timedelta(hours=20)).isoformat(), "permalink": "a"},
+        {"id": "B", "caption": "Hook  eins.\n\nMehr.", "timestamp": (jetzt - timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M:%S+0000"), "permalink": "b"}]})
+    assert echt("instagram", "Hook eins.\n\nMehr.") == {"id": "B", "url": "b"}
+    assert echt("instagram", "Ganz anders") is None
 
 
 def test_reel_texte_bearbeiten(frische_db):

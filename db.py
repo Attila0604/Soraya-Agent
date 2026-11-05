@@ -261,6 +261,21 @@ def faellige_veroeffentlichungen(jetzt, max_versuche: int = 3) -> list[dict]:
         return cur.fetchall()
 
 
+def beanspruche_veroeffentlichung(zeile: dict) -> bool:
+    """Termin fuer genau einen Durchlauf sperren (auf 'laeuft' setzen) -- nur wenn er seit dem Lesen unveraendert ist.
+    So posten zwei Prozesse (z. B. alter und neuer Server waehrend eines Deploys) nie denselben Termin."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "update soraya_veroeffentlichungen set status = 'laeuft', fehler = null, extern_stand = null, "
+            "extern_geprueft = null, versuche = versuche + 1, aktualisiert = now() "
+            "where id = %s and status = %s and aktualisiert is not distinct from %s returning id;",
+            (zeile["id"], zeile["status"], zeile.get("aktualisiert")),
+        )
+        ok = cur.fetchone() is not None
+        conn.commit()
+    return ok
+
+
 def setze_veroeffentlichung(zid: int, status: str, *, fehler: str | None = None, extern_id: str | None = None,
                             url: str | None = None, versuch: bool = False, extern_stand: str | None = None) -> None:
     with _verbindung() as conn, conn.cursor() as cur:
