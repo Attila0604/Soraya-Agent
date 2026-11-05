@@ -1038,10 +1038,10 @@ def test_claude_ohne_schluessel(monkeypatch):
 def test_facebook_text_ohne_bio():
     p = {"id": 7, "art": "post", "sprache": "en", "text": "Your chart awaits. Link in bio ✨", "hashtags": "#astro"}
     fb = posten.text_fuer(p, "facebook")
-    assert "bio" not in fb.lower() and "http" not in fb and "link at the top of our page" in fb   # kein Link im Text
-    assert "Link in bio" in posten.text_fuer(p, "instagram")
+    assert "bio" not in fb.lower() and "http" not in fb and "link at the top" not in fb   # kein Link-Hinweis im Text
+    assert "bio" not in posten.text_fuer(p, "instagram").lower()
     de = posten.text_fuer({**p, "sprache": "de", "text": "Neumond im Skorpion.\n\nDein Horoskop: Link in Bio"}, "facebook")
-    assert "Bio" not in de and de.count("Link oben auf unserer Seite") == 1 and "http" not in de
+    assert "Bio" not in de and "Link" not in de and de.startswith("Neumond im Skorpion.")
     assert "Link oben auf unserer Seite" in posten._ohne_bio("Dein Horoskop: Link in Bio", "de")   # mitten im Satz: ersetzt
     viele = {**p, "hashtags": "#a1 #b2 #c3 #d4 #e5"}
     assert posten.text_fuer(viele, "facebook").endswith("#a1 #b2 #horoscope")      # 3: Thema + grosser Such-Hashtag
@@ -1060,17 +1060,14 @@ def test_instagram_bio_hinweis(monkeypatch):
     monkeypatch.setattr(meta, "zugang", lambda d: {"name": "soraya.astroguide"})
     p = {"id": 7, "art": "post", "sprache": "en", "text": "Your chart awaits. Link in bio ✨", "hashtags": "#astro"}
     ig = posten.text_fuer(p, "instagram")
-    assert ig.count("bio") == 1 and "👉 @soraya.astroguide" in ig and ig.index("@soraya") < ig.index("#astro")
+    assert "bio" not in ig.lower() and "@soraya" not in ig and "🔗" not in ig     # kein Link-Hinweis (Wunsch)
     reel = posten.text_fuer({**p, "art": "reel", "sprache": "hu", "text": "Mit hoz a hét?"}, "instagram")
-    assert "Az ingyenes horoszkópod: link a bióban 👉 @soraya.astroguide" in reel
+    assert "bióban" not in reel and "@soraya" not in reel
     assert "sorayaluxuryastroguide.com" not in ig and "sorayaluxuryastroguide.com" not in reel   # keine Adresse im Text (Reichweite)
     assert "@soraya" not in posten.text_fuer({**p, "art": "story"}, "instagram")
     fb = posten.text_fuer(p, "facebook")
-    assert "@soraya" not in fb and "🔗 Your free horoscope: link at the top of our page" in fb and "http" not in fb
-    assert "🔗 Az ingyenes horoszkópod: link az oldalunk tetején" in posten.text_fuer({**p, "sprache": "hu"}, "facebook")
-    assert posten.text_fuer({**p, "text": "Hi @soraya.astroguide"}, "instagram").count("@soraya") == 1
-    monkeypatch.setattr(meta, "zugang", lambda d: None)
-    assert "Your free horoscope: link in bio" in posten.text_fuer({**p, "text": "Hello"}, "instagram")
+    assert "@soraya" not in fb and "🔗" not in fb and "http" not in fb
+    assert "oldalunk tetején" not in posten.text_fuer({**p, "sprache": "hu"}, "facebook")
 
 
 def test_wirkung_facebook_reaktionen(monkeypatch, frische_db):
@@ -1331,7 +1328,7 @@ def test_bildunterschrift_wie_von_der_redaktion(monkeypatch):
     assert absaetze[-2] == "Welches Zeichen bist du? Schreib es in die Kommentare 👇"  # Frage allein
     assert posten._luftig("Ein Satz z. B. so. Zwei.") == "Ein Satz z. B. so.\n\nZwei."   # Abkuerzung bleibt
     ig = posten.text_fuer({"id": 3, "art": "post", "sprache": "de", "text": wand, "hashtags": "#a1 #b2 #c3 #d4 #e5 #f6 #g7"}, "instagram")
-    assert "Link in Bio ✨ 👉 @soraya.astroguide" in ig and ig.endswith("#a1 #b2 #c3 #d4 #horoskop")    # max. 5 Hashtags
+    assert "Link in Bio" not in ig and ig.endswith("#a1 #b2 #c3 #d4 #horoskop")    # ohne Link-Hinweis, max. 5 Hashtags
     b = redaktion.pruefe_post({"art": "post", "titel": "T", "text": "x " * 50, "hashtags": ["#a"] * 6}, "en")
     assert "6 Hashtags (3 bis 5 sinnvoll)" in b and not redaktion.schwer(b)
     lange_folie = {"art": "post", "titel": "T", "text": "x " * 50, "hashtags": ["#a", "#b", "#c"],
@@ -1872,12 +1869,12 @@ def test_kommentar_frage_beim_posten(monkeypatch):
          "meta": {"thema": "Mitmachen", "bild_punkte": ["Sì", "No", "Forse"]}}
     ig = posten.text_fuer(p, "instagram")
     teile = ig.split("\n\n")
-    # Hook, gleich danach der Bio-Hinweis mit @Profil, dann der Text, die Frage, Speichern + Adresse, Hashtags
-    assert teile[0] == "La Luna è in Scorpione." and teile[1].startswith("Il tuo oroscopo gratis: link in bio 👉 @soraya.astroguide")
-    assert teile[3] == "A, B o C? Scrivi la tua lettera nei commenti 👇" and teile[4].startswith("🔖 Salvalo per dopo")
+    # Hook, Text, die Frage, Speichern, Hashtags -- ohne Link-Hinweis
+    assert teile[0] == "La Luna è in Scorpione." and "link in bio" not in ig.lower() and "@soraya" not in ig
+    assert teile[2] == "A, B o C? Scrivi la tua lettera nei commenti 👇" and teile[3].startswith("🔖 Salvalo per dopo")
     assert teile[-1] == "#astrologia #luna #oroscopo #segnizodiacali #oroscopodioggi"     # + Such-Hashtags
     fb = posten.text_fuer(p, "facebook")
-    assert fb.count("Scrivi la tua lettera") == 1 and "http" not in fb and "link in cima alla nostra pagina" in fb
+    assert fb.count("Scrivi la tua lettera") == 1 and "http" not in fb and "link in cima" not in fb
     assert "link in bio" not in fb.lower() and "qui sotto" not in fb and fb.split("\n\n")[0] == "La Luna è in Scorpione."
     story = {**p, "art": "story", "text": "Come dormi? Rispondi con 🌙", "meta": {}}
     assert "commenti" not in posten.text_fuer(story, "instagram")
@@ -2467,7 +2464,7 @@ def test_sprache_je_plattform(frische_db):
     # Facebook-Text: kein Link im Text, Hinweis auf den Link der Seite und Folgen-Zeile am Ende
     t = posten.text_fuer({"id": 3, "art": "post", "sprache": "hu", "text": "Hook.\n\nMehr Text.", "hashtags": "#a #b", "meta": {}}, "facebook")
     teile = t.split("\n\n")
-    assert teile[0] == "Hook." and "http" not in t and any("az oldalunk tetején" in x for x in teile) \
+    assert teile[0] == "Hook." and "http" not in t and not any("oldalunk tetején" in x for x in teile) \
         and any("Kövesd az oldalt" in x for x in teile)
 
 
