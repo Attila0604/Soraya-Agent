@@ -263,10 +263,6 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
 # sondern ein Hinweis auf den Link oben auf der Seite (Website der Seite, am besten mit ?q=bio-fb)
 BIO_ERSATZ = [(r"link in (the )?bio", "link at the top of our page"), (r"Link in (der )?Bio", "Link oben auf unserer Seite"),
               (r"link a bióban", "link az oldalunk tetején"), (r"link nella bio|link in bio", "link in cima alla nostra pagina")]
-FB_HINWEIS = {"de": "🔗 Dein Horoskop gratis: Link oben auf unserer Seite",
-              "en": "🔗 Your free horoscope: link at the top of our page",
-              "hu": "🔗 Az ingyenes horoszkópod: link az oldalunk tetején",
-              "it": "🔗 Il tuo oroscopo gratis: link in cima alla nostra pagina"}
 
 
 # LinkedIn: dort steht der echte Link unter dem Text
@@ -366,24 +362,22 @@ IG_SPEICHERN = {"de": "🔖 Speichern – für später", "en": "🔖 Save this f
                 "it": "🔖 Salvalo per dopo"}
 
 
-def _mit_bio_hinweis(text: str, sprache: str, speichern: bool = False) -> str:
-    """'Link in Bio' mit dem Profil (@name ist auf Instagram antippbar) gleich nach dem Hook -- Instagram kuerzt
-    nach zwei Zeilen ("... mehr"), ganz unten las das kaum jemand. speichern: Bitte ums Speichern (staerkstes Signal)."""
-    name = _instagram_name()
-    zeilen = [IG_SPEICHERN.get(sprache, IG_SPEICHERN["en"])] if speichern else []
+# Link-Hinweise ("Link in Bio", "Link oben auf unserer Seite", @Profil) im Beitragstext: Attila moechte sie weder
+# auf Instagram noch auf Facebook (Plattformen zeigen solche Beitraege weniger Leuten). Der Link steht im Profil.
+_LINK_HINWEIS = re.compile(r"\bbio\b|bióban|link (oben|at the top|az oldalunk|in cima)|🔗", re.IGNORECASE)
+
+
+def _ohne_link_hinweis(text: str) -> str:
+    """Kurze Absaetze mit Link-Hinweis entfernen (der Hook bleibt immer)."""
     absaetze = text.split("\n\n")
-    if not (name and f"@{name}".lower() in text.lower()):
-        mit_bio = [i for i, a in enumerate(absaetze) if _BIO.search(a)]
-        if mit_bio:
-            bio = absaetze.pop(mit_bio[-1]).rstrip()
-            # "@name" direkt hinter "Link in Bio" (eine Aufforderung statt zwei Zeilen)
-            bio = f"{bio} 👉 @{name}" if name else bio
-        else:
-            zeile = IG_HINWEIS.get(sprache, IG_HINWEIS["en"])
-            bio = f"{zeile} 👉 @{name}" if name else zeile
-        absaetze.insert(1 if len(absaetze) > 1 else len(absaetze), bio)
-        text = "\n\n".join(absaetze)
-    # keine Web-Adresse im Instagram-Text: Instagram zeigt Posts mit Adressen oft weniger Leuten (der Link steht in der Bio)
+    behalten = [a for i, a in enumerate(absaetze) if i == 0 or len(a) > 140 or not _LINK_HINWEIS.search(a)]
+    return "\n\n".join(behalten)
+
+
+def _mit_bio_hinweis(text: str, sprache: str, speichern: bool = False) -> str:
+    """Instagram: ohne Link-Hinweis im Text (auf Wunsch); speichern: Bitte ums Speichern (staerkstes Signal)."""
+    zeilen = [IG_SPEICHERN.get(sprache, IG_SPEICHERN["en"])] if speichern else []
+    text = _ohne_link_hinweis(text)
     return f"{text}\n\n" + "\n".join(zeilen) if zeilen else text
 
 
@@ -636,16 +630,11 @@ def text_fuer(post: dict, plattform: str) -> str:
         text = redaktion.mit_kommentar_frage(text, post.get("sprache") or "en", f"p{post.get('id')}", antworten)
     teile = [_luftig(text)]
     if plattform == "facebook" and post.get("art") != "story":
-        # eine eigene Zeile "... Link in Bio" faellt weg: unten steht ein einheitlicher Hinweis (ohne Link im Text)
-        absaetze = teile[0].split("\n\n")
-        if len(absaetze) > 1:
-            absaetze = [a for i, a in enumerate(absaetze)
-                        if i == 0 or len(a) > 90 or not any(re.search(m, a, re.IGNORECASE) for m, _ in BIO_ERSATZ)]
-        teile[0] = _ohne_bio("\n\n".join(absaetze), post.get("sprache") or "de")
+        # kein Link-Hinweis im Text (Wunsch von Attila); steht er mitten in einem langen Satz, bleibt er sinngemaess
+        teile[0] = _ohne_bio(_ohne_link_hinweis(teile[0]), post.get("sprache") or "de")
     if plattform == "facebook" and post.get("art") != "story":
-        # kein Link im Text (Facebook zeigt Beitraege mit Links weniger Leuten) -- Hinweis auf den Link der Seite
+        # kein Link im Text (Facebook zeigt Beitraege mit Links weniger Leuten), dafuer die Bitte zu folgen
         sprache = post.get("sprache") or "en"
-        teile.append(FB_HINWEIS.get(sprache, FB_HINWEIS["en"]))
         teile.append(FB_FOLGEN.get(sprache, FB_FOLGEN["en"]))
     if plattform == "instagram" and post.get("art") != "story":
         teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en", speichern=True)
