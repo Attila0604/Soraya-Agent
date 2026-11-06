@@ -279,7 +279,8 @@ def besucher(quellen: dict | None, posts: list[dict], tage: list[date], vor_tage
 # Trichter und Lernen
 # ---------------------------------------------------------------------------
 TRICHTER_TIPP = {
-    "besuche": "Viele sehen die Posts, aber wenige klicken. Nenne den Link früher und konkret – z. B. „Dein Mondzeichen gratis: Link in Bio“.",
+    "besuche": "Viele sehen die Posts, aber wenige klicken. Der Weg führt übers Profil: Bio-Link aktuell halten, Kommentare "
+               "beantworten (mehr Profilbesuche) und auf TikTok die 1.000 Follower erreichen (dann wird der Link klickbar).",
     "gratis": "Besucher probieren den Gratis-Test selten. Der Test sollte auf der Landingpage ganz oben und mit einem Klick erreichbar sein.",
     "konten": "Nach dem Gratis-Test legen wenige ein Konto an. Zeig direkt nach dem Ergebnis, was ein Konto zusätzlich bringt.",
 }
@@ -328,6 +329,8 @@ def lern_saetze(bewertet: list[dict], min_gemessen: int = 4) -> dict:
     if len(gemessen) >= min_gemessen:
         for kat in ("formate", "arten", "stile", "aufforderungen"):
             g = erk.get(kat) or []
+            if kat == "formate":          # alte Formate (z. B. "Sternzeichen im Fokus") gibt es nicht mehr im Plan
+                g = [x for x in g if x["name"] in redaktion.AKTUELLE_FORMATE]
             if len(g) >= 2:
                 beste, schwach = g[0], g[-1]
                 mehr = (f"{_name(kat, beste['name'])[0].upper()}{_name(kat, beste['name'])[1:]} kommt am besten an "

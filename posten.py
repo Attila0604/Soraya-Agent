@@ -646,7 +646,7 @@ def text_fuer(post: dict, plattform: str) -> str:
 
 
 # Instagram zeigt Fremden fast nur Reels: an diesen Wochentagen bleibt der Feed-Post ein Karussell (Mo, Mi, Fr),
-# an den anderen wird er auf Instagram als Reel aus seinen Folien gepostet (Diashow). Facebook bleibt Karussell.
+# an den anderen wird er auf Instagram und Facebook als Reel aus seinen Folien gepostet (Diashow).
 KARUSSELL_TAGE = (0, 2, 4)
 
 
@@ -727,6 +727,10 @@ def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
     if p == "facebook":
         if art == "reel":
             return meta.poste_facebook("reel", text, video=paket._rendere_video(post))
+        if als_diashow(post):
+            # Feed-Posts als Bild kamen auf Facebook kaum an (13-22 Aufrufe), Reels viel besser: an den Tagen
+            # ohne Karussell wie auf Instagram als Reel aus den Folien
+            return meta.poste_facebook("reel", text, video=paket.rendere_diashow(post))
         if art == "post" and paket.medien.anzahl_bilder(post) > 1:
             return meta.poste_facebook(art, text, bilder=paket.hole_karussell(post))
         return meta.poste_facebook(art, text, bild=paket.hole_bild(post))

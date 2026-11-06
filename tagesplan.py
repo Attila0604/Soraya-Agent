@@ -59,6 +59,12 @@ Was gute Posts ausmacht:
   (z. B. Venus und Aphrodite, Saturn und die Zeit), der Astronomie (z. B. warum ein Planet rückläufig wirkt) oder
   der Psychologie des Alltags –, in einem verständlichen Satz und verbunden mit dem Leben der Leserin. Nichts
   erfinden: keine Zitate, keine Studien, keine Zahlen, die du nicht sicher weißt.
+- Tiefe (Feed-Post und erstes Reel): dazu ein stiller, weiser Gedanke, der bleibt – spirituell und philosophisch
+  (Zeit und Wandel, Loslassen, Dankbarkeit, Vergebung, Stille, Verbundenheit, das Vertrauen in den eigenen Rhythmus),
+  so wie ihn eine lebenserfahrene, belesene Frau sagen würde. Ohne zu predigen, ohne Religion vorzuschreiben, ohne
+  erfundene Zitate oder Namen. Lieber ein eigenes, klares Bild als ein großes Wort.
+- Sprache auf muttersprachlichem, literarischem Niveau: präzise Wörter, ein schöner Satzrhythmus, natürliche
+  Wendungen der Zielsprache (nie übersetzt klingen), jeder Satz grammatisch und stilistisch einwandfrei.
 - Intuitiver Aufbau (Feed-Post): Hook → Einsicht (mit der Wissensschicht) → ein kleiner, konkreter Schritt für
   heute → die Frage zum Kommentieren → die Handlungsaufforderung.
 - Sei überraschend und kreativ: jeder Tag fühlt sich anders an (Erzählform unten). Sinnliche Details
@@ -119,9 +125,10 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
    einem passenden Emoji (z. B. „🔥 Ja, total“, „🌙 Eher nicht“) – sie stehen als Knöpfe im Bild.
 4. art "reel", platform "tiktok": ZWEITES Reel des Tages (geht abends raus) – ein anderer Blickwinkel als
-   das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook: z. B. ein schneller Sternzeichen-Check
-   („Skorpion, Krebs, Fische – so fühlt sich heute an“), ein „POV“-Moment aus dem Alltag oder eine Frage mit
-   Auflösung. Kurz: 8-12 Sekunden. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
+   das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook. Am liebsten ein Drei-Zeichen-Check (bringt die
+   meisten Kommentare): drei Sternzeichen, die heute besonders betroffen sind („Skorpion, Krebs, Fische – so fühlt
+   sich heute an“), je Zeichen eine Einblendung, und als Frage „Welches Zeichen bist du?“ (nur das Zeichen
+   schreiben). Sonst ein „POV“-Moment aus dem Alltag oder eine Frage mit Auflösung. Kurz: 8-12 Sekunden. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
    höchstens 8 Wörter, der letzte ist die Pointe), "szenen" (2 bis 3 kurze Bild-Ideen), "schluss" (kurz, ohne
    „{link_in_bio}“). "text": Bildunterschrift, 1-2 Sätze mit Hook, danach als eigener Absatz die eine leichte
    Frage zum Kommentieren (anders als bei Feed-Post und erstem Reel). "bild_punkte": [], "folien": [].
@@ -317,20 +324,64 @@ LEBENSPHASEN = [
 ]
 
 
-def lebensphasen(tag: date) -> tuple[tuple[str, str], tuple[str, str]]:
+def lebensphasen(tag: date, reif: bool = False) -> tuple[tuple[str, str], tuple[str, str]]:
+    """Zwei Lebensphasen fuer den Tag. reif: nur 40er/50plus (z. B. wenn die Sprache nur auf Facebook laeuft)."""
+    if reif:
+        a, b = LEBENSPHASEN[2], LEBENSPHASEN[3]
+        return (a, b) if tag.toordinal() % 2 == 0 else (b, a)
     i = tag.toordinal() % len(LEBENSPHASEN)
     return LEBENSPHASEN[i], LEBENSPHASEN[(i + 2) % len(LEBENSPHASEN)]
 
 
+# Wer auf welcher Plattform liest (aus den Kommentaren und Zahlen von Attilas Konten)
+PUBLIKUM = {
+    "facebook": "Facebook: vor allem Frauen zwischen etwa 45 und 70 – lebenserfahren, warmherzig, spirituell offen, "
+                "kommentieren gern mit ihrem Sternzeichen. Themen: Partnerschaft nach vielen Jahren oder späte Liebe, "
+                "Kinder und Enkel, Freundinnen, Dankbarkeit, innere Ruhe, Loslassen, gesunder Rhythmus (ohne "
+                "Heilversprechen). Ruhige, würdevolle Sprache, keine Jugendsprache, kein „POV“, keine Anglizismen.",
+    "tiktok": "TikTok: vor allem junge Frauen (etwa 18–35) – schnell, direkt, nahbar, gern ein Alltags-Moment zum "
+              "Wiedererkennen (Dating, Freundschaft, Selbstwert, Neuanfang).",
+    "instagram": "Instagram: Frauen etwa 25–45 – ästhetisch, nachdenklich, speichern gern Rituale und Erklärungen.",
+    "pinterest": "Pinterest: Frauen, die nach Ritualen, Ideen und Sternzeichen-Wissen suchen und sie sich merken.",
+    "linkedin": "LinkedIn: berufliches Umfeld – sachlich, klug, ohne Esoterik-Klischees.",
+}
+
+
+def publikum_fuer(sprache: str) -> list[str]:
+    """Auf welchen eingeschalteten Plattformen diese Sprache heute gepostet wird (aus den Posten-Einstellungen)."""
+    try:
+        import posten
+        e = posten.einstellungen()
+    except Exception:  # noqa: BLE001 -- ohne Einstellungen: keine eigene Ansprache
+        return []
+    pls = [p for p, an in (e.get("plattformen") or {}).items() if an]
+    tag = himmel.heute()
+    return [p for p in pls if any(posten.sprache_fuer(tag, a, e, p) == sprache for a in posten.ARTEN)]
+
+
+def nur_facebook(plattformen: list[str] | None) -> bool:
+    return bool(plattformen) and set(plattformen) == {"facebook"}
+
+
+def publikum_text(plattformen: list[str]) -> str:
+    zeilen = [PUBLIKUM[p] for p in plattformen if p in PUBLIKUM]
+    if not zeilen:
+        return ""
+    return ("Wo diese Texte erscheinen und wer dort liest – schreib genau für diese Menschen (Ton, Themen, Beispiele):\n"
+            + "\n".join(f"- {z}" for z in zeilen))
+
+
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
            vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None,
-           phasen: tuple | None = None, form: tuple | None = None, zuletzt_motive: list[str] | None = None) -> str:
+           phasen: tuple | None = None, form: tuple | None = None, zuletzt_motive: list[str] | None = None,
+           publikum: str = "") -> str:
     profil = zielgruppen_text(zielgruppe)
     phasen = phasen or lebensphasen(himmel.heute())
     return (
         "Himmelsdaten für den Tag des Posts (bereits in der Zielsprache benannt):\n"
         f"{himmel.als_text(info)}\n\n"
         f"{redaktion.thema_text(thema, LINK_IN_BIO[sprache])}\n\n"
+        + (f"{publikum}\n\n" if publikum else "")
         + (f"{profil}\n\n" if profil else "")
         + ("Diese eigenen Posts kamen zuletzt am besten an (Besuche, neue Konten, Reaktionen):\n"
            + "\n".join(f"- {v}" for v in vorbilder) + "\n\n" if vorbilder else "")
@@ -381,14 +432,16 @@ def _aufbereiten(daten: dict, sprache: str, thema_name: str = "") -> list[dict]:
 
 def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None = None,
                    thema: dict | None = None, vorbilder: list[str] | None = None, erkenntnis: str = "",
-                   anfaenge: list[str] | None = None, zuletzt_motive: list[str] | None = None) -> list[dict]:
+                   anfaenge: list[str] | None = None, zuletzt_motive: list[str] | None = None,
+                   plattformen: list[str] | None = None) -> list[dict]:
     """Ein Claude-Aufruf: die vier Eintraege des Tages in einer Sprache. Bei schweren Befunden
     der Qualitaetspruefung (z. B. falsche Sprache, heikle Versprechen) genau ein Korrekturdurchgang."""
     tag = date.fromisoformat(info["datum"]) if info.get("datum") else himmel.heute()
     thema = thema or redaktion.wochenthema(tag, info)
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
-    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge, lebensphasen(tag),
-                   erzaehlform(tag, sprache), zuletzt_motive)
+    frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
+                   lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
+                   publikum_text(plattformen or []))
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
@@ -449,13 +502,14 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             zuletzt_motive = db.letzte_motive(sprache)
         except Exception:
             zuletzt_motive = []
+        plattformen = publikum_fuer(sprache)
         posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder, erkenntnis,
-                               anfaenge, zuletzt_motive)
+                               anfaenge, zuletzt_motive, plattformen)
         try:   # Serien-Nummer: der wievielte Post dieses Formats in dieser Sprache (z. B. "Ritual · Folge 12")
             folge = None if thema["name"].startswith("Großes Ereignis") else db.zaehle_format(sprache, thema["name"], tag) + 1
         except Exception:
             folge = None
-        gespeichert, phasen = [], lebensphasen(tag)
+        gespeichert, phasen = [], lebensphasen(tag, reif=nur_facebook(plattformen))
         # Symbole: heute jedes nur einmal; die von gestern/vorgestern moeglichst auch nicht (wenn genug andere passen)
         heute_motive: set[str] = set()
         for nr, p in enumerate(posts):
