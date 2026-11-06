@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-15"
+VERSION = "reel-16"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -367,11 +367,15 @@ TIKTOK_ZEILEN = 2
 TIKTOK_ENDE = 1.8
 
 
-def zeitplan(zeilen: list[str], ende_s: float = 3.2) -> tuple[list[tuple[float, float]], float, float]:
-    """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden)."""
+# Ungarisch laeuft auf Facebook (Leserinnen etwa 45-70): etwas mehr Zeit zum Lesen je Zeile
+TEMPO = {"hu": 1.12}
+
+
+def zeitplan(zeilen: list[str], ende_s: float = 3.2, tempo: float = 1.0) -> tuple[list[tuple[float, float]], float, float]:
+    """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden). tempo > 1: langsamer (mehr Lesezeit)."""
     t, plan = 0.0, []                     # Hook ab dem ersten Bild (Vorschaubild, erste Sekunde)
     for i, z in enumerate(zeilen):
-        dauer = max(2.4, min(4.2, 1.1 + 0.32 * len(z.split())))
+        dauer = max(2.4, min(4.2, 1.1 + 0.32 * len(z.split()))) * tempo
         if i == 0:
             dauer += 0.4
         plan.append((t, t + dauer))
@@ -399,7 +403,9 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     zeilen, _ = texte(post)
     if tiktok:
         zeilen = zeilen[:TIKTOK_ZEILEN]
-    plan, end_start, dauer = zeitplan(zeilen, TIKTOK_ENDE if tiktok else 3.2)
+    tempo = 1.0 if tiktok else TEMPO.get((post.get("sprache") or "")[:2], 1.0)
+    plan, end_start, dauer = zeitplan(zeilen, TIKTOK_ENDE if tiktok else 3.2, tempo)
+    SCHLEIFE = 0.7          # die letzten Sekundenbruchteile blenden zurueck zum Anfang (Video laeuft nahtlos weiter)
     n = int(round(dauer * FPS))
 
     # --- feste Ebenen einmal vorbereiten
@@ -439,7 +445,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
         mond = mond.resize((mond.width // 2, mond.height // 2), Image.LANCZOS)
     schein = medien.mond_schein(r, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
     mond_y = 760
-    karten = [_textkarte(z_, breite=W - 160, groesse=92 if i == 0 else 78, name="cormorant", farbe="#F6E3B4",
+    # groessere Schrift (gut lesbar auch fuer aeltere Augen und in der kleinen Vorschau)
+    karten = [_textkarte(z_, breite=W - 140, groesse=106 if i == 0 else 90, name="cormorant", farbe="#F6E3B4",
                          max_zeilen=4, akzent=akzent) for i, z_ in enumerate(zeilen)]
     text_mitte = 1270
     endkarte, end_pos = _zuschneiden(_endkarte(post, tiktok))
@@ -490,6 +497,10 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
             for start_t, pos, winkel in schnuppen:
                 _sternschnuppe(bild, pos, winkel, (t - start_t) / 0.9)
             sichtbar_ende = 1 - _weich((t - end_start) / 0.8)      # Mond und Texte gehen vor der Endkarte
+            u = (t - (dauer - SCHLEIFE)) / SCHLEIFE               # am Schluss zurueck zum Anfangsbild (Schleife):
+            weg = _weich(2 * u)                                    # erst geht die Endkarte,
+            rueck = _weich(2 * u - 1)                              # dann kommt der Anfang zurueck
+            sichtbar_ende = max(sichtbar_ende, rueck)
             _staub_malen(dd, staub, t, 0.5 + 0.5 * sichtbar_ende, staub_farbe)
             if zeichen is not None:
                 _sternbild(dd, zeichen, sb_kasten, t, sichtbar_ende * _weich(t / 0.6), tuple(akzent))
@@ -514,8 +525,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 skala = 0.94 + 0.08 * min(1.0, t / max(end_start, 1))   # langsamer Zoom (Bewegung)
                 mb = mond if abs(skala - 1) < 0.002 else mond.resize((int(mond.width * skala), int(mond.height * skala)), Image.BILINEAR)
                 medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
-            if held is not None:
-                held.zeichne(bild, t, sichtbar_ende)
+            if held is not None:          # Vorlauf: das Symbol steht schon im ersten Bild (Titelbild der Plattformen)
+                held.zeichne(bild, t + 1.2, sichtbar_ende)
             if bahn and sichtbar_ende > 0:
                 d2 = ImageDraw.Draw(bild, "RGBA")
                 for u, fb in lichter(umlauf):
@@ -541,7 +552,10 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                         medien.aufkleben(bild, _mit_alpha(k, raus),
                                          (W / 2 - karte.width / 2, text_mitte - karte.height / 2 + hub))
             if t >= end_start:
-                medien.aufkleben(bild, _mit_alpha(endkarte, _weich((t - end_start - 0.3) / 0.9)), end_pos)
+                medien.aufkleben(bild, _mit_alpha(endkarte, _weich((t - end_start - 0.3) / 0.9) * (1 - weg)), end_pos)
+            if rueck > 0.003:                                          # der Hook kommt zurueck wie im ersten Bild
+                medien.aufkleben(bild, _mit_alpha(karten[0][0], rueck),
+                                 (W / 2 - karten[0][0].width / 2, text_mitte - karten[0][0].height / 2))
             schwarz = 1.0          # keine Schwarzblende: das erste Bild zeigt gleich den Hook
             daten = np.asarray(bild, dtype=np.uint8)
             if schwarz < 0.999:
