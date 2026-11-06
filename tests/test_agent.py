@@ -2158,6 +2158,30 @@ def test_kein_doppelter_post_nach_fehler(monkeypatch, fake_meta, frische_db):
     assert echt("instagram", "Ganz anders") is None
 
 
+def test_publikum_je_plattform(monkeypatch):
+    """Ungarisch nur auf Facebook -> reife Leserinnen (Lebensphasen 40er/50plus) und eigene Ansprache im Auftrag."""
+    e = {**posten.STANDARD, "sprache": "en", "sprache_pl": {"facebook": "hu"},
+         "plattformen": {"facebook": True, "instagram": True, "tiktok": True, "linkedin": False, "pinterest": False}}
+    monkeypatch.setattr(posten, "einstellungen", lambda: e)
+    assert tagesplan.publikum_fuer("hu") == ["facebook"] and set(tagesplan.publikum_fuer("en")) == {"instagram", "tiktok"}
+    assert tagesplan.nur_facebook(["facebook"]) and not tagesplan.nur_facebook(["facebook", "tiktok"])
+    a, b = tagesplan.lebensphasen(HEUTE, reif=True)
+    assert {a[0], b[0]} == {"40er", "50plus"}
+    t = tagesplan.publikum_text(["facebook"])
+    assert "45 und 70" in t and "TikTok" not in t and tagesplan.publikum_text([]) == ""
+    assert "stiller, weiser Gedanke" in tagesplan.SYSTEM_PROMPT and "Drei-Zeichen-Check" in tagesplan.SYSTEM_PROMPT
+
+
+def test_facebook_feed_als_reel_an_diashow_tagen(monkeypatch):
+    import meta as _meta
+    gesendet = []
+    monkeypatch.setattr(posten, "als_diashow", lambda p, tag=None: True)
+    monkeypatch.setattr(posten.paket, "rendere_diashow", lambda p: b"MP4")
+    monkeypatch.setattr(_meta, "poste_facebook", lambda art, text, **k: gesendet.append((art, k)) or {"id": "1"})
+    posten.veroeffentliche({"plattform": "facebook"}, {"id": 5, "art": "post", "sprache": "hu", "text": "Hook.", "meta": {}})
+    assert gesendet[0][0] == "reel" and gesendet[0][1]["video"] == b"MP4"
+
+
 def test_reel_texte_bearbeiten(frische_db):
     p = db.speichere_posts([{"art": "reel", "titel": "R", "text": "x", "sprache": "hu",
                              "skript": {"hook": "Alt", "einblendungen": ["Kos: Gyors, de őszinte szerelem"], "szenen": [], "schluss": "s"}}],
@@ -2337,9 +2361,12 @@ def test_cockpit_follower_nur_verbundene(monkeypatch, frische_db):
 def test_lern_saetze_mehr_weniger_test():
     def e(i, thema, punkte, stil="frage"):
         return {"post": {"id": i, "art": "post", "meta": {"thema": thema, "hook_stil": stil}}, "punkte": punkte, "gemessen": True}
-    b = [e(1, "Ritual", 40), e(2, "Ritual", 30), e(3, "Rückblick", 5), e(4, "Rückblick", 7)]
+    b = [e(1, "Ritual", 40), e(2, "Ritual", 30), e(3, "Rückblick & Vorschau", 5), e(4, "Rückblick & Vorschau", 7)]
     s = {x["art"]: x["text"] for x in cockpit.lern_saetze(b)["saetze"]}
-    assert "„Ritual“" in s["mehr"] and "Ø 35 Punkte" in s["mehr"] and "„Rückblick“" in s["weniger"] and "Ø 6 Punkte" in s["weniger"]
+    assert "„Ritual“" in s["mehr"] and "Ø 35 Punkte" in s["mehr"] and "Rückblick" in s["weniger"] and "Ø 6 Punkte" in s["weniger"]
+    # alte Formate (nicht mehr im Wochenplan) zaehlen nicht als "Weniger davon"
+    alt = b + [e(5, "Sternzeichen im Fokus", 0), e(6, "Sternzeichen im Fokus", 1)]
+    assert "Sternzeichen im Fokus" not in cockpit.lern_saetze(alt)["saetze"][1]["text"]
     assert s["test"].startswith("Anfang „") and "bisher 0 von 3" in s["test"]
     nah = [e(1, "Ritual", 10), e(2, "Ritual", 10), e(3, "Mitmachen", 9), e(4, "Mitmachen", 9.5)]
     assert "Nichts fällt deutlich ab" in cockpit.lern_saetze(nah)["saetze"][1]["text"]
@@ -2590,6 +2617,8 @@ def test_lektorat_korrigiert_ungarisch_und_merkt_es(monkeypatch):
 def test_lektorat_nur_fuer_gewaehlte_sprachen_und_fehlerfest(monkeypatch):
     aufrufe = []
     monkeypatch.setattr(lektorat, "frage_json", lambda *a, **k: aufrufe.append(1) or {"korrekturen": []})
+    assert lektorat.sprachen() == {"hu", "de", "en", "it"}                 # Standard: alle vier Sprachen
+    monkeypatch.setenv("LEKTORAT_SPRACHEN", "hu")
     assert lektorat.pruefen([{"art": "post", "text": "Hello"}], "en") == [] and not aufrufe
     monkeypatch.setenv("LEKTORAT_SPRACHEN", "hu,it")
     lektorat.pruefen([{"art": "post", "text": "Ciao"}], "it")

@@ -4,7 +4,7 @@ Sprach-Lektorat fuer die Posts des Tagesplans (wie das Lektorat der Engine).
 Nach dem Schreiben liest ein zweiter Claude-Aufruf alle Texte eines Tages als muttersprachlicher
 Korrektor: Rechtschreibung, Grammatik/Endungen, woertliche Uebersetzungen, unnatuerliche Wendungen.
 Claude liefert nur eine kurze Liste "alt -> neu" (kein Neuschreiben), die hier eingesetzt wird.
-Standard nur Ungarisch (Facebook). Weitere Sprachen ueber Railway: LEKTORAT_SPRACHEN=hu,it
+Standard alle vier Sprachen. Einschraenken ueber Railway: LEKTORAT_SPRACHEN=hu (oder z. B. hu,it)
 Kosten: ein kleiner Aufruf pro Sprache und Tag. Fehler -> Texte bleiben unveraendert.
 """
 
@@ -47,7 +47,7 @@ _SCHEMA = {
 
 
 def sprachen() -> set[str]:
-    roh = os.environ.get("LEKTORAT_SPRACHEN", "hu")
+    roh = os.environ.get("LEKTORAT_SPRACHEN", "hu,de,en,it")
     return {s.strip().lower() for s in roh.split(",") if s.strip().lower() in SPRACHNAMEN}
 
 

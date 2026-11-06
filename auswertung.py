@@ -197,7 +197,9 @@ def erkennt(gem: list[dict], *, kpis: dict, trichter: dict, plattformen: dict, z
     n = len(gem)
 
     # 1) Arten vergleichen: Ø erreicht je Termin-Platz
-    arten = [g for g in gruppen(gem, lambda p: p["platz"], PLATZ_NAME) if g["genug"] and g["schnitt_erreicht"]]
+    # Storys nicht vergleichen: Facebook-Storys sind nicht messbar, das verzerrt den Schnitt (z. B. "307× mehr")
+    arten = [g for g in gruppen([p for p in gem if p["platz"] != "story"], lambda p: p["platz"], PLATZ_NAME)
+             if g["genug"] and g["schnitt_erreicht"]]
     if len(arten) >= 2:
         arten.sort(key=lambda g: g["schnitt_erreicht"], reverse=True)
         hoch, tief = arten[0], arten[-1]
