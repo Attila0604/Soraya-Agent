@@ -2807,3 +2807,15 @@ def test_tiktok_html_fehler_verstaendlich():
     with pytest.raises(tiktok.TikTokFehler) as ex:
         tiktok._antwort(SimpleNamespace(status_code=503, json=lambda: (_ for _ in ()).throw(ValueError()), text=html))
     assert "Störung bei TikTok" in str(ex.value) and "<HTML>" not in str(ex.value)
+
+
+def test_leerer_hook_wird_erkannt():
+    import redaktion
+    reel = {"art": "reel", "titel": "Ikrek, Vízöntő, Bika", "hashtags": "#horoszkop #ikrek #bika",
+            "text": "Ma este nektek szól ez.\n\nValami szép. Te melyik jegy vagy? Írd meg 👇",
+            "skript": {"hook": "Ma este nektek szól ez", "einblendungen": ["a", "b"]}}
+    b = redaktion.pruefe_post(reel, "hu")
+    assert redaktion.leer(b) and not redaktion.schwer(b)
+    reel["skript"]["hook"] = "Ma este végre kimondjátok, amit érzetek"
+    reel["text"] = "Ma este végre kimondjátok, amit érzetek.\n\nValami szép. Te melyik jegy vagy? Írd meg 👇"
+    assert not redaktion.leer(redaktion.pruefe_post(reel, "hu"))
