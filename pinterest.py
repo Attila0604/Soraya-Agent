@@ -236,6 +236,47 @@ def pinnwand(sprache: str, token: str | None = None, ohne: set[str] | None = Non
     return bid
 
 
+# Eine Pinnwand je Sternzeichen und Sprache: Pinterest ordnet Pins ueber die Pinnwand einem Suchthema zu
+PINNWAND_ZEICHEN = {"de": "{z} – Sternzeichen & Horoskop", "en": "{z} Zodiac Sign & Horoscope",
+                    "hu": "{z} csillagjegy és horoszkóp", "it": "{z}: segno zodiacale e oroscopo"}
+PINNWAND_ZEICHEN_TEXT = {"de": "{z}: Eigenschaften, Liebe, passende Sternzeichen und das Horoskop – von Soraya.",
+                         "en": "{z}: traits, love, best matches and daily horoscope – by Soraya.",
+                         "hu": "{z}: tulajdonságok, szerelem, illő csillagjegyek és napi horoszkóp – Soraya.",
+                         "it": "{z}: caratteristiche, amore, segni affini e oroscopo – da Soraya."}
+
+
+def pinnwand_zeichen(sprache: str, idx: int, token: str | None = None) -> str:
+    """ID der Pinnwand fuer ein Sternzeichen in einer Sprache (vorhandene nutzen, sonst anlegen und merken)."""
+    token = token or gueltiger_token()
+    schluessel = f"{sprache}-{idx}"
+    z = zugang() or {}
+    fach = _pinnwand_schluessel() + "_zeichen"
+    gemerkt = (z.get(fach) or {}).get(schluessel)
+    if gemerkt:
+        return gemerkt
+    name_z = medien.ZEICHEN_NAMEN[idx][{"de": 0, "en": 1, "hu": 2, "it": 3}.get(sprache, 1)]
+    name_z = name_z[:1].upper() + name_z[1:]
+    name = PINNWAND_ZEICHEN.get(sprache, PINNWAND_ZEICHEN["en"]).format(z=name_z)
+    vorhanden = next((b for b in (_get("/boards", token, page_size=250).get("items") or []) if b.get("name") == name), None)
+    if not vorhanden:
+        vorhanden = _post("/boards", token, {"name": name, "privacy": "PUBLIC",
+                                             "description": PINNWAND_ZEICHEN_TEXT.get(sprache, PINNWAND_ZEICHEN_TEXT["en"]).format(z=name_z)})
+    z = zugang() or {}
+    z.setdefault(fach, {})[schluessel] = vorhanden["id"]
+    db.setze_einstellung(SCHLUESSEL, z)
+    return vorhanden["id"]
+
+
+def _pinnwand_fuer(sprache: str, token: str, zeichen: int | None) -> str:
+    """Sternzeichen-Pinnwand, wenn der Pin von einem Zeichen handelt -- sonst (oder bei einem Fehler) die Sprach-Pinnwand."""
+    if zeichen is not None:
+        try:
+            return pinnwand_zeichen(sprache, zeichen, token)
+        except PinterestFehler as ex:
+            print(f"[Pinterest] Sternzeichen-Pinnwand nicht angelegt: {ex}", flush=True)
+    return pinnwand(sprache, token)
+
+
 def ziel_link(post: dict, basis: str) -> str:
     """Wohin der Pin fuehrt: Zeichen-Seite, wenn der Post von einem Sternzeichen handelt, sonst die Landingpage."""
     sprache = (post.get("sprache") or "en")[:2]
@@ -250,12 +291,47 @@ def ziel_link(post: dict, basis: str) -> str:
     return f"{basis}?{q}"
 
 
-def poste_pin(bild: bytes, titel: str, beschreibung: str, link: str, sprache: str, alt: str | None = None) -> dict:
+def poste_pin(bild: bytes, titel: str, beschreibung: str, link: str, sprache: str, alt: str | None = None,
+              zeichen: int | None = None) -> dict:
     token = gueltiger_token()
-    daten = {"board_id": pinnwand(sprache, token), "title": (titel or "Soraya")[:100], "description": beschreibung[:500],
-             "link": link, "alt_text": (alt or titel or "Soraya")[:500],
+    daten = {"board_id": _pinnwand_fuer(sprache, token, zeichen), "title": (titel or "Soraya")[:100],
+             "description": beschreibung[:500], "link": link, "alt_text": (alt or titel or "Soraya")[:500],
              "media_source": {"source_type": "image_base64", "content_type": "image/jpeg",
                               "data": base64.b64encode(bild).decode()}}
+    return _pin_anlegen(daten, sprache, token)
+
+
+VIDEO_WARTEN_S = 240          # so lange darf Pinterest ein Video verarbeiten, dann neuer Versuch spaeter
+
+
+def poste_video(video: bytes, titel: str, beschreibung: str, link: str, sprache: str, alt: str | None = None,
+                zeichen: int | None = None, warten_s: int = VIDEO_WARTEN_S) -> dict:
+    """Video-Pin (Reel): Video bei Pinterest anmelden, hochladen, verarbeiten lassen, dann den Pin anlegen."""
+    token = gueltiger_token()
+    reg = _post("/media", token, {"media_type": "video"})
+    if not reg.get("media_id") or not reg.get("upload_url"):
+        raise PinterestFehler("Pinterest: Video konnte nicht angemeldet werden.")
+    r = requests.post(reg["upload_url"], data=reg.get("upload_parameters") or {},
+                      files={"file": ("reel.mp4", video, "video/mp4")}, timeout=TIMEOUT * 3)
+    if r.status_code >= 300:
+        raise PinterestFehler(f"Pinterest: Video-Upload fehlgeschlagen ({r.status_code}).")
+    ende = time.time() + warten_s
+    while True:
+        stand = (_get(f"/media/{reg['media_id']}", token).get("status") or "").lower()
+        if stand == "succeeded":
+            break
+        if stand == "failed":
+            raise PinterestFehler("Pinterest konnte das Video nicht verarbeiten.")
+        if time.time() > ende:
+            raise PinterestFehler("Pinterest verarbeitet das Video noch – nächster Versuch später.")
+        time.sleep(5)
+    daten = {"board_id": _pinnwand_fuer(sprache, token, zeichen), "title": (titel or "Soraya")[:100],
+             "description": beschreibung[:500], "link": link, "alt_text": (alt or titel or "Soraya")[:500],
+             "media_source": {"source_type": "video_id", "media_id": reg["media_id"], "cover_image_key_frame_time": 2}}
+    return _pin_anlegen(daten, sprache, token)
+
+
+def _pin_anlegen(daten: dict, sprache: str, token: str) -> dict:
     try:
         pin = _post("/pins", token, daten)
     except PinterestFehler as ex:
