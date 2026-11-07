@@ -118,20 +118,24 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    mit dem Namen des Zeichens und einem Doppelpunkt), "szenen" (3 kurze Bild-Ideen, falls jemand selbst filmt),
    "schluss" (kurzer Schlusssatz, der neugierig auf das persönliche Horoskop macht, OHNE
    „{link_in_bio}“ oder andere Link-Hinweise – das Video zeigt darunter schon den Knopf, und es
-   läuft auch auf Facebook). "text": Bildunterschrift, 1-3 Sätze, erster Satz wieder ein Hook, danach
-   als eigener Absatz die eine leichte Frage zum Kommentieren (anders als beim Feed-Post). "bild_punkte": [].
+   läuft auch auf Facebook). "text": Bildunterschrift mit Substanz (40-80 Wörter): erster Satz ein Hook, dann 2 bis 3
+   sehr kurze Absätze, die mehr erzählen als das Video – ein konkretes Bild, die Einsicht des Tages und der stille,
+   weise Gedanke; nennt das Video Sternzeichen, nenn sie auch im Text beim Namen. Zum Schluss als eigener Absatz die
+   eine leichte Frage zum Kommentieren (anders als beim Feed-Post). "bild_punkte": [].
 3. art "story", platform "instagram": ein kurzer Satz zur Tagesenergie plus eine Frage, auf die
    man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 20 Wörter.
    "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
    einem passenden Emoji (z. B. „🔥 Ja, total“, „🌙 Eher nicht“) – sie stehen als Knöpfe im Bild.
-4. art "reel", platform "tiktok": ZWEITES Reel des Tages (geht abends raus) – ein anderer Blickwinkel als
+4. art "reel", platform "tiktok": ZWEITES Reel des Tages – ein anderer Blickwinkel als
    das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook. Am liebsten ein Drei-Zeichen-Check (bringt die
    meisten Kommentare): drei Sternzeichen, die heute besonders betroffen sind („Skorpion, Krebs, Fische – so fühlt
    sich heute an“), je Zeichen eine Einblendung, und als Frage „Welches Zeichen bist du?“ (nur das Zeichen
    schreiben). Sonst ein „POV“-Moment aus dem Alltag oder eine Frage mit Auflösung. Kurz: 8-12 Sekunden. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
    höchstens 8 Wörter, der letzte ist die Pointe), "szenen" (2 bis 3 kurze Bild-Ideen), "schluss" (kurz, ohne
-   „{link_in_bio}“). "text": Bildunterschrift, 1-2 Sätze mit Hook, danach als eigener Absatz die eine leichte
-   Frage zum Kommentieren (anders als bei Feed-Post und erstem Reel). "bild_punkte": [], "folien": [].
+   „{link_in_bio}“). "text": Bildunterschrift (35-70 Wörter): Hook, dann beim Drei-Zeichen-Check je Zeichen ein eigener
+   kurzer Absatz mit dem Namen des Zeichens und einem treffenden, warmen Satz (sonst 2 kurze Absätze mit Einsicht und
+   Gedanke), zum Schluss als eigener Absatz die eine leichte Frage zum Kommentieren (anders als bei Feed-Post und
+   erstem Reel). "bild_punkte": [], "folien": [].
 
 Für jeden Eintrag:
 - "titel": Bild-Überschrift, höchstens 6 Wörter, ohne Hashtags und Emojis.
@@ -359,6 +363,32 @@ def publikum_fuer(sprache: str) -> list[str]:
     return [p for p in pls if any(posten.sprache_fuer(tag, a, e, p) == sprache for a in posten.ARTEN)]
 
 
+ART_NAMEN = {"story": "Story", "post": "Feed-Post", "reel": "erstes Reel", "reel2": "zweites Reel"}
+
+
+def tageszeit(uhr: str) -> str:
+    try:
+        h = int(str(uhr).split(":")[0])
+    except ValueError:
+        return ""
+    return ("früh am Morgen" if h < 9 else "am Vormittag" if h < 12 else "mittags" if h < 14
+            else "am Nachmittag" if h < 18 else "am Abend" if h < 22 else "spät am Abend")
+
+
+def zeiten_text() -> str:
+    """Wann welcher Eintrag erscheint (Uhrzeiten aus den Posten-Einstellungen) -- damit kein Morgen-Post "heute Abend" sagt."""
+    try:
+        import posten
+        z = posten.einstellungen().get("zeiten") or {}
+    except Exception:  # noqa: BLE001
+        return ""
+    teile = [f"{ART_NAMEN[k]} {z[k]} Uhr ({tageszeit(z[k])})" for k in ("story", "reel", "post", "reel2") if z.get(k)]
+    if not teile:
+        return ""
+    return ("Wann die Einträge erscheinen (Ortszeit Wien): " + ", ".join(teile) + ". Schreib passend zu dieser Tageszeit: "
+            "ein Morgen-Post sagt nicht „heute Abend“, ein Abend-Post nicht „heute Morgen“. Im Zweifel einfach „heute“.")
+
+
 def nur_facebook(plattformen: list[str] | None) -> bool:
     return bool(plattformen) and set(plattformen) == {"facebook"}
 
@@ -374,7 +404,7 @@ def publikum_text(plattformen: list[str]) -> str:
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
            vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None,
            phasen: tuple | None = None, form: tuple | None = None, zuletzt_motive: list[str] | None = None,
-           publikum: str = "") -> str:
+           publikum: str = "", zeiten: str = "") -> str:
     profil = zielgruppen_text(zielgruppe)
     phasen = phasen or lebensphasen(himmel.heute())
     return (
@@ -382,6 +412,7 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
         f"{himmel.als_text(info)}\n\n"
         f"{redaktion.thema_text(thema, LINK_IN_BIO[sprache])}\n\n"
         + (f"{publikum}\n\n" if publikum else "")
+        + (f"{zeiten}\n\n" if zeiten else "")
         + (f"{profil}\n\n" if profil else "")
         + ("Diese eigenen Posts kamen zuletzt am besten an (Besuche, neue Konten, Reaktionen):\n"
            + "\n".join(f"- {v}" for v in vorbilder) + "\n\n" if vorbilder else "")
@@ -441,7 +472,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
-                   publikum_text(plattformen or []))
+                   publikum_text(plattformen or []), zeiten_text())
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
