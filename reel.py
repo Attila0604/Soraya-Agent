@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-16"
+VERSION = "reel-17"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -444,11 +444,11 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     if mond is not None:
         mond = mond.resize((mond.width // 2, mond.height // 2), Image.LANCZOS)
     schein = medien.mond_schein(r, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
-    mond_y = 760
+    mond_y = 720
     # groessere Schrift (gut lesbar auch fuer aeltere Augen und in der kleinen Vorschau)
     karten = [_textkarte(z_, breite=W - 140, groesse=106 if i == 0 else 90, name="cormorant", farbe="#F6E3B4",
-                         max_zeilen=4, akzent=akzent) for i, z_ in enumerate(zeilen)]
-    text_mitte = 1270
+                         max_zeilen=3, akzent=akzent) for i, z_ in enumerate(zeilen)]
+    text_mitte = 1200          # etwas hoeher: Facebook zeigt Reels im Feed beschnitten (unten fehlt sonst Text)
     endkarte, end_pos = _zuschneiden(_endkarte(post, tiktok))
     # Bildideen (reel-10)
     zeichen = welches_zeichen(post, st)

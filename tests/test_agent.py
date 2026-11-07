@@ -747,6 +747,7 @@ def test_automatisch_posten(fake_meta, frische_db, monkeypatch):
 
 
 def test_posten_fehler_wiederholung_freigabe_verspaetung(monkeypatch, frische_db):
+    monkeypatch.setattr(posten, "KARUSSELL_TAGE", tuple(range(7)))    # unabhaengig vom Wochentag (kein Diashow-Reel)
     f = FakeMeta(fehler_bei="/123/photos")
     monkeypatch.setattr(meta.requests, "get", f.get)
     monkeypatch.setattr(meta.requests, "post", f.post)
@@ -1071,6 +1072,7 @@ def test_instagram_bio_hinweis(monkeypatch):
 
 
 def test_wirkung_facebook_reaktionen(monkeypatch, frische_db):
+    monkeypatch.setattr(posten, "KARUSSELL_TAGE", tuple(range(7)))    # unabhaengig vom Wochentag (kein Diashow-Reel)
     f = FakeMeta()
     monkeypatch.setattr(meta.requests, "get", f.get)
     monkeypatch.setattr(meta.requests, "post", f.post)
@@ -1273,6 +1275,7 @@ def test_anlaesse_saison_vollmond_feiertage():
 
 
 def test_karussell_bilder_und_posten(fake_meta, monkeypatch):
+    monkeypatch.setattr(posten, "KARUSSELL_TAGE", tuple(range(7)))    # unabhaengig vom Wochentag (kein Diashow-Reel)
     def antwort(*a, **k):
         r = tagesplan_antwort("en")
         r["posts"][0] = dict(r["posts"][0], folien=FOLIEN)
@@ -2170,6 +2173,14 @@ def test_publikum_je_plattform(monkeypatch):
     t = tagesplan.publikum_text(["facebook"])
     assert "45 und 70" in t and "TikTok" not in t and tagesplan.publikum_text([]) == ""
     assert "stiller, weiser Gedanke" in tagesplan.SYSTEM_PROMPT and "Drei-Zeichen-Check" in tagesplan.SYSTEM_PROMPT
+
+
+def test_tageszeit_im_auftrag(monkeypatch):
+    e = {**posten.STANDARD, "zeiten": {"story": "05:00", "post": "12:00", "reel": "05:00", "reel2": "21:00"}}
+    monkeypatch.setattr(posten, "einstellungen", lambda: e)
+    t = tagesplan.zeiten_text()
+    assert "erstes Reel 05:00 Uhr (früh am Morgen)" in t and "zweites Reel 21:00 Uhr (am Abend)" in t and "heute Abend" in t
+    assert "40-80 Wörter" in tagesplan.SYSTEM_PROMPT and "(geht abends raus)" not in tagesplan.SYSTEM_PROMPT
 
 
 def test_facebook_feed_als_reel_an_diashow_tagen(monkeypatch):
