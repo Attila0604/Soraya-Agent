@@ -46,6 +46,11 @@ Was gute Posts ausmacht:
 - Der erste Satz ist der Hook: höchstens 12 Wörter und höchstens 100 Zeichen (Instagram zeigt nur
   die ersten ~125 Zeichen, dann „… mehr“), konkret, persönlich („du“), weckt Neugier oder spricht
   Sternzeichen direkt an. Denk dir mehrere Hooks aus und nimm den stärksten.
+- Der Hook (auch der große Satz im Reel) sagt selbst schon etwas: ein Gefühl, einen Moment, eine Behauptung, die
+  neugierig macht. VERBOTEN sind leere Ankündigungen ohne Inhalt wie „Das ist für euch“, „Heute Abend ist das für
+  euch“, „Das erwartet euch heute“, „So fühlt sich heute an“ (ungarisch z. B. „Ma este nektek szól ez“, „Ma ez vár
+  rátok“). Statt anzukündigen, sag es: z. B. „Ihr drei sagt heute endlich, was ihr denkt“, „Heute Nacht schlaft ihr
+  drei unruhig – zu Recht“, „Ihr habt heute mehr gegeben, als ihr zeigt“.
 - Verboten sind leere Floskeln wie „Die Sterne stehen gut“, „Das Universum hat einen Plan“,
   „magische Energie“, „kosmische Schwingungen“, „Manifestiere jetzt“. Lieber ein konkretes Bild
   aus dem Alltag (Gespräch, Nachricht, Entscheidung, Schlaf, Arbeit, Beziehung).
@@ -128,8 +133,9 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    einem passenden Emoji (z. B. „🔥 Ja, total“, „🌙 Eher nicht“) – sie stehen als Knöpfe im Bild.
 4. art "reel", platform "tiktok": ZWEITES Reel des Tages – ein anderer Blickwinkel als
    das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook. Am liebsten ein Drei-Zeichen-Check (bringt die
-   meisten Kommentare): drei Sternzeichen, die heute besonders betroffen sind („Skorpion, Krebs, Fische – so fühlt
-   sich heute an“), je Zeichen eine Einblendung, und als Frage „Welches Zeichen bist du?“ (nur das Zeichen
+   meisten Kommentare): drei Sternzeichen, die heute besonders betroffen sind, je Zeichen eine Einblendung. Die drei
+   Namen stehen schon klein über dem Hook im Bild – der Hook nennt deshalb das, was die drei heute verbindet, als
+   konkrete Aussage (z. B. „Ihr drei lasst heute etwas Altes los“), nie bloß „das ist für euch“; und als Frage „Welches Zeichen bist du?“ (nur das Zeichen
    schreiben). Sonst ein „POV“-Moment aus dem Alltag oder eine Frage mit Auflösung. Kurz: 8-12 Sekunden. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
    höchstens 8 Wörter, der letzte ist die Pointe), "szenen" (2 bis 3 kurze Bild-Ideen), "schluss" (kurz, ohne
    „{link_in_bio}“). "text": Bildunterschrift (35-70 Wörter): Hook, dann beim Drei-Zeichen-Check je Zeichen ein eigener
@@ -531,7 +537,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
-    if any(redaktion.schwer(b) for b in befunde.values()):
+    if any(redaktion.schwer(b) or redaktion.leer(b) for b in befunde.values()):
         hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
         korrigiert = _aufbereiten(frage_json(
             system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,

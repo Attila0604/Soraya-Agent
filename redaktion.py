@@ -128,6 +128,14 @@ _DEUTSCH_IN_FREMD = re.compile(r"\b(und|nicht|deine?n?|für|heute|Mond|Sonne|Ste
 _URL = re.compile(r"https?://|www\.", re.IGNORECASE)
 _GRENZEN = {"post": (40, 110), "reel": (5, 60), "story": (4, 25)}
 FOLIE_WOERTER = 14       # Text je Karussell-Folie (steht gross im Bild)
+# Leere Ankuendigungen ohne Inhalt ("Ma este nektek szól ez", "Das ist für euch") -> ein Korrekturdurchgang
+_LEERER_HOOK = re.compile(
+    r"(\b(das|dies|es) (hier )?ist (heute )?(nur )?für (euch|dich)\b|\bfür euch drei\b|"
+    r"\b(euch|dich) (heute )?erwartet\b|\bwartet (heute )?auf (euch|dich)\b|\bso fühlt sich (der tag |heute )?an\b|"
+    r"\bthis (one )?is for you\b|\bthis one'?s for you\b|\bawaits you\b|\bwhat today holds\b|\bhow today feels\b|"
+    r"\bnektek szól\b|\bneked szól\b|\brólatok szól\b|\bvár rátok\b|\bvár rád\b|\bez vár\b|"
+    r"\bè per (voi|te)\b|\bquesto è per\b|\b(vi|ti) aspetta\b)", re.IGNORECASE)
+LEERER_HOOK = "Leerer Hook"
 HOOK_ZEICHEN = 100        # Hook steht sicher vor "… mehr" (Instagram zeigt ~125 Zeichen)
 HASHTAGS_MAX = 5          # Instagram nimmt hoechstens 5 Hashtags je Beitrag
 _EMOJI = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
@@ -268,11 +276,16 @@ def pruefe_post(post: dict, sprache: str) -> list[str]:
             befunde.append("Reel ohne Hook")
         elif _woerter(sk.get("hook")) > 12:
             befunde.append("Hook zu lang (max. 12 Wörter)")
+        if _LEERER_HOOK.search(sk.get("hook") or ""):
+            befunde.append(f"{LEERER_HOOK} im Video („{sk.get('hook')}“): kündigt nur an – sag konkret, was die Zeichen "
+                           "heute fühlen oder erleben")
         ein = list(sk.get("einblendungen") or [])
         if not 2 <= len(ein) <= 4:
             befunde.append("Reel braucht 2 bis 4 Einblendungen")
         if any(_woerter(e) > 10 for e in ein):
             befunde.append("Einblendung zu lang (max. 10 Wörter)")
+    if art in ("post", "reel") and _LEERER_HOOK.search(erste):
+        befunde.append(f"{LEERER_HOOK} im Text („{erste}“): kündigt nur an – der erste Satz soll selbst etwas sagen")
     heikel = sorted({m.group(0).lower() for m in _HEIKEL.finditer(alles)})
     if heikel:
         befunde.append("Heikle Versprechen: " + ", ".join(heikel))
@@ -283,6 +296,11 @@ def pruefe_post(post: dict, sprache: str) -> list[str]:
         if reste:
             befunde.append("Deutsche Wörter im Text: " + ", ".join(reste))
     return befunde
+
+
+def leer(befunde: list[str]) -> bool:
+    """Leerer Hook: der Tagesplan schreibt einmal neu, blockiert aber das automatische Posten nicht."""
+    return any(b.startswith(LEERER_HOOK) for b in befunde)
 
 
 def schwer(befunde: list[str]) -> bool:

@@ -32,7 +32,9 @@ _HINWEISE = {
            "\"vibe\" -> \"hangulat\", \"ez nem egy véletlen\" -> \"ez nem véletlen\", superfluous \"egy\" "
            "as English 'a/an'. Be especially strict with the short on-screen lines (titles, reel lines): they must not "
            "read like translated English captions, e.g. \"Gyors, de őszinte szerelem\" -> \"Hamar lángra lobban, de "
-           "őszintén szeret\". If in doubt, rewrite the line naturally."),
+           "őszintén szeret\". If in doubt, rewrite the line naturally. Empty announcement lines that say nothing (\"Ma este "
+           "nektek szól ez\", \"Ma ez vár rátok\") must be replaced by a concrete statement that fits the rest of the post, "
+           "e.g. \"Ma este végre kimondjátok, amit érzetek\"."),
 }
 
 _SCHEMA = {
