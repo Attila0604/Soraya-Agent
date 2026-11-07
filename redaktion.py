@@ -30,8 +30,9 @@ WOCHENTHEMEN = [
     # Dienstag: frueher "Sternzeichen im Fokus" (kam schwach an) -- jetzt Mitmachen rund um die Sternzeichen,
     # so bleiben die Zeichen im Plan, aber der Post laedt zum Antworten ein
     {"name": "Mitmachen", "variante": "Sternzeichen-Check",
-     "auftrag": "Ein Mitmach-Post rund um die Sternzeichen: das Zeichen, in dem der Mond heute steht, und zwei passende "
-                "(gleiches Element oder Gegenzeichen) – je ein konkreter Satz, in dem man sich sofort wiedererkennt. "
+     "auftrag": "Ein Mitmach-Post rund um die Sternzeichen: drei Zeichen mit Bezug zum heutigen Himmel (z. B. über das "
+                "Element des Mondzeichens oder das Gegenzeichen) – bevorzugt solche, die länger nicht dran waren (Liste "
+                "unten) – je ein konkreter Satz, in dem man sich sofort wiedererkennt. "
                 "Dann eine leichte Frage, auf die jedes Zeichen antworten kann (z. B. „Welches Zeichen bist du – trifft "
                 "es?“). Ziel sind Kommentare und Antworten."},
     # Mittwoch: frueher "Liebe & Beziehung" (kam schwach an) -- jetzt ein Ritual fuer Naehe (Rituale bringen die

@@ -363,6 +363,56 @@ def publikum_fuer(sprache: str) -> list[str]:
     return [p for p in pls if any(posten.sprache_fuer(tag, a, e, p) == sprache for a in posten.ARTEN)]
 
 
+# erlaubte Endungen nach dem Zeichennamen (Ungarisch: Mérlegek, Bikának, Rákok ...; sonst Plural/Genitiv)
+_ENDUNG = r"(?:ok|ek|ök|ak|nak|nek|knak|knek|ként|ban|ben|ra|re|hoz|hez|höz|on|en|ön|t|ot|et|öt|at|é|ék|s|'s|’s|e|i|n)?"
+
+
+def zeichen_im_text(text: str) -> set[int]:
+    """Welche Sternzeichen (Index 0-11) ein Text beim Namen nennt -- in allen vier Sprachen."""
+    import re as _re
+    import medien
+    klein = str(text or "").lower()
+    gefunden = set()
+    lang = {"a": "á", "e": "é", "o": "ó", "ö": "ő"}          # Ungarisch: Bika -> Bikának, Skorpió bleibt
+    for i, namen in enumerate(medien.ZEICHEN_NAMEN):
+        namen = set(namen) | {n[:-1] + lang[n[-1]] for n in namen if n[-1] in lang}
+        if any(_re.search(rf"(?<![\w]){_re.escape(n)}{_ENDUNG}(?![\w])", klein) for n in namen):
+            gefunden.add(i)
+    return gefunden
+
+
+def zeichen_rotation(sprache: str) -> tuple[list[int], list[int]]:
+    """(zuletzt im Mittelpunkt, laenger nicht dran) -- damit nicht jeden Tag dieselben Zeichen kommen."""
+    try:
+        zeilen = db.letzte_texte(sprache, 4)
+    except Exception:  # noqa: BLE001
+        return [], []
+    zuletzt: dict[int, int] = {}                     # Zeichen -> wie oft in den letzten Tagen
+    for z in zeilen:
+        sk = z.get("skript") or {}
+        teile = [z.get("titel"), (z.get("text") or "").split("\n")[0], sk.get("hook")] + list(sk.get("einblendungen") or [])
+        for i in zeichen_im_text(" | ".join(str(t or "") for t in teile)):
+            zuletzt[i] = zuletzt.get(i, 0) + 1
+    oft = sorted(zuletzt, key=lambda i: -zuletzt[i])
+    frei = [i for i in range(12) if i not in zuletzt]
+    return oft, frei
+
+
+def zeichen_text(sprache: str) -> str:
+    oft, frei = zeichen_rotation(sprache)
+    if not oft:
+        return ""
+    from sprachen import zeichen as _name, _SIGN_KEYS
+    namen = lambda xs: ", ".join(_name(_SIGN_KEYS[i], sprache) for i in xs)      # noqa: E731
+    text = (f"Sternzeichen, die in den letzten Tagen schon im Mittelpunkt standen: {namen(oft)} – stell sie heute NICHT "
+            "wieder in den Mittelpunkt (auch nicht im Drei-Zeichen-Check), selbst wenn sie gut ankamen.")
+    if frei:
+        text += (f" Länger nicht dran waren: {namen(frei)} – nimm für den Drei-Zeichen-Check und das Mitmachen bevorzugt "
+                 "Zeichen von dieser Liste (passend zum heutigen Himmel, z. B. über das Element oder die Mondphase). "
+                 "Über die Woche soll jedes der zwölf Zeichen drankommen.")
+    return text
+
+
 ART_NAMEN = {"story": "Story", "post": "Feed-Post", "reel": "erstes Reel", "reel2": "zweites Reel"}
 
 
@@ -386,7 +436,11 @@ def zeiten_text() -> str:
     if not teile:
         return ""
     return ("Wann die Einträge erscheinen (Ortszeit Wien): " + ", ".join(teile) + ". Schreib passend zu dieser Tageszeit: "
-            "ein Morgen-Post sagt nicht „heute Abend“, ein Abend-Post nicht „heute Morgen“. Im Zweifel einfach „heute“.")
+            "ein Morgen-Post sagt nicht „heute Abend“, ein Abend-Post nicht „heute Morgen“. Morgens und mittags darf es um "
+            "das gehen, was der Tag bringt. Abends ist der Tag fast vorbei: dann NICHT ankündigen, was „heute auf euch "
+            "wartet“ oder „was euch heute erwartet“, sondern auf den Tag zurückblicken, den Abend und die Nacht begleiten "
+            "(Ruhe, Loslassen, Träume, ein Gedanke vor dem Schlafen) oder neugierig auf morgen machen – auch die Frage zum "
+            "Kommentieren passt dazu (z. B. wie der Tag war, was man heute loslässt).")
 
 
 def nur_facebook(plattformen: list[str] | None) -> bool:
@@ -404,7 +458,7 @@ def publikum_text(plattformen: list[str]) -> str:
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
            vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None,
            phasen: tuple | None = None, form: tuple | None = None, zuletzt_motive: list[str] | None = None,
-           publikum: str = "", zeiten: str = "") -> str:
+           publikum: str = "", zeiten: str = "", zeichen_hinweis: str = "") -> str:
     profil = zielgruppen_text(zielgruppe)
     phasen = phasen or lebensphasen(himmel.heute())
     return (
@@ -413,6 +467,7 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
         f"{redaktion.thema_text(thema, LINK_IN_BIO[sprache])}\n\n"
         + (f"{publikum}\n\n" if publikum else "")
         + (f"{zeiten}\n\n" if zeiten else "")
+        + (f"{zeichen_hinweis}\n\n" if zeichen_hinweis else "")
         + (f"{profil}\n\n" if profil else "")
         + ("Diese eigenen Posts kamen zuletzt am besten an (Besuche, neue Konten, Reaktionen):\n"
            + "\n".join(f"- {v}" for v in vorbilder) + "\n\n" if vorbilder else "")
@@ -472,7 +527,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
-                   publikum_text(plattformen or []), zeiten_text())
+                   publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache))
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}

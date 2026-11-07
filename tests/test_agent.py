@@ -2191,6 +2191,16 @@ def test_tageszeit_im_auftrag(monkeypatch):
     monkeypatch.setattr(posten, "einstellungen", lambda: e)
     t = tagesplan.zeiten_text()
     assert "erstes Reel 05:00 Uhr (früh am Morgen)" in t and "zweites Reel 21:00 Uhr (am Abend)" in t and "heute Abend" in t
+    assert "auf den Tag zurückblicken" in t
+    # Sternzeichen erkennen (auch mit ungarischen Endungen, ohne falsche Treffer) und abwechseln
+    assert tagesplan.zeichen_im_text("Bika, Mérleg, Rák – ma") == {1, 3, 6}
+    assert tagesplan.zeichen_im_text("Mérlegek és Bikának") == {1, 6} and tagesplan.zeichen_im_text("Rákóczi út, kosár") == set()
+    monkeypatch.setattr(tagesplan.db, "letzte_texte", lambda s, t=4: [
+        {"titel": "Így hat rátok a Vénusz", "text": "Bika, Mérleg, Rák – ma", "skript": {"hook": "x", "einblendungen": ["Skorpió: csend"]}}])
+    oft, frei = tagesplan.zeichen_rotation("hu")
+    assert set(oft) == {1, 3, 6, 7} and 7 not in frei and len(frei) == 8
+    zt = tagesplan.zeichen_text("hu")
+    assert "Mérleg" in zt and "NICHT" in zt and "Nyilas" in zt
     assert "40-80 Wörter" in tagesplan.SYSTEM_PROMPT and "(geht abends raus)" not in tagesplan.SYSTEM_PROMPT
 
 

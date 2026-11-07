@@ -685,6 +685,18 @@ def zaehle_format(sprache: str, thema: str, vor) -> int:
         return int(cur.fetchone()["n"] or 0)
 
 
+def letzte_texte(sprache: str, tage: int = 4) -> list[dict]:
+    """Titel, Text und Reel-Skript der Tagesplan-Posts der letzten Tage (neueste zuerst) -- z. B. fuer die
+    Sternzeichen, die zuletzt im Mittelpunkt standen."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select geplant_fuer, titel, text, skript from soraya_posts where quelle = 'himmel' and sprache = %s "
+            "and geplant_fuer >= current_date - %s and geplant_fuer < current_date + 2 order by geplant_fuer desc, id desc;",
+            (sprache, tage),
+        )
+        return cur.fetchall()
+
+
 def letzte_motive(sprache: str, tage: int = 2) -> list[str]:
     """Symbole der letzten Tage (neueste zuerst), damit die Bilder abwechseln."""
     with _verbindung() as conn, conn.cursor() as cur:
