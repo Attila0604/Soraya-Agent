@@ -123,7 +123,7 @@ def pruefen(posts: list[dict], sprache: str) -> list[str]:
     for i, p in enumerate(posts, 1):
         bloecke.append(f"--- Post {i} ({p.get('art') or 'post'}) ---\n" + "\n".join(_texte(p)))
     try:
-        antwort = frage_json(_system(sprache), "\n\n".join(bloecke), _SCHEMA, effort="medium", max_tokens=6000)
+        antwort = frage_json(_system(sprache), "\n\n".join(bloecke), _SCHEMA, effort="medium", max_tokens=12000)
         return anwenden(posts, antwort.get("korrekturen") or [])
     except Exception as e:   # Lektorat darf den Tagesplan nie aufhalten
         log.warning("Lektorat %s fehlgeschlagen: %s", sprache, e)

@@ -2175,6 +2175,17 @@ def test_publikum_je_plattform(monkeypatch):
     assert "stiller, weiser Gedanke" in tagesplan.SYSTEM_PROMPT and "Drei-Zeichen-Check" in tagesplan.SYSTEM_PROMPT
 
 
+def test_neu_erstellen_behaelt_entwuerfe_bei_fehler(monkeypatch, frische_db):
+    """Geht das Neu-Schreiben schief, bleiben die alten Entwuerfe des Tages erhalten (vorher waren sie weg)."""
+    tagesplan.erstelle("en")
+    vorher = [p["id"] for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en"]
+    assert vorher
+    monkeypatch.setattr(tagesplan, "frage_json", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("Claude weg")))
+    r = tagesplan.erstelle("en", erzwingen=True)
+    assert r["status"] == "fehler"
+    assert [p["id"] for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en"] == vorher
+
+
 def test_tageszeit_im_auftrag(monkeypatch):
     e = {**posten.STANDARD, "zeiten": {"story": "05:00", "post": "12:00", "reel": "05:00", "reel2": "21:00"}}
     monkeypatch.setattr(posten, "einstellungen", lambda: e)
