@@ -473,13 +473,14 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
                    publikum_text(plattformen or []), zeiten_text())
-    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium"), sprache, thema["name"])
+    # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
+    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
     if any(redaktion.schwer(b) for b in befunde.values()):
         hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
         korrigiert = _aufbereiten(frage_json(
             system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,
-            SCHEMA, effort="medium"), sprache, thema["name"])
+            SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
         if korrigiert:
             posts = korrigiert
             befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
@@ -512,8 +513,8 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
     if not db.beanspruche_tagesplan(tag, sprache, erzwingen=erzwingen, manuell=manuell):
         return {"sprache": sprache, "status": "schon_da"}
     try:
-        if erzwingen:
-            db.loesche_tagesplan_entwuerfe(tag, sprache)
+        # Bei "Alle neu erstellen" werden die alten Entwuerfe erst NACH dem erfolgreichen Schreiben ersetzt --
+        # geht das Schreiben schief, bleiben sie erhalten (vorher waren sie dann einfach weg)
         info = himmel.aufbereiten(himmel.hole_himmel(tag), tag, sprache)
         zielgruppe = _zielgruppe_fuer(sprache)
         thema = redaktion.wochenthema(tag, info)
@@ -536,6 +537,8 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
         plattformen = publikum_fuer(sprache)
         posts = schreibe_posts(info, sprache, db.letzte_titel(sprache), zielgruppe, thema, vorbilder, erkenntnis,
                                anfaenge, zuletzt_motive, plattformen)
+        if erzwingen:
+            db.loesche_tagesplan_entwuerfe(tag, sprache)
         try:   # Serien-Nummer: der wievielte Post dieses Formats in dieser Sprache (z. B. "Ritual · Folge 12")
             folge = None if thema["name"].startswith("Großes Ereignis") else db.zaehle_format(sprache, thema["name"], tag) + 1
         except Exception:
