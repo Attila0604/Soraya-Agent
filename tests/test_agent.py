@@ -2819,3 +2819,11 @@ def test_leerer_hook_wird_erkannt():
     reel["skript"]["hook"] = "Ma este végre kimondjátok, amit érzetek"
     reel["text"] = "Ma este végre kimondjátok, amit érzetek.\n\nValami szép. Te melyik jegy vagy? Írd meg 👇"
     assert not redaktion.leer(redaktion.pruefe_post(reel, "hu"))
+
+
+def test_lebensthemen_wechseln_taeglich():
+    from datetime import date, timedelta
+    import tagesplan
+    tage = [tagesplan.lebensthemen(date(2026, 11, 1) + timedelta(d), "hu") for d in range(7)]
+    assert all(a != b for a, b in tage)
+    assert len({a for a, _ in tage}) == 7 and len({b for _, b in tage}) == 7

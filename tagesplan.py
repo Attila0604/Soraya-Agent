@@ -321,6 +321,53 @@ def erzaehlform(tag: date, sprache: str) -> tuple[str, str]:
     return random.Random(f"form-{tag.isoformat()}-{sprache}").choice(ERZAEHLFORMEN)
 
 
+# Lebensthema des Tages: zwei verschiedene je Tag (Feed + 1. Reel / Story + 2. Reel), rotiert ueber zwei Wochen,
+# damit nicht jeden Abend wieder "loslassen" oder "endlich sagen, was du fuehlst" kommt
+LEBENSTHEMEN = [
+    "Geld und Wert: was du dir gönnst, was du verlangst, was dir etwas wert ist",
+    "Freundinnen: eine alte Freundschaft, eine Nachricht, die fällt, wer dich wirklich kennt",
+    "Familie: Mutter, Schwester, Kinder, alte Rollen am Familientisch",
+    "Arbeit und Berufung: ein Gespräch mit der Chefin, ein Projekt, Anerkennung, Pausen",
+    "Körper und Rhythmus: Schlaf, Bewegung, Hunger, Müdigkeit – freundlich, ohne Heilversprechen",
+    "Zuhause: ein Raum, aufräumen, ein Lieblingsplatz, Ordnung und Chaos",
+    "Flirten und Verliebtsein: Blicke, Nachrichten, Herzklopfen, ein erstes Treffen",
+    "Lange Partnerschaft: Alltag zu zweit, kleine Gesten, ein Streit und die Versöhnung",
+    "Mut und Neuanfang: etwas zum ersten Mal tun, eine Entscheidung, ein Ja",
+    "Kreativität und Freude: spielen, gestalten, tanzen, etwas nur für dich",
+    "Erinnerungen: ein Lied, ein Geruch, ein Foto, wer du früher warst",
+    "Grenzen: Nein sagen, Erwartungen anderer, Zeit für dich verteidigen",
+    "Intuition und Träume: Bauchgefühl, Zeichen im Alltag, ein Traum, der nachklingt",
+    "Reisen und Weite: Fernweh, ein Spaziergang, ein neuer Weg, raus aus der Routine",
+]
+
+
+def lebensthemen(tag: date, sprache: str) -> tuple[str, str]:
+    import zlib
+    n = len(LEBENSTHEMEN)
+    i = (tag.toordinal() + zlib.crc32(sprache.encode())) % n
+    return LEBENSTHEMEN[i], LEBENSTHEMEN[(i + 5) % n]
+
+
+def botschaften_text(sprache: str) -> str:
+    """Hooks und Kernsaetze der letzten Tage -- heute ein anderes Thema, nicht dieselbe Botschaft in neuen Worten."""
+    try:
+        zeilen = db.letzte_texte(sprache, 4)
+    except Exception:  # noqa: BLE001
+        return ""
+    saetze = []
+    for z in zeilen:
+        sk = z.get("skript") or {}
+        for t in [sk.get("hook"), *(sk.get("einblendungen") or [])[-1:], z.get("titel")]:
+            t = str(t or "").strip()
+            if t and t not in saetze:
+                saetze.append(t)
+    if not saetze:
+        return ""
+    return ("Botschaften der letzten Tage (Hooks, Pointen, Überschriften) – heute ein ANDERES Thema und eine andere "
+            "Botschaft, nicht dasselbe in neuen Worten (z. B. nicht schon wieder „endlich sagen, was du fühlst“ oder "
+            "„etwas loslassen“, wenn das schon dran war):\n" + "\n".join(f"- {t}" for t in saetze[:24]))
+
+
 # Lebensphasen der Leserinnen: jeden Tag zwei im Wechsel (Feed + 1. Reel / Story + 2. Reel)
 LEBENSPHASEN = [
     ("20er", "Anfang 20 bis Anfang 30: Dating und erste große Liebe, Selbstfindung, Studium oder Berufsstart, Freundinnen, "
@@ -445,8 +492,8 @@ def zeiten_text() -> str:
             "ein Morgen-Post sagt nicht „heute Abend“, ein Abend-Post nicht „heute Morgen“. Morgens und mittags darf es um "
             "das gehen, was der Tag bringt. Abends ist der Tag fast vorbei: dann NICHT ankündigen, was „heute auf euch "
             "wartet“ oder „was euch heute erwartet“, sondern auf den Tag zurückblicken, den Abend und die Nacht begleiten "
-            "(Ruhe, Loslassen, Träume, ein Gedanke vor dem Schlafen) oder neugierig auf morgen machen – auch die Frage zum "
-            "Kommentieren passt dazu (z. B. wie der Tag war, was man heute loslässt).")
+            "oder neugierig auf morgen machen – immer über das heutige Lebensthema (nicht jeden Abend „loslassen“ oder "
+            "„zur Ruhe kommen“); auch die Frage zum Kommentieren passt zur Abendstimmung.")
 
 
 def nur_facebook(plattformen: list[str] | None) -> bool:
@@ -464,9 +511,11 @@ def publikum_text(plattformen: list[str]) -> str:
 def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | None, thema: dict,
            vorbilder: list[str], erkenntnis: str = "", anfaenge: list[str] | None = None,
            phasen: tuple | None = None, form: tuple | None = None, zuletzt_motive: list[str] | None = None,
-           publikum: str = "", zeiten: str = "", zeichen_hinweis: str = "") -> str:
+           publikum: str = "", zeiten: str = "", zeichen_hinweis: str = "", themen: tuple | None = None,
+           botschaften: str = "") -> str:
     profil = zielgruppen_text(zielgruppe)
     phasen = phasen or lebensphasen(himmel.heute())
+    themen = themen or lebensthemen(himmel.heute(), sprache)
     return (
         "Himmelsdaten für den Tag des Posts (bereits in der Zielsprache benannt):\n"
         f"{himmel.als_text(info)}\n\n"
@@ -482,6 +531,10 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
         + ("\n".join(f"- {t}" for t in bisherige) if bisherige else "- (noch keine)")
         + ("\n\nAnfänge (erste Zeilen) der letzten Tage – nicht ähnlich beginnen:\n"
            + "\n".join(f"- {a}" for a in anfaenge) if anfaenge else "")
+        + (f"\n\n{botschaften}" if botschaften else "")
+        + "\n\nLebensthema heute – darum dreht sich der konkrete Moment, verbunden mit dem Himmel (auch beim "
+          "Drei-Zeichen-Check: was die drei Zeichen in diesem Bereich heute erleben):\n"
+        + f"1. (Feed-Post, erstes Reel) {themen[0]}\n2. (Story, zweites Reel) {themen[1]}"
         + f"\n\nErzählform heute (Feed-Post und erstes Reel): {(form or ERZAEHLFORMEN[0])[1]}"
         + "\n\nLebensphasen heute:\n"
         + f"1. (Feed-Post, erstes Reel) {phasen[0][1]}\n2. (Story, zweites Reel) {phasen[1][1]}"
@@ -533,7 +586,8 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
-                   publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache))
+                   publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache),
+                   lebensthemen(tag, sprache), botschaften_text(sprache))
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
     befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
