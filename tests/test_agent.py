@@ -69,7 +69,7 @@ def tagesplan_antwort(sprache="de"):
 @pytest.fixture(autouse=True)
 def frische_db(monkeypatch):
     with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
-        conn.execute("drop table if exists soraya_veroeffentlichungen, soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
+        conn.execute("drop table if exists soraya_pins, soraya_veroeffentlichungen, soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
     db.init_db()
     aufrufe = []
 
@@ -2315,7 +2315,7 @@ def test_pinterest_verbinden_und_pin(monkeypatch, frische_db):
     assert "verbunden=pinterest" in r.headers["location"]
     v = client.get("/posten", headers=AUTH).json()["verbindungen"]["pinterest"]
     assert v["verbunden"] and v["name"] == "soraya_astro" and v["sandbox"] and v["selbst_verlaengert"]
-    assert posten.passt("pinterest", "post") and posten.passt("pinterest", "story") and not posten.passt("pinterest", "reel")
+    assert posten.passt("pinterest", "post") and posten.passt("pinterest", "story") and posten.passt("pinterest", "reel")
     # Pin: Titelbild, Link auf die Zeichen-Seite, Text ohne "Link in Bio"
     post = {"id": 5, "art": "post", "sprache": "hu", "titel": "Skorpió: mélyebb beszélgetések", "untertitel": "U",
             "text": "A Skorpió-szezon őszinteséget kér.\n\nLink a bióban.", "hashtags": "#asztrologia #skorpio", "meta": {}}
@@ -2330,7 +2330,8 @@ def test_pinterest_verbinden_und_pin(monkeypatch, frische_db):
     assert gesendet[-1][0] == "https://api-sandbox.pinterest.com/v5/pins" and pin["board_id"] == "B1"
     assert pin["link"].endswith("/hu/csillagjegyek/skorpio?q=p5&lang=hu") and "bió" not in pin["description"]
     assert pin["media_source"]["source_type"] == "image_base64" and pin["title"].startswith("Skorpió")
-    assert (pinterest.zugang() or {}).get("pinnwaende_sandbox") == {"hu": "B1"} and not (pinterest.zugang() or {}).get("pinnwaende")
+    # Post ueber ein Sternzeichen -> Pinnwand des Zeichens (Skorpio = 7)
+    assert (pinterest.zugang() or {}).get("pinnwaende_sandbox_zeichen") == {"hu-7": "B1"} and not (pinterest.zugang() or {}).get("pinnwaende")
 
 
 def test_wunsch_zeiten_und_termine_verschieben(frische_db):
@@ -2827,3 +2828,87 @@ def test_lebensthemen_wechseln_taeglich():
     tage = [tagesplan.lebensthemen(date(2026, 11, 1) + timedelta(d), "hu") for d in range(7)]
     assert all(a != b for a, b in tage)
     assert len({a for a, _ in tage}) == 7 and len({b for _, b in tage}) == 7
+
+
+def test_pinterest_video_pin(monkeypatch, frische_db):
+    import pinterest
+    monkeypatch.setattr(pinterest, "gueltiger_token", lambda: "tok")
+    monkeypatch.setattr(pinterest, "pinnwand", lambda sprache, token=None, ohne=None: "B-" + sprache)
+    monkeypatch.setattr(pinterest.time, "sleep", lambda s: None)
+    gesendet, staende = [], iter(["processing", "succeeded"])
+
+    def fake_post(url, data=None, json=None, headers=None, timeout=None, files=None):
+        gesendet.append((url, json or data, files))
+        if url.endswith("/media"):
+            return SimpleNamespace(status_code=201, content=b"1", text="", json=lambda: {
+                "media_id": "M1", "upload_url": "https://upload.example/s3", "upload_parameters": {"key": "k"}})
+        if url == "https://upload.example/s3":
+            return SimpleNamespace(status_code=204, content=b"", text="")
+        if url.endswith("/pins"):
+            return SimpleNamespace(status_code=201, content=b"1", text="", json=lambda: {"id": "PV"})
+        raise AssertionError(url)
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        assert url.endswith("/media/M1")
+        st = next(staende)
+        return SimpleNamespace(status_code=200, content=b"1", text="", json=lambda: {"status": st})
+    monkeypatch.setattr(pinterest.requests, "post", fake_post)
+    monkeypatch.setattr(pinterest.requests, "get", fake_get)
+    monkeypatch.setattr(posten.paket, "_rendere_video", lambda p: b"mp4")
+    reel = {"id": 8, "art": "reel", "sprache": "en", "titel": "Libra, Gemini, Aquarius", "text": "Air signs tonight.",
+            "hashtags": "#astrology", "meta": {"reel_nr": 2}}
+    out = posten.veroeffentliche({"plattform": "pinterest"}, reel)
+    assert out["id"] == "PV"
+    assert gesendet[1][2]["file"][1] == b"mp4" and gesendet[1][1] == {"key": "k"}
+    pin = gesendet[-1][1]
+    assert pin["media_source"] == {"source_type": "video_id", "media_id": "M1", "cover_image_key_frame_time": 2}
+    assert pin["board_id"] == "B-en"              # drei Zeichen -> keine Zeichen-Pinnwand, sondern die Sprach-Pinnwand
+
+
+def test_pin_extras_folien_und_sternzeichen(monkeypatch, frische_db):
+    import pin_extras
+    import pinterest
+    heute = date(2026, 11, 9)
+    p = db.speichere_posts([{"art": "post", "titel": "Drei Wege", "text": "Text.", "hashtags": "#astrology"}],
+                           quelle="tagesplan", geplant_fuer=heute,
+                           meta={"folien": [{"titel": "Erstens", "text": "A"}, {"titel": "Zweitens", "text": "B"},
+                                            {"titel": "Drittens", "text": "C"}]})[0]
+    db.plane_veroeffentlichung(p["id"], "pinterest", datetime(2026, 11, 9, 12, 0, tzinfo=himmel.WIEN))
+    jetzt = datetime(2026, 11, 9, 12, 5, tzinfo=himmel.WIEN)
+    assert pin_extras.planen({}, jetzt) == 0                  # Titel-Pin noch nicht erschienen
+    zid = db.faellige_veroeffentlichungen(jetzt)[0]["id"]
+    db.setze_veroeffentlichung(zid, "fertig", extern_id="P1")
+    with db._verbindung() as conn, conn.cursor() as cur:            # Titel-Pin erschien um 12:05
+        cur.execute("update soraya_veroeffentlichungen set aktualisiert = %s where id = %s;", (jetzt, zid))
+        conn.commit()
+    assert pin_extras.planen({}, jetzt) == 4                  # 3 Folien + Sternzeichen-Pin
+    assert pin_extras.planen({}, jetzt) == 0                  # nicht doppelt
+    gepostet = []
+    monkeypatch.setattr(pinterest, "poste_pin", lambda bild, titel, text, link, sprache, alt=None, zeichen=None:
+                        gepostet.append((titel, link, zeichen, len(text))) or {"id": f"X{len(gepostet)}"})
+    monkeypatch.setattr(posten.paket.medien, "folie", lambda post, nr, video=False: __import__("PIL.Image").Image.new("RGB", (10, 10)))
+    monkeypatch.setattr(posten.paket.medien, "bild", lambda post, f="feed": __import__("PIL.Image").Image.new("RGB", (10, 10)))
+    assert pin_extras.ausfuehren(jetzt) == []                 # noch nichts faellig
+    spaeter = datetime(2026, 11, 9, 21, 0, tzinfo=himmel.WIEN)
+    erg = pin_extras.ausfuehren(spaeter)
+    assert sorted(e["art"] for e in erg) == ["folie2", "folie3", "folie4", "zeichen"] and all(e["status"] == "fertig" for e in erg)
+    zeichen_pin = next(g for g in gepostet if "?q=pin-" in g[1])
+    assert zeichen_pin[2] is not None and "/sternzeichen/" in zeichen_pin[1] and zeichen_pin[3] <= 500
+    assert any(g[0].startswith("Erstens") for g in gepostet)
+    # Zahlen der Zusatz-Pins zaehlen zum Feed-Post
+    monkeypatch.setattr(pinterest, "verbindung", lambda: {"verbunden": True, "sandbox": False})
+    monkeypatch.setattr(pinterest, "gueltiger_token", lambda: "tok")
+    monkeypatch.setattr(pinterest, "follower", lambda token=None: 5)
+    monkeypatch.setattr(pinterest, "pin_zahlen", lambda pid, token=None: {"anzeigen": 10, "gespeichert": 1, "klicks": 0, "link_klicks": 1})
+    posten.zahlen_pinterest(datetime(2026, 11, 1, tzinfo=himmel.WIEN))
+    with db._verbindung() as conn, conn.cursor() as cur:
+        cur.execute("select reichweite from soraya_veroeffentlichungen where post_id = %s and plattform = 'pinterest';", (p["id"],))
+        assert cur.fetchone()["reichweite"] == 50
+    assert pin_extras.stand(30)["anzahl"] == {"fertig": 4}
+
+
+def test_sternzeichen_pin_wechselt():
+    import pin_extras
+    tage = [pin_extras.wahl(date(2026, 11, 1) + timedelta(d), "hu") for d in range(12)]
+    assert len({z for z, _ in tage}) == 12
+    assert pin_extras.wahl(date(2026, 11, 1), "hu")[1] != pin_extras.wahl(date(2026, 11, 13), "hu")[1]

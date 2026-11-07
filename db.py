@@ -108,6 +108,28 @@ def init_db():
             """
         )
         cur.execute("create index if not exists soraya_veroeff_faellig on soraya_veroeffentlichungen (status, geplant_um);")
+        # Zusaetzliche Pins (Pinterest): Karussell-Folien und der taegliche Sternzeichen-Pin, je an einem Feed-Post
+        # haengend (seine Zahlen zaehlen zu dessen Pinterest-Zahlen) -- seit 07.11.2026
+        cur.execute(
+            """
+            create table if not exists soraya_pins (
+                id            bigint generated always as identity primary key,
+                post_id       bigint not null references soraya_posts(id) on delete cascade,
+                art           text not null,
+                geplant_um    timestamptz not null,
+                status        text not null default 'geplant',
+                versuche      int not null default 0,
+                fehler        text,
+                extern_id     text,
+                daten         jsonb,
+                reichweite    int,
+                gespeichert   int,
+                aufrufe       int,
+                aktualisiert  timestamptz not null default now(),
+                unique (post_id, art)
+            );
+            """
+        )
         # Zielgruppe im Tagesplan verwenden, Land der Recherche (seit Version 0.9)
         cur.execute("alter table soraya_zielgruppen add column if not exists im_tagesplan boolean not null default false;")
         cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
@@ -718,3 +740,74 @@ def letzte_titel(sprache: str, tage: int = 7) -> list[str]:
             (sprache, tage),
         )
         return [z["titel"] for z in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Zusaetzliche Pins (pin_extras.py)
+# ---------------------------------------------------------------------------
+def plane_pin(post_id: int, art: str, geplant_um, daten: dict | None = None) -> int:
+    """1 = neu angelegt, 0 = gab es schon (bleibt unveraendert)."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("insert into soraya_pins (post_id, art, geplant_um, daten) values (%s, %s, %s, %s) "
+                    "on conflict (post_id, art) do nothing returning id;", (post_id, art, geplant_um, Jsonb(daten or {})))
+        neu = cur.fetchone() is not None
+        conn.commit()
+    return 1 if neu else 0
+
+
+def faellige_pins(jetzt, max_versuche: int = 3) -> list[dict]:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select * from soraya_pins where geplant_um <= %s and (status = 'geplant' "
+            " or (status = 'fehler' and versuche < %s and aktualisiert < now() - interval '15 minutes') "
+            " or (status = 'laeuft' and aktualisiert < now() - interval '30 minutes' and versuche < %s)) "
+            "order by geplant_um, id limit 10;", (jetzt, max_versuche, max_versuche))
+        return cur.fetchall()
+
+
+def beanspruche_pin(zeile: dict) -> bool:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_pins set status = 'laeuft', fehler = null, versuche = versuche + 1, aktualisiert = now() "
+                    "where id = %s and status = %s and aktualisiert is not distinct from %s returning id;",
+                    (zeile["id"], zeile["status"], zeile.get("aktualisiert")))
+        ok = cur.fetchone() is not None
+        conn.commit()
+    return ok
+
+
+def setze_pin(zid: int, status: str, *, fehler: str | None = None, extern_id: str | None = None) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_pins set status = %s, fehler = %s, extern_id = coalesce(%s, extern_id), "
+                    "aktualisiert = now() where id = %s;", (status, fehler, extern_id, zid))
+        conn.commit()
+
+
+def lade_pins(seit=None, status: str | None = None, limit: int = 200) -> list[dict]:
+    bedingungen, werte = ["true"], []
+    if seit is not None:
+        bedingungen.append("geplant_um >= %s")
+        werte.append(seit)
+    if status:
+        bedingungen.append("status = %s")
+        werte.append(status)
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(f"select * from soraya_pins where {' and '.join(bedingungen)} order by geplant_um desc, id desc limit %s;",
+                    (*werte, limit))
+        return cur.fetchall()
+
+
+def speichere_pin_zahlen(zid: int, reichweite: int, gespeichert: int, aufrufe: int) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("update soraya_pins set reichweite = %s, gespeichert = %s, aufrufe = %s where id = %s;",
+                    (reichweite, gespeichert, aufrufe, zid))
+        conn.commit()
+
+
+def pinterest_feed_pins(tag) -> list[dict]:
+    """Feed-Posts eines Tages, deren Pin auf Pinterest erschienen ist (mit Zeitpunkt), fuer die Zusatz-Pins."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select p.*, v.aktualisiert as gepinnt_um from soraya_posts p join soraya_veroeffentlichungen v "
+            "on v.post_id = p.id and v.plattform = 'pinterest' and v.status = 'fertig' "
+            "where p.geplant_fuer = %s and p.art = 'post' order by p.id;", (tag,))
+        return cur.fetchall()

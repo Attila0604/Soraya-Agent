@@ -1370,7 +1370,7 @@
           <label class="sr" for="spl-tiktok">Sprache für TikTok</label><select id="spl-tiktok" data-spl="tiktok"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
         <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plLinkedin"> <span>LinkedIn<small>dein Profil, ohne Storys</small></span></label>
           <label class="sr" for="spl-linkedin">Sprache für LinkedIn</label><select id="spl-linkedin" data-spl="linkedin"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
-        <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plPinterest"> <span>Pinterest<small>Bilder als Pins</small></span></label>
+        <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plPinterest"> <span>Pinterest<small>Bilder & Reels als Pins</small></span></label>
           <label class="sr" for="spl-pinterest">Sprache für Pinterest</label><select id="spl-pinterest" data-spl="pinterest"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
       </div>
       <div class="row" id="tiktokZeile" style="margin-top:10px">
@@ -1437,7 +1437,7 @@ const IKON = {
 const PLATTFORMEN = ['facebook', 'instagram', 'tiktok', 'linkedin', 'pinterest'];
 // art darf auch der Termin-Platz sein ('reel2' = zweites Reel): automatisch geht auf LinkedIn nur das erste Reel
 // wie posten.passt + NUR_ERSTES_REEL: das 2. Reel geht auf TikTok, Facebook und Instagram
-const passtPl = (pl, art) => pl === 'tiktok' ? (art === 'reel' || art === 'reel2') : art === 'reel2' ? (pl === 'facebook' || pl === 'instagram') : pl === 'linkedin' ? art !== 'story' : pl === 'pinterest' ? (art === 'post' || art === 'story') : true;
+const passtPl = (pl, art) => pl === 'tiktok' ? (art === 'reel' || art === 'reel2') : art === 'reel2' ? (pl === 'facebook' || pl === 'instagram') : pl === 'linkedin' ? art !== 'story' : pl === 'pinterest' ? (art === 'post' || art === 'story' || art === 'reel' || art === 'reel2') : true;
 // wie posten.platz(): story, post, reel oder reel2 (zweites Reel des Tages mit eigener Uhrzeit)
 const platzVon = (p) => p && p.art === 'reel' && (((p.meta || {}).reel_nr === 2) || p.reel_nr === 2) ? 'reel2' : (p && p.art) || 'post';
 const plIkon = (pl, cls = '', zusatz = '') => `<span class="plk ${cls}" title="${esc((PL_NAME[pl] || pl) + (zusatz ? ': ' + zusatz : ''))}">${IKON[pl] || ''}${esc(PL_NAME[pl] || pl)}</span>`;
@@ -3671,7 +3671,7 @@ function verbindungsZeile(p, x, e){
   const zusatz = [];
   if(p === 'tiktok' && x.verbunden) zusatz.push(e.plattformen.tiktok
     ? `Ein · ${e.tiktok_modus === 'direkt' ? 'veröffentlicht direkt' : 'Reels kommen als Entwurf in deine TikTok-App'}` : 'Aus – es geht nichts auf TikTok (unten bei Einstellungen einschalten)');
-  if(p === 'pinterest' && x.verbunden) zusatz.push((e.plattformen.pinterest ? 'Ein · Feed-Posts und Storys werden zu Pins (je Sprache eine Pinnwand), Link direkt auf die Landingpage bzw. Sternzeichen-Seite'
+  if(p === 'pinterest' && x.verbunden) zusatz.push((e.plattformen.pinterest ? 'Ein · Feed-Posts, Storys und Reels werden zu Pins, dazu jede Karussell-Folie und abends ein Sternzeichen-Pin (Pinnwand je Sprache bzw. Sternzeichen), Link direkt auf die Landingpage bzw. Sternzeichen-Seite'
     : 'Aus – es geht nichts auf Pinterest (unten bei Einstellungen einschalten)') + (x.sandbox ? (x.sandbox_schluessel === false ? ' · <b>⚠ Testmodus: Sandbox-Schlüssel fehlt</b> (developers.pinterest.com → App → „Generate token“ mit „Sandbox“ → in Railway als PINTEREST_SANDBOX_TOKEN)' : ' · <b>Sandbox</b>: Pins sind noch nicht öffentlich') : ''));
   if(p === 'linkedin' && x.verbunden) zusatz.push(e.plattformen.linkedin ? 'Ein · Feed-Posts und Reels (keine Storys), sachlicher Text mit Link'
     : 'Aus – es geht nichts auf LinkedIn (unten bei Einstellungen einschalten)');

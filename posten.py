@@ -57,7 +57,7 @@ STANDARD = {"an": False, "sprache": "en", "sprache_pl": {}, "modus": "auto", "ti
             "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"},
             "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False, "pinterest": False}}
 PLATTFORMEN = ("facebook", "instagram", "tiktok", "linkedin", "pinterest")
-# Pinterest nimmt (noch) nur Bilder: Feed-Post (Titelbild) und Story (Hochformat) werden zu Pins
+# Pinterest: Feed-Post (Titelbild), Story (Hochformat) und die Reels (Video-Pins) -- seit 07.11. auch Videos
 NUR_BILDER = {"pinterest"}
 # TikTok nimmt nur Videos: dort gehen nur die Reels hin
 NUR_REELS = {"tiktok"}
@@ -82,7 +82,7 @@ def passt(plattform: str, art: str) -> bool:
     if plattform in NUR_REELS:
         return art == "reel"
     if plattform in NUR_BILDER:
-        return art in ("post", "story")
+        return art in ("post", "story", "reel")
     if plattform in OHNE_STORYS:
         return art != "story"
     return True
@@ -562,6 +562,16 @@ def _zeichen_im(post: dict) -> int | None:
     return idx
 
 
+def ein_zeichen(post: dict) -> int | None:
+    """Das eine Sternzeichen, um das es im Post geht -- None, wenn keins oder mehrere (z. B. Drei-Zeichen-Check)."""
+    idx = paket.medien.stil(post).get("zeichen")
+    if idx is not None:
+        return idx
+    woerter = set(re.findall(r"\w+", (post.get("titel") or "").lower()))
+    treffer = [i for i, namen in enumerate(paket.medien.ZEICHEN_NAMEN) if woerter & {n.lower() for n in namen}]
+    return treffer[0] if len(treffer) == 1 else None
+
+
 def pinterest_text(post: dict) -> str:
     """Pin-Beschreibung (hoechstens 500 Zeichen): Pinterest ist eine Suche -- klare Saetze mit Stichworten statt
     Plaudern, ohne "Link in Bio" (der Pin selbst verlinkt) und ohne Kommentar-Frage, dann eine Zeile mit den
@@ -703,12 +713,17 @@ def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
     p, art = zeile["plattform"], post.get("art") or "post"
     if not passt(p, art):
         raise ValueError("Auf TikTok gehen nur Reels (Videos)." if p == "tiktok" else
-                         "Auf Pinterest gehen nur Bilder (Feed-Posts und Storys)." if p == "pinterest" else "Storys gibt es auf LinkedIn nicht.")
+                         "Auf Pinterest gehen nur Feed-Posts, Storys und Reels." if p == "pinterest" else "Storys gibt es auf LinkedIn nicht.")
     text = text_fuer(post, p)
     if p == "pinterest":
+        link = pinterest.ziel_link(post, link_basis())
+        alt = post.get("untertitel") or post.get("titel")
+        if art == "reel":
+            return pinterest.poste_video(paket._rendere_video(post), pin_titel(post), text, link,
+                                         post.get("sprache") or "en", alt=alt, zeichen=ein_zeichen(post))
         bild = paket.hole_bild(pin_fassung(post), "story" if art == "story" else "feed")
-        return pinterest.poste_pin(bild, pin_titel(post), text, pinterest.ziel_link(post, link_basis()),
-                                   post.get("sprache") or "en", alt=post.get("untertitel") or post.get("titel"))
+        return pinterest.poste_pin(bild, pin_titel(post), text, link, post.get("sprache") or "en", alt=alt,
+                                   zeichen=ein_zeichen(post))
     if p == "tiktok":
         return tiktok.poste_video(paket.rendere_tiktok(post), text, (e or einstellungen()).get("tiktok_modus", "entwurf"))
     if p == "linkedin":
@@ -919,12 +934,31 @@ def zahlen_pinterest(seit: datetime) -> list[dict]:
         return []
     token = pinterest.gueltiger_token()
     zeilen, fehler = [], []
-    for z in db.lade_gepostete("pinterest", seit, limit=60):
+    # Zusatz-Pins (Folien, Sternzeichen-Pin) zaehlen zum Feed-Post, an dem sie haengen
+    extra: dict[int, dict] = {}
+    try:
+        for x in db.lade_pins(seit, status="fertig", limit=200):
+            if not x.get("extern_id"):
+                continue
+            try:
+                m = pinterest.pin_zahlen(x["extern_id"], token)
+            except Exception as ex:  # noqa: BLE001
+                fehler.append(str(ex)[:200])
+                continue
+            db.speichere_pin_zahlen(x["id"], m["anzeigen"], m["gespeichert"], m["klicks"] + m["link_klicks"])
+            summe = extra.setdefault(x["post_id"], {"anzeigen": 0, "gespeichert": 0, "klicks": 0, "link_klicks": 0})
+            for k in summe:
+                summe[k] += m[k]
+    except Exception as ex:  # noqa: BLE001 -- Zusatz-Pins sind ein Extra
+        print(f"[Posten] Zahlen der Zusatz-Pins nicht geholt: {ex}", flush=True)
+    for z in db.lade_gepostete("pinterest", seit, limit=80):
         try:
             m = pinterest.pin_zahlen(z["extern_id"], token)
         except Exception as ex:  # noqa: BLE001 -- ein Pin ohne Zahlen haelt die anderen nicht auf
             fehler.append(str(ex)[:200])
             continue
+        for k, v in (extra.get(z["post_id"]) or {}).items():
+            m[k] += v
         db.speichere_zahlen(z["post_id"], "pinterest", 0, 0, 0, reichweite=m["anzeigen"], gespeichert=m["gespeichert"],
                             aufrufe=m["klicks"] + m["link_klicks"])
         zeilen.append({"post_id": z["post_id"], **m})
@@ -1095,7 +1129,14 @@ def durchlauf(jetzt: datetime | None = None) -> dict:
             print(f"[Posten] TikTok-Stand nicht geprüft: {ex}", flush=True)
         if not e["an"]:
             return {"an": False}
-        return {"an": True, "geplant": planen(e, jetzt), "ausgefuehrt": fuehre_aus(jetzt, e)}
+        ergebnis = {"an": True, "geplant": planen(e, jetzt), "ausgefuehrt": fuehre_aus(jetzt, e)}
+        if "pinterest" in _aktive_plattformen(e):
+            try:
+                import pin_extras
+                ergebnis["pins"] = pin_extras.durchlauf(e, jetzt)
+            except Exception as ex:  # noqa: BLE001 -- Zusatz-Pins halten das Posten nicht auf
+                print(f"[Posten] Zusatz-Pins: {ex}", flush=True)
+        return ergebnis
     finally:
         _SPERRE.release()
 

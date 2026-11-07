@@ -1435,6 +1435,8 @@ def folie(post: dict, nr: int, video: bool = False) -> Image.Image:
     f = folien[nr - 2]
     titel, text = (f.get("titel") or "").strip(), (f.get("text") or "").strip()
     idx = zeichen_aus_text(titel)
+    if idx is None and isinstance((post.get("meta") or {}).get("folie_zeichen"), int):   # z. B. Sternzeichen-Pin mit Frage
+        idx = post["meta"]["folie_zeichen"]
     if idx is not None:          # grosses, kaum sichtbares Zeichen im Hintergrund (wie auf dem Titelbild)
         ebene = Image.new("RGBA", leinwand.size, (0, 0, 0, 0))
         ImageDraw.Draw(ebene).text((W * m / 2, H * m * 0.55), ZEICHEN_GLYPHE[idx], font=schrift("zeichen", 640 * m),

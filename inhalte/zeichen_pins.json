@@ -1,0 +1,2122 @@
+{
+ "de": [
+  {
+   "key": "Ari",
+   "slug": "widder",
+   "name": "Widder",
+   "intro": "Der Widder eröffnet den Tierkreis wie ein Startschuss im Frühling: Kaum ist der Winter vorbei, will er los. Wenn du zwischen dem 21. März und dem 19. April geboren bist, kennst du dieses Kribbeln, sobald etwas Neues beginnt. Hier erfährst du, was hinter deinem Feuer steckt.",
+   "meta_description": "Sternzeichen Widder: Charakter, Stärken, Liebe, Beruf und welche Zeichen zu dir passen. Entdecke dein Widder-Profil und dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Mutig",
+    "Ehrlich und direkt",
+    "Begeisterungsfähig",
+    "Entschlussfreudig",
+    "Beschützend"
+   ],
+   "schwaechen": [
+    "Manchmal ungeduldig",
+    "Schnell auf hundert",
+    "Startet mehr, als er beendet",
+    "Hört nicht immer zu Ende zu"
+   ],
+   "passt_gut": [
+    "Leo",
+    "Sag",
+    "Gem",
+    "Aqu"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zum Widder?",
+     "antwort": "Besonders gut harmoniert der Widder mit Löwe und Schütze, die sein Feuer teilen, sowie mit Zwillinge und Wassermann, die seine Neugier anregen. Spannender, aber auch fordernder sind Verbindungen mit Krebs und Steinbock. Wie gut ihr wirklich zusammenpasst, zeigt erst der Vergleich eurer vollständigen Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist der Widder Mann in der Liebe?",
+     "antwort": "Der Widder Mann erobert gern und zeigt seine Gefühle direkt. Er macht den ersten Schritt, überrascht mit spontanen Ideen und möchte für seine Partnerin oder seinen Partner da sein. Er braucht Ehrlichkeit, gemeinsame Abenteuer und ein Gegenüber, das ihm selbstbewusst begegnet, statt Spielchen zu spielen."
+    },
+    {
+     "frage": "Was sind typische Widder Eigenschaften?",
+     "antwort": "Typisch für den Widder sind Mut, Tatendrang, Ehrlichkeit und ein starker Wille. Er beginnt gern Neues, sagt offen seine Meinung und setzt sich für andere ein. Auf der anderen Seite kann er ungeduldig sein und schnell aufbrausen, beruhigt sich aber meist ebenso schnell wieder."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Widder?",
+     "antwort": "Sternzeichen Widder bist du, wenn du zwischen dem 21. März und dem 19. April geboren bist. Da der Sonneneintritt je nach Jahr leicht schwankt, lohnt sich bei Geburtstagen an den Grenzen ein Blick in dein persönliches Geburtshoroskop, das auch die genaue Uhrzeit berücksichtigt."
+    }
+   ]
+  },
+  {
+   "key": "Tau",
+   "slug": "stier",
+   "name": "Stier",
+   "intro": "Der Stier wird geboren, wenn der Frühling in voller Blüte steht, die Wiesen duften und alles wachsen darf. Bist du zwischen dem 20. April und dem 20. Mai geboren, trägst du diese erdige Ruhe in dir. Entdecke, warum Beständigkeit bei dir so viel Schönheit hervorbringt.",
+   "meta_description": "Sternzeichen Stier: Charakter, Liebe, Beruf, Stärken und Schwächen. Erfahre, welches Zeichen zum Stier passt, und lies dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Verlässlich",
+    "Geduldig",
+    "Genussfähig",
+    "Treu",
+    "Praktisch begabt"
+   ],
+   "schwaechen": [
+    "Manchmal stur",
+    "Hält gern am Gewohnten fest",
+    "Braucht viel Zeit für Neues",
+    "Kann besitzergreifend wirken"
+   ],
+   "passt_gut": [
+    "Vir",
+    "Cap",
+    "Can",
+    "Pis"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zum Stier?",
+     "antwort": "Am leichtesten versteht sich der Stier mit Jungfrau und Steinbock, die ebenfalls Erdzeichen sind, sowie mit Krebs und Fische, die ihm Gefühl und Geborgenheit schenken. Mit Löwe und Wassermann braucht es mehr Kompromisse. Ein Partnervergleich der Geburtshoroskope zeigt, wo eure Verbindung wirklich stark ist."
+    },
+    {
+     "frage": "Wie ist die Stier Frau in der Liebe?",
+     "antwort": "Die Stier Frau ist sinnlich, treu und lässt sich Zeit, bevor sie sich bindet. Sie liebt Gesten, die man spüren kann, und schätzt einen Partner, der verlässlich ist und ihre Ruhe respektiert. Hat sie Vertrauen gefasst, schenkt sie eine tiefe, warme Liebe, die lange hält."
+    },
+    {
+     "frage": "Was sind typische Stier Eigenschaften?",
+     "antwort": "Der Stier gilt als geduldig, bodenständig, treu und genussfreudig. Er schätzt Sicherheit, schöne Dinge und eingespielte Abläufe. Seine Ausdauer macht ihn im Beruf und in Beziehungen sehr verlässlich. Auf der anderen Seite kann er stur wirken und tut sich mit plötzlichen Veränderungen manchmal schwer."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Stier?",
+     "antwort": "Sternzeichen Stier bist du, wenn du zwischen dem 20. April und dem 20. Mai geboren bist. Da sich der genaue Wechsel der Sonne je nach Jahr um einen Tag verschieben kann, schafft dein persönliches Geburtshoroskop bei Geburtstagen an der Grenze Klarheit."
+    }
+   ]
+  },
+  {
+   "key": "Gem",
+   "slug": "zwillinge",
+   "name": "Zwillinge",
+   "intro": "Die Zwillinge kommen zur Welt, wenn der Frühsommer voller Stimmen, Vogelrufe und offener Fenster ist. Bist du zwischen dem 21. Mai und dem 20. Juni geboren, hast du vermutlich immer eine Frage mehr als die anderen. Hier erfährst du, warum deine Neugier eine echte Gabe ist.",
+   "meta_description": "Sternzeichen Zwillinge: Charakter, Liebe, Beruf und Freundschaft. Finde heraus, welche Zeichen zu dir passen, und lies dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Neugierig",
+    "Schlagfertig",
+    "Anpassungsfähig",
+    "Kommunikativ",
+    "Humorvoll"
+   ],
+   "schwaechen": [
+    "Manchmal rastlos",
+    "Verzettelt sich leicht",
+    "Wechselt schnell die Stimmung",
+    "Meidet ab und zu tiefe Gefühle"
+   ],
+   "passt_gut": [
+    "Lib",
+    "Aqu",
+    "Ari",
+    "Leo"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zu Zwillinge?",
+     "antwort": "Zwillinge harmonieren besonders gut mit Waage und Wassermann, die ebenfalls Luftzeichen sind, sowie mit Widder und Löwe, die Energie und Begeisterung mitbringen. Mehr Arbeit verlangen Beziehungen mit Jungfrau und Fische. Wie eure Verbindung im Detail aussieht, verrät der Vergleich eurer Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist der Zwillinge Mann in der Liebe?",
+     "antwort": "Der Zwillinge Mann ist charmant, witzig und verliebt sich zuerst in den Kopf seines Gegenübers. Er braucht anregende Gespräche, Freiraum und gemeinsame Abenteuer. Bindung fällt ihm leichter, wenn er sich nicht kontrolliert fühlt. Findet er jemanden, der seine Neugier teilt, ist er ein aufmerksamer, unterhaltsamer Partner."
+    },
+    {
+     "frage": "Was sind typische Zwillinge Eigenschaften?",
+     "antwort": "Zwillinge gelten als neugierig, kommunikativ, vielseitig und humorvoll. Sie lernen schnell, lieben Abwechslung und können sich auf neue Situationen hervorragend einstellen. Auf der anderen Seite neigen sie dazu, sich zu verzetteln, und wirken manchmal unruhig oder wechselhaft in ihren Stimmungen."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Zwillinge?",
+     "antwort": "Sternzeichen Zwillinge bist du, wenn du zwischen dem 21. Mai und dem 20. Juni geboren bist. Wer genau an einem der Grenztage Geburtstag hat, sollte sein Geburtshoroskop berechnen lassen, denn der Zeitpunkt des Zeichenwechsels verschiebt sich je nach Jahr leicht."
+    }
+   ]
+  },
+  {
+   "key": "Can",
+   "slug": "krebs",
+   "name": "Krebs",
+   "intro": "Der Krebs beginnt mit der Sommersonnenwende, dem längsten Tag des Jahres, wenn das Licht am hellsten ist. Bist du zwischen dem 21. Juni und dem 22. Juli geboren, trägst du eine besondere Wärme in dir. Entdecke, wie dein feines Gespür dein Leben prägt.",
+   "meta_description": "Sternzeichen Krebs: Gefühlvoller Charakter, Liebe, Beruf und Freundschaft. Erfahre, welche Zeichen zum Krebs passen – dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Einfühlsam",
+    "Fürsorglich",
+    "Loyal",
+    "Intuitiv",
+    "Schützend"
+   ],
+   "schwaechen": [
+    "Manchmal launisch",
+    "Nimmt Kritik schnell persönlich",
+    "Grübelt gern",
+    "Hängt an der Vergangenheit"
+   ],
+   "passt_gut": [
+    "Sco",
+    "Pis",
+    "Tau",
+    "Vir"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zum Krebs?",
+     "antwort": "Der Krebs versteht sich besonders gut mit Skorpion und Fische, die seine emotionale Tiefe teilen, und mit Stier und Jungfrau, die ihm Sicherheit geben. Schwieriger, aber nicht unmöglich sind Beziehungen mit Widder und Waage. Den genauen Blick auf eure Verbindung bietet ein Partnervergleich der Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist die Krebs Frau in der Liebe?",
+     "antwort": "Die Krebs Frau ist gefühlvoll, fürsorglich und sucht eine Beziehung, in der sie sich geborgen fühlt. Sie öffnet sich behutsam, liebt dann aber mit ganzer Hingabe. Sie schätzt Treue, kleine Aufmerksamkeiten und einen Partner, der ihre Stimmungen ernst nimmt, ohne sie ändern zu wollen."
+    },
+    {
+     "frage": "Was sind typische Krebs Eigenschaften?",
+     "antwort": "Der Krebs gilt als einfühlsam, fürsorglich, loyal und sehr intuitiv. Familie und Zuhause sind ihm besonders wichtig, und er erinnert sich lange an schöne wie schmerzhafte Momente. Auf der anderen Seite kann er launisch wirken, empfindlich auf Kritik reagieren und sich zurückziehen, wenn er verletzt ist."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Krebs?",
+     "antwort": "Sternzeichen Krebs bist du, wenn du zwischen dem 21. Juni und dem 22. Juli geboren bist. Der Beginn fällt mit der Sommersonnenwende zusammen und kann sich je nach Jahr leicht verschieben. Bei einem Geburtstag an der Grenze bringt dein Geburtshoroskop Gewissheit."
+    }
+   ]
+  },
+  {
+   "key": "Leo",
+   "slug": "loewe",
+   "name": "Löwe",
+   "intro": "Der Löwe wird im Hochsommer geboren, wenn die Sonne golden über den Feldern steht und die Abende lang und warm sind. Bist du zwischen dem 23. Juli und dem 22. August geboren, trägst du dieses Licht in dir. Hier erfährst du, was dein Strahlen ausmacht.",
+   "meta_description": "Sternzeichen Löwe: Charakter, Liebe, Beruf und welches Sternzeichen zum Löwen passt. Entdecke deine Stärken und dein Horoskop heute gratis in Soraya.",
+   "staerken": [
+    "Großzügig",
+    "Selbstbewusst",
+    "Kreativ",
+    "Loyal",
+    "Warmherzig"
+   ],
+   "schwaechen": [
+    "Braucht viel Anerkennung",
+    "Kann dominant wirken",
+    "Manchmal stolz",
+    "Empfindlich bei Kritik"
+   ],
+   "passt_gut": [
+    "Ari",
+    "Sag",
+    "Gem",
+    "Lib"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zum Löwen?",
+     "antwort": "Der Löwe harmoniert besonders gut mit Widder und Schütze, die sein Feuer teilen, sowie mit Zwillinge und Waage, die ihn mit Charme und Ideen bereichern. Herausfordernder sind Verbindungen mit Stier und Skorpion. Wie stark eure Anziehung wirklich ist, zeigt ein Vergleich eurer Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist der Löwe Mann in der Liebe?",
+     "antwort": "Der Löwe Mann ist romantisch, großzügig und beschützend. Er zeigt seine Liebe gern mit großen Gesten und möchte, dass seine Partnerin oder sein Partner stolz auf ihn ist. Treue und Bewunderung sind ihm wichtig. Fühlt er sich geschätzt, ist er ein warmherziger, verlässlicher Partner."
+    },
+    {
+     "frage": "Was sind typische Löwe Eigenschaften?",
+     "antwort": "Der Löwe gilt als selbstbewusst, großzügig, kreativ und herzlich. Er hat eine starke Ausstrahlung, übernimmt gern Verantwortung und steht loyal zu seinen Liebsten. Auf der anderen Seite kann er stolz wirken, viel Anerkennung brauchen und empfindlich reagieren, wenn er sich übergangen fühlt."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Löwe?",
+     "antwort": "Sternzeichen Löwe bist du, wenn du zwischen dem 23. Juli und dem 22. August geboren bist. Da der Sonnenwechsel je nach Jahr um einen Tag schwanken kann, lohnt sich bei Geburtstagen an den Grenzen eine genaue Berechnung deines Geburtshoroskops mit Uhrzeit und Ort."
+    }
+   ]
+  },
+  {
+   "key": "Vir",
+   "slug": "jungfrau",
+   "name": "Jungfrau",
+   "intro": "Die Jungfrau kommt zur Erntezeit, wenn das Korn eingebracht und jede Frucht sorgfältig sortiert wird. Bist du zwischen dem 23. August und dem 22. September geboren, siehst du Details, die anderen entgehen. Entdecke, wie viel Wärme in deiner Genauigkeit steckt.",
+   "meta_description": "Sternzeichen Jungfrau: Charakter, Liebe, Beruf, Stärken und Schwächen. Finde heraus, welches Zeichen zur Jungfrau passt – Horoskop gratis in Soraya.",
+   "staerken": [
+    "Gewissenhaft",
+    "Hilfsbereit",
+    "Analytisch",
+    "Zuverlässig",
+    "Bescheiden"
+   ],
+   "schwaechen": [
+    "Neigt zum Perfektionismus",
+    "Sehr selbstkritisch",
+    "Macht sich viele Sorgen",
+    "Kann pingelig wirken"
+   ],
+   "passt_gut": [
+    "Tau",
+    "Cap",
+    "Can",
+    "Sco"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zur Jungfrau?",
+     "antwort": "Die Jungfrau versteht sich besonders gut mit Stier und Steinbock, die ebenfalls Erdzeichen sind, sowie mit Krebs und Skorpion, die ihr Tiefe und Geborgenheit schenken. Mehr Verständnis brauchen Verbindungen mit Zwillinge und Schütze. Den genauen Blick auf eure Beziehung gibt ein Vergleich eurer Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist der Jungfrau Mann in der Liebe?",
+     "antwort": "Der Jungfrau Mann ist zurückhaltend, aufmerksam und sehr verlässlich. Er zeigt seine Liebe eher durch Hilfsbereitschaft und kleine Gesten als durch große Worte. Er braucht Zeit, um sich zu öffnen, und schätzt eine Partnerin oder einen Partner, der ehrlich ist und seine ruhige Art versteht."
+    },
+    {
+     "frage": "Was sind typische Jungfrau Eigenschaften?",
+     "antwort": "Die Jungfrau gilt als gewissenhaft, analytisch, hilfsbereit und bescheiden. Sie hat einen scharfen Blick für Details, organisiert gern und findet praktische Lösungen. Auf der anderen Seite neigt sie zu Perfektionismus und Selbstkritik und macht sich manchmal mehr Sorgen, als nötig wäre."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Jungfrau?",
+     "antwort": "Sternzeichen Jungfrau bist du, wenn du zwischen dem 23. August und dem 22. September geboren bist. Wer an einem der Grenztage Geburtstag hat, sollte sein Geburtshoroskop berechnen lassen, denn der Wechsel der Sonne in das nächste Zeichen verschiebt sich je nach Jahr leicht."
+    }
+   ]
+  },
+  {
+   "key": "Lib",
+   "slug": "waage",
+   "name": "Waage",
+   "intro": "Die Waage beginnt zur Tagundnachtgleiche im Herbst, wenn Licht und Dunkelheit für einen Moment genau gleich lang sind. Bist du zwischen dem 23. September und dem 22. Oktober geboren, suchst du dieses Gleichgewicht in allem. Hier erfährst du, was dich so besonders macht.",
+   "meta_description": "Sternzeichen Waage: Charakter, Liebe, Beruf und Freundschaft. Erfahre, welches Sternzeichen zur Waage passt, und lies dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Diplomatisch",
+    "Charmant",
+    "Fair",
+    "Stilsicher",
+    "Gesellig"
+   ],
+   "schwaechen": [
+    "Manchmal unentschlossen",
+    "Will es allen recht machen",
+    "Meidet Konflikte",
+    "Abhängig von Harmonie"
+   ],
+   "passt_gut": [
+    "Gem",
+    "Aqu",
+    "Leo",
+    "Sag"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zur Waage?",
+     "antwort": "Die Waage versteht sich besonders gut mit Zwillinge und Wassermann, die ebenfalls Luftzeichen sind, sowie mit Löwe und Schütze, die ihr Energie und Lebensfreude schenken. Herausfordernder sind Beziehungen mit Krebs und Steinbock. Wie gut ihr harmoniert, zeigt der Partnervergleich eurer Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist die Waage Frau in der Liebe?",
+     "antwort": "Die Waage Frau ist charmant, romantisch und sucht eine Partnerschaft auf Augenhöhe. Sie liebt schöne gemeinsame Momente, gute Gespräche und gegenseitigen Respekt. Streit belastet sie, deshalb wünscht sie sich einen Partner, der fair bleibt und auch ihre leisen Wünsche wahrnimmt."
+    },
+    {
+     "frage": "Was sind typische Waage Eigenschaften?",
+     "antwort": "Die Waage gilt als diplomatisch, charmant, gerecht und stilbewusst. Sie sucht Harmonie, vermittelt gern und hat ein feines Gespür für Schönheit und Atmosphäre. Auf der anderen Seite fällt es ihr oft schwer, sich zu entscheiden, und sie meidet Konflikte manchmal länger, als gut für sie ist."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Waage?",
+     "antwort": "Sternzeichen Waage bist du, wenn du zwischen dem 23. September und dem 22. Oktober geboren bist. Der Beginn fällt mit der Herbst-Tagundnachtgleiche zusammen und kann sich je nach Jahr leicht verschieben. Bei einem Geburtstag an der Grenze schafft dein Geburtshoroskop Klarheit."
+    }
+   ]
+  },
+  {
+   "key": "Sco",
+   "slug": "skorpion",
+   "name": "Skorpion",
+   "intro": "Der Skorpion wird geboren, wenn der Herbst die Blätter fallen lässt und die Natur sich nach innen zurückzieht, um sich zu erneuern. Bist du zwischen dem 23. Oktober und dem 21. November geboren, kennst du die Kraft der Verwandlung. Hier erfährst du, was unter deiner Oberfläche brennt.",
+   "meta_description": "Sternzeichen Skorpion: Charakter, Skorpion Mann und Frau in der Liebe, Beruf und passende Zeichen. Entdecke dein Horoskop heute gratis in Soraya.",
+   "staerken": [
+    "Leidenschaftlich",
+    "Loyal",
+    "Scharfsinnig",
+    "Willensstark",
+    "Intuitiv"
+   ],
+   "schwaechen": [
+    "Manchmal misstrauisch",
+    "Neigt zur Eifersucht",
+    "Möchte gern die Kontrolle",
+    "Vergisst Verletzungen schwer"
+   ],
+   "passt_gut": [
+    "Can",
+    "Pis",
+    "Vir",
+    "Cap"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zum Skorpion?",
+     "antwort": "Der Skorpion harmoniert besonders gut mit Krebs und Fische, die seine emotionale Tiefe teilen, sowie mit Jungfrau und Steinbock, die ihm Halt und Verlässlichkeit geben. Mehr Reibung entsteht oft mit Löwe und Wassermann. Wie eure Verbindung wirklich aussieht, zeigt ein Vergleich eurer Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist der Skorpion Mann in der Liebe?",
+     "antwort": "Der Skorpion Mann liebt intensiv, leidenschaftlich und treu. Nach außen wirkt er oft zurückhaltend oder geheimnisvoll, doch wenn er vertraut, öffnet er sich mit großer Tiefe. Er wünscht sich Ehrlichkeit und Loyalität und reagiert empfindlich, wenn er sich getäuscht fühlt."
+    },
+    {
+     "frage": "Was sind typische Skorpion Eigenschaften?",
+     "antwort": "Der Skorpion gilt als leidenschaftlich, loyal, willensstark und sehr intuitiv. Er geht den Dingen auf den Grund, durchschaut Menschen schnell und gibt nicht so leicht auf. Auf der anderen Seite kann er misstrauisch, eifersüchtig oder kontrollierend wirken, besonders wenn er sich unsicher fühlt."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Skorpion?",
+     "antwort": "Sternzeichen Skorpion bist du, wenn du zwischen dem 23. Oktober und dem 21. November geboren bist. Da sich der Wechsel der Sonne je nach Jahr um einen Tag verschieben kann, lohnt sich bei Geburtstagen an der Grenze ein Blick in dein persönliches Geburtshoroskop."
+    }
+   ]
+  },
+  {
+   "key": "Sag",
+   "slug": "schuetze",
+   "name": "Schütze",
+   "intro": "Der Schütze wird in den langen Nächten vor der Wintersonnenwende geboren, wenn Lichterketten leuchten und die Sehnsucht nach Weite wächst. Bist du zwischen dem 22. November und dem 21. Dezember geboren, zielt dein Pfeil immer auf den Horizont. Entdecke, was dich antreibt.",
+   "meta_description": "Sternzeichen Schütze: Charakter, Liebe, Beruf und welches Sternzeichen zum Schützen passt. Entdecke deine Stärken und dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Optimistisch",
+    "Abenteuerlustig",
+    "Ehrlich",
+    "Großzügig",
+    "Humorvoll"
+   ],
+   "schwaechen": [
+    "Manchmal ungeduldig",
+    "Bindet sich nicht gern fest",
+    "Etwas rastlos",
+    "Ehrlichkeit ohne Filter"
+   ],
+   "passt_gut": [
+    "Ari",
+    "Leo",
+    "Lib",
+    "Aqu"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zum Schützen?",
+     "antwort": "Der Schütze harmoniert besonders gut mit Widder und Löwe, die sein Feuer teilen, sowie mit Waage und Wassermann, die seine Neugier und Freiheitsliebe verstehen. Fordernder sind Verbindungen mit Jungfrau und Fische. Wie gut ihr wirklich zusammenpasst, zeigt der Vergleich eurer vollständigen Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist die Schütze Frau in der Liebe?",
+     "antwort": "Die Schütze Frau ist offen, humorvoll und abenteuerlustig. Sie wünscht sich einen Partner, mit dem sie lachen, reisen und wachsen kann. Eifersucht und Enge schrecken sie ab. Fühlt sie sich frei und ernst genommen, ist sie eine ehrliche, warmherzige und treue Partnerin."
+    },
+    {
+     "frage": "Was sind typische Schütze Eigenschaften?",
+     "antwort": "Der Schütze gilt als optimistisch, abenteuerlustig, ehrlich und wissbegierig. Er liebt Reisen, neue Erfahrungen und große Ideen und steckt andere mit seiner Begeisterung an. Auf der anderen Seite kann er ungeduldig, rastlos oder sehr direkt sein und tut sich mit Routine schwer."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Schütze?",
+     "antwort": "Sternzeichen Schütze bist du, wenn du zwischen dem 22. November und dem 21. Dezember geboren bist. Da der genaue Wechsel der Sonne je nach Jahr leicht schwankt, schafft bei Geburtstagen an der Grenze dein persönliches Geburtshoroskop mit Uhrzeit und Ort Klarheit."
+    }
+   ]
+  },
+  {
+   "key": "Cap",
+   "slug": "steinbock",
+   "name": "Steinbock",
+   "intro": "Der Steinbock beginnt mit der Wintersonnenwende, der längsten Nacht des Jahres, ab der das Licht langsam zurückkehrt. Bist du zwischen dem 22. Dezember und dem 19. Januar geboren, weißt du, dass sich Ausdauer lohnt. Hier erfährst du, wie viel Wärme hinter deiner Stärke steckt.",
+   "meta_description": "Sternzeichen Steinbock: Charakter, Liebe, Beruf und Freundschaft. Erfahre, welches Zeichen zum Steinbock passt, und lies dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Zielstrebig",
+    "Verlässlich",
+    "Diszipliniert",
+    "Verantwortungsvoll",
+    "Trockener Humor"
+   ],
+   "schwaechen": [
+    "Manchmal zu streng mit sich",
+    "Neigt zur Arbeitswut",
+    "Zeigt Gefühle zögerlich",
+    "In Krisen eher pessimistisch"
+   ],
+   "passt_gut": [
+    "Tau",
+    "Vir",
+    "Sco",
+    "Pis"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zum Steinbock?",
+     "antwort": "Der Steinbock versteht sich besonders gut mit Stier und Jungfrau, die ebenfalls Erdzeichen sind, sowie mit Skorpion und Fische, die ihm emotionale Tiefe schenken. Mehr Kompromisse verlangen Beziehungen mit Widder und Waage. Wie eure Verbindung im Detail aussieht, zeigt ein Vergleich eurer Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist der Steinbock Mann in der Liebe?",
+     "antwort": "Der Steinbock Mann ist ernsthaft, treu und verlässlich. Er lässt sich Zeit, bevor er sich bindet, zeigt seine Liebe dann aber durch Beständigkeit, Fürsorge und gemeinsame Zukunftspläne. Große Worte sind nicht seine Art. Er schätzt eine Partnerin oder einen Partner, der seine Ziele versteht und ihm Wärme schenkt."
+    },
+    {
+     "frage": "Was sind typische Steinbock Eigenschaften?",
+     "antwort": "Der Steinbock gilt als zielstrebig, diszipliniert, verantwortungsbewusst und realistisch. Er plant langfristig, arbeitet ausdauernd und ist in Beziehungen sehr treu. Auf der anderen Seite kann er streng mit sich selbst sein, Gefühle eher zurückhalten und in schwierigen Zeiten zu Pessimismus neigen."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Steinbock?",
+     "antwort": "Sternzeichen Steinbock bist du, wenn du zwischen dem 22. Dezember und dem 19. Januar geboren bist. Der Beginn fällt mit der Wintersonnenwende zusammen und kann sich je nach Jahr leicht verschieben. Bei einem Geburtstag an der Grenze schafft dein Geburtshoroskop Gewissheit."
+    }
+   ]
+  },
+  {
+   "key": "Aqu",
+   "slug": "wassermann",
+   "name": "Wassermann",
+   "intro": "Der Wassermann wird mitten im Winter geboren, wenn klare, kalte Nächte den Sternenhimmel besonders funkeln lassen. Bist du zwischen dem 20. Januar und dem 18. Februar geboren, denkst du oft schon an morgen, während andere noch im Heute stehen. Entdecke, was deine Eigenart so wertvoll macht.",
+   "meta_description": "Sternzeichen Wassermann: Charakter, Liebe, Beruf und welche Zeichen zum Wassermann passen. Entdecke deine Stärken und dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Originell",
+    "Unabhängig",
+    "Offen für Neues",
+    "Gemeinschaftlich",
+    "Visionär"
+   ],
+   "schwaechen": [
+    "Wirkt manchmal distanziert",
+    "Hält stur an Ideen fest",
+    "Etwas unberechenbar",
+    "Analysiert Gefühle lieber"
+   ],
+   "passt_gut": [
+    "Gem",
+    "Lib",
+    "Ari",
+    "Sag"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zum Wassermann?",
+     "antwort": "Der Wassermann harmoniert besonders gut mit Zwillinge und Waage, die ebenfalls Luftzeichen sind, sowie mit Widder und Schütze, die seine Freiheitsliebe teilen. Fordernder sind Verbindungen mit Stier und Skorpion. Wie gut ihr wirklich zusammenpasst, zeigt ein Vergleich eurer vollständigen Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist die Wassermann Frau in der Liebe?",
+     "antwort": "Die Wassermann Frau ist eigenständig, offen und freundschaftlich in der Liebe. Sie sucht einen Partner, mit dem sie gute Gespräche führen kann und der ihre Unabhängigkeit respektiert. Eifersucht und Kontrolle schrecken sie ab. In einer Beziehung auf Augenhöhe ist sie treu, loyal und überraschend romantisch."
+    },
+    {
+     "frage": "Was sind typische Wassermann Eigenschaften?",
+     "antwort": "Der Wassermann gilt als originell, unabhängig, menschenfreundlich und zukunftsorientiert. Er denkt gern quer, setzt sich für Gerechtigkeit ein und hat oft einen bunten Freundeskreis. Auf der anderen Seite kann er distanziert, stur oder unberechenbar wirken und tut sich manchmal schwer, Gefühle zu zeigen."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Wassermann?",
+     "antwort": "Sternzeichen Wassermann bist du, wenn du zwischen dem 20. Januar und dem 18. Februar geboren bist. Da sich der Wechsel der Sonne je nach Jahr um einen Tag verschieben kann, lohnt sich bei Geburtstagen an der Grenze ein Blick in dein persönliches Geburtshoroskop."
+    }
+   ]
+  },
+  {
+   "key": "Pis",
+   "slug": "fische",
+   "name": "Fische",
+   "intro": "Die Fische schließen den Tierkreis ab, wenn der Winter schmilzt und das erste Tauwasser in die Bäche fließt. Bist du zwischen dem 19. Februar und dem 20. März geboren, spürst du oft mehr, als du in Worte fassen kannst. Hier erfährst du, wie viel Kraft in deiner Feinfühligkeit liegt.",
+   "meta_description": "Sternzeichen Fische: Charakter, Liebe, Beruf und welche Zeichen zu den Fischen passen. Entdecke deine Gaben und lies dein Horoskop gratis in Soraya.",
+   "staerken": [
+    "Einfühlsam",
+    "Kreativ",
+    "Intuitiv",
+    "Hilfsbereit",
+    "Fantasievoll"
+   ],
+   "schwaechen": [
+    "Grenzt sich schwer ab",
+    "Meidet Konflikte",
+    "Flüchtet gern in Tagträume",
+    "Sagt ungern Nein"
+   ],
+   "passt_gut": [
+    "Can",
+    "Sco",
+    "Tau",
+    "Cap"
+   ],
+   "faq": [
+    {
+     "frage": "Welches Sternzeichen passt zu Fische?",
+     "antwort": "Fische harmonieren besonders gut mit Krebs und Skorpion, die ebenfalls Wasserzeichen sind, sowie mit Stier und Steinbock, die ihnen Halt und Sicherheit geben. Mehr Verständnis brauchen Beziehungen mit Zwillinge und Schütze. Wie eure Verbindung im Detail aussieht, zeigt ein Vergleich eurer Geburtshoroskope."
+    },
+    {
+     "frage": "Wie ist der Fische Mann in der Liebe?",
+     "antwort": "Der Fische Mann ist romantisch, einfühlsam und zärtlich. Er zeigt seine Gefühle offen, überrascht mit kreativen Gesten und sucht eine tiefe, seelische Verbindung. Er braucht eine Partnerin oder einen Partner, der seine Sensibilität schätzt und ihm zugleich Halt gibt, wenn er sich in Gedanken verliert."
+    },
+    {
+     "frage": "Was sind typische Fische Eigenschaften?",
+     "antwort": "Fische gelten als einfühlsam, kreativ, intuitiv und hilfsbereit. Sie spüren Stimmungen sehr fein, haben eine reiche Fantasie und oft eine künstlerische Ader. Auf der anderen Seite fällt es ihnen manchmal schwer, sich abzugrenzen, Konflikte offen anzusprechen oder einfach Nein zu sagen."
+    },
+    {
+     "frage": "Wann ist man Sternzeichen Fische?",
+     "antwort": "Sternzeichen Fische bist du, wenn du zwischen dem 19. Februar und dem 20. März geboren bist. Wer an einem der Grenztage Geburtstag hat, sollte sein Geburtshoroskop berechnen lassen, denn der Wechsel der Sonne ins nächste Zeichen verschiebt sich je nach Jahr leicht."
+    }
+   ]
+  }
+ ],
+ "en": [
+  {
+   "key": "Ari",
+   "slug": "aries",
+   "name": "Aries",
+   "intro": "Aries opens the zodiac the way a sunrise opens the day: suddenly, brightly, and without asking permission. If you were born between March 21 and April 19, you carry the spark that gets things started. Here is what that spark means for your character, love life, and best matches.",
+   "meta_description": "Aries traits, love, career and compatibility explained with warmth and clarity. Discover your fire, then read your free horoscope in Soraya today.",
+   "staerken": [
+    "Courageous",
+    "Energetic",
+    "Honest",
+    "Spontaneous",
+    "Natural leader"
+   ],
+   "schwaechen": [
+    "Sometimes impatient",
+    "Quick to react",
+    "Easily bored",
+    "Can rush the finish"
+   ],
+   "passt_gut": [
+    "Leo",
+    "Sag",
+    "Gem",
+    "Aqu"
+   ],
+   "faq": [
+    {
+     "frage": "What are the main Aries traits?",
+     "antwort": "Aries is known for courage, energy, honesty, and a love of new beginnings. As a cardinal fire sign ruled by Mars, you tend to take initiative, act quickly, and lead naturally. Impatience and a quick temper can appear when things move too slowly."
+    },
+    {
+     "frage": "How does an Aries man act when he is in love?",
+     "antwort": "An Aries man in love is usually direct and enthusiastic. He makes the first move, plans exciting dates, and shows his feelings through action rather than long speeches. He can be protective and wants to impress the person he likes. Keeping a little mystery and matching his sense of adventure tends to keep his interest strong."
+    },
+    {
+     "frage": "Who is Aries most compatible with?",
+     "antwort": "Aries often connects easily with Leo and Sagittarius, the other fire signs, as well as with Gemini and Aquarius, whose air energy fuels Aries' fire. Real compatibility, however, depends on the whole birth chart, including the Moon and Venus, not only on the Sun sign."
+    },
+    {
+     "frage": "What are the dates for the Aries zodiac sign?",
+     "antwort": "Aries runs from about March 21 to April 19 and is the first sign of the zodiac. If you were born right on the edge of these dates, the exact time and place of birth determine whether your Sun is in Aries or a neighboring sign. A free birth chart calculation can confirm it."
+    }
+   ]
+  },
+  {
+   "key": "Tau",
+   "slug": "taurus",
+   "name": "Taurus",
+   "intro": "Taurus is the garden in full bloom in late spring: patient, fragrant, and deeply rooted. If you were born between April 20 and May 20, you know that the good things in life are worth waiting for. Discover what your sign reveals about love, work, and the people who feel like home.",
+   "meta_description": "Taurus traits, love style, career and best matches, explained with warmth. Explore your steady earth nature and read your free horoscope in Soraya.",
+   "staerken": [
+    "Reliable",
+    "Patient",
+    "Sensual",
+    "Loyal",
+    "Practical"
+   ],
+   "schwaechen": [
+    "Can be stubborn",
+    "Resists change",
+    "Loves comfort a lot",
+    "Slow to forgive"
+   ],
+   "passt_gut": [
+    "Vir",
+    "Cap",
+    "Can",
+    "Pis"
+   ],
+   "faq": [
+    {
+     "frage": "What are typical Taurus traits?",
+     "antwort": "Taurus is known for reliability, patience, sensuality, and loyalty. As a fixed earth sign ruled by Venus, you value comfort, beauty, and stability. Taurus people tend to work steadily toward their goals and rarely give up. Stubbornness and resistance to change can appear when they feel rushed."
+    },
+    {
+     "frage": "How does a Taurus man show love?",
+     "antwort": "A Taurus man in love shows affection through actions: cooking for you, planning comfortable dates, offering steady support, and physical closeness. He may take time to commit, but once he does, he is usually loyal and generous. Consistency and honesty matter a lot to him."
+    },
+    {
+     "frage": "Who is Taurus most compatible with?",
+     "antwort": "Taurus often harmonizes with Virgo and Capricorn, the other earth signs, and with Cancer and Pisces, whose water energy nourishes Taurus' earth. These pairings tend to share a desire for security and closeness. Your Moon, Venus, and rising sign also strongly shape compatibility."
+    },
+    {
+     "frage": "When is Taurus season?",
+     "antwort": "Taurus season runs from about April 20 to May 20. It is the second sign of the zodiac, following Aries. If your birthday falls near the start or end of this period, your exact birth time and place determine your Sun sign, which a free birth chart can show."
+    }
+   ]
+  },
+  {
+   "key": "Gem",
+   "slug": "gemini",
+   "name": "Gemini",
+   "intro": "Gemini is the conversation that sparks at midnight and keeps going until sunrise. If you were born between May 21 and June 20, your mind moves like a breeze through an open window, picking up ideas everywhere it goes. Here is what your sign says about love, work, and the people who keep up with you.",
+   "meta_description": "Gemini traits, love life, career and best matches in one elegant guide. Explore your curious, quick-witted nature and read your free horoscope in Soraya.",
+   "staerken": [
+    "Curious",
+    "Witty",
+    "Adaptable",
+    "Sociable",
+    "Quick learner"
+   ],
+   "schwaechen": [
+    "Easily distracted",
+    "Changes plans often",
+    "Restless at times",
+    "Avoids heavy feelings"
+   ],
+   "passt_gut": [
+    "Lib",
+    "Aqu",
+    "Ari",
+    "Leo"
+   ],
+   "faq": [
+    {
+     "frage": "What are the main Gemini traits?",
+     "antwort": "Gemini is known for curiosity, wit, adaptability, and strong communication skills. As a mutable air sign ruled by Mercury, you learn quickly and love variety. Gemini people are usually sociable and charming. Restlessness and difficulty sticking to one plan can appear when life feels too routine."
+    },
+    {
+     "frage": "Is a Gemini man in love hard to read?",
+     "antwort": "A Gemini man in love can seem changeable because he expresses affection through conversation, humor, and shared adventures rather than intense declarations. If he texts you often, shares ideas, and wants to explore new things with you, he is likely interested. Mental connection is the clearest sign of his feelings."
+    },
+    {
+     "frage": "Who is Gemini most compatible with?",
+     "antwort": "Gemini often connects well with Libra and Aquarius, the fellow air signs, and with Aries and Leo, whose fire energy adds spark. These signs tend to enjoy variety and lively conversation. A full compatibility reading also looks at the Moon, Venus, and Mars in both charts."
+    },
+    {
+     "frage": "What are the dates for Gemini?",
+     "antwort": "Gemini runs from about May 21 to June 20 and is the third sign of the zodiac. If you were born close to the start or end of this window, your exact birth time and location decide your Sun sign. A free birth chart in Soraya shows it precisely."
+    }
+   ]
+  },
+  {
+   "key": "Can",
+   "slug": "cancer",
+   "name": "Cancer",
+   "intro": "Cancer is the warm kitchen light glowing on a summer evening, the place everyone wants to return to. If you were born between June 21 and July 22, you feel life deeply and care fiercely. Here is what the Moon's own sign reveals about your heart, your work, and your truest connections.",
+   "meta_description": "Cancer traits, love style, career and compatibility in a warm, clear guide. Explore your caring, intuitive nature and read your free horoscope in Soraya.",
+   "staerken": [
+    "Caring",
+    "Intuitive",
+    "Loyal",
+    "Protective",
+    "Emotionally intelligent"
+   ],
+   "schwaechen": [
+    "Moody at times",
+    "Easily hurt",
+    "Holds on to the past",
+    "Can withdraw"
+   ],
+   "passt_gut": [
+    "Sco",
+    "Pis",
+    "Tau",
+    "Vir"
+   ],
+   "faq": [
+    {
+     "frage": "What are the main Cancer zodiac traits?",
+     "antwort": "Cancer is known for empathy, intuition, loyalty, and a strong caring instinct. As a cardinal water sign ruled by the Moon, you feel emotions deeply and value home and family. Cancer people are protective and nurturing, though they can be moody or withdraw when hurt."
+    },
+    {
+     "frage": "How does a Cancer man act in love?",
+     "antwort": "A Cancer man in love is usually affectionate, attentive, and protective. He shows his feelings by taking care of you, remembering small details, and creating a cozy atmosphere. He needs emotional safety before fully opening up, so patience and kindness help him feel secure."
+    },
+    {
+     "frage": "Who is Cancer most compatible with?",
+     "antwort": "Cancer often connects deeply with Scorpio and Pisces, the other water signs, and with Taurus and Virgo, whose earth energy offers stability. These matches tend to value loyalty and emotional closeness. Your Moon and Venus placements also play a key role in compatibility."
+    },
+    {
+     "frage": "What are the dates for Cancer season?",
+     "antwort": "Cancer season runs from about June 21 to July 22, starting around the summer solstice in the Northern Hemisphere. It is the fourth sign of the zodiac. If you were born near these dates, your exact birth time determines your Sun sign."
+    }
+   ]
+  },
+  {
+   "key": "Leo",
+   "slug": "leo",
+   "name": "Leo",
+   "intro": "Leo is the golden hour of the zodiac, that moment when the late summer sun makes everything glow. If you were born between July 23 and August 22, you carry a natural radiance that people notice the second you walk in. Here is what the sign of the Sun means for your heart, your ambitions, and your best matches.",
+   "meta_description": "Leo traits, love, career and compatibility in an elegant guide to the sign of the Sun. Explore your radiant side and read your free horoscope in Soraya.",
+   "staerken": [
+    "Generous",
+    "Confident",
+    "Warm-hearted",
+    "Creative",
+    "Loyal"
+   ],
+   "schwaechen": [
+    "Can be proud",
+    "Needs appreciation",
+    "Likes the spotlight",
+    "Takes things personally"
+   ],
+   "passt_gut": [
+    "Ari",
+    "Sag",
+    "Gem",
+    "Lib"
+   ],
+   "faq": [
+    {
+     "frage": "What are the most typical Leo traits?",
+     "antwort": "Leo is known for generosity, confidence, creativity, and loyalty. As a fixed fire sign ruled by the Sun, you naturally radiate warmth and enjoy being appreciated. Leo people are often natural leaders and entertainers. Pride and a strong need for recognition can show up when they feel overlooked."
+    },
+    {
+     "frage": "How do you know a Leo man is in love?",
+     "antwort": "A Leo man in love is usually hard to miss. He spoils you, compliments you, introduces you proudly to friends, and plans memorable dates. He wants to protect and impress the person he loves. If he shares his spotlight with you and asks for your opinion, his feelings are serious."
+    },
+    {
+     "frage": "Who is Leo most compatible with?",
+     "antwort": "Leo often matches well with Aries and Sagittarius, the other fire signs, and with Gemini and Libra, whose air energy fans Leo's flame. These signs share enthusiasm and a love of fun. Compatibility also depends on the Moon, Venus, and rising sign in both birth charts."
+    },
+    {
+     "frage": "When is Leo season?",
+     "antwort": "Leo season runs from about July 23 to August 22, during the height of summer in the Northern Hemisphere. It is the fifth sign of the zodiac. If you were born near these dates, your exact birth time determines whether your Sun is in Leo."
+    }
+   ]
+  },
+  {
+   "key": "Vir",
+   "slug": "virgo",
+   "name": "Virgo",
+   "intro": "Virgo is the harvest season of the zodiac, when fields are gathered, sorted, and stored with care. If you were born between August 23 and September 22, you have a gift for noticing what others overlook. Here is what your sign reveals about your mind, your love life, and the people who appreciate your quiet devotion.",
+   "meta_description": "Virgo traits, love, career and compatibility in a thoughtful, elegant guide. Discover your mindful earth nature and read your free horoscope in Soraya.",
+   "staerken": [
+    "Attentive",
+    "Helpful",
+    "Analytical",
+    "Reliable",
+    "Modest"
+   ],
+   "schwaechen": [
+    "Perfectionist at times",
+    "Self-critical",
+    "Worries easily",
+    "Hard to relax"
+   ],
+   "passt_gut": [
+    "Tau",
+    "Cap",
+    "Can",
+    "Sco"
+   ],
+   "faq": [
+    {
+     "frage": "What are the main Virgo traits?",
+     "antwort": "Virgo is known for attentiveness, helpfulness, analytical thinking, and reliability. As a mutable earth sign ruled by Mercury, you notice details and enjoy improving things. Virgo people are modest and caring in practical ways. Perfectionism and self-criticism can appear under stress."
+    },
+    {
+     "frage": "How does a Virgo man show he is in love?",
+     "antwort": "A Virgo man in love expresses his feelings through practical care and consistency. He remembers details, helps you solve problems, and shows up reliably. He may be reserved at first and take time to trust, but once he commits, he is loyal and deeply attentive."
+    },
+    {
+     "frage": "Who is Virgo most compatible with?",
+     "antwort": "Virgo often harmonizes with Taurus and Capricorn, the fellow earth signs, and with Cancer and Scorpio, whose water energy brings emotional depth. These matches tend to share loyalty and a wish for security. The Moon, Venus, and rising sign also shape compatibility."
+    },
+    {
+     "frage": "What are the dates for Virgo?",
+     "antwort": "Virgo runs from about August 23 to September 22 and is the sixth sign of the zodiac, linked to the harvest season. If your birthday is close to these dates, your exact birth time determines whether your Sun is in Virgo or a neighboring sign."
+    }
+   ]
+  },
+  {
+   "key": "Lib",
+   "slug": "libra",
+   "name": "Libra",
+   "intro": "Libra arrives with the autumn equinox, when day and night stand in perfect balance. If you were born between September 23 and October 22, you have an instinct for harmony, beauty, and fairness. Here is what your sign says about your relationships, your work, and the people who match your grace.",
+   "meta_description": "Libra traits, love, career and compatibility in a graceful, clear guide. Explore your charming, harmonious side and read your free horoscope in Soraya.",
+   "staerken": [
+    "Diplomatic",
+    "Charming",
+    "Fair-minded",
+    "Artistic",
+    "Sociable"
+   ],
+   "schwaechen": [
+    "Can be indecisive",
+    "Avoids conflict",
+    "Wants to please",
+    "Tempted by luxury"
+   ],
+   "passt_gut": [
+    "Gem",
+    "Aqu",
+    "Leo",
+    "Sag"
+   ],
+   "faq": [
+    {
+     "frage": "What are the key Libra traits?",
+     "antwort": "Libra is known for charm, diplomacy, fairness, and a strong sense of beauty. As a cardinal air sign ruled by Venus, you value harmony and partnership. Libra people are sociable and good at seeing all sides of a situation. Indecision and conflict avoidance can appear under pressure."
+    },
+    {
+     "frage": "How does a Libra man act when he likes you?",
+     "antwort": "A Libra man who likes you is usually charming and attentive. He compliments you, plans elegant dates, and wants to know your opinions. He may be cautious about conflict, so he shows his feelings through kindness and harmony. If he asks about your plans and includes you in his, he is serious."
+    },
+    {
+     "frage": "Who is Libra most compatible with?",
+     "antwort": "Libra often connects well with Gemini and Aquarius, the other air signs, and with Leo and Sagittarius, whose fire energy brings warmth and excitement. These signs share a love of social life and ideas. Compatibility also depends on the Moon, Venus, and rising sign."
+    },
+    {
+     "frage": "When does Libra season start?",
+     "antwort": "Libra season begins around September 23, with the autumn equinox in the Northern Hemisphere, and lasts until about October 22. It is the seventh sign of the zodiac. If you were born near these dates, your exact birth time decides your Sun sign."
+    }
+   ]
+  },
+  {
+   "key": "Sco",
+   "slug": "scorpio",
+   "name": "Scorpio",
+   "intro": "Scorpio is the still, dark lake in late autumn, calm on the surface and astonishingly deep below. If you were born between October 23 and November 21, you feel everything intensely and see through masks with ease. Here is what your sign reveals about passion, power, and the people worthy of your trust.",
+   "meta_description": "Scorpio traits, love, career and compatibility in a deep, elegant guide. Explore your intense and magnetic nature and read your free horoscope in Soraya.",
+   "staerken": [
+    "Passionate",
+    "Loyal",
+    "Intuitive",
+    "Determined",
+    "Resilient"
+   ],
+   "schwaechen": [
+    "Can be jealous",
+    "Slow to trust",
+    "Holds grudges",
+    "Very private"
+   ],
+   "passt_gut": [
+    "Can",
+    "Pis",
+    "Vir",
+    "Cap"
+   ],
+   "faq": [
+    {
+     "frage": "What are the main Scorpio traits?",
+     "antwort": "Scorpio is known for intensity, loyalty, intuition, and determination. As a fixed water sign ruled by Pluto and traditionally Mars, you feel deeply and commit fully. Scorpio people are perceptive and resilient. Jealousy, secrecy, and slow trust can appear when they feel vulnerable."
+    },
+    {
+     "frage": "How does a Scorpio man behave in love?",
+     "antwort": "A Scorpio man in love is intense, protective, and deeply loyal. He may seem reserved at first and observe you carefully before opening up. Once he trusts you, he gives his full attention and wants an honest, exclusive bond. Openness and consistency help him feel safe enough to show his tender side."
+    },
+    {
+     "frage": "Who is Scorpio most compatible with?",
+     "antwort": "Scorpio often connects deeply with Cancer and Pisces, the other water signs, and with Virgo and Capricorn, whose earth energy offers stability. These matches value loyalty and emotional depth. A complete compatibility reading also considers the Moon, Venus, and Mars."
+    },
+    {
+     "frage": "What are the dates for Scorpio?",
+     "antwort": "Scorpio runs from about October 23 to November 21 and is the eighth sign of the zodiac. If you were born near the beginning or end of this period, your exact birth time and location determine your Sun sign. A free birth chart in Soraya shows it precisely."
+    }
+   ]
+  },
+  {
+   "key": "Sag",
+   "slug": "sagittarius",
+   "name": "Sagittarius",
+   "intro": "Sagittarius is the arrow released toward a distant horizon, the open road on a crisp winter morning. If you were born between November 22 and December 21, you are wired for freedom, meaning, and big adventures. Discover what your sign says about love, work, and the companions who travel well with you.",
+   "meta_description": "Sagittarius traits, love, career and compatibility in a bright guide. Explore your adventurous, optimistic spirit and read your free horoscope in Soraya.",
+   "staerken": [
+    "Optimistic",
+    "Adventurous",
+    "Honest",
+    "Open-minded",
+    "Generous"
+   ],
+   "schwaechen": [
+    "Can be restless",
+    "Blunt at times",
+    "Overpromises",
+    "Dislikes routine"
+   ],
+   "passt_gut": [
+    "Ari",
+    "Leo",
+    "Lib",
+    "Aqu"
+   ],
+   "faq": [
+    {
+     "frage": "What are the main Sagittarius traits?",
+     "antwort": "Sagittarius is known for optimism, honesty, adventure, and open-mindedness. As a mutable fire sign ruled by Jupiter, you love freedom, travel, and learning. Sagittarius people are generous, funny, and great storytellers. Restlessness and bluntness can appear when they feel confined by routine or rules."
+    },
+    {
+     "frage": "How does a Sagittarius man act in love?",
+     "antwort": "A Sagittarius man in love is fun, generous, and spontaneous. He invites you on adventures, shares his ideas and dreams, and is refreshingly honest about his feelings. He needs freedom and trust in a relationship, and he commits when he feels that love makes his world bigger, not smaller."
+    },
+    {
+     "frage": "Who is Sagittarius most compatible with?",
+     "antwort": "Sagittarius often connects well with Aries and Leo, the other fire signs, and with Libra and Aquarius, whose air energy fuels Sagittarius' fire. These signs share a love of freedom and adventure. Compatibility also depends on the Moon, Venus, and rising sign in both charts."
+    },
+    {
+     "frage": "When is Sagittarius season?",
+     "antwort": "Sagittarius season runs from about November 22 to December 21, ending around the winter solstice in the Northern Hemisphere. It is the ninth sign of the zodiac. If you were born near these dates, your exact birth time determines your Sun sign."
+    }
+   ]
+  },
+  {
+   "key": "Cap",
+   "slug": "capricorn",
+   "name": "Capricorn",
+   "intro": "Capricorn is the mountain goat climbing steadily through the winter snow, sure-footed and unhurried. If you were born between December 22 and January 19, you know that lasting success is built one step at a time. Here is what your sign reveals about ambition, love, and the people who stand firmly beside you.",
+   "meta_description": "Capricorn traits, love, career and compatibility in a clear, elegant guide. Explore your ambitious, grounded nature and read your free horoscope in Soraya.",
+   "staerken": [
+    "Disciplined",
+    "Ambitious",
+    "Responsible",
+    "Loyal",
+    "Practical"
+   ],
+   "schwaechen": [
+    "Can overwork",
+    "Reserved with feelings",
+    "Self-critical",
+    "Sometimes pessimistic"
+   ],
+   "passt_gut": [
+    "Tau",
+    "Vir",
+    "Sco",
+    "Pis"
+   ],
+   "faq": [
+    {
+     "frage": "What are typical Capricorn traits?",
+     "antwort": "Capricorn is known for discipline, ambition, responsibility, and loyalty. As a cardinal earth sign ruled by Saturn, you value structure and long-term goals. Capricorn people are reliable and have a dry sense of humor. Overworking and being reserved with feelings can show up under pressure."
+    },
+    {
+     "frage": "How does a Capricorn man show love?",
+     "antwort": "A Capricorn man in love shows his feelings through commitment and practical support. He plans a future with you, helps you reach your goals, and stays reliable. He may seem reserved at first, but once he trusts you, he is deeply loyal and protective."
+    },
+    {
+     "frage": "Who is Capricorn most compatible with?",
+     "antwort": "Capricorn often harmonizes with Taurus and Virgo, the other earth signs, and with Scorpio and Pisces, whose water energy adds emotional depth. These matches tend to value loyalty and security. A full reading also looks at the Moon, Venus, and rising sign."
+    },
+    {
+     "frage": "What are the dates for Capricorn?",
+     "antwort": "Capricorn runs from about December 22 to January 19, beginning around the winter solstice in the Northern Hemisphere. It is the tenth sign of the zodiac. If you were born near these dates, your exact birth time determines your Sun sign."
+    }
+   ]
+  },
+  {
+   "key": "Aqu",
+   "slug": "aquarius",
+   "name": "Aquarius",
+   "intro": "Aquarius is the clear, starlit sky on a frosty winter night, wide open and full of possibilities. If you were born between January 20 and February 18, you think differently and dream of a better world. Here is what your sign says about love, work, friendship, and the people who understand your spark.",
+   "meta_description": "Aquarius traits, love, career and compatibility in an inspiring guide. Explore your original, free-spirited nature and read your free horoscope in Soraya.",
+   "staerken": [
+    "Original",
+    "Independent",
+    "Humanitarian",
+    "Open-minded",
+    "Inventive"
+   ],
+   "schwaechen": [
+    "Can seem distant",
+    "Stubborn at times",
+    "Avoids emotional drama",
+    "Contrary streak"
+   ],
+   "passt_gut": [
+    "Gem",
+    "Lib",
+    "Ari",
+    "Sag"
+   ],
+   "faq": [
+    {
+     "frage": "What are the main Aquarius traits?",
+     "antwort": "Aquarius is known for originality, independence, open-mindedness, and humanitarian ideals. As a fixed air sign ruled by Uranus and traditionally Saturn, you think ahead and value freedom. Aquarius people are inventive and loyal friends. Emotional distance and stubbornness can appear under stress."
+    },
+    {
+     "frage": "How does an Aquarius man act in love?",
+     "antwort": "An Aquarius man in love often starts as a friend. He shares ideas, includes you in his interests, and respects your independence. He may express feelings unconventionally rather than through classic romance. If he lets you into his inner world and makes time for deep conversations, he is serious."
+    },
+    {
+     "frage": "Who is Aquarius most compatible with?",
+     "antwort": "Aquarius often connects well with Gemini and Libra, the other air signs, and with Aries and Sagittarius, whose fire energy matches Aquarius' love of freedom. These signs share curiosity and independence. Compatibility also depends on the Moon, Venus, and rising sign."
+    },
+    {
+     "frage": "When is Aquarius season?",
+     "antwort": "Aquarius season runs from about January 20 to February 18 and is the eleventh sign of the zodiac. If you were born near the start or end of this period, your exact birth time and location determine your Sun sign. A free birth chart shows it precisely."
+    }
+   ]
+  },
+  {
+   "key": "Pis",
+   "slug": "pisces",
+   "name": "Pisces",
+   "intro": "Pisces is the ocean at twilight, where the horizon dissolves and dreams feel almost real. If you were born between February 19 and March 20, you sense the world with extraordinary sensitivity and imagination. Here is what the last sign of the zodiac reveals about your heart, your gifts, and your soulmates.",
+   "meta_description": "Pisces traits, love, career and compatibility in a gentle, elegant guide. Explore your dreamy, intuitive nature and read your free horoscope in Soraya.",
+   "staerken": [
+    "Compassionate",
+    "Intuitive",
+    "Imaginative",
+    "Gentle",
+    "Artistic"
+   ],
+   "schwaechen": [
+    "Can be dreamy",
+    "Absorbs others' moods",
+    "Avoids conflict",
+    "Idealizes people"
+   ],
+   "passt_gut": [
+    "Can",
+    "Sco",
+    "Tau",
+    "Cap"
+   ],
+   "faq": [
+    {
+     "frage": "What are the main Pisces traits?",
+     "antwort": "Pisces is known for compassion, intuition, imagination, and gentleness. As a mutable water sign ruled by Neptune and traditionally Jupiter, you feel deeply and are drawn to art and spirituality. Pisces people are empathetic and creative. Dreaminess and difficulty with boundaries can appear under stress."
+    },
+    {
+     "frage": "How does a Pisces man act in love?",
+     "antwort": "A Pisces man in love is romantic, gentle, and attentive. He may express his feelings through creative gestures, sweet messages, or simply by sensing your needs. He wants a deep emotional connection and can be very devoted. Kindness and emotional safety help him open up fully."
+    },
+    {
+     "frage": "Who is Pisces most compatible with?",
+     "antwort": "Pisces often connects deeply with Cancer and Scorpio, the other water signs, and with Taurus and Capricorn, whose earth energy offers stability. These matches value loyalty and emotional closeness. A full compatibility reading also considers the Moon, Venus, and rising sign."
+    },
+    {
+     "frage": "What are the dates for Pisces?",
+     "antwort": "Pisces runs from about February 19 to March 20 and is the twelfth and final sign of the zodiac. If you were born near the start or end of this period, your exact birth time and place determine your Sun sign. A free birth chart in Soraya shows it precisely."
+    }
+   ]
+  }
+ ],
+ "hu": [
+  {
+   "key": "Ari",
+   "slug": "kos",
+   "name": "Kos",
+   "intro": "A Kos az állatöv első jegye, és ez meg is látszik rajta: ő az, aki elsőként lép, elsőként szól, és elsőként neveti el magát, ha valami nem jön össze. Ha Kos vagy, vagy éppen egy Kos rabolta el a szívedet, itt megtudhatod, mi hajtja ezt a tüzes, őszinte jegyet.",
+   "meta_description": "Kos csillagjegy (március 21. – április 19.): jellem, szerelem, munka és a hozzá illő jegyek. Olvasd el ingyen a napi Kos horoszkópot a Sorayában!",
+   "staerken": [
+    "bátor",
+    "lelkes",
+    "őszinte",
+    "kezdeményező",
+    "nagylelkű"
+   ],
+   "schwaechen": [
+    "néha türelmetlen",
+    "hamar fellobban",
+    "a befejezés nehezebb neki, mint a kezdés",
+    "szeret mindig első lenni"
+   ],
+   "passt_gut": [
+    "Leo",
+    "Sag",
+    "Gem",
+    "Aqu"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Koshoz?",
+     "antwort": "A Koshoz általában az Oroszlán és a Nyilas illik a legjobban, mert velük közös a tűz eleme és a lelkesedés. Az Ikrek és a Vízöntő is jó társ lehet, hiszen frissességet és szabadságot hoznak a kapcsolatba. A Rákkal és a Bakkal több kompromisszum kell. A valódi összhangot azonban a két teljes születési horoszkóp mutatja meg, ezt a Soraya partnerösszehasonlítása százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Kos férfi szerelemben?",
+     "antwort": "A Kos férfi szerelemben nyílt, lelkes és kezdeményező. Ha valaki megtetszik neki, nem titkolja, hanem udvarol, meglep és kalandokra hív. Szereti védelmezni a párját, mégis az önálló, határozott társ vonzza igazán. Gyorsan fellobban, de nem haragtartó. Akkor érzi jól magát, ha a kapcsolatban van tér a spontaneitásnak és az őszinte, egyenes beszédnek."
+    },
+    {
+     "frage": "Mikor van a Kos időszaka?",
+     "antwort": "A Nap minden évben nagyjából március 21. és április 19. között jár a Kos jegyében. A pontos határ évről évre egy-egy napot elmozdulhat, ezért ha a születésnapod a határ közelébe esik, érdemes a pontos születési idővel ellenőrizni. A Soraya az időpont és a hely alapján kiszámolja, melyik jegyben állt a Nap, amikor születtél."
+    },
+    {
+     "frage": "Hol olvashatom a napi Kos horoszkópot?",
+     "antwort": "A napi Kos horoszkópot a Soraya alkalmazásban ingyen olvashatod, fiók nélkül is. A napi szöveg a valódi bolygóállásokból készül, és megmutatja, milyen hangulat, energia és lehetőség vár rád aznap. Ha megadod a születési adataidat, az előrejelzés még személyesebb lesz, mert a saját horoszkópodhoz igazodik."
+    }
+   ]
+  },
+  {
+   "key": "Tau",
+   "slug": "bika",
+   "name": "Bika",
+   "intro": "A Bika pontosan tudja, milyen illata van a frissen sült kenyérnek, és miért ér többet egy lassú vasárnap reggel minden rohanásnál. Kitartó, hűséges és érzéki – ha meg akarod érteni, mitől ilyen megbízható, jó helyen jársz.",
+   "meta_description": "Bika csillagjegy (április 20. – május 20.): jellem, szerelem, munka, pénz és a legjobb párok. Nézd meg ingyen a napi Bika horoszkópot a Sorayában!",
+   "staerken": [
+    "kitartó",
+    "megbízható",
+    "hűséges",
+    "türelmes",
+    "érzéki"
+   ],
+   "schwaechen": [
+    "néha makacs",
+    "lassan alkalmazkodik",
+    "ragaszkodó",
+    "nagyon szereti a kényelmet"
+   ],
+   "passt_gut": [
+    "Vir",
+    "Cap",
+    "Can",
+    "Pis"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Bikához?",
+     "antwort": "A Bikához leginkább a Szűz és a Bak illik, mert velük közös a föld eleme, a gyakorlatiasság és a biztonság iránti igény. A Rák és a Halak is szép párost alkothat vele, hiszen érzelmi melegséget hoznak. Az Oroszlánnal és a Vízöntővel több kompromisszum kell. A pontos összhangot a két születési horoszkóp mutatja meg, ezt a Soraya partnerösszehasonlítása százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Bika nő szerelemben?",
+     "antwort": "A Bika nő szerelemben hűséges, meleg és érzéki. Nem siet, előbb alaposan megismeri a másikat, és csak akkor nyílik meg igazán, ha biztonságban érzi magát. Értékeli a figyelmességet, a megbízhatóságot és az apró, kedves gesztusokat. Ha elkötelezi magát, kitartó társ, aki otthonos, nyugodt légkört teremt maga körül, és sokat tesz a kapcsolat stabilitásáért."
+    },
+    {
+     "frage": "Miért tartják makacsnak a Bikát?",
+     "antwort": "A Bika fix földjegy, ezért erős benne a kitartás és az állandóság iránti igény. Amit egyszer jónak talált, ahhoz ragaszkodik, és nem szereti, ha sürgetik. Ez kívülről makacsságnak tűnhet, valójában azonban az óvatosság és a hűség jele. Ha elég időt és jó érveket kap, a Bika is képes változtatni, csak a saját tempójában."
+    },
+    {
+     "frage": "Hol olvashatom a napi Bika horoszkópot?",
+     "antwort": "A napi Bika horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szöveg minden nap a valódi bolygóállások alapján készül, és megmutatja, mire érdemes figyelned a szerelemben, a munkában és a hangulatodban. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, így még személyesebb lesz."
+    }
+   ]
+  },
+  {
+   "key": "Gem",
+   "slug": "ikrek",
+   "name": "Ikrek",
+   "intro": "Az Ikrek egyszerre két könyvet olvas, három beszélgetésben vesz részt, és közben már a hétvégi programot szervezi. Kíváncsi, szellemes és gyors észjárású – ha szeretnéd megérteni, mi zajlik ebben a nyughatatlan elmében, olvass tovább.",
+   "meta_description": "Ikrek csillagjegy (május 21. – június 20.): jellem, szerelem, munka és a hozzá illő jegyek. Olvasd el ingyen a napi Ikrek horoszkópot a Sorayában!",
+   "staerken": [
+    "kíváncsi",
+    "szellemes",
+    "sokoldalú",
+    "kommunikatív",
+    "rugalmas"
+   ],
+   "schwaechen": [
+    "néha szétszórt",
+    "könnyen elunja magát",
+    "kerüli a nehéz témákat",
+    "sok mindent elkezd egyszerre"
+   ],
+   "passt_gut": [
+    "Lib",
+    "Aqu",
+    "Leo",
+    "Ari"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik az Ikrekhez?",
+     "antwort": "Az Ikrekhez leginkább a Mérleg és a Vízöntő illik, mert velük közös a levegő eleme, a kíváncsiság és a kommunikáció öröme. Az Oroszlán és a Kos is izgalmas társ lehet, hiszen tüzet és lendületet visznek a kapcsolatba. A Szűzzel és a Halakkal több egyeztetés kell. A valódi összhangot a két születési horoszkóp mutatja meg, a Soraya ezt százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen az Ikrek férfi szerelemben?",
+     "antwort": "Az Ikrek férfi szerelemben játékos, szellemes és tele van ötletekkel. Fontos neki a jó beszélgetés, és az a társ vonzza, aki megnevetteti, és el is tudja gondolkodtatni. Szereti a változatosságot és a spontán programokat, a túl szoros kontrollt viszont nehezen viseli. Ha szabadságot és bizalmat kap, figyelmes, kedves és kifejezetten szórakoztató partner."
+    },
+    {
+     "frage": "Miért mondják, hogy az Ikreknek két arca van?",
+     "antwort": "A jegy szimbóluma két testvér, és ez jól mutatja az Ikrek sokoldalúságát. Egyszerre vonzza a társaság és a magány, a könnyedség és az elmélyült gondolkodás. Ez nem kétszínűség, hanem annak a jele, hogy a változó levegőjegy gyorsan alkalmazkodik a helyzetekhez. Az Ikrek-szülött egyszerűen több arcát is szívesen megmutatja a világnak, attól függően, mi érdekli éppen."
+    },
+    {
+     "frage": "Hol olvashatom a napi Ikrek horoszkópot?",
+     "antwort": "A napi Ikrek horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállásokból készülnek, és megmutatják, milyen hangulat vár rád a szerelemben, a munkában és a kapcsolataidban. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, és még személyesebb lesz."
+    }
+   ]
+  },
+  {
+   "key": "Can",
+   "slug": "rak",
+   "name": "Rák",
+   "intro": "A Rák kemény páncél mögött hordozza az állatöv egyik leglágyabb szívét. Gondoskodó, mélyen érző és hűséges – ha kíváncsi vagy, mi teszi ilyen különlegessé az otthon, a család és a szerelem világában, itt megtalálod.",
+   "meta_description": "Rák csillagjegy (június 21. – július 22.): jellem, szerelem, család, munka és a hozzá illő jegyek. Olvasd el ingyen a napi Rák horoszkópot a Sorayában!",
+   "staerken": [
+    "gondoskodó",
+    "empatikus",
+    "hűséges",
+    "intuitív",
+    "védelmező"
+   ],
+   "schwaechen": [
+    "érzékeny a kritikára",
+    "néha szeszélyes",
+    "nehezen engedi el a múltat",
+    "hajlamos visszahúzódni"
+   ],
+   "passt_gut": [
+    "Sco",
+    "Pis",
+    "Vir",
+    "Tau"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Rákhoz?",
+     "antwort": "A Rákhoz leginkább a Skorpió és a Halak illik, mert velük közös a víz eleme és az érzelmi mélység. A Szűz és a Bika is jó társ lehet, hiszen stabilitást és megbízhatóságot hoznak a kapcsolatba. A Mérleggel és a Kossal több kompromisszumra van szükség. A valódi összhangot a két teljes születési horoszkóp mutatja meg, a Soraya ezt százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Rák nő szerelemben?",
+     "antwort": "A Rák nő szerelemben odaadó, gyengéd és nagyon intuitív. Óvatosan nyílik meg, de ha bízik valakiben, teljes szívvel szeret. Fontos neki az otthon melege, a hűség és az, hogy a párja kimutassa az érzéseit. A kimondatlan feszültségeket is megérzi, ezért a nyílt, kedves beszélgetés sokat segít. Hosszú távú, biztonságot adó kapcsolatot keres."
+    },
+    {
+     "frage": "Miért ilyen érzékeny a Rák?",
+     "antwort": "A Rák uralkodó bolygója a Hold, amely az érzelmeket és a belső világot jelképezi, eleme pedig a víz. Ezért a Rák-szülött erősen érzi a hangulatokat, a sajátjait és másokéit is. Ez az érzékenység nem gyengeség, hanem az empátia forrása. Ha megtanulja védeni a határait, éppen ebből lesz a legnagyobb ereje."
+    },
+    {
+     "frage": "Hol olvashatom a napi Rák horoszkópot?",
+     "antwort": "A napi Rák horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek a valódi bolygóállásokból készülnek, és megmutatják, milyen érzelmi hangulat, energia és lehetőség vár rád az adott napon. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, így sokkal személyesebb képet kapsz."
+    }
+   ]
+  },
+  {
+   "key": "Leo",
+   "slug": "oroszlan",
+   "name": "Oroszlán",
+   "intro": "Az Oroszlán belép egy szobába, és a hangulat azonnal melegebb lesz. Nagyvonalú, szenvedélyes és büszke – ha szeretnéd tudni, mi rejlik a ragyogó külső mögött, és melyik csillagjegy illik az Oroszlánhoz, olvass tovább.",
+   "meta_description": "Oroszlán csillagjegy (július 23. – augusztus 22.): jellem, szerelem, munka és a hozzá illő jegyek. Napi Oroszlán horoszkóp ingyen a Sorayában!",
+   "staerken": [
+    "nagyvonalú",
+    "magabiztos",
+    "kreatív",
+    "hűséges",
+    "melegszívű"
+   ],
+   "schwaechen": [
+    "néha büszke",
+    "vágyik az elismerésre",
+    "szeret irányítani",
+    "nehezen kér bocsánatot"
+   ],
+   "passt_gut": [
+    "Sag",
+    "Ari",
+    "Lib",
+    "Gem"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik az Oroszlánhoz?",
+     "antwort": "Az Oroszlánhoz leginkább a Nyilas és a Kos illik, mert velük közös a tűz eleme és a szenvedélyes életszemlélet. A Mérleg és az Ikrek is szép párost alkothat vele, hiszen könnyedséget és szellemességet hoznak. A Skorpióval és a Bikával több kompromisszum kell. A pontos összhangot a két teljes születési horoszkóp mutatja meg, ezt a Soraya százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen az Oroszlán férfi szerelemben?",
+     "antwort": "Az Oroszlán férfi szerelemben romantikus, nagyvonalú és védelmező. Szereti a nagy gesztusokat, és büszkén mutatja meg a párját a világnak. Fontos neki a csodálat és az elismerés, és ha ezt megkapja, hűséges, melegszívű társ. Rosszul viseli, ha magától értetődőnek veszik. Egy őszinte dicséret és a közös ünneplés sokat jelent neki."
+    },
+    {
+     "frage": "Miért szeret az Oroszlán a középpontban lenni?",
+     "antwort": "Az Oroszlán uralkodó égiteste a Nap, az önkifejezés és az életerő jelképe. Ezért az Oroszlán-szülött természetes módon vágyik arra, hogy lássák, és hogy megmutathassa a tehetségét. Ez nem feltétlenül hiúság, sokkal inkább a kreativitás és az életöröm megnyilvánulása. A legjobb formájában arra használja a figyelmet, hogy másokat is felemeljen."
+    },
+    {
+     "frage": "Hol olvashatom a napi Oroszlán horoszkópot?",
+     "antwort": "A napi Oroszlán horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállások alapján készülnek, és megmutatják, milyen energiák várnak rád a szerelemben, a munkában és a kreatív terveidben. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, és még személyesebb lesz."
+    }
+   ]
+  },
+  {
+   "key": "Vir",
+   "slug": "szuz",
+   "name": "Szűz",
+   "intro": "A Szűz az, aki észreveszi a ferdén lógó képet, a hiányzó vesszőt, és azt is, hogy ma fáradtabb vagy a szokásosnál. Figyelmes, segítőkész és precíz – ha szeretnéd megérteni, mi rejlik mindez mögött, és milyen a Szűz a szerelemben, itt megtudhatod.",
+   "meta_description": "Szűz csillagjegy (augusztus 23. – szeptember 22.): jellem, szerelem, munka és a hozzá illő jegyek. Olvasd el ingyen a napi Szűz horoszkópot a Sorayában!",
+   "staerken": [
+    "figyelmes",
+    "megbízható",
+    "segítőkész",
+    "precíz",
+    "gyakorlatias"
+   ],
+   "schwaechen": [
+    "néha maximalista",
+    "hajlamos aggódni",
+    "kritikus önmagával",
+    "nehezen lazít"
+   ],
+   "passt_gut": [
+    "Cap",
+    "Tau",
+    "Sco",
+    "Can"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Szűzhöz?",
+     "antwort": "A Szűzhöz leginkább a Bak és a Bika illik, mert velük közös a föld eleme, a gyakorlatiasság és a megbízhatóság iránti igény. A Skorpió és a Rák is jó társ lehet, hiszen érzelmi mélységet hoznak a kapcsolatba. A Nyilassal és az Ikrekkel több kompromisszum kell. A valódi összhangot a két teljes születési horoszkóp mutatja meg, a Soraya ezt százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Szűz férfi szerelemben?",
+     "antwort": "A Szűz férfi szerelemben figyelmes, megbízható és kissé visszafogott. Nem a nagy szavak embere, a szeretetét inkább gondoskodással és apró, praktikus gesztusokkal mutatja meg. Lassan nyílik meg, de ha elkötelezi magát, hűséges és következetes társ. Értékeli az őszinteséget és a rendezett, nyugodt életet. Jólesik neki, ha a párja kimondja, hogy értékeli a törődését."
+    },
+    {
+     "frage": "Tényleg maximalista a Szűz?",
+     "antwort": "Sok Szűz-szülött valóban magas mércét állít maga elé, mert a Merkúr hatására erős benne az elemzés és a fejlődés iránti vágy. Ez azonban nem jelenti azt, hogy mindenkit kritizál: leggyakrabban önmagával szigorúbb, mint másokkal. Ha megtanulja, hogy néha a jó is elég jó, a pontossága hatalmas erővé válik, és sokkal több örömet talál a mindennapokban."
+    },
+    {
+     "frage": "Hol olvashatom a napi Szűz horoszkópot?",
+     "antwort": "A napi Szűz horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállásokból készülnek, és megmutatják, mire érdemes figyelned a munkában, a kapcsolataidban és a saját jóllétedben. Ha megadod a születési adataidat, a napi előrejelzés a te horoszkópodhoz igazodik, és még személyesebb lesz."
+    }
+   ]
+  },
+  {
+   "key": "Lib",
+   "slug": "merleg",
+   "name": "Mérleg",
+   "intro": "A Mérleg egy feszült vacsorán is megtalálja azt a mondatot, amelytől mindenki fellélegzik. Elegáns, igazságszerető és bájos – ha kíváncsi vagy, milyen a Mérleg a szerelemben és a barátságban, és mi segíti a döntéseiben, jó helyen jársz.",
+   "meta_description": "Mérleg csillagjegy (szeptember 23. – október 22.): jellem, szerelem, munka és a hozzá illő jegyek. Napi Mérleg horoszkóp ingyen a Sorayában!",
+   "staerken": [
+    "diplomatikus",
+    "elegáns",
+    "igazságszerető",
+    "bájos",
+    "együttműködő"
+   ],
+   "schwaechen": [
+    "néha határozatlan",
+    "kerüli a konfliktust",
+    "túlzottan alkalmazkodik",
+    "sokat ad mások véleményére"
+   ],
+   "passt_gut": [
+    "Aqu",
+    "Gem",
+    "Sag",
+    "Leo"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Mérleghez?",
+     "antwort": "A Mérleghez leginkább a Vízöntő és az Ikrek illik, mert velük közös a levegő eleme, a nyitottság és a jó beszélgetések szeretete. A Nyilas és az Oroszlán is szép párost alkothat vele, hiszen lendületet és szenvedélyt hoznak. A Bakkal és a Rákkal több kompromisszum kell. A valódi összhangot a két teljes születési horoszkóp mutatja meg, a Soraya ezt százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Mérleg nő szerelemben?",
+     "antwort": "A Mérleg nő szerelemben romantikus, elegáns és figyelmes. Fontos neki a harmónia, a kölcsönös tisztelet, és az, hogy a kapcsolat szép és kiegyensúlyozott legyen. Szereti a stílusos randevúkat és a hosszú beszélgetéseket. A konfliktusokat nem kedveli, ezért jólesik neki, ha a párja nyugodtan, kedvesen hozza fel a nehezebb témákat. Egyenrangú társat keres."
+    },
+    {
+     "frage": "Miért határozatlan a Mérleg?",
+     "antwort": "A Mérleg mindig az egyensúlyt keresi, ezért egy döntés előtt minden szempontot alaposan végiggondol. Látja az érveket és az ellenérveket is, és szeretne mindenkivel szemben igazságos lenni. Ez kívülről határozatlanságnak tűnhet, valójában az igazságérzet és a figyelmesség jele. Ha megbízik a saját belső hangjában, a döntései gyorsabbak és magabiztosabbak lesznek."
+    },
+    {
+     "frage": "Hol olvashatom a napi Mérleg horoszkópot?",
+     "antwort": "A napi Mérleg horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállások alapján készülnek, és megmutatják, milyen energiák hatnak a kapcsolataidra, a munkádra és a belső egyensúlyodra. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, és még személyesebb lesz."
+    }
+   ]
+  },
+  {
+   "key": "Sco",
+   "slug": "skorpio",
+   "name": "Skorpió",
+   "intro": "A Skorpió tekintete mögött mély tó rejlik: a felszín nyugodt, de alatta erős áramlatok mozognak. Szenvedélyes, hűséges és rendkívül intuitív – ha szeretnéd megérteni, milyen a Skorpió férfi és nő a szerelemben, és mi hajtja ezt a titokzatos jegyet, olvass tovább.",
+   "meta_description": "Skorpió csillagjegy (október 23. – november 21.): jellem, szenvedély, szerelem, munka és a hozzá illő jegyek. Olvasd el ingyen a napi horoszkópodat!",
+   "staerken": [
+    "szenvedélyes",
+    "hűséges",
+    "intuitív",
+    "elszánt",
+    "mélyen érző"
+   ],
+   "schwaechen": [
+    "néha bizalmatlan",
+    "hajlamos a féltékenységre",
+    "nehezen felejt",
+    "szeret mindent kézben tartani"
+   ],
+   "passt_gut": [
+    "Pis",
+    "Can",
+    "Cap",
+    "Vir"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Skorpióhoz?",
+     "antwort": "A Skorpióhoz leginkább a Halak és a Rák illik, mert velük közös a víz eleme és az érzelmi mélység. A Bak és a Szűz is erős párost alkothat vele, hiszen stabilitást és megbízhatóságot hoznak. A Vízöntővel és az Oroszlánnal több kompromisszum kell. A valódi összhangot a két teljes születési horoszkóp mutatja meg, ezt a Soraya partnerösszehasonlítása százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Skorpió férfi szerelemben?",
+     "antwort": "A Skorpió férfi szerelemben szenvedélyes, hűséges és mélyen elkötelezett. Nem keres felszínes kalandokat, olyan kapcsolatra vágyik, amelyben teljes a bizalom. Figyelmes, és szinte belelát a párja lelkébe. A bizalom megsértését nehezen bocsátja meg, és a féltékenység is jelen lehet nála. Ha őszinteséget kap, rendkívül odaadó és védelmező társ."
+    },
+    {
+     "frage": "Miért tartják titokzatosnak a Skorpiót?",
+     "antwort": "A Skorpió fix vízjegy, erős, mély érzésekkel, és nem osztja meg mindenkivel a belső világát. Előbb megfigyel, és csak akkor nyílik meg, ha megbízik valakiben. Ezért kívülről zárkózottnak vagy rejtélyesnek tűnhet. Valójában nagyon is érző, odaadó ember, aki egyszerűen óvja a legértékesebb részét, amíg meg nem győződik róla, hogy biztonságban van."
+    },
+    {
+     "frage": "Hol olvashatom a napi Skorpió horoszkópot?",
+     "antwort": "A napi Skorpió horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállásokból készülnek, és megmutatják, milyen érzelmi és szenvedélyes energiák hatnak rád. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, így sokkal személyesebb képet kapsz."
+    }
+   ]
+  },
+  {
+   "key": "Sag",
+   "slug": "nyilas",
+   "name": "Nyilas",
+   "intro": "A Nyilas mindig egy kicsit a horizonton túlra néz: a következő utazásra, a következő nagy kérdésre, a következő kalandra. Optimista, szabadságszerető és őszinte – ha szeretnéd tudni, mi hajtja ezt a világjáró jegyet, és ki illik hozzá a szerelemben, itt megtalálod.",
+   "meta_description": "Nyilas csillagjegy (november 22. – december 21.): jellem, szerelem, munka, utazás és a hozzá illő jegyek. Olvasd el ingyen a napi Nyilas horoszkópot!",
+   "staerken": [
+    "optimista",
+    "nyitott",
+    "őszinte",
+    "kalandvágyó",
+    "nagyvonalú"
+   ],
+   "schwaechen": [
+    "néha nyughatatlan",
+    "hajlamos túl sokat vállalni",
+    "nehezen köteleződik el",
+    "olykor tapintatlanul őszinte"
+   ],
+   "passt_gut": [
+    "Ari",
+    "Leo",
+    "Aqu",
+    "Lib"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Nyilashoz?",
+     "antwort": "A Nyilashoz leginkább a Kos és az Oroszlán illik, mert velük közös a tűz eleme, a lelkesedés és a kalandvágy. A Vízöntő és a Mérleg is jó társ lehet, hiszen szabadságot és szellemi izgalmat hoznak a kapcsolatba. A Halakkal és a Szűzzel több kompromisszum kell. A valódi összhangot a két teljes születési horoszkóp mutatja meg, a Soraya ezt százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Nyilas nő szerelemben?",
+     "antwort": "A Nyilas nő szerelemben vidám, őszinte és független. Olyan társat keres, aki a kalandtársa is lehet, és akivel együtt fedezheti fel a világot. Fontos neki a szabadság és a kölcsönös bizalom, a túlzott féltékenység vagy kontroll pedig elriasztja. Ha teret kap, lelkes, nagylelkű és hűséges partner, akivel minden nap hoz valami újat."
+    },
+    {
+     "frage": "Miért szeret annyira utazni a Nyilas?",
+     "antwort": "A Nyilas uralkodó bolygója a Jupiter, a kiteljesedés és a bölcsesség bolygója, ezért a Nyilas-szülött természeténél fogva vágyik az új tapasztalatokra. Az utazás számára nemcsak kikapcsolódás, hanem tanulás is: más kultúrák, gondolkodásmódok és nézőpontok megismerése. Ha éppen nem utazhat, könyvekben, tanfolyamokon vagy hosszú beszélgetésekben keresi ugyanezt a tágasságot."
+    },
+    {
+     "frage": "Hol olvashatom a napi Nyilas horoszkópot?",
+     "antwort": "A napi Nyilas horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállások alapján készülnek, és megmutatják, milyen lehetőségek és energiák várnak rád a szerelemben, a munkában és a terveidben. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, így még személyesebb lesz."
+    }
+   ]
+  },
+  {
+   "key": "Cap",
+   "slug": "bak",
+   "name": "Bak",
+   "intro": "A Bak az a jegy, aki csendben, lépésről lépésre mászik fel a hegycsúcsra, miközben mások még a térképet nézegetik. Kitartó, felelősségteljes és meglepően humoros – ha szeretnéd megérteni, mi rejlik a komoly külső mögött, olvass tovább.",
+   "meta_description": "Bak csillagjegy (december 22. – január 19.): jellem, szerelem, karrier, pénz és a hozzá illő jegyek. Olvasd el ingyen a napi Bak horoszkópot a Sorayában!",
+   "staerken": [
+    "kitartó",
+    "felelősségteljes",
+    "céltudatos",
+    "megbízható",
+    "fegyelmezett"
+   ],
+   "schwaechen": [
+    "néha túl komoly",
+    "nehezen kér segítséget",
+    "hajlamos túlhajszolni magát",
+    "visszafogottan mutatja ki az érzéseit"
+   ],
+   "passt_gut": [
+    "Tau",
+    "Vir",
+    "Pis",
+    "Sco"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Bakhoz?",
+     "antwort": "A Bakhoz leginkább a Bika és a Szűz illik, mert velük közös a föld eleme, a megbízhatóság és a hosszú távú gondolkodás. A Halak és a Skorpió is szép párost alkothat vele, hiszen érzelmi mélységet hoznak a kapcsolatba. A Kossal és a Mérleggel több kompromisszum kell. A valódi összhangot a két teljes születési horoszkóp mutatja meg, a Soraya ezt százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Bak férfi szerelemben?",
+     "antwort": "A Bak férfi szerelemben megbízható, hűséges és komoly szándékú. Óvatosan közelít, és csak akkor köteleződik el, ha biztos a dolgában. A szeretetét inkább tettekkel mutatja ki: biztonságot teremt, gondoskodik, és a nehéz időkben is kitart. Néha visszafogottnak tűnik, de mélyen érez. Jólesik neki, ha a párja türelmes, és értékeli a stabilitást."
+    },
+    {
+     "frage": "Miért tűnik komolynak a Bak?",
+     "antwort": "A Bak uralkodó bolygója a Szaturnusz, amely a felelősséget, a fegyelmet és az idő próbáját jelképezi. Ezért a Bak-szülött sokszor már fiatalon komolyan veszi a kötelességeit. Ez a komolyság azonban nem jelent ridegséget: a Bakoknak gyakran remek, száraz humoruk van, és az évek során egyre felszabadultabbak lesznek. Nála a komolyság a megbízhatóság egyik formája."
+    },
+    {
+     "frage": "Hol olvashatom a napi Bak horoszkópot?",
+     "antwort": "A napi Bak horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállásokból készülnek, és megmutatják, milyen energiák segítik a céljaidat, a munkádat és a kapcsolataidat. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, így még személyesebb képet kapsz."
+    }
+   ]
+  },
+  {
+   "key": "Aqu",
+   "slug": "vizonto",
+   "name": "Vízöntő",
+   "intro": "A Vízöntő már ma arról beszél, ami tíz év múlva mindenkinek természetes lesz. Eredeti, szabad szellemű és mélyen emberbarát – ha kíváncsi vagy, mi zajlik ebben a különleges elmében, és milyen a Vízöntő a szerelemben, olvass tovább.",
+   "meta_description": "Vízöntő csillagjegy (január 20. – február 18.): jellem, szerelem, barátság, munka és a hozzá illő jegyek. Olvasd el ingyen a napi Vízöntő horoszkópot!",
+   "staerken": [
+    "eredeti",
+    "nyitott",
+    "emberbarát",
+    "független",
+    "előrelátó"
+   ],
+   "schwaechen": [
+    "néha távolságtartó",
+    "makacs a meggyőződésében",
+    "nehezen mutatja ki az érzéseit",
+    "olykor kiszámíthatatlan"
+   ],
+   "passt_gut": [
+    "Gem",
+    "Lib",
+    "Ari",
+    "Sag"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Vízöntőhöz?",
+     "antwort": "A Vízöntőhöz leginkább az Ikrek és a Mérleg illik, mert velük közös a levegő eleme, a nyitottság és a szellemi kíváncsiság. A Kos és a Nyilas is izgalmas társ lehet, hiszen lendületet és kalandot hoznak a kapcsolatba. A Bikával és a Skorpióval több kompromisszum kell. A valódi összhangot a két teljes születési horoszkóp mutatja meg, a Soraya ezt százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Vízöntő nő szerelemben?",
+     "antwort": "A Vízöntő nő szerelemben független, őszinte és szellemes. Számára a szerelem barátsággal kezdődik, és olyan társat keres, akivel izgalmasan lehet beszélgetni, és aki tiszteli a szabadságát. A túlzott féltékenység vagy kontroll elriasztja. Ha teret és bizalmat kap, hűséges, eredeti és mindig meglepő partner, aki sosem hagyja ellaposodni a kapcsolatot."
+    },
+    {
+     "frage": "Miért tartják különcnek a Vízöntőt?",
+     "antwort": "A Vízöntő modern uralkodó bolygója az Uránusz, az újítás és a váratlan fordulatok bolygója. Ezért a Vízöntő-szülött gyakran másképp gondolkodik, mint a többség, és nem fél a saját útját járni. Ez kívülről különcségnek tűnhet, valójában azonban az eredetiség és a bátorság jele. Sok Vízöntő éppen ezzel inspirálja a környezetét."
+    },
+    {
+     "frage": "Hol olvashatom a napi Vízöntő horoszkópot?",
+     "antwort": "A napi Vízöntő horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállások alapján készülnek, és megmutatják, milyen energiák hatnak a terveidre, a kapcsolataidra és a kreatív ötleteidre. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, így még személyesebb lesz."
+    }
+   ]
+  },
+  {
+   "key": "Pis",
+   "slug": "halak",
+   "name": "Halak",
+   "intro": "A Halak az állatöv álmodozója, aki egy dallamból, egy esőcseppből vagy egy idegen mosolyából is történetet sző. Érzékeny, empatikus és kreatív – ha szeretnéd megérteni, mi rejlik ebben a mély, intuitív lélekben, és milyen a Halak a szerelemben, itt megtalálod.",
+   "meta_description": "Halak csillagjegy (február 19. – március 20.): jellem, szerelem, munka és a hozzá illő jegyek. Olvasd el ingyen a napi Halak horoszkópot a Sorayában!",
+   "staerken": [
+    "empatikus",
+    "kreatív",
+    "intuitív",
+    "gyengéd",
+    "nagylelkű"
+   ],
+   "schwaechen": [
+    "néha álmodozó",
+    "nehezen húz határokat",
+    "hajlamos túl sokat adni",
+    "érzékeny a feszültségre"
+   ],
+   "passt_gut": [
+    "Can",
+    "Sco",
+    "Tau",
+    "Cap"
+   ],
+   "faq": [
+    {
+     "frage": "Melyik csillagjegy illik a Halakhoz?",
+     "antwort": "A Halakhoz leginkább a Rák és a Skorpió illik, mert velük közös a víz eleme és az érzelmi mélység. A Bika és a Bak is szép párost alkothat vele, hiszen stabilitást és biztonságot hoznak a kapcsolatba. Az Ikrekkel és a Nyilassal több kompromisszum kell. A valódi összhangot a két teljes születési horoszkóp mutatja meg, a Soraya ezt százalékban is kiszámolja."
+    },
+    {
+     "frage": "Milyen a Halak férfi szerelemben?",
+     "antwort": "A Halak férfi szerelemben gyengéd, romantikus és nagyon figyelmes. Megérzi a párja hangulatát, és szívesen lepi meg apró, költői gesztusokkal. Mélyen kötődik, odaadó társ, aki a lelki kapcsolatot tartja a legfontosabbnak. Néha idealizálja a szerelmet, és nehezen húz határokat. Jólesik neki, ha a párja türelmes, őszinte, és stabil hátteret ad."
+    },
+    {
+     "frage": "Miért tartják a Halakat a legérzékenyebb jegynek?",
+     "antwort": "A Halak változó vízjegy, modern uralkodó bolygója pedig a Neptunusz, az álmok és az intuíció bolygója. Ezért a Halak-szülött különösen fogékony mások érzéseire és a környezete hangulatára. Ez az érzékenység nem gyengeség, hanem az empátia és a kreativitás forrása. Ha jól vigyáz az energiáira, éppen ez segíti abban, hogy mélyen kapcsolódjon másokhoz és a saját alkotóerejéhez."
+    },
+    {
+     "frage": "Hol olvashatom a napi Halak horoszkópot?",
+     "antwort": "A napi Halak horoszkópot ingyen olvashatod a Soraya alkalmazásban, fiók nélkül is. A szövegek minden nap a valódi bolygóállásokból készülnek, és megmutatják, milyen érzelmi és kreatív energiák vesznek körül. Ha megadod a születési adataidat, a napi előrejelzés a saját horoszkópodhoz igazodik, így még személyesebb képet kapsz arról, mi vár rád."
+    }
+   ]
+  }
+ ],
+ "it": [
+  {
+   "key": "Ari",
+   "slug": "ariete",
+   "name": "Ariete",
+   "intro": "L'Ariete apre lo zodiaco come la prima luce di primavera: diretto, vivace, impossibile da ignorare. Se sei nato tra il 21 marzo e il 19 aprile, conosci bene quella scintilla che ti spinge a partire prima ancora che gli altri abbiano finito di pensare.",
+   "meta_description": "Caratteristiche dell'Ariete, amore, lavoro e affinità: scopri cosa rende unico il primo segno dello zodiaco e leggi gratis il tuo oroscopo di oggi.",
+   "staerken": [
+    "coraggioso",
+    "spontaneo",
+    "sincero",
+    "intraprendente",
+    "generoso"
+   ],
+   "schwaechen": [
+    "a volte impaziente",
+    "un po' impulsivo",
+    "fatica con la routine",
+    "schietto senza filtri"
+   ],
+   "passt_gut": [
+    "Leo",
+    "Sag",
+    "Gem",
+    "Aqu"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche principali dell'Ariete?",
+     "antwort": "L'Ariete è coraggioso, diretto e pieno di energia. Ama iniziare cose nuove, affronta le sfide senza paura e dice ciò che pensa. Governato da Marte, ha un temperamento vivace ma non porta rancore. Può essere impaziente, però il suo entusiasmo è contagioso e spesso trascina anche gli altri."
+    },
+    {
+     "frage": "Con chi è compatibile l'Ariete?",
+     "antwort": "Secondo l'astrologia classica l'Ariete si intende bene con gli altri segni di Fuoco, Leone e Sagittario, e con i segni d'Aria Gemelli e Acquario. Con Cancro e Capricorno l'intesa richiede più pazienza. Per un quadro reale conviene confrontare i temi natali completi, non solo il segno solare."
+    },
+    {
+     "frage": "Com'è l'uomo Ariete in amore?",
+     "antwort": "L'uomo Ariete in amore è passionale, diretto e protettivo. Non ama i giochi di attesa: se è interessato, lo dimostra subito. Cerca una partner vivace e indipendente, con cui condividere avventure. Ha bisogno di sentirsi ammirato, e dà il meglio di sé quando la relazione resta stimolante."
+    },
+    {
+     "frage": "Dove posso leggere l'oroscopo Ariete di oggi?",
+     "antwort": "Puoi leggere gratis l'oroscopo Ariete di oggi nell'app Soraya, basato sui transiti reali del giorno. Se inserisci data, ora e luogo di nascita, ricevi anche un oroscopo personale che tiene conto del tuo ascendente e della posizione della tua Luna, molto più preciso del solo segno."
+    }
+   ]
+  },
+  {
+   "key": "Tau",
+   "slug": "toro",
+   "name": "Toro",
+   "intro": "Il Toro nasce quando la primavera si fa piena: prati in fiore, giornate più lunghe, profumo di terra bagnata. Se sei nato tra il 20 aprile e il 20 maggio, sai che la bellezza non va rincorsa, ma coltivata con calma, giorno dopo giorno.",
+   "meta_description": "Caratteristiche del Toro, amore, lavoro e affinità di coppia: scopri il segno più sensuale e affidabile dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "affidabile",
+    "paziente",
+    "sensuale",
+    "leale",
+    "concreto"
+   ],
+   "schwaechen": [
+    "a volte testardo",
+    "lento ad accettare il nuovo",
+    "un po' possessivo",
+    "ama troppo le comodità"
+   ],
+   "passt_gut": [
+    "Vir",
+    "Cap",
+    "Can",
+    "Pis"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche del Toro?",
+     "antwort": "Il Toro è affidabile, paziente e legato ai piaceri della vita. Governato da Venere, ama la bellezza, il comfort e le relazioni stabili. È un segno concreto, che costruisce con calma e mantiene la parola data. Può essere testardo e restio al cambiamento, ma è un amico e un partner di grande lealtà."
+    },
+    {
+     "frage": "Con chi è compatibile il Toro?",
+     "antwort": "Il Toro trova grande intesa con Vergine e Capricorno, gli altri segni di Terra, e con Cancro e Pesci, segni d'Acqua che apprezzano la sua stabilità. Con Leone e Acquario possono esserci più attriti. Per capire davvero una coppia, però, è utile confrontare l'intero tema natale, compresi Luna e Venere."
+    },
+    {
+     "frage": "Com'è la donna Toro in amore?",
+     "antwort": "La donna Toro in amore è dolce, sensuale e molto leale. Non si concede subito: ha bisogno di fiducia e di gesti sinceri. Ama le attenzioni concrete, una cena curata, un ambiente accogliente. Quando si sente al sicuro è una compagna presente e generosa, che costruisce il rapporto con pazienza."
+    },
+    {
+     "frage": "Come leggere l'oroscopo Toro di oggi?",
+     "antwort": "Nell'app Soraya trovi ogni giorno l'oroscopo Toro gratuito, calcolato sui movimenti reali dei pianeti. Inserendo i tuoi dati di nascita ottieni anche un oroscopo personale, che considera ascendente e Luna. È un modo semplice per capire quali energie colorano la tua giornata."
+    }
+   ]
+  },
+  {
+   "key": "Gem",
+   "slug": "gemelli",
+   "name": "Gemelli",
+   "intro": "I Gemelli arrivano con le prime sere d'estate, quando le piazze si riempiono di voci e le conversazioni durano fino a tardi. Se sei nato tra il 21 maggio e il 20 giugno, la tua mente è una finestra sempre aperta sul mondo.",
+   "meta_description": "Caratteristiche dei Gemelli, amore, lavoro e compatibilità: scopri il segno più curioso e brillante dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "curioso",
+    "brillante",
+    "versatile",
+    "comunicativo",
+    "spiritoso"
+   ],
+   "schwaechen": [
+    "a volte dispersivo",
+    "un po' incostante",
+    "nervoso quando si annoia",
+    "evita i discorsi pesanti"
+   ],
+   "passt_gut": [
+    "Lib",
+    "Aqu",
+    "Leo",
+    "Ari"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche dei Gemelli?",
+     "antwort": "I Gemelli sono curiosi, comunicativi e brillanti. Governati da Mercurio, amano imparare, parlare e conoscere persone nuove. Si adattano facilmente ai cambiamenti e hanno un ottimo senso dell'umorismo. Possono essere incostanti o dispersivi, ma la loro mente vivace rende ogni incontro stimolante e mai banale."
+    },
+    {
+     "frage": "Con chi sono compatibili i Gemelli?",
+     "antwort": "I Gemelli si trovano bene con Bilancia e Acquario, segni d'Aria come loro, e con Ariete e Leone, segni di Fuoco pieni di energia. Con Vergine e Pesci l'intesa richiede più impegno. Per valutare una coppia in modo completo è utile guardare l'intero tema natale di entrambi."
+    },
+    {
+     "frage": "Com'è l'uomo Gemelli in amore?",
+     "antwort": "L'uomo Gemelli in amore è affascinante, divertente e imprevedibile. Corteggia con le parole e ama una partner intelligente, capace di tenergli testa nelle conversazioni. Ha bisogno di libertà e di novità: una relazione che lo stimola mentalmente lo rende un compagno presente, attento e molto giocoso."
+    },
+    {
+     "frage": "Dove trovo l'oroscopo Gemelli di oggi?",
+     "antwort": "Ogni giorno puoi leggere gratis l'oroscopo Gemelli nell'app Soraya, basato sui transiti reali dei pianeti. Con data, ora e luogo di nascita ricevi anche un oroscopo personalizzato che tiene conto di ascendente e Luna, per capire meglio le energie della tua giornata."
+    }
+   ]
+  },
+  {
+   "key": "Can",
+   "slug": "cancro",
+   "name": "Cancro",
+   "intro": "Il Cancro nasce nei giorni più lunghi dell'anno, quando le notti d'estate sono illuminate da una Luna grande e luminosa. Se sei nato tra il 21 giugno e il 22 luglio, porti dentro di te un mare di emozioni e un cuore che sa proteggere.",
+   "meta_description": "Caratteristiche del Cancro, amore, famiglia e compatibilità: scopri il segno più sensibile e protettivo dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "empatico",
+    "protettivo",
+    "intuitivo",
+    "leale",
+    "premuroso"
+   ],
+   "schwaechen": [
+    "a volte permaloso",
+    "lunatico come la Luna",
+    "si chiude nel guscio",
+    "fatica a lasciar andare"
+   ],
+   "passt_gut": [
+    "Sco",
+    "Pis",
+    "Vir",
+    "Tau"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche del Cancro?",
+     "antwort": "Il Cancro è sensibile, protettivo e molto intuitivo. Governato dalla Luna, vive le emozioni in profondità e dà grande valore alla casa, alla famiglia e ai ricordi. All'inizio può sembrare riservato, ma con chi ama è caloroso e premuroso. A volte è lunatico e tende a chiudersi quando si sente ferito."
+    },
+    {
+     "frage": "Con chi è compatibile il Cancro?",
+     "antwort": "Il Cancro trova grande affinità con Scorpione e Pesci, gli altri segni d'Acqua, e con Toro e Vergine, segni di Terra che gli danno stabilità. Con Ariete e Bilancia l'intesa può essere più complessa. Per un confronto davvero utile conviene esaminare i temi natali completi di entrambi."
+    },
+    {
+     "frage": "Com'è la donna Cancro in amore?",
+     "antwort": "La donna Cancro in amore è dolce, romantica e profondamente leale. Ha bisogno di sentirsi al sicuro prima di aprirsi, e cerca un partner affidabile e rispettoso. Si prende cura di chi ama con piccoli gesti quotidiani. Quando si sente compresa, è una compagna affettuosa e molto presente."
+    },
+    {
+     "frage": "Come posso leggere l'oroscopo Cancro di oggi?",
+     "antwort": "Puoi leggere gratis l'oroscopo Cancro di oggi nell'app Soraya, calcolato sui transiti reali. Inserendo data, ora e luogo di nascita ottieni anche indicazioni personali basate sul tuo ascendente e sulla tua Luna, particolarmente importante per un segno lunare come il Cancro."
+    }
+   ]
+  },
+  {
+   "key": "Leo",
+   "slug": "leone",
+   "name": "Leone",
+   "intro": "Il Leone nasce nel cuore dell'estate, quando il Sole brilla al massimo e le giornate profumano di mare e di vacanza. Se sei nato tra il 23 luglio e il 22 agosto, sai illuminare una stanza con un sorriso e scaldare chi ti sta accanto.",
+   "meta_description": "Caratteristiche del Leone, amore, lavoro e con chi è compatibile: scopri il segno più solare e generoso dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "generoso",
+    "carismatico",
+    "leale",
+    "creativo",
+    "ottimista"
+   ],
+   "schwaechen": [
+    "a volte orgoglioso",
+    "bisognoso di conferme",
+    "un po' teatrale",
+    "fatica ad ammettere errori"
+   ],
+   "passt_gut": [
+    "Sag",
+    "Ari",
+    "Lib",
+    "Gem"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche del Leone?",
+     "antwort": "Il Leone è generoso, carismatico e pieno di calore. Governato dal Sole, ama esprimersi, creare e stare al centro della scena. È leale verso chi ama e sa motivare gli altri con il suo entusiasmo. Può essere orgoglioso e sensibile alle critiche, ma il suo cuore resta grande e sincero."
+    },
+    {
+     "frage": "Con chi è compatibile il Leone?",
+     "antwort": "Il Leone si intende molto bene con Ariete e Sagittario, segni di Fuoco come lui, e con Gemelli e Bilancia, segni d'Aria che lo stimolano. Con Toro e Scorpione la relazione può essere intensa ma impegnativa. Per conoscere davvero l'affinità di coppia è utile confrontare i temi natali completi."
+    },
+    {
+     "frage": "Com'è l'uomo Leone in amore?",
+     "antwort": "L'uomo Leone in amore è romantico, generoso e protettivo. Ama corteggiare con gesti plateali e desidera una partner di cui andare fiero. Ha bisogno di sentirsi ammirato e apprezzato. Quando si sente amato, è un compagno leale, passionale e capace di grandi attenzioni quotidiane."
+    },
+    {
+     "frage": "Dove leggere l'oroscopo Leone di oggi?",
+     "antwort": "Nell'app Soraya trovi gratis ogni giorno l'oroscopo Leone, calcolato sui movimenti reali dei pianeti. Se inserisci i tuoi dati di nascita, ricevi anche un oroscopo personale che considera ascendente e Luna, per capire con più precisione come vivere al meglio la tua giornata."
+    }
+   ]
+  },
+  {
+   "key": "Vir",
+   "slug": "vergine",
+   "name": "Vergine",
+   "intro": "La Vergine nasce alla fine dell'estate, nel tempo della vendemmia e del raccolto, quando si mette ordine e ci si prepara a ricominciare. Se sei nato tra il 23 agosto e il 22 settembre, vedi i dettagli che agli altri sfuggono.",
+   "meta_description": "Caratteristiche della Vergine, amore, lavoro e compatibilità: scopri il segno più attento e premuroso dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "preciso",
+    "affidabile",
+    "analitico",
+    "premuroso",
+    "modesto"
+   ],
+   "schwaechen": [
+    "a volte perfezionista",
+    "tende a preoccuparsi",
+    "un po' critico",
+    "fatica a rilassarsi"
+   ],
+   "passt_gut": [
+    "Cap",
+    "Tau",
+    "Sco",
+    "Can"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche della Vergine?",
+     "antwort": "La Vergine è precisa, intelligente e premurosa. Governata da Mercurio, ha una mente analitica e un grande senso pratico. Ama l'ordine, la cura dei dettagli e sentirsi utile. È discreta e spesso modesta. Può essere perfezionista e preoccuparsi troppo, ma è tra i segni più affidabili dello zodiaco."
+    },
+    {
+     "frage": "Con chi è compatibile la Vergine?",
+     "antwort": "La Vergine trova grande intesa con Toro e Capricorno, gli altri segni di Terra, e con Cancro e Scorpione, segni d'Acqua che apprezzano la sua attenzione. Con Gemelli e Sagittario l'equilibrio richiede più impegno. Per un quadro completo è utile confrontare i temi natali di entrambi."
+    },
+    {
+     "frage": "Com'è l'uomo Vergine in amore?",
+     "antwort": "L'uomo Vergine in amore è riservato, attento e molto leale. Non ama i gesti eccessivi, ma dimostra affetto con premure quotidiane e affidabilità. Ha bisogno di fiducia e di una partner sincera e intelligente. Quando si sente al sicuro, è un compagno dolce, presente e sorprendentemente tenero."
+    },
+    {
+     "frage": "Dove posso leggere l'oroscopo Vergine di oggi?",
+     "antwort": "Puoi leggere gratis l'oroscopo Vergine di oggi nell'app Soraya, basato sui transiti reali dei pianeti. Con data, ora e luogo di nascita ricevi anche un oroscopo personale che considera ascendente e Luna, così le indicazioni diventano davvero tue e ti aiutano a organizzare la giornata con più serenità."
+    }
+   ]
+  },
+  {
+   "key": "Lib",
+   "slug": "bilancia",
+   "name": "Bilancia",
+   "intro": "La Bilancia nasce all'equinozio d'autunno, quando giorno e notte si equivalgono e la luce diventa dorata. Se sei nato tra il 23 settembre e il 22 ottobre, cerchi armonia ovunque: nelle relazioni, negli spazi, persino nelle parole.",
+   "meta_description": "Caratteristiche della Bilancia, amore, lavoro e affinità: scopri il segno più elegante e diplomatico dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "diplomatico",
+    "elegante",
+    "gentile",
+    "giusto",
+    "socievole"
+   ],
+   "schwaechen": [
+    "a volte indeciso",
+    "evita i conflitti",
+    "vuole piacere a tutti",
+    "un po' dipendente dagli altri"
+   ],
+   "passt_gut": [
+    "Aqu",
+    "Gem",
+    "Sag",
+    "Leo"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche della Bilancia?",
+     "antwort": "La Bilancia è elegante, diplomatica e amante dell'armonia. Governata da Venere, ha un forte senso estetico e un grande talento per le relazioni. Sa vedere tutti i lati di una questione ed è un'ottima mediatrice. Può essere indecisa ed evitare i conflitti, ma porta bellezza e gentilezza ovunque."
+    },
+    {
+     "frage": "Con chi è compatibile la Bilancia?",
+     "antwort": "La Bilancia trova ottima intesa con Gemelli e Acquario, gli altri segni d'Aria, e con Leone e Sagittario, segni di Fuoco che la stimolano. Con Cancro e Capricorno l'equilibrio richiede più dialogo. Per valutare davvero una coppia è utile confrontare i temi natali completi, non solo il segno."
+    },
+    {
+     "frage": "Com'è la donna Bilancia in amore?",
+     "antwort": "La donna Bilancia in amore è romantica, raffinata e molto attenta all'armonia di coppia. Ama essere corteggiata con eleganza e cerca un partner gentile, intelligente e rispettoso. Dà grande valore al dialogo e all'equilibrio. Quando si sente amata, è una compagna dolce, presente e affascinante."
+    },
+    {
+     "frage": "Come leggere l'oroscopo Bilancia di oggi?",
+     "antwort": "Nell'app Soraya trovi gratis ogni giorno l'oroscopo Bilancia, calcolato sui transiti reali dei pianeti. Inserendo data, ora e luogo di nascita ricevi anche un oroscopo personale che considera ascendente e Luna, per un quadro più preciso e su misura per te."
+    }
+   ]
+  },
+  {
+   "key": "Sco",
+   "slug": "scorpione",
+   "name": "Scorpione",
+   "intro": "Lo Scorpione nasce nel cuore dell'autunno, quando le foglie cadono e la natura si ritira per rigenerarsi. Se sei nato tra il 23 ottobre e il 21 novembre, conosci il fascino delle profondità e il potere della trasformazione.",
+   "meta_description": "Caratteristiche dello Scorpione, com'è in amore e con chi è compatibile: scopri il segno più intenso e magnetico e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "intenso",
+    "leale",
+    "intuitivo",
+    "determinato",
+    "magnetico"
+   ],
+   "schwaechen": [
+    "a volte geloso",
+    "tende al controllo",
+    "fatica a perdonare",
+    "molto riservato"
+   ],
+   "passt_gut": [
+    "Pis",
+    "Can",
+    "Cap",
+    "Vir"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche dello Scorpione?",
+     "antwort": "Lo Scorpione è intenso, magnetico e molto intuitivo. Governato da Plutone e tradizionalmente da Marte, vive emozioni profonde e cerca sempre la verità. È riservato ma estremamente leale con chi conquista la sua fiducia. Può essere geloso o diffidente, ma ha una straordinaria capacità di rinascere dalle difficoltà."
+    },
+    {
+     "frage": "Con chi è compatibile lo Scorpione?",
+     "antwort": "Lo Scorpione trova grande affinità con Cancro e Pesci, gli altri segni d'Acqua, e con Vergine e Capricorno, segni di Terra che gli danno stabilità. Con Leone e Acquario l'intesa può essere intensa ma impegnativa. Per un'analisi completa è utile confrontare i temi natali di entrambi i partner."
+    },
+    {
+     "frage": "Com'è l'uomo Scorpione in amore?",
+     "antwort": "L'uomo Scorpione in amore è passionale, intenso e molto protettivo. Non ama le relazioni superficiali: cerca un legame profondo, basato sulla fiducia totale. Può essere geloso e riservato all'inizio, ma quando si sente sicuro è un partner devoto, presente e capace di grande tenerezza."
+    },
+    {
+     "frage": "Dove trovo l'oroscopo Scorpione di oggi?",
+     "antwort": "Puoi leggere gratis l'oroscopo Scorpione di oggi nell'app Soraya, basato sui transiti reali dei pianeti. Inserendo i tuoi dati di nascita ottieni anche un oroscopo personale che tiene conto di ascendente e Luna, per scoprire in profondità le energie della giornata."
+    }
+   ]
+  },
+  {
+   "key": "Sag",
+   "slug": "sagittario",
+   "name": "Sagittario",
+   "intro": "Il Sagittario nasce quando l'anno volge al termine e le prime luci di festa si accendono nelle città. Se sei nato tra il 22 novembre e il 21 dicembre, hai lo sguardo rivolto all'orizzonte e una freccia sempre pronta a puntare lontano.",
+   "meta_description": "Caratteristiche del Sagittario, amore, lavoro e compatibilità: scopri il segno più ottimista e avventuroso dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "ottimista",
+    "avventuroso",
+    "sincero",
+    "generoso",
+    "aperto"
+   ],
+   "schwaechen": [
+    "a volte irrequieto",
+    "schietto senza filtri",
+    "fatica con gli impegni",
+    "un po' impaziente"
+   ],
+   "passt_gut": [
+    "Ari",
+    "Leo",
+    "Aqu",
+    "Lib"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche del Sagittario?",
+     "antwort": "Il Sagittario è ottimista, avventuroso e amante della libertà. Governato da Giove, ha una grande sete di conoscenza e ama viaggiare, imparare e scoprire. È sincero e generoso, con un'allegria contagiosa. Può essere irrequieto o troppo diretto, ma porta sempre entusiasmo e una prospettiva ampia nella vita degli altri."
+    },
+    {
+     "frage": "Con chi è compatibile il Sagittario?",
+     "antwort": "Il Sagittario si intende molto bene con Ariete e Leone, gli altri segni di Fuoco, e con Bilancia e Acquario, segni d'Aria che rispettano la sua libertà. Con Vergine e Pesci l'intesa richiede più pazienza. Per conoscere l'affinità reale di una coppia è utile confrontare i temi natali completi."
+    },
+    {
+     "frage": "Com'è l'uomo Sagittario in amore?",
+     "antwort": "L'uomo Sagittario in amore è spontaneo, divertente e molto sincero. Ama una partner indipendente, curiosa e pronta all'avventura. Ha bisogno di sentirsi libero e non sopporta le gelosie eccessive. Quando trova la persona giusta, è un compagno leale, ottimista e capace di rendere speciale ogni giornata."
+    },
+    {
+     "frage": "Dove leggere l'oroscopo Sagittario di oggi?",
+     "antwort": "Nell'app Soraya puoi leggere gratis ogni giorno l'oroscopo Sagittario, calcolato sui movimenti reali dei pianeti. Inserendo data, ora e luogo di nascita ricevi anche un oroscopo personale che considera ascendente e Luna, per orientare meglio la tua giornata e cogliere le occasioni giuste."
+    }
+   ]
+  },
+  {
+   "key": "Cap",
+   "slug": "capricorno",
+   "name": "Capricorno",
+   "intro": "Il Capricorno nasce al solstizio d'inverno, quando le notti sono più lunghe e la luce comincia lentamente a tornare. Se sei nato tra il 22 dicembre e il 19 gennaio, sai che le cose più grandi si costruiscono un passo dopo l'altro.",
+   "meta_description": "Caratteristiche del Capricorno, amore, carriera e compatibilità: scopri il segno più tenace e affidabile dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "ambizioso",
+    "responsabile",
+    "paziente",
+    "affidabile",
+    "concreto"
+   ],
+   "schwaechen": [
+    "a volte troppo serio",
+    "un po' rigido",
+    "fatica a mostrare emozioni",
+    "tende al pessimismo"
+   ],
+   "passt_gut": [
+    "Tau",
+    "Vir",
+    "Pis",
+    "Sco"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche del Capricorno?",
+     "antwort": "Il Capricorno è ambizioso, responsabile e molto tenace. Governato da Saturno, ha un grande senso del dovere e la pazienza per raggiungere obiettivi a lungo termine. È affidabile e leale, con un umorismo sottile. Può essere troppo serio o rigido, ma con il tempo sa diventare più leggero e sereno."
+    },
+    {
+     "frage": "Con chi è compatibile il Capricorno?",
+     "antwort": "Il Capricorno trova grande affinità con Toro e Vergine, gli altri segni di Terra, e con Scorpione e Pesci, segni d'Acqua che ne ammorbidiscono la serietà. Con Ariete e Bilancia l'intesa richiede più dialogo. Per conoscere davvero una coppia è utile confrontare i temi natali completi di entrambi."
+    },
+    {
+     "frage": "Com'è l'uomo Capricorno in amore?",
+     "antwort": "L'uomo Capricorno in amore è serio, leale e molto protettivo. Non si espone subito: ha bisogno di tempo e di fiducia. Dimostra affetto con la presenza costante e con progetti concreti per il futuro. Quando si apre, rivela una dolcezza sorprendente e una dedizione che dura nel tempo."
+    },
+    {
+     "frage": "Come posso leggere l'oroscopo Capricorno di oggi?",
+     "antwort": "Puoi leggere gratis l'oroscopo Capricorno di oggi nell'app Soraya, basato sui transiti reali dei pianeti. Con data, ora e luogo di nascita ottieni anche un oroscopo personale che considera ascendente e Luna, per pianificare la giornata con più consapevolezza e calma."
+    }
+   ]
+  },
+  {
+   "key": "Aqu",
+   "slug": "acquario",
+   "name": "Acquario",
+   "intro": "L'Acquario nasce nel cuore dell'inverno, quando il cielo notturno è limpido e le stelle sembrano più vicine. Se sei nato tra il 20 gennaio e il 18 febbraio, guardi il mondo con occhi diversi e immagini già il futuro.",
+   "meta_description": "Caratteristiche dell'Acquario, amore, lavoro e affinità: scopri il segno più originale e visionario dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "originale",
+    "visionario",
+    "indipendente",
+    "altruista",
+    "aperto"
+   ],
+   "schwaechen": [
+    "a volte distaccato",
+    "un po' testardo",
+    "fatica con le emozioni",
+    "imprevedibile"
+   ],
+   "passt_gut": [
+    "Gem",
+    "Lib",
+    "Ari",
+    "Sag"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche dell'Acquario?",
+     "antwort": "L'Acquario è originale, indipendente e visionario. Governato da Urano e tradizionalmente da Saturno, ama le idee nuove, la libertà e le cause collettive. È un amico leale e una mente aperta, capace di vedere soluzioni inedite. Può sembrare distaccato o imprevedibile, ma ha un cuore sinceramente attento agli altri."
+    },
+    {
+     "frage": "Con chi è compatibile l'Acquario?",
+     "antwort": "L'Acquario trova ottima intesa con Gemelli e Bilancia, gli altri segni d'Aria, e con Ariete e Sagittario, segni di Fuoco pieni di entusiasmo. Con Toro e Scorpione l'equilibrio richiede più impegno. Per un quadro davvero completo di una coppia è utile confrontare i temi natali di entrambi."
+    },
+    {
+     "frage": "Com'è la donna Acquario in amore?",
+     "antwort": "La donna Acquario in amore è libera, brillante e molto leale. Cerca un partner intelligente, che la tratti da pari e rispetti la sua indipendenza. Ama le conversazioni profonde e le esperienze fuori dal comune. Quando si sente compresa, è una compagna sincera, originale e capace di grande complicità."
+    },
+    {
+     "frage": "Dove trovo l'oroscopo Acquario di oggi?",
+     "antwort": "Nell'app Soraya puoi leggere gratis ogni giorno l'oroscopo Acquario, basato sui transiti reali dei pianeti. Inserendo data, ora e luogo di nascita ricevi anche un oroscopo personale che tiene conto di ascendente e Luna, per capire meglio le energie della giornata."
+    }
+   ]
+  },
+  {
+   "key": "Pis",
+   "slug": "pesci",
+   "name": "Pesci",
+   "intro": "I Pesci chiudono lo zodiaco negli ultimi giorni d'inverno, quando la neve si scioglie e l'acqua torna a scorrere verso il mare. Se sei nato tra il 19 febbraio e il 20 marzo, porti in te un oceano di sogni, intuizioni e compassione.",
+   "meta_description": "Caratteristiche dei Pesci, amore, lavoro e compatibilità: scopri il segno più sognatore ed empatico dello zodiaco e leggi gratis l'oroscopo di oggi.",
+   "staerken": [
+    "empatico",
+    "creativo",
+    "intuitivo",
+    "romantico",
+    "generoso"
+   ],
+   "schwaechen": [
+    "a volte troppo sognatore",
+    "fatica a dire di no",
+    "tende a evitare i problemi",
+    "un po' distratto"
+   ],
+   "passt_gut": [
+    "Can",
+    "Sco",
+    "Tau",
+    "Cap"
+   ],
+   "faq": [
+    {
+     "frage": "Quali sono le caratteristiche dei Pesci?",
+     "antwort": "I Pesci sono sensibili, empatici e molto creativi. Governati da Nettuno e tradizionalmente da Giove, vivono in un mondo ricco di emozioni, intuizioni e fantasia. Sono generosi e capaci di grande compassione. Possono essere sognatori o faticare con la vita pratica, ma portano dolcezza e poesia nelle vite altrui."
+    },
+    {
+     "frage": "Con chi sono compatibili i Pesci?",
+     "antwort": "I Pesci trovano grande affinità con Cancro e Scorpione, gli altri segni d'Acqua, e con Toro e Capricorno, segni di Terra che offrono stabilità. Con Gemelli e Sagittario l'intesa richiede più pazienza e dialogo. Per conoscere davvero una coppia è utile confrontare i temi natali completi di entrambi."
+    },
+    {
+     "frage": "Com'è l'uomo Pesci in amore?",
+     "antwort": "L'uomo Pesci in amore è romantico, dolce e molto premuroso. Intuisce i bisogni della partner senza bisogno di parole e ama i gesti poetici. Cerca una relazione profonda e autentica. A volte è sfuggente o idealista, ma quando si sente amato è un compagno tenero, fedele e presente."
+    },
+    {
+     "frage": "Come leggere l'oroscopo Pesci di oggi?",
+     "antwort": "Puoi leggere gratis l'oroscopo Pesci di oggi nell'app Soraya, calcolato sui transiti reali dei pianeti. Inserendo data, ora e luogo di nascita ricevi anche un oroscopo personale che considera ascendente e Luna, per vivere la tua giornata in sintonia con il cielo."
+    }
+   ]
+  }
+ ]
+}
