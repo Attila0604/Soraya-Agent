@@ -13,6 +13,8 @@ Railway-Variablen (alle optional):
   TAGESPLAN_STUNDE    ab dieser Stunde (Wiener Zeit) wird erstellt, Standard 6
 """
 
+import copy
+import json
 import os
 import random
 import re
@@ -686,24 +688,74 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     pruefe = lambda p: redaktion.pruefe_post(p, sprache) + tageszeit_befunde(p, zeiten) + stil_befunde(p, sprache) \
         + zeichen_befunde(p)  # noqa: E731
     befunde = {i: pruefe(p) for i, p in enumerate(posts)}
-    if any(redaktion.schwer(b) or redaktion.leer(b) or any(x.startswith((TAGESZEIT, STIL, ZEICHEN_FEHLT)) for x in b)
-           for b in befunde.values()):
+    anzahl = lambda bf: sum(1 for b in bf.values() if hart(b))      # noqa: E731
+    if anzahl(befunde):
         hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
         korrigiert = _aufbereiten(frage_json(
             system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,
             SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"])
         if korrigiert:
-            posts = korrigiert
-            befunde = {i: pruefe(p) for i, p in enumerate(posts)}
+            neu = {i: pruefe(p) for i, p in enumerate(korrigiert)}
+            if anzahl(neu) <= anzahl(befunde):          # nur nehmen, wenn es nicht schlechter geworden ist
+                posts, befunde = korrigiert, neu
     if not posts:
         raise RuntimeError("Claude hat keine Posts geliefert.")
-    # Muttersprachliches Lektorat (Standard: Ungarisch) -- danach Pruefung neu, falls Texte sich geaendert haben
+    # Was jetzt noch hart daneben ist (z. B. 2. Reel ohne drei Zeichen, Morgen-Post mit "heute Abend"):
+    # nur diesen einen Eintrag gezielt nachbessern lassen, hoechstens zweimal
+    for i in range(len(posts)):
+        for _ in range(NACHBESSERN_MAX):
+            if not hart(befunde[i]):
+                break
+            try:
+                neu = nachbessern(system, frage, posts[i], befunde[i], sprache, thema["name"])
+            except Exception as ex:  # noqa: BLE001 -- dann bleibt der Eintrag, wie er ist
+                print(f"[Tagesplan] Nachbessern {sprache} {posts[i].get('art')}: {ex}", flush=True)
+                break
+            if neu:
+                posts[i], befunde[i] = neu, pruefe(neu)
+    # Muttersprachliches Lektorat (Standard: Ungarisch) -- danach Pruefung neu; bringt es einen harten Fehler
+    # zurueck (z. B. die drei Zeichen aus dem Hook entfernt), gilt fuer diesen Eintrag die Fassung davor
+    vorher = copy.deepcopy(posts)
     if lektorat.pruefen(posts, sprache):
-        befunde = {i: pruefe(p) for i, p in enumerate(posts)}
+        for i, p in enumerate(posts):
+            b = pruefe(p)
+            if hart(b) and not hart(befunde[i]):
+                posts[i] = vorher[i]
+            else:
+                befunde[i] = b
     for i, p in enumerate(posts):
         p["_pruefung"] = befunde.get(i) or []
         p["_thema"] = thema["name"]
     return posts
+
+
+NACHBESSERN_MAX = 2
+
+
+def hart(befunde: list[str]) -> bool:
+    """Befunde, die einen neuen Versuch rechtfertigen (ohne das Posten zu blockieren, ausser redaktion.schwer)."""
+    return redaktion.schwer(befunde) or redaktion.leer(befunde) or any(
+        x.startswith((TAGESZEIT, STIL, ZEICHEN_FEHLT)) for x in befunde)
+
+
+def nachbessern(system: str, frage: str, post: dict, befunde: list[str], sprache: str, thema_name: str) -> dict | None:
+    """Ein einzelner Eintrag wird gezielt ueberarbeitet (kleiner, guenstiger Aufruf)."""
+    item = SCHEMA["properties"]["posts"]["items"]
+    schema = {"type": "object", "properties": {"post": item}, "required": ["post"], "additionalProperties": False}
+    roh = {k: v for k, v in post.items() if not k.startswith("_") and k != "sprache"}
+    roh["skript"] = post.get("skript") or {"hook": "", "szenen": [], "einblendungen": [], "schluss": ""}
+    roh["bild_punkte"], roh["folien"], roh["motiv"] = post.get("_bild_punkte") or [], post.get("_folien") or [], post.get("_motiv") or ""
+    welcher = "das ZWEITE Reel des Tages" if post.get("_reel_nr") == 2 else f"der Eintrag „{post.get('art')}“"
+    auftrag = (f"\n\nÜberarbeite jetzt NUR {welcher}. Er hat diese Probleme – behebe sie vollständig und behalte alles "
+               "andere (Thema, Ton, Länge, Sprache) bei:\n- " + "\n- ".join(befunde)
+               + "\n\nDer Eintrag bisher (JSON):\n" + json.dumps(roh, ensure_ascii=False))
+    d = frage_json(system, frage + auftrag, schema, effort="medium", max_tokens=16000)
+    neu = _aufbereiten({"posts": [d.get("post") or {}]}, sprache, thema_name)
+    if not neu or neu[0].get("art") != post.get("art"):
+        return None
+    if post.get("_reel_nr"):
+        neu[0]["_reel_nr"] = post["_reel_nr"]
+    return neu[0]
 
 
 def _zielgruppe_fuer(sprache: str) -> dict | None:
