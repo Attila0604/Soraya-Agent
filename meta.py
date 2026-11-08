@@ -295,6 +295,24 @@ def _fb_insights_reaktionen(oid: str, token: str) -> dict | None:
     return None
 
 
+def _fb_reel_insights(oid: str, token: str) -> dict | None:
+    """Facebook-Reels (Video-Objekte) kennen weder das Feld noch die Kante "reactions" -- ihre Reaktionen stehen
+    in /video_insights (post_video_likes_by_reaction_type)."""
+    try:
+        d = _get(f"{graph_fb()}/{oid}/video_insights", metric="post_video_likes_by_reaction_type", access_token=token)
+    except Exception:  # noqa: BLE001
+        return None
+    for eintrag in d.get("data") or []:
+        werte = eintrag.get("values") or []
+        if werte:
+            wert = werte[-1].get("value")
+            if isinstance(wert, dict):
+                return {"reaktionen": int(sum(v for v in wert.values() if isinstance(v, (int, float)))), "kommentare": 0, "geteilt": 0}
+            if isinstance(wert, (int, float)):
+                return {"reaktionen": int(wert), "kommentare": 0, "geteilt": 0}
+    return None
+
+
 def facebook_reichweite(extern_id: str, token: str) -> int | None:
     for metrik in REICHWEITE_METRIKEN:
         try:
@@ -372,6 +390,10 @@ def _fb_zahlen_eines(oid: str, art: str | None, seite: str | None, token: str) -
         ersatz = _fb_insights_reaktionen(k, token)
         if ersatz is not None:
             return ersatz, k
+    if art == "reel":
+        ersatz = _fb_reel_insights(oid, token)
+        if ersatz is not None:
+            return ersatz, oid
     if letzter and "pages_read_user_content" in str(letzter):
         raise MetaFehler(FB_RECHTE_HINWEIS)
     raise letzter or MetaFehler("Meta: keine Zahlen")
