@@ -59,7 +59,7 @@ def tagesplan_antwort(sprache="de"):
          "skript": {"hook": "", "szenen": [], "einblendungen": [], "schluss": ""}},
         {"art": "reel", "platform": "tiktok", "titel": "Reel", "untertitel": "U", "text": "Two nights to go. Can you feel it?" if sprache == "en" else "Caption mit Hook. Zwei Nächte noch. Spürst du es?",
          "hashtags": TAGS[:4], "bild_punkte": [],
-         "skript": {"hook": "Hook!", "szenen": ["S1", "S2", "S3"], "einblendungen": ["Eins zwei", "Drei vier", "Fünf"],
+         "skript": {"hook": "Scorpio, Hook!", "szenen": ["S1", "S2", "S3"], "einblendungen": ["Eins zwei", "Drei vier", "Fünf"],
                     "schluss": "Link in Bio"}},
         {"art": "story", "platform": "instagram", "titel": "Story", "untertitel": "U", "text": "How do you sleep? Reply with 🌙" if sprache == "en" else "Wie schläfst du? Antworte mit 🌙",
          "hashtags": ["#mondphase"], "bild_punkte": [], "skript": {"hook": "", "szenen": [], "einblendungen": [], "schluss": ""}},
@@ -171,7 +171,7 @@ def test_tagesplan_einmal_pro_tag_und_sprache(frische_db):
     posts = db.lade_posts(von=HEUTE, bis=HEUTE)
     assert {p["art"] for p in posts} == {"post", "reel", "story"}
     reel = next(p for p in posts if p["art"] == "reel")
-    assert reel["skript"]["hook"] == "Hook!" and reel["meta"]["phase_index"] == 1
+    assert reel["skript"]["hook"] == "Scorpio, Hook!" and reel["meta"]["phase_index"] == 1
     assert next(p for p in posts if p["art"] == "post")["skript"] is None
     assert all(p["quelle"] == "himmel" and p["geplant_fuer"] == HEUTE for p in posts)
     n = len(frische_db)
@@ -1045,7 +1045,9 @@ def test_facebook_text_ohne_bio():
     assert "Bio" not in de and "Link" not in de and de.startswith("Neumond im Skorpion.")
     assert "Link oben auf unserer Seite" in posten._ohne_bio("Dein Horoskop: Link in Bio", "de")   # mitten im Satz: ersetzt
     viele = {**p, "hashtags": "#a1 #b2 #c3 #d4 #e5"}
-    assert posten.text_fuer(viele, "facebook").endswith("#a1 #b2 #horoscope")      # 3: Thema + grosser Such-Hashtag
+    assert posten.text_fuer(viele, "facebook").endswith("#a1 #b2 #c3 #d4 #e5 #horoscope")   # 6 (Facebook-Tipp 08.11.)
+    lang = {**p, "text": "Hook hier?\n\n" + "Ein langer Absatz. " * 12 + "\n\nNoch einer.\n\nWelches Zeichen bist du? 👇"}
+    assert posten.text_fuer(lang, "facebook").startswith("Hook hier?\n\nWelches Zeichen bist du? 👇")    # nur Hook + Frage
     assert posten.text_fuer(viele, "instagram").endswith("#a1 #b2 #c3 #d4 #horoscope")  # 5: max. auf Instagram
 
 
@@ -1802,7 +1804,7 @@ def _vier_eintraege(sprache="en"):
     d["posts"].append({"art": "reel", "platform": "tiktok", "titel": "Quick sign check", "untertitel": "U",
                        "text": "Scorpio, Cancer, Pisces: today hits different.", "hashtags": TAGS[:4], "bild_punkte": [],
                        "folien": [],
-                       "skript": {"hook": "Three signs feel it first", "szenen": ["S1", "S2"],
+                       "skript": {"hook": "Scorpio, Cancer, Pisces: it hits first", "szenen": ["S1", "S2"],
                                   "einblendungen": ["Scorpio: says it out loud", "Pisces: finally rests"],
                                   "schluss": "Which one are you?"}})
     return d
@@ -2526,7 +2528,7 @@ def test_pinterest_titel_und_text():
     q = {"id": 5, "art": "reel", "sprache": "hu", "titel": "Skorpió: mélyebb", "text": "x", "meta": {},
          "hashtags": "#skorpioszezon #asztrologia #holdfazis #szerelem #tarot"}
     assert posten.seo_tags(q, "instagram") == ["#skorpioszezon", "#asztrologia", "#holdfazis", "#szerelem", "#skorpió"]
-    assert len(posten.seo_tags(q, "facebook")) == 3 and len(posten.seo_tags(q, "tiktok")) == 6
+    assert len(posten.seo_tags(q, "facebook")) == 6 and len(posten.seo_tags(q, "tiktok")) == 6
     pin = posten.seo_tags(q, "pinterest")
     assert len(pin) == 10 and "#asztrológia" not in pin                       # = #asztrologia
     tt = posten.tiktok_text(q)
@@ -2922,3 +2924,11 @@ def test_tageszeit_pruefung():
         tagesplan.STIL + ": Prozentzahl im Text („1 százalékban“) – sag es als Bild", tagesplan.STIL + ": „szó szerint“ (englisch „literally“) – weglassen"]
     assert tagesplan.tageszeit_befunde({"art": "reel", "_reel_nr": 2, "text": "This morning you knew it."}, z)
     assert not tagesplan.tageszeit_befunde({"art": "post", "text": "Heute ist ein guter Tag."}, z)
+
+
+def test_reels_brauchen_sternzeichen():
+    assert tagesplan.zeichen_befunde({"art": "reel", "skript": {"hook": "Mikor csináltál utoljára valamit?"}})
+    assert not tagesplan.zeichen_befunde({"art": "reel", "skript": {"hook": "Skorpió, holnap kialszik"}})
+    assert tagesplan.zeichen_befunde({"art": "reel", "_reel_nr": 2, "skript": {"hook": "Skorpió: ma este csend van"}})
+    assert not tagesplan.zeichen_befunde({"art": "reel", "_reel_nr": 2, "skript": {"hook": "Bika, Mérleg, Rák: ma a pénz a téma"}})
+    assert not tagesplan.zeichen_befunde({"art": "post", "text": "x"})

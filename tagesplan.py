@@ -120,7 +120,9 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    "text" (höchstens 14 Wörter, ein konkreter Gedanke – es steht groß im Bild). Jede Folie muss allein verständlich und
    wertvoll sein; die letzte macht neugierig auf das persönliche Horoskop.
 2. art "reel", platform "tiktok": Kurzvideo (12-18 Sekunden, Text-Video ohne Sprecher).
-   "skript": "hook" (erste Einblendung, höchstens 8 Wörter, stoppt das Scrollen),
+   "skript": "hook" (erste Einblendung, höchstens 8 Wörter, stoppt das Scrollen; nennt IMMER mindestens ein
+   Sternzeichen beim Namen, am besten am Anfang, z. B. „Skorpion, morgen beginnt in dir etwas Neues“ – Reels ohne
+   Sternzeichen bekommen nur einen Bruchteil der Aufrufe),
    "einblendungen" (3 Texte, je höchstens 8 Wörter, erzählen die Botschaft in Schritten mit
    Spannung bis zum Schluss, der letzte ist die Pointe; bei Sternzeichen beginnt jede Einblendung
    mit dem Namen des Zeichens und einem Doppelpunkt), "szenen" (3 kurze Bild-Ideen, falls jemand selbst filmt),
@@ -135,11 +137,13 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
    einem passenden Emoji (z. B. „🔥 Ja, total“, „🌙 Eher nicht“) – sie stehen als Knöpfe im Bild.
 4. art "reel", platform "tiktok": ZWEITES Reel des Tages – ein anderer Blickwinkel als
-   das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook. Am liebsten ein Drei-Zeichen-Check (bringt die
-   meisten Kommentare): drei Sternzeichen, die heute besonders betroffen sind, je Zeichen eine Einblendung. Die drei
-   Namen stehen schon klein über dem Hook im Bild – der Hook nennt deshalb das, was die drei heute verbindet, als
-   konkrete Aussage (z. B. „Ihr drei lasst heute etwas Altes los“), nie bloß „das ist für euch“; und als Frage „Welches Zeichen bist du?“ (nur das Zeichen
-   schreiben). Sonst ein „POV“-Moment aus dem Alltag oder eine Frage mit Auflösung. Kurz: 8-12 Sekunden. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
+   das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook. IMMER ein Drei-Zeichen-Check (bringt mit Abstand
+   die meisten Aufrufe und Kommentare – Leserinnen bleiben stehen, wenn sie ihr Zeichen sehen): drei Sternzeichen, die
+   heute besonders betroffen sind, je Zeichen eine Einblendung. Der Hook beginnt GENAU so: die drei Namen mit Komma,
+   dann ein Doppelpunkt, dann die konkrete Aussage, was die drei heute im Lebensthema des Tages verbindet
+   (z. B. „Stier, Waage, Krebs: heute dreht sich alles ums Geld“) – die Namen erscheinen im Bild klein über dem Satz;
+   nie bloß „das ist für euch“. Der "titel" sind die drei Namen. Als Frage „Welches Zeichen bist du?“ (nur das Zeichen
+   schreiben). Kurz: 8-12 Sekunden. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
    höchstens 8 Wörter, der letzte ist die Pointe), "szenen" (2 bis 3 kurze Bild-Ideen), "schluss" (kurz, ohne
    „{link_in_bio}“). "text": Bildunterschrift (35-70 Wörter): Hook, dann beim Drei-Zeichen-Check je Zeichen ein eigener
    kurzer Absatz mit dem Namen des Zeichens und einem treffenden, warmen Satz (sonst 2 kurze Absätze mit Einsicht und
@@ -547,6 +551,24 @@ def stil_befunde(post: dict, sprache: str) -> list[str]:
     return out
 
 
+ZEICHEN_FEHLT = "Sternzeichen fehlt"
+
+
+def zeichen_befunde(post: dict) -> list[str]:
+    """Reels mit Sternzeichen-Namen laufen viel besser (Facebook-Zahlen 08.11.: 8.600 statt 250 Aufrufe):
+    erstes Reel nennt im Hook mindestens ein Zeichen, das zweite ist ein Drei-Zeichen-Check."""
+    if post.get("art") != "reel":
+        return []
+    hook = (post.get("skript") or {}).get("hook") or ""
+    n = len(zeichen_im_text(hook))
+    if post.get("_reel_nr") == 2 and n < 3:
+        return [f"{ZEICHEN_FEHLT}: das zweite Reel ist ein Drei-Zeichen-Check – der Hook beginnt mit drei Sternzeichen "
+                "(„Name, Name, Name: Aussage“)"]
+    if post.get("_reel_nr") != 2 and n < 1:
+        return [f"{ZEICHEN_FEHLT}: der Hook des ersten Reels nennt kein Sternzeichen beim Namen"]
+    return []
+
+
 def _posten_zeiten() -> dict:
     try:
         import posten
@@ -650,9 +672,11 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
     zeiten = _posten_zeiten()
-    pruefe = lambda p: redaktion.pruefe_post(p, sprache) + tageszeit_befunde(p, zeiten) + stil_befunde(p, sprache)  # noqa: E731
+    pruefe = lambda p: redaktion.pruefe_post(p, sprache) + tageszeit_befunde(p, zeiten) + stil_befunde(p, sprache) \
+        + zeichen_befunde(p)  # noqa: E731
     befunde = {i: pruefe(p) for i, p in enumerate(posts)}
-    if any(redaktion.schwer(b) or redaktion.leer(b) or any(x.startswith((TAGESZEIT, STIL)) for x in b) for b in befunde.values()):
+    if any(redaktion.schwer(b) or redaktion.leer(b) or any(x.startswith((TAGESZEIT, STIL, ZEICHEN_FEHLT)) for x in b)
+           for b in befunde.values()):
         hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
         korrigiert = _aufbereiten(frage_json(
             system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,

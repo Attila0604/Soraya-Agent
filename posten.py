@@ -523,7 +523,7 @@ PIN_TAGS_MAX = 10
 _SPRACH_SPALTE = {"de": 0, "en": 1, "hu": 2, "it": 3}
 
 
-HASHTAGS_JE_PLATTFORM = {"instagram": 5, "facebook": 3, "tiktok": 6, "pinterest": PIN_TAGS_MAX, "linkedin": 3}
+HASHTAGS_JE_PLATTFORM = {"instagram": 5, "facebook": 6, "tiktok": 6, "pinterest": PIN_TAGS_MAX, "linkedin": 3}
 
 
 def _tag_schluessel(t: str) -> str:
@@ -621,6 +621,19 @@ FB_FOLGEN = {"de": "➕ Folge der Seite – jeden Tag dein Himmel", "en": "➕ F
              "hu": "➕ Kövesd az oldalt – minden nap új üzenet a csillagoktól", "it": "➕ Segui la pagina – il tuo cielo, ogni giorno"}
 
 
+FB_MAX = 200
+
+
+def fb_kurz(text: str) -> str:
+    """Facebook: erster Absatz (Hook) und die Frage zum Kommentieren -- zusammen hoechstens ~200 Zeichen."""
+    absaetze = [a.strip() for a in (text or "").split("\n\n") if a.strip()]
+    if len(absaetze) <= 2 or len("\n\n".join(absaetze)) <= FB_MAX:
+        return "\n\n".join(absaetze)
+    hook = absaetze[0]
+    frage = next((a for a in reversed(absaetze[1:]) if redaktion.hat_kommentar_frage("x.\n\n" + a)), None)
+    return "\n\n".join([hook] + ([frage] if frage else []))
+
+
 def text_fuer(post: dict, plattform: str) -> str:
     if plattform == "pinterest":
         return pinterest_text(post)
@@ -642,6 +655,8 @@ def text_fuer(post: dict, plattform: str) -> str:
     if plattform == "facebook" and post.get("art") != "story":
         # kein Link-Hinweis im Text (Wunsch von Attila); steht er mitten in einem langen Satz, bleibt er sinngemaess
         teile[0] = _ohne_bio(_ohne_link_hinweis(teile[0]), post.get("sprache") or "de")
+        # Facebook-Tipp (08.11.): Beitraege mit 100-200 Zeichen bekommen deutlich mehr Aufrufe -> nur Hook + Frage
+        teile[0] = fb_kurz(teile[0])
     if plattform == "facebook" and post.get("art") != "story":
         # kein Link im Text (Facebook zeigt Beitraege mit Links weniger Leuten), dafuer die Bitte zu folgen
         sprache = post.get("sprache") or "en"
