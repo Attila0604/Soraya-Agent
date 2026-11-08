@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-19"
+VERSION = "reel-20"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -270,6 +270,65 @@ def _sternbild(d: ImageDraw.ImageDraw, idx: int, kasten: tuple, t: float, sichtb
             d.ellipse([x - r, y - r, x + r, y + r], fill=farbe + (int(255 * a * funkeln * sichtbar),))
 
 
+ELEMENT_FARBE = {0: (244, 176, 96), 1: (156, 206, 150), 2: (206, 218, 238), 3: (128, 178, 236)}   # Feuer, Erde, Luft, Wasser
+
+
+def drei_zeichen(post: dict) -> list[int]:
+    """Zweites Reel = Drei-Zeichen-Check: die drei Zeichen vor dem Doppelpunkt im Hook ("Stier, Waage, Krebs: ...")."""
+    if (post.get("meta") or {}).get("reel_nr") != 2:
+        return []
+    hook = (post.get("skript") or {}).get("hook") or ""
+    if ":" not in hook:
+        return []
+    teile = [t.strip() for t in re.split(r",|\bés\b|\bund\b|\band\b|\be\b", hook.split(":", 1)[0]) if t.strip()]
+    idx = [medien.zeichen_aus_text(t) for t in teile]
+    return idx if len(idx) == 3 and None not in idx and len(set(idx)) == 3 else []
+
+
+def _dreier_ebenen(drei: list[int], sprache: str) -> dict:
+    """Je Zeichen ein Medaillon (Symbol in der Element-Farbe, Name darunter) -- normal und leuchtend."""
+    from PIL import ImageFilter
+    spalte = {"de": 0, "en": 1, "hu": 2, "it": 3}.get(sprache, 1)
+    out = {}
+    m = 2
+    for i in drei:
+        farbe = ELEMENT_FARBE[i % 4]
+        gr = 300
+        ebene = Image.new("RGBA", (gr * m, int(gr * 1.25) * m), (0, 0, 0, 0))
+        d = ImageDraw.Draw(ebene)
+        c, r = gr / 2, 104
+        d.ellipse([(c - r) * m, (c - r) * m, (c + r) * m, (c + r) * m], fill=farbe + (26,), outline=farbe + (210,), width=3 * m)
+        d.text((c * m, c * m + 4 * m), medien.ZEICHEN_GLYPHE[i], font=medien.schrift("zeichen", 118 * m), fill=farbe + (255,), anchor="mm")
+        name = medien.ZEICHEN_NAMEN[i][spalte]
+        medien.gesperrt(d, name.upper(), c * m, (c + r + 58) * m, medien.schrift("cinzel", 36 * m), 5 * m, farbe + (255,))
+        ebene = ebene.resize((gr, int(gr * 1.25)), Image.LANCZOS)
+        glow = Image.new("RGBA", ebene.size, (0, 0, 0, 0))
+        ImageDraw.Draw(glow).ellipse([c - r - 30, c - r - 30, c + r + 30, c + r + 30], fill=farbe + (150,))
+        glow = glow.filter(ImageFilter.GaussianBlur(34))
+        hell = glow.copy()
+        hell.alpha_composite(ebene)
+        out[i] = (ebene, hell)
+    return out
+
+
+def _dreier_malen(bild: Image.Image, reihe: dict, drei: list[int], aktiv, t: float, sichtbar: float) -> None:
+    """Drei Medaillons nebeneinander; das Zeichen der laufenden Zeile leuchtet und wird groesser, die anderen treten zurueck."""
+    y = 700
+    for k, i in enumerate(drei):
+        x = W / 2 + (k - 1) * 330
+        normal, hell = reihe[i]
+        if aktiv is None:
+            puls = 0.9 + 0.1 * math.sin(t * 1.6 + k * 1.2)
+            ebene, skala, alpha = normal, 1.0, puls
+        elif aktiv == i:
+            ebene, skala, alpha = hell, 1.16, 1.0
+        else:
+            ebene, skala, alpha = normal, 0.9, 0.38
+        if abs(skala - 1) > 0.01:
+            ebene = ebene.resize((int(ebene.width * skala), int(ebene.height * skala)), Image.BILINEAR)
+        medien.aufkleben(bild, _mit_alpha(ebene, alpha * sichtbar), (x - ebene.width / 2, y - ebene.width / 2))
+
+
 def _neumond_kranz(r: float, beleuchtung) -> Image.Image:
     """Neumond: weicher goldener Lichtkranz um die dunkle Scheibe und ein feiner, heller Saum auf der Seite,
     an der die neue Sichel erscheint (rechts) -- wie bei einer Sonnenfinsternis, ruhig statt einer schwarzen Kugel."""
@@ -423,6 +482,13 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     meta = post.get("meta") or {}
     seed = post.get("id") or 1
     zeilen, _ = texte(post)
+    drei = drei_zeichen(post) if not tiktok else []
+    zeichen_je_zeile = [medien.zeichen_aus_text(z_) for z_ in zeilen]
+    if drei:            # die Namen stehen gross in der Dreier-Reihe -> die Saetze kommen ohne sie aus
+        for nr, z_ in enumerate(zeilen):
+            rest = re.split(r"\s*[:–—]\s*", z_, maxsplit=1)
+            if len(rest) > 1 and rest[1].strip() and (nr == 0 or zeichen_je_zeile[nr] in drei):
+                zeilen[nr] = rest[1].strip()[:1].upper() + rest[1].strip()[1:]
     if tiktok:
         zeilen = zeilen[:TIKTOK_ZEILEN]
     tempo = 1.0 if tiktok else TEMPO.get((post.get("sprache") or "")[:2], 1.0)
@@ -462,7 +528,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     oben.alpha_composite(gross, (0, 230))
     oben, oben_pos = _zuschneiden(oben)
     motiv = motive.waehle(post, st)                    # Hauptmotiv je Format (reel-11)
-    mit_mond = meta.get("phase_index") is not None and motiv == "mond"
+    mit_mond = meta.get("phase_index") is not None and motiv == "mond" and not drei
     r = 200
     mond = medien.mond(r * 2, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
     if mond is not None:
@@ -477,7 +543,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     # Bildideen (reel-10)
     zeichen = welches_zeichen(post, st)
     sb_kasten = (70, mond_y - 430, W - 140, 860)                    # Sternbild rund um den Mond
-    held = motive.baue(motiv, W / 2, mond_y, zeichen=zeichen, akzent=akzent, seed=int(seed), post=post)
+    held = None if drei else motive.baue(motiv, W / 2, mond_y, zeichen=zeichen, akzent=akzent, seed=int(seed), post=post)
+    reihe = _dreier_ebenen(drei, (post.get("sprache") or "de")[:2]) if drei else None
     # reel-18 (Wunsch Attila 08.11.): kein Sternbild aus Linien und keine kreisende Umlaufbahn mehr -- das wirkte wie
     # ein Planet mit Ring und "stehende Sterne"; das Zeichen steht ohnehin im kleinen Kreis unter dem Mond
     zeichen = None
@@ -560,6 +627,10 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                     medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
             if held is not None:          # Vorlauf: das Symbol steht schon im ersten Bild (Titelbild der Plattformen)
                 held.zeichne(bild, t + 1.2, sichtbar_ende)
+            if reihe is not None and sichtbar_ende > 0:
+                aktiv = next((zeichen_je_zeile[nr] for nr, (a_, b_) in enumerate(plan)
+                              if nr and a_ - 0.2 <= t <= b_ + 0.1 and zeichen_je_zeile[nr] in drei), None)
+                _dreier_malen(bild, reihe, drei, aktiv, t, sichtbar_ende)
             if bahn and sichtbar_ende > 0:
                 d2 = ImageDraw.Draw(bild, "RGBA")
                 for u, fb in lichter(umlauf):

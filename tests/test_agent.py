@@ -2962,3 +2962,10 @@ def test_himmel_mit_planeten_und_betroffenen_zeichen():
     assert "Skorpion: Mond im Zeichen; Neumond im Zeichen" in z and "Stier: Mond gegenüber; Herrscher Venus rückläufig" in z
     assert "Zwillinge" not in z                       # 0 Punkte -> nicht angesprochen
     assert tagesplan.zeichen_text("de", himmel.aufbereiten({**sky, "signs_today": []}, date(2026, 11, 9), "de")) is not None
+
+
+def test_drei_zeichen_reihe_im_reel():
+    p = {"art": "reel", "meta": {"reel_nr": 2}, "skript": {"hook": "Bika, Mérleg, Rák: ma a pénz a téma"}}
+    assert reel.drei_zeichen(p) == [1, 6, 3]
+    assert reel.drei_zeichen({**p, "meta": {}}) == []                                  # nur das zweite Reel
+    assert reel.drei_zeichen({**p, "skript": {"hook": "Bika: ma a pénz"}}) == []       # nur ein Zeichen
