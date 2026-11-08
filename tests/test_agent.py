@@ -410,7 +410,7 @@ def test_tagesplan_schreibt_fuer_zielgruppe(frische_db):
     assert tagesplan.erstelle("de")["status"] == "fertig"
     frage = frische_db[-1]["frage"]
     assert "Zielgruppe (Recherche „Liebe & Beziehung“)" in frage and "Frauen 28-45 nach einer Trennung" in frage
-    assert "Trennung; Neuanfang; Selbstwert; Familie" in frage and "Geld" not in frage   # hoechstens 4
+    assert "Trennung; Neuanfang; Selbstwert; Familie" in frage and "Familie; Geld" not in frage   # hoechstens 4
     assert "Seelenverwandter; Zeichen" in frage and "zu viel" not in frage               # hoechstens 6
     assert "nicht wörtlich zitieren" in frische_db[-1]["system"]
     posts = db.lade_posts(von=HEUTE, bis=HEUTE)
@@ -2912,3 +2912,13 @@ def test_sternzeichen_pin_wechselt():
     tage = [pin_extras.wahl(date(2026, 11, 1) + timedelta(d), "hu") for d in range(12)]
     assert len({z for z, _ in tage}) == 12
     assert pin_extras.wahl(date(2026, 11, 1), "hu")[1] != pin_extras.wahl(date(2026, 11, 13), "hu")[1]
+
+
+def test_tageszeit_pruefung():
+    z = {"story": "05:00", "reel": "05:00", "post": "12:00", "reel2": "21:00"}
+    assert tagesplan.tageszeit_befunde({"art": "reel", "text": "Te mit engednél el ma este?"}, z)
+    assert not tagesplan.tageszeit_befunde({"art": "reel", "_reel_nr": 2, "text": "Ma este végre kimondod."}, z)
+    assert tagesplan.stil_befunde({"text": "A Hold mindössze 1 százalékban látszik, szó szerint eltűnik."}, "hu") == [
+        tagesplan.STIL + ": Prozentzahl im Text („1 százalékban“) – sag es als Bild", tagesplan.STIL + ": „szó szerint“ (englisch „literally“) – weglassen"]
+    assert tagesplan.tageszeit_befunde({"art": "reel", "_reel_nr": 2, "text": "This morning you knew it."}, z)
+    assert not tagesplan.tageszeit_befunde({"art": "post", "text": "Heute ist ein guter Tag."}, z)
