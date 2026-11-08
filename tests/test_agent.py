@@ -2932,3 +2932,15 @@ def test_reels_brauchen_sternzeichen():
     assert tagesplan.zeichen_befunde({"art": "reel", "_reel_nr": 2, "skript": {"hook": "Skorpió: ma este csend van"}})
     assert not tagesplan.zeichen_befunde({"art": "reel", "_reel_nr": 2, "skript": {"hook": "Bika, Mérleg, Rák: ma a pénz a téma"}})
     assert not tagesplan.zeichen_befunde({"art": "post", "text": "x"})
+
+
+def test_facebook_reel_zahlen_ueber_video_insights(monkeypatch):
+    import meta
+
+    def fake_get(url, **params):
+        if url.endswith("/video_insights"):
+            return {"data": [{"values": [{"value": {"like": 4, "love": 2}}]}]}
+        raise meta.MetaFehler("Meta: (#100) Tried accessing nonexisting field (reactions)")
+    monkeypatch.setattr(meta, "_get", fake_get)
+    zahlen, k = meta._fb_zahlen_eines("V1", "reel", "S", "tok")
+    assert zahlen["reaktionen"] == 6 and k == "V1"
