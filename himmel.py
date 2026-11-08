@@ -87,7 +87,35 @@ def aufbereiten(sky: dict, tag: date, sprache: str) -> dict:
         "vollmond": mondereignis(sky.get("next_full_moon")),
         "ruecklaeufig": rueck,
         "bald_ruecklaeufig": bald,
+        # seit 08.11. (Engine): wo die Planeten stehen, Winkel des Tages, welche Zeichen heute angesprochen sind
+        "planeten": [{"planet": planet(x.get("key"), sprache), "zeichen": zeichen(x.get("sign"), sprache),
+                      "grad": x.get("degree"), "rueck": bool(x.get("retrograde"))}
+                     for x in sky.get("planets") or [] if x.get("key") not in ("Sun", "Moon")],
+        "winkel": [{"a": planet(w.get("a"), sprache), "b": planet(w.get("b"), sprache),
+                    "art": WINKEL.get(w.get("aspect"), w.get("aspect")), "orb": w.get("orb")}
+                   for w in (sky.get("aspects") or [])[:5]],
+        "zeichen_heute": [{"idx": _SIGN_KEYS.index(z["sign"]), "name": zeichen(z["sign"], sprache), "punkte": z.get("score", 0),
+                           "gruende": [grund_text(g) for g in z.get("reasons") or []]}
+                          for z in sky.get("signs_today") or [] if z.get("sign") in _SIGN_KEYS],
     }
+
+
+_SIGN_KEYS = ["Ari", "Tau", "Gem", "Can", "Leo", "Vir", "Lib", "Sco", "Sag", "Cap", "Aqu", "Pis"]
+WINKEL = {"conjunction": "Konjunktion", "sextile": "Sextil", "square": "Quadrat", "trine": "Trigon", "opposition": "Opposition"}
+_GRUND = {"moon_in": "Mond im Zeichen", "moon_opposite": "Mond gegenüber", "moon_square": "Mond im Spannungswinkel (Quadrat)",
+          "moon_trine": "Mond im harmonischen Winkel (Trigon)", "sun_in": "Sonne im Zeichen",
+          "mercury_in": "Merkur im Zeichen", "venus_in": "Venus im Zeichen", "mars_in": "Mars im Zeichen",
+          "new_moon_in": "Neumond im Zeichen", "full_moon_in": "Vollmond im Zeichen",
+          "full_moon_opposite": "Vollmond gegenüber"}
+_PLANET_DE = {"Sun": "Sonne", "Moon": "Mond", "Mercury": "Merkur", "Venus": "Venus", "Mars": "Mars", "Jupiter": "Jupiter",
+              "Saturn": "Saturn", "Uranus": "Uranus", "Neptune": "Neptun", "Pluto": "Pluto"}
+
+
+def grund_text(g: str) -> str:
+    """Grund aus der Engine ("moon_in", "ruler_retro:Venus") als kurzer deutscher Text fuer den Prompt."""
+    if g.startswith("ruler_retro:"):
+        return f"Herrscher {_PLANET_DE.get(g.split(':', 1)[1], g.split(':', 1)[1])} rückläufig"
+    return _GRUND.get(g, g)
 
 
 def als_text(info: dict) -> str:
@@ -105,6 +133,11 @@ def als_text(info: dict) -> str:
     if info["ruecklaeufig"]:
         zeilen.append("Rückläufig: " + ", ".join(
             f"{r['planet']} (bis {r['bis']})" if r["bis"] else r["planet"] for r in info["ruecklaeufig"]))
+    if info.get("planeten"):
+        zeilen.append("Planeten: " + ", ".join(
+            f"{p['planet']} in {p['zeichen']}" + (" (rückläufig)" if p["rueck"] else "") for p in info["planeten"]))
+    if info.get("winkel"):
+        zeilen.append("Winkel heute: " + ", ".join(f"{w['a']} {w['art']} {w['b']}" for w in info["winkel"]))
     if info["bald_ruecklaeufig"]:
         zeilen.append("Wird bald rückläufig: " + ", ".join(
             f"{r['planet']} (ab {r['ab']})" if r["ab"] else r["planet"] for r in info["bald_ruecklaeufig"]))

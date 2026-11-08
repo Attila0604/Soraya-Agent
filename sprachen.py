@@ -34,6 +34,8 @@ _SIGNS = {
     "it": ["Ariete", "Toro", "Gemelli", "Cancro", "Leone", "Vergine", "Bilancia", "Scorpione", "Sagittario", "Capricorno", "Acquario", "Pesci"],
 }
 _PLANETS = {
+    "Sun": {"de": "Sonne", "en": "Sun", "hu": "Nap", "it": "Sole"},
+    "Moon": {"de": "Mond", "en": "Moon", "hu": "Hold", "it": "Luna"},
     "Mercury": {"de": "Merkur", "en": "Mercury", "hu": "Merkúr", "it": "Mercurio"},
     "Venus": {"de": "Venus", "en": "Venus", "hu": "Vénusz", "it": "Venere"},
     "Mars": {"de": "Mars", "en": "Mars", "hu": "Mars", "it": "Marte"},

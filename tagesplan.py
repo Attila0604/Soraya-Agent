@@ -458,8 +458,19 @@ def zeichen_rotation(sprache: str) -> tuple[list[int], list[int]]:
     return oft, frei
 
 
-def zeichen_text(sprache: str) -> str:
+def zeichen_text(sprache: str, info: dict | None = None) -> str:
     oft, frei = zeichen_rotation(sprache)
+    heute = [z for z in (info or {}).get("zeichen_heute") or [] if z.get("punkte", 0) > 0]
+    if heute:
+        # echte Astrologie (Engine): welche Zeichen heute angesprochen sind -- davon die, die laenger nicht dran waren, zuerst
+        kandidaten = heute[:7]
+        kandidaten = [z for z in kandidaten if z["idx"] not in oft[:6]] + [z for z in kandidaten if z["idx"] in oft[:6]]
+        zeilen = "\n".join(f"- {z['name']}: " + "; ".join(z["gruende"]) + (" (war zuletzt schon dran)" if z["idx"] in oft[:6] else "")
+                           for z in kandidaten)
+        return ("Welche Sternzeichen heute astrologisch wirklich angesprochen sind (aus der Engine berechnet, stärkste zuerst):\n"
+                + zeilen + "\nFür den Drei-Zeichen-Check und das Mitmachen nimm drei Zeichen aus DIESER Liste – bevorzugt "
+                "solche, die zuletzt nicht dran waren – und gib jedem Zeichen seinen echten Grund (z. B. „Stier: der Mond steht dir "
+                "heute gegenüber …“, in eigenen Worten, ohne Fachjargon). Nichts dazuerfinden, was nicht in den Himmelsdaten steht.")
     if not oft:
         return ""
     from sprachen import zeichen as _name, _SIGN_KEYS
@@ -667,7 +678,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     system = SYSTEM_PROMPT.replace("{link_in_bio}", LINK_IN_BIO[sprache])
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
-                   publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache),
+                   publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache, info),
                    lebensthemen(tag, sprache), botschaften_text(sprache))
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"])

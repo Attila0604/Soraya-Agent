@@ -2945,3 +2945,20 @@ def test_facebook_reel_zahlen_ueber_video_insights(monkeypatch):
     monkeypatch.setattr(meta, "_get", fake_get)
     zahlen, k = meta._fb_zahlen_eines("V1", "reel", "S", "tok")
     assert zahlen["reaktionen"] == 6 and k == "V1"
+
+
+def test_himmel_mit_planeten_und_betroffenen_zeichen():
+    sky = {"moon": {"phase_index": 0, "illumination": 0, "sign": "Sco"}, "sun": {"sign": "Sco"},
+           "retrograde": [], "retrograde_soon": [],
+           "planets": [{"key": "Venus", "sign": "Lib", "degree": 3.2, "retrograde": True}, {"key": "Moon", "sign": "Sco"}],
+           "aspects": [{"a": "Sun", "b": "Moon", "aspect": "conjunction", "orb": 0.5}],
+           "signs_today": [{"sign": "Sco", "score": 13, "reasons": ["moon_in", "new_moon_in"]},
+                           {"sign": "Tau", "score": 5, "reasons": ["moon_opposite", "ruler_retro:Venus"]},
+                           {"sign": "Gem", "score": 0, "reasons": []}]}
+    info = himmel.aufbereiten(sky, date(2026, 11, 9), "de")
+    t = himmel.als_text(info)
+    assert "Venus in Waage (rückläufig)" in t and "Sonne Konjunktion Mond" in t
+    z = tagesplan.zeichen_text("de", info)
+    assert "Skorpion: Mond im Zeichen; Neumond im Zeichen" in z and "Stier: Mond gegenüber; Herrscher Venus rückläufig" in z
+    assert "Zwillinge" not in z                       # 0 Punkte -> nicht angesprochen
+    assert tagesplan.zeichen_text("de", himmel.aufbereiten({**sky, "signs_today": []}, date(2026, 11, 9), "de")) is not None
