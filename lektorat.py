@@ -61,7 +61,11 @@ def _system(sprache: str) -> str:
         f"You receive {name} texts written by an AI. The posts must read as if a native {name} speaker wrote them. "
         "Find ONLY real problems: spelling and accent errors, grammar or suffix errors, words from another "
         "language, and phrases a native speaker would find clumsy, unnatural or nonsensical (literal translations, "
-        "odd word choices). Do not change content, meaning, tone, emojis, hashtags' meaning or anything that is fine."
+        "odd word choices). Do not change content, meaning, tone, emojis, hashtags' meaning or anything that is fine. "
+        "Also check the logic of every post: the first sentence (hook) must fit what follows. If the hook promises something "
+        "the rest does not deliver (e.g. the hook says a scent takes three signs back in time, but the paragraphs talk about "
+        "a melody, a scent and a photo), rewrite the hook so it fits all of it (e.g. \"a small memory takes you back in time\"). "
+        "Also fix sentences that are grammatical but unclear or illogical. Keep the zodiac sign names at the start of a hook."
         + _HINWEISE.get(sprache, "") +
         "\n\nEvery correction: \"alt\" = the exact passage copied character for character from the texts (2-15 words, "
         "a single word only if it is unique; a whole sentence when it must be rewritten), \"neu\" = the corrected passage. At most "
@@ -126,7 +130,7 @@ def pruefen(posts: list[dict], sprache: str) -> list[str]:
     for i, p in enumerate(posts, 1):
         bloecke.append(f"--- Post {i} ({p.get('art') or 'post'}) ---\n" + "\n".join(_texte(p)))
     try:
-        antwort = frage_json(_system(sprache), "\n\n".join(bloecke), _SCHEMA, effort="medium", max_tokens=12000)
+        antwort = frage_json(_system(sprache), "\n\n".join(bloecke), _SCHEMA, effort="high", max_tokens=24000)
         return anwenden(posts, antwort.get("korrekturen") or [])
     except Exception as e:   # Lektorat darf den Tagesplan nie aufhalten
         log.warning("Lektorat %s fehlgeschlagen: %s", sprache, e)

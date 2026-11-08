@@ -670,7 +670,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
                    publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache),
                    lebensthemen(tag, sprache), botschaften_text(sprache))
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
-    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
+    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"])
     zeiten = _posten_zeiten()
     pruefe = lambda p: redaktion.pruefe_post(p, sprache) + tageszeit_befunde(p, zeiten) + stil_befunde(p, sprache) \
         + zeichen_befunde(p)  # noqa: E731
@@ -680,7 +680,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
         hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
         korrigiert = _aufbereiten(frage_json(
             system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,
-            SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
+            SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"])
         if korrigiert:
             posts = korrigiert
             befunde = {i: pruefe(p) for i, p in enumerate(posts)}

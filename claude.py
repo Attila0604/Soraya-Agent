@@ -43,7 +43,7 @@ def _client_holen() -> anthropic.Anthropic:
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise RuntimeError("ANTHROPIC_API_KEY fehlt. Bitte in Railway unter Variables setzen.")
     if _client is None:
-        _client = anthropic.Anthropic(timeout=240.0, max_retries=2)
+        _client = anthropic.Anthropic(timeout=600.0, max_retries=2)   # gruendliches Denken (effort high) braucht laenger
     return _client
 
 
