@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-17"
+VERSION = "reel-18"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -270,6 +270,25 @@ def _sternbild(d: ImageDraw.ImageDraw, idx: int, kasten: tuple, t: float, sichtb
             d.ellipse([x - r, y - r, x + r, y + r], fill=farbe + (int(255 * a * funkeln * sichtbar),))
 
 
+def _neumond_kranz(r: float, beleuchtung) -> Image.Image:
+    """Neumond: weicher goldener Lichtkranz um die dunkle Scheibe und ein feiner, heller Saum auf der Seite,
+    an der die neue Sichel erscheint (rechts) -- wie bei einer Sonnenfinsternis, ruhig statt einer schwarzen Kugel."""
+    from PIL import ImageFilter
+    gr = int(r * 3.2)
+    c = gr / 2
+    kranz = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
+    d = ImageDraw.Draw(kranz)
+    for breite, a in ((int(r * 0.26), 120), (int(r * 0.1), 190)):
+        d.ellipse([c - r - breite / 2, c - r - breite / 2, c + r + breite / 2, c + r + breite / 2],
+                  outline=(240, 214, 160, a), width=breite)
+    kranz = kranz.filter(ImageFilter.GaussianBlur(r * 0.12))
+    saum = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
+    ImageDraw.Draw(saum).arc([c - r, c - r, c + r, c + r], start=-70, end=70, fill=(255, 246, 225, 255), width=max(3, int(r * 0.05)))
+    saum = saum.filter(ImageFilter.GaussianBlur(r * 0.012))
+    kranz.alpha_composite(saum)
+    return kranz
+
+
 def _bahn_punkte(cx, cy, rx, ry, neigung, n=180):
     c, s = math.cos(neigung), math.sin(neigung)
     out = []
@@ -454,9 +473,12 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     zeichen = welches_zeichen(post, st)
     sb_kasten = (70, mond_y - 430, W - 140, 860)                    # Sternbild rund um den Mond
     held = motive.baue(motiv, W / 2, mond_y, zeichen=zeichen, akzent=akzent, seed=int(seed), post=post)
-    if held is not None and not held.mit_sternbild:
-        zeichen = None
-    bahn = _bahn_punkte(W / 2, mond_y, 330, 86, math.radians(-14)) if mit_mond or (held and held.mit_bahn) else []
+    # reel-18 (Wunsch Attila 08.11.): kein Sternbild aus Linien und keine kreisende Umlaufbahn mehr -- das wirkte wie
+    # ein Planet mit Ring und "stehende Sterne"; das Zeichen steht ohnehin im kleinen Kreis unter dem Mond
+    zeichen = None
+    bahn = []
+    # Neumond (fast kein Licht): statt einer dunklen Kugel ein zarter goldener Lichtkranz und ein feiner Lichtsaum
+    neumond = _neumond_kranz(r, meta.get("beleuchtung")) if mit_mond and float(meta.get("beleuchtung") or 0) < 8 else None
     staub = _staub(int(seed))
     staub_farbe = (236, 180, 160) if st["palette"] == "liebe" else (233, 207, 156)
     glut = _glut(1000, 560, tuple(akzent))
@@ -524,7 +546,13 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                                  (W / 2 - schein.width / 2, mond_y - schein.height / 2))
                 skala = 0.94 + 0.08 * min(1.0, t / max(end_start, 1))   # langsamer Zoom (Bewegung)
                 mb = mond if abs(skala - 1) < 0.002 else mond.resize((int(mond.width * skala), int(mond.height * skala)), Image.BILINEAR)
-                medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
+                if neumond is not None:
+                    nk = neumond if abs(skala - 1) < 0.002 else neumond.resize((int(neumond.width * skala), int(neumond.height * skala)), Image.BILINEAR)
+                    medien.aufkleben(bild, _mit_alpha(nk, (0.8 + 0.2 * math.sin(t * 1.1)) * sichtbar_ende),
+                                     (W / 2 - nk.width / 2, mond_y - nk.height / 2))
+                    medien.aufkleben(bild, _mit_alpha(mb, 0.55 * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
+                else:
+                    medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
             if held is not None:          # Vorlauf: das Symbol steht schon im ersten Bild (Titelbild der Plattformen)
                 held.zeichne(bild, t + 1.2, sichtbar_ende)
             if bahn and sichtbar_ende > 0:
