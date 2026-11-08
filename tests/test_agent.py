@@ -297,7 +297,9 @@ def test_zeitplan(monkeypatch, frische_db):
     assert [x["sprache"] for x in r] == ["de", "it", "de", "it"] and all(x["status"] == "fertig" for x in r)
     assert all(x["status"] == "schon_da" for x in tagesplan.pruefe_faellige(jetzt_stunde=9))
     # DE: je 1 Aufruf; IT: Testtext ist deutsch -> Qualitaetspruefung -> je 1 Korrekturdurchgang
-    assert len(frische_db) == 6 and sum("Probleme" in a["frage"] for a in frische_db) == 2
+    # und danach je 2 gezielte Nachbesserungen des einen Eintrags (die Attrappe liefert nie etwas Besseres)
+    assert len(frische_db) == 10 and sum("Probleme" in a["frage"] for a in frische_db) == 6
+    assert sum("Überarbeite jetzt NUR" in a["frage"] for a in frische_db) == 4
     assert len(db.lade_posts_zeitraum(HEUTE + timedelta(days=1), HEUTE + timedelta(days=1))) == 6
 
 
@@ -2969,3 +2971,28 @@ def test_drei_zeichen_reihe_im_reel():
     assert reel.drei_zeichen(p) == [1, 6, 3]
     assert reel.drei_zeichen({**p, "meta": {}}) == []                                  # nur das zweite Reel
     assert reel.drei_zeichen({**p, "skript": {"hook": "Bika: ma a pénz"}}) == []       # nur ein Zeichen
+
+
+def test_nachbessern_nur_der_fehlerhafte_eintrag(monkeypatch):
+    monkeypatch.setenv("LEKTORAT_SPRACHEN", "xx")
+    monkeypatch.setattr(tagesplan, "_posten_zeiten", lambda: {})
+    for f in ("zeichen_text", "botschaften_text"):
+        monkeypatch.setattr(tagesplan, f, lambda *a, **k: "")
+    aufrufe = []
+
+    def fake(system, frage, schema, **k):
+        aufrufe.append(schema)
+        if "post" in schema["properties"]:                       # gezieltes Nachbessern
+            assert "ZWEITE Reel" in frage
+            d = _vier_eintraege("en")["posts"][-1]
+            return {"post": dict(d, skript=dict(d["skript"], hook="Scorpio, Taurus, Leo: tonight you choose rest"))}
+        d = _vier_eintraege("en")
+        d["posts"][-1] = dict(d["posts"][-1], skript=dict(d["posts"][-1]["skript"], hook="Someone asked too much"))
+        return d
+    monkeypatch.setattr(tagesplan, "frage_json", fake)
+    info = himmel.aufbereiten({"moon": {"phase_index": 0, "illumination": 0, "sign": "Sco"}, "sun": {"sign": "Sco"},
+                               "retrograde": [], "retrograde_soon": []}, date(2026, 11, 9), "en")
+    posts = tagesplan.schreibe_posts(info, "en", [])
+    assert len(aufrufe) == 3                                    # Entwurf, Korrektur (gleich schlecht), Nachbessern
+    assert posts[-1]["skript"]["hook"].startswith("Scorpio, Taurus, Leo:") and posts[-1]["_reel_nr"] == 2
+    assert not tagesplan.hart(posts[-1]["_pruefung"])
