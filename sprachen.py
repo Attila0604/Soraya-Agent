@@ -18,7 +18,7 @@ _ANWEISUNG = {
            "nem beszéltél?”). Kerüld a tükörfordított angol fordulatokat – magyarul így nem mondjuk: „kivel van ma "
            "kémia?” (jó: „Ki felé húz ma a szíved?” / „Kivel pattan ma a szikra?”), „tartsd észben” (jó: „ne feledd”), "
            "„csinálj időt magadnak” (jó: „szánj időt magadra”), „vibe/vibrálás” (jó: „hangulat”), „ez nem egy véletlen” "
-           "(jó: „ez nem véletlen”), „self-care” (jó: „törődj magaddal”). A rövid feliratok (cím, reel-szövegek) se angol "
+           "(jó: „ez nem véletlen”), „self-care” (jó: „törődj magaddal”), „szó szerint” mint az angol „literally” (hagyd el), „a legtöbb erőnk van … újrakezdeni” (jó: „akkor van a legtöbb erőnk újrakezdeni”). A rövid feliratok (cím, reel-szövegek) se angol "
            "képaláírás-stílusban legyenek: „Gyors, de őszinte szerelem” helyett „Hamar lángra lobban, de őszintén szeret”. "
            "Pontos ékezetek, helyes ragozás."),
     "it": "Scrivi tutti i testi in italiano naturale e scorrevole, dando del tu (mercato italiano).",

@@ -15,6 +15,7 @@ Railway-Variablen (alle optional):
 
 import os
 import random
+import re
 import threading
 import time
 from datetime import date, timedelta
@@ -51,6 +52,8 @@ Was gute Posts ausmacht:
   euch“, „Das erwartet euch heute“, „So fühlt sich heute an“ (ungarisch z. B. „Ma este nektek szól ez“, „Ma ez vár
   rátok“). Statt anzukündigen, sag es: z. B. „Ihr drei sagt heute endlich, was ihr denkt“, „Heute Nacht schlaft ihr
   drei unruhig – zu Recht“, „Ihr habt heute mehr gegeben, als ihr zeigt“.
+- Keine Prozentzahlen oder Messwerte im Text (nicht „der Mond ist zu 1 % beleuchtet“) – sag es als Bild: „der Mond
+  ist kaum noch zu sehen“, „eine hauchdünne Sichel“. Zahlen stehen schon im Bild.
 - Verboten sind leere Floskeln wie „Die Sterne stehen gut“, „Das Universum hat einen Plan“,
   „magische Energie“, „kosmische Schwingungen“, „Manifestiere jetzt“. Lieber ein konkretes Bild
   aus dem Alltag (Gespräch, Nachricht, Entscheidung, Schlaf, Arbeit, Beziehung).
@@ -496,6 +499,62 @@ def zeiten_text() -> str:
             "„zur Ruhe kommen“); auch die Frage zum Kommentieren passt zur Abendstimmung.")
 
 
+# Woerter fuer Abend/Nacht bzw. Morgen in den vier Sprachen (Pruefung: passt der Text zur Uhrzeit des Postens?)
+_ABEND = re.compile(r"\b(heute abend|heute nacht|tonight|this evening|ma este|ma éjjel|ma éjszaka|estére|stasera|stanotte)\b",
+                    re.IGNORECASE)
+_MORGEN = re.compile(r"\b(heute morgen|heute früh|this morning|ma reggel|reggel óta|stamattina|questa mattina)\b", re.IGNORECASE)
+TAGESZEIT = "Tageszeit passt nicht"
+
+
+def platz_von(post: dict) -> str:
+    return "reel2" if post.get("art") == "reel" and post.get("_reel_nr") == 2 else (post.get("art") or "post")
+
+
+def tageszeit_befunde(post: dict, zeiten: dict) -> list[str]:
+    """Ein Post, der frueh morgens erscheint, spricht nicht vom Abend (und umgekehrt)."""
+    uhr = zeiten.get(platz_von(post))
+    try:
+        h = int(str(uhr).split(":")[0])
+    except (TypeError, ValueError):
+        return []
+    sk = post.get("skript") or {}
+    alles = " ".join([post.get("titel") or "", post.get("text") or "", sk.get("hook") or ""] + list(sk.get("einblendungen") or []))
+    if h < 14 and _ABEND.search(alles):
+        return [f"{TAGESZEIT}: erscheint um {uhr} Uhr, spricht aber vom Abend („{_ABEND.search(alles).group(0)}“) – "
+                "schreib für den Morgen bzw. den ganzen Tag"]
+    if h >= 17 and _MORGEN.search(alles):
+        return [f"{TAGESZEIT}: erscheint um {uhr} Uhr, spricht aber vom Morgen („{_MORGEN.search(alles).group(0)}“)"]
+    return []
+
+
+STIL = "Stil"
+_PROZENT = re.compile(r"\d+(?:[.,]\d+)?\s?(?:%|százalék\w*|prozent|percent|per ?cento)", re.IGNORECASE)
+_WOERTLICH = {"hu": re.compile(r"\bszó szerint\b", re.IGNORECASE), "de": re.compile(r"\bbuchstäblich\b", re.IGNORECASE),
+              "en": re.compile(r"\bliterally\b", re.IGNORECASE), "it": re.compile(r"\bletteralmente\b", re.IGNORECASE)}
+
+
+def stil_befunde(post: dict, sprache: str) -> list[str]:
+    """Fest gepruefte Stilfehler, die Claude trotz Regel immer wieder macht -> ein Korrekturdurchgang."""
+    sk = post.get("skript") or {}
+    alles = " ".join([post.get("text") or "", sk.get("hook") or ""] + list(sk.get("einblendungen") or []))
+    out = []
+    m = _PROZENT.search(alles)
+    if m:
+        out.append(f"{STIL}: Prozentzahl im Text („{m.group(0)}“) – sag es als Bild")
+    w = _WOERTLICH.get(sprache)
+    if w and w.search(alles):
+        out.append(f"{STIL}: „{w.search(alles).group(0)}“ (englisch „literally“) – weglassen")
+    return out
+
+
+def _posten_zeiten() -> dict:
+    try:
+        import posten
+        return posten.einstellungen().get("zeiten") or {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def nur_facebook(plattformen: list[str] | None) -> bool:
     return bool(plattformen) and set(plattformen) == {"facebook"}
 
@@ -590,20 +649,22 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
                    lebensthemen(tag, sprache), botschaften_text(sprache))
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
-    befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
-    if any(redaktion.schwer(b) or redaktion.leer(b) for b in befunde.values()):
+    zeiten = _posten_zeiten()
+    pruefe = lambda p: redaktion.pruefe_post(p, sprache) + tageszeit_befunde(p, zeiten) + stil_befunde(p, sprache)  # noqa: E731
+    befunde = {i: pruefe(p) for i, p in enumerate(posts)}
+    if any(redaktion.schwer(b) or redaktion.leer(b) or any(x.startswith((TAGESZEIT, STIL)) for x in b) for b in befunde.values()):
         hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
         korrigiert = _aufbereiten(frage_json(
             system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,
             SCHEMA, effort="medium", max_tokens=32000), sprache, thema["name"])
         if korrigiert:
             posts = korrigiert
-            befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
+            befunde = {i: pruefe(p) for i, p in enumerate(posts)}
     if not posts:
         raise RuntimeError("Claude hat keine Posts geliefert.")
     # Muttersprachliches Lektorat (Standard: Ungarisch) -- danach Pruefung neu, falls Texte sich geaendert haben
     if lektorat.pruefen(posts, sprache):
-        befunde = {i: redaktion.pruefe_post(p, sprache) for i, p in enumerate(posts)}
+        befunde = {i: pruefe(p) for i, p in enumerate(posts)}
     for i, p in enumerate(posts):
         p["_pruefung"] = befunde.get(i) or []
         p["_thema"] = thema["name"]
