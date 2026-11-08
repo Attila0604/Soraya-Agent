@@ -757,9 +757,9 @@ def veroeffentliche(zeile: dict, post: dict, e: dict | None = None) -> dict:
     if p == "facebook":
         if art == "reel":
             return meta.poste_facebook("reel", text, video=paket._rendere_video(post))
-        if als_diashow(post):
-            # Feed-Posts als Bild kamen auf Facebook kaum an (13-22 Aufrufe), Reels viel besser: an den Tagen
-            # ohne Karussell wie auf Instagram als Reel aus den Folien
+        if art == "post" and (als_diashow(post) or paket.medien.anzahl_bilder(post) > 1):
+            # Facebook-Zahlen (08.11.): Reels 98,6 % der Aufrufe, Karussells 1 % -> Feed-Post auf Facebook JEDEN Tag
+            # als Reel aus den Folien (Instagram behaelt Mo/Mi/Fr das Karussell)
             return meta.poste_facebook("reel", text, video=paket.rendere_diashow(post))
         if art == "post" and paket.medien.anzahl_bilder(post) > 1:
             return meta.poste_facebook(art, text, bilder=paket.hole_karussell(post))

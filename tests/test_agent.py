@@ -1292,11 +1292,12 @@ def test_karussell_bilder_und_posten(fake_meta, monkeypatch):
         assert r.status_code == 200 and r.content[:2] == b"\xff\xd8"
     assert client.get(f"/medien/{feed['id']}/folie/6", headers=AUTH).status_code == 404
     _verbinde("facebook")
+    # Facebook: Feed-Post mit Folien geht jeden Tag als Reel aus den Folien (Karussells brachten dort nur 1 %)
+    monkeypatch.setattr(posten.paket, "rendere_diashow", lambda p: b"mp4")
+    gepostet = []
+    monkeypatch.setattr(posten.meta, "poste_facebook", lambda art, text, **k: gepostet.append((art, k)) or {"id": "R1"})
     assert client.post("/posten/jetzt", json={"post_id": feed["id"], "plattform": "facebook"}, headers=AUTH).status_code == 200
-    fotos = [a for a in fake_meta.aufrufe if a[0] == "POST" and a[1].endswith("/photos")]
-    beitrag = [a for a in fake_meta.aufrufe if a[0] == "POST" and a[1].endswith("/feed")][-1]
-    assert len(fotos) >= 5 and all(f[2].get("published") == "false" for f in fotos[-5:])
-    assert sum(k.startswith("attached_media[") for k in beitrag[2]) == 5 and "http" not in beitrag[2]["message"]
+    assert gepostet and gepostet[-1][0] == "reel" and gepostet[-1][1]["video"] == b"mp4"
     # oeffentliche Adresse einer Folie (fuer Instagram) liefert das Bild nur mit passender Signatur
     url = posten.medien_url(feed, 3)
     name = url.rsplit("/", 1)[1]
