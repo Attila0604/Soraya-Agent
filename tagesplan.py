@@ -143,7 +143,7 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    dann ein Doppelpunkt, dann die konkrete Aussage, was die drei heute im Lebensthema des Tages verbindet
    (z. B. „Stier, Waage, Krebs: heute dreht sich alles ums Geld“) – die Namen erscheinen im Bild klein über dem Satz;
    nie bloß „das ist für euch“. Der "titel" sind die drei Namen. Als Frage „Welches Zeichen bist du?“ (nur das Zeichen
-   schreiben). Kurz: 8-12 Sekunden. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
+   schreiben). Etwa 15-18 Sekunden: genau 3 Einblendungen (je Zeichen eine), damit jede Leserin ihr Zeichen in Ruhe findet. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
    höchstens 8 Wörter, der letzte ist die Pointe), "szenen" (2 bis 3 kurze Bild-Ideen), "schluss" (kurz, ohne
    „{link_in_bio}“). "text": Bildunterschrift (35-70 Wörter): Hook, dann beim Drei-Zeichen-Check je Zeichen ein eigener
    kurzer Absatz mit dem Namen des Zeichens und einem treffenden, warmen Satz (sonst 2 kurze Absätze mit Einsicht und

@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-18"
+VERSION = "reel-19"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -390,6 +390,9 @@ TIKTOK_ENDE = 1.8
 TEMPO = {"hu": 1.12}
 
 
+ZWEITES_REEL_TEMPO = 1.25
+
+
 def zeitplan(zeilen: list[str], ende_s: float = 3.2, tempo: float = 1.0) -> tuple[list[tuple[float, float]], float, float]:
     """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden). tempo > 1: langsamer (mehr Lesezeit)."""
     t, plan = 0.0, []                     # Hook ab dem ersten Bild (Vorschaubild, erste Sekunde)
@@ -423,6 +426,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     if tiktok:
         zeilen = zeilen[:TIKTOK_ZEILEN]
     tempo = 1.0 if tiktok else TEMPO.get((post.get("sprache") or "")[:2], 1.0)
+    if not tiktok and meta.get("reel_nr") == 2:
+        tempo *= ZWEITES_REEL_TEMPO       # Drei-Zeichen-Check: jedes Zeichen bleibt laenger stehen (Facebook: 15-30 s am besten)
     plan, end_start, dauer = zeitplan(zeilen, TIKTOK_ENDE if tiktok else 3.2, tempo)
     SCHLEIFE = 0.7          # die letzten Sekundenbruchteile blenden zurueck zum Anfang (Video laeuft nahtlos weiter)
     n = int(round(dauer * FPS))
