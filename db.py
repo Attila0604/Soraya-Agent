@@ -666,18 +666,19 @@ def lade_tagesplaene_zeitraum(von: date, bis: date) -> list[dict]:
         return cur.fetchall()
 
 
-def loesche_tagesplan_entwuerfe(datum: date, sprache: str) -> int:
+def loesche_tagesplan_entwuerfe(datum: date, sprache: str, auch_bearbeitete: bool = True) -> int:
     """Vor dem Neu-Erstellen: nur unbearbeitete Entwuerfe dieses Tages entfernen. Was schon auf einer Plattform
     ist (z. B. per Testpost-Knopf, Status bleibt dann "entwurf"), bleibt -- sonst verschwindet mit ihm der Eintrag
     "heute schon gepostet" und der neue Post ginge auf derselben Plattform ein zweites Mal raus."""
     with _verbindung() as conn, conn.cursor() as cur:
         cur.execute(
-            "delete from soraya_posts p where quelle = 'himmel' and status = 'entwurf' "
-            "and aktualisiert - created_at < interval '5 seconds' "
+            # "Alle neu erstellen" ersetzt auch bearbeitete Entwuerfe (sonst gab es zwei 2. Reels und das alte ging raus)
+            "delete from soraya_posts p where quelle = 'himmel' and status in ('entwurf', 'freigegeben') "
+            "and (%s or aktualisiert - created_at < interval '5 seconds') "
             "and geplant_fuer = %s and sprache = %s "
             "and not exists (select 1 from soraya_veroeffentlichungen v where v.post_id = p.id "
             "                and v.status in ('fertig', 'laeuft'));",
-            (datum, sprache),
+            (auch_bearbeitete, datum, sprache),
         )
         anzahl = cur.rowcount
         conn.commit()

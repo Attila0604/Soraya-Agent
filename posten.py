@@ -525,13 +525,24 @@ def _tag_schluessel(t: str) -> str:
     return "".join(c for c in roh if not unicodedata.combining(c))
 
 
+def _zeichen_tag_passt(tag: str, post: dict) -> bool:
+    """Ein Sternzeichen-Hashtag (#vizonto, #ikrek ...) nur, wenn der Post dieses Zeichen auch nennt."""
+    import tagesplan
+    im_tag = tagesplan.zeichen_im_text(tag.lstrip("#"))
+    if not im_tag:
+        return True
+    sk = post.get("skript") or {}
+    genannt = tagesplan.zeichen_im_text(" ".join([post.get("titel") or "", post.get("text") or "", sk.get("hook") or ""]))
+    return bool(im_tag & genannt)
+
+
 def seo_tags(post: dict, plattform: str) -> list[str]:
     """Hashtags je Plattform: zuerst die vom Tagesplan (Thema), dann das Sternzeichen des Posts und die grossen
     Such-Hashtags der Sprache (#astrology, #horoscope ...) -- ohne Doppelte, so viele, wie die Plattform mag."""
     sprache = (post.get("sprache") or "en")[:2]
     idx = _zeichen_im(post)
     zeichen = ["#" + paket.medien.ZEICHEN_NAMEN[idx][_SPRACH_SPALTE.get(sprache, 1)]] if idx is not None else []
-    eigene = (post.get("hashtags") or "").split()[:5]
+    eigene = [t for t in (post.get("hashtags") or "").split()[:5] if _zeichen_tag_passt(t, post)]
     gross = PIN_TAGS.get(sprache, PIN_TAGS["en"]).split()
     n = HASHTAGS_JE_PLATTFORM.get(plattform, HASHTAGS_MAX)
     reihe = eigene[:n - 1] + zeichen + gross[:1] + eigene[n - 1:] + gross[1:]
