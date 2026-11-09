@@ -1121,6 +1121,29 @@
     table.hm th{font-size:10.5px}
     button.hm-zelle{font-size:11.5px}
   }
+  /* ================= Aufgeräumt (09.11.): weniger auf einmal, Rest aufklappbar ================= */
+  details.weitere-aktionen{flex-basis:100%}
+  details.weitere-aktionen>summary{font-size:13px;color:var(--mist-dim);padding:4px 0}
+  details.weitere-aktionen[open]>summary{color:var(--champagne)}
+  details.weitere-aktionen>.gruppe{margin-top:8px}
+  .aktionen .gruppe>.nebenbei{display:inline-flex}
+  details.heute-posts{margin-top:var(--s5)}
+  details.heute-posts>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    font-size:16px;color:var(--champagne);padding:14px 16px;border:1px solid var(--line-soft);border-radius:16px;background:rgba(255,255,255,.02)}
+  details.heute-posts>summary::before{content:none}
+  details.heute-posts>summary::after{content:"⌄";margin-left:auto;color:var(--mist-dim)}
+  #heutePostsBox[open]>summary::after,details.panel.tt-texte[open]>summary::after,details.panel.wz-lernt[open]>summary::after{content:"⌃"}
+  details.heute-posts .bar h3{display:none}
+  details.heute-posts[open]>summary{margin-bottom:var(--s3)}
+  details.heute-posts>summary .meta{font-family:inherit;font-size:13px}
+  details.panel>summary{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;list-style:none}
+  details.panel>summary h2{margin:0;display:inline}
+  details.panel>summary::before{content:none}
+  details.panel>summary::after{content:"⌄";margin-left:auto;color:var(--mist-dim)}
+  details.panel[open]>summary::after{content:"⌃"}
+  details.panel[open]>summary{margin-bottom:var(--s3)}
+  details.erkennt-mehr{margin-top:var(--s2)}
+
 </style>
 </head>
 <body>
@@ -1172,11 +1195,14 @@
       </details>
     </div>
 
+    <details class="heute-posts" id="heutePostsBox">
+    <summary>Posts von heute ansehen und bearbeiten<span class="meta" id="heutePostsZahl"></span></summary>
     <div class="bar">
       <h3>Posts von heute<span data-hilfe="karten"></span></h3>
       <div class="chips" id="heuteSprachen" role="group" aria-label="Sprache"></div>
     </div>
     <div id="heuteListe"><div class="empty"><span class="spin"></span>Wird geladen …</div></div>
+    </details>
 
   </section>
 
@@ -1646,17 +1672,19 @@ function karte(p, {datum = true} = {}){
     <p class="wirk" data-wirk="p${esc(p.id)}">${wirkText('p' + p.id)}</p>
     ${termin}
     <div class="aktionen">
-      <div class="gruppe">${schnell}${stopp}
-        <select data-aktion="status" aria-label="Status">${Object.entries(STATUS).map(([k,v]) =>
-          `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
-        ${datum ? `<input type="date" data-aktion="datum" aria-label="Geplant für" value="${esc((p.geplant_fuer || '').slice(0,10))}">` : ''}</div>
-      <div class="gruppe nebenbei rechts">
-        <button data-aktion="bearbeiten">Bearbeiten</button>
-        <button data-aktion="kopieren">Text kopieren</button>
-        <button data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
-        ${skript ? '<button data-aktion="skript">Skript kopieren</button>' : ''}
-        <button data-aktion="bild">${n > 1 ? 'Bilder' : 'Bild'}</button>
-        ${p.art === 'reel' ? '<button data-aktion="video">Video</button>' : ''}</div>
+      <div class="gruppe">${schnell}<span class="nebenbei"><button data-aktion="bearbeiten">Bearbeiten</button></span></div>
+      <details class="weitere-aktionen"><summary>Weitere Aktionen</summary>
+        <div class="gruppe">${stopp}
+          <select data-aktion="status" aria-label="Status">${Object.entries(STATUS).map(([k,v]) =>
+            `<option value="${k}"${k === st ? ' selected' : ''}>${v}</option>`).join('')}</select>
+          ${datum ? `<input type="date" data-aktion="datum" aria-label="Geplant für" value="${esc((p.geplant_fuer || '').slice(0,10))}">` : ''}</div>
+        <div class="gruppe nebenbei">
+          <button data-aktion="kopieren">Text kopieren</button>
+          <button data-aktion="link" title="Link mit Messung, z. B. für Story-Link-Sticker oder Facebook">Link kopieren</button>
+          ${skript ? '<button data-aktion="skript">Skript kopieren</button>' : ''}
+          <button data-aktion="bild">${n > 1 ? 'Bilder' : 'Bild'}</button>
+          ${p.art === 'reel' ? '<button data-aktion="video">Video</button>' : ''}</div>
+      </details>
     </div>
     </div>
   </article>`;
@@ -2162,10 +2190,11 @@ async function ladeTikTokTexte(){
   const box = $('tiktokTexte'); if(!box) return;
   try{ TT_TEXTE = (await api('/posten/tiktok-texte?tage=3')).texte || []; }catch(e){ TT_TEXTE = []; }
   if(!TT_TEXTE.length){ box.innerHTML = ''; return; }
-  box.innerHTML = `<div class="panel tt-texte"><h2>${IKON.tiktok} Text für TikTok</h2>
+  const offen = TT_TEXTE.filter(x => !x.zuordnet).length;
+  box.innerHTML = `<details class="panel tt-texte"${offen ? ' open' : ''}><summary><h2>${IKON.tiktok} Text für TikTok</h2><span class="meta">${offen ? offen + ' noch nicht auf TikTok' : 'alles erledigt'}</span></summary>
     <p class="hint">${kurzMehr('Entwurf in der TikTok-App öffnen → Weiter → hier „Text kopieren“ → in die Beschreibung einfügen → Veröffentlichen.', 'Bei Entwürfen übernimmt TikTok den Text nicht von selbst. Der Titel steht vorne – so findet Soraya das Video später wieder und zählt seine Aufrufe.')}</p>
     ${ttZeile(TT_TEXTE[0], 0)}
-    ${TT_TEXTE.length > 1 ? `<details class="tt-aeltere"><summary>Ältere (${Math.min(TT_TEXTE.length, 4) - 1})</summary>${TT_TEXTE.slice(1, 4).map((x, i) => ttZeile(x, i + 1)).join('')}</details>` : ''}</div>`;
+    ${TT_TEXTE.length > 1 ? `<details class="tt-aeltere"><summary>Ältere (${Math.min(TT_TEXTE.length, 4) - 1})</summary>${TT_TEXTE.slice(1, 4).map((x, i) => ttZeile(x, i + 1)).join('')}</details>` : ''}</details>`;
 }
 function ttZeile(x, i){
   return `<div class="tt-zeile">
@@ -2227,6 +2256,9 @@ async function ladeHeute(){
   sprachChips($('heuteSprachen'), heuteSprache, (s) => { heuteSprache = s; heuteGewaehlt = true; ladeHeute(); });
   const posts = (d.posts || []).filter(p => p.sprache === heuteSprache).sort(ordne);
   liste($('heuteListe'), posts, 'Für diese Sprache gibt es heute noch keine Posts.<span>Erstelle den Tagesplan oben.</span>', {datum: false});
+  const pruefen = alle.filter(p => befundSchwer((p.meta || {}).pruefung || []) && p.status === 'entwurf').length;
+  $('heutePostsZahl').textContent = `${alle.length} Posts${pruefen ? ' · ' + pruefen + ' zum Prüfen' : ''}`;
+  if(pruefen) $('heutePostsBox').open = true;          // etwas muss geprueft werden -> gleich offen
   if(laeuft) heuteTimer = setTimeout(ladeHeute, 4000);
   else if($('status').textContent.startsWith('Tagesplan wird')) melde(fehler.length ? '' : 'Tagesplan fertig ✓');
 }
@@ -2965,13 +2997,15 @@ const ERK_IKON = {plus: ['↑', 'Gut'], minus: ['↓', 'Schwächer'], achtung: [
 function htmlErkennt(d){
   const k = (d.analyse || {}).erkennt || [];
   if(!k.length) return '';
-  return `<div class="panel wz-erkennt"><h2>Soraya erkennt</h2><ol class="erkennt">${k.map(x => {
+  const zeile = x => {
     const [ik, lab] = ERK_IKON[x.art] || ERK_IKON.info;
     const aktion = x.aktion ? `<button class="textlink" data-zeit-platz="${esc(x.aktion.platz)}" data-zeit="${esc(x.aktion.zeit)}">Übernehmen ›<span class="sr"> ${esc(x.aktion.text)} (nur eintragen, du speicherst selbst)</span></button>`
       : x.post_id ? `<button class="textlink" data-wz-post="${esc(x.post_id)}">Ansehen ›</button>` : '';
     return `<li class="erk ${esc(x.art)}"><span class="erk-ikon" aria-hidden="true">${ik}</span><span class="sr">${lab}: </span>
       <span class="erk-zahl">${esc(x.zahl)}</span>
-      <div class="erk-text"><b>${esc(x.text)}</b>${x.detail ? `<span class="meta">${esc(x.detail)}</span>` : ''}${aktion}</div></li>`; }).join('')}</ol></div>`;
+      <div class="erk-text"><b>${esc(x.text)}</b>${x.detail ? `<span class="meta">${esc(x.detail)}</span>` : ''}${aktion}</div></li>`; };
+  return `<div class="panel wz-erkennt"><h2>Soraya erkennt</h2><ol class="erkennt">${k.slice(0, 3).map(zeile).join('')}</ol>
+    ${k.length > 3 ? `<details class="erkennt-mehr"><summary>Weitere Erkenntnisse (${k.length - 3})</summary><ol class="erkennt">${k.slice(3).map(zeile).join('')}</ol></details>` : ''}</div>`;
 }
 function htmlTrichter(d){
   const t = d.trichter, v = ((d.analyse || {}).trichter_vorher || {}).stufen || [];
@@ -3007,8 +3041,8 @@ function htmlUeberblick(d){
     ${htmlErkennt(d)}
     <div class="wz-zwei">${htmlTrichter(d)}
       <div class="panel wz-top"><h2>Beste Posts</h2>${top}</div></div>
-    <div class="panel wz-lernt"><h2>Soraya lernt</h2><dl class="lernt">${lernt}</dl>
-      ${d.lernen.duenn ? '' : `<p class="meta">Aus ${mehrzahl(d.lernen.gemessen, 'gemessenen Post', 'gemessenen Posts')} der letzten 30 Tage.</p>`}</div>`;
+    <details class="panel wz-lernt"><summary><h2>Soraya lernt</h2><span class="meta">was mehr, was weniger kommt</span></summary><dl class="lernt">${lernt}</dl>
+      ${d.lernen.duenn ? '' : `<p class="meta">Aus ${mehrzahl(d.lernen.gemessen, 'gemessenen Post', 'gemessenen Posts')} der letzten 30 Tage.</p>`}</details>`;
 }
 
 /* --- Besucher: woher, wann, wie viele --- */
@@ -3594,7 +3628,7 @@ async function ladePosten(){
     }).join('')}</tbody></table>`;
   $('termine').innerHTML = gruppen.length
     ? `${offenG.length ? `<h4 class="termin-kopf">Kommt noch <span>${offenG.length}</span></h4>${tabelle(offenG)}` : '<p class="meta">Gerade ist nichts geplant.</p>'}
-      ${fertigG.length ? `<details class="termin-fertig"${offenG.length ? '' : ' open'}><summary>Schon erledigt (${fertigG.length})</summary>${tabelle(fertigG)}</details>` : ''}`
+      ${fertigG.length ? `<details class="termin-fertig"><summary>Schon erledigt (${fertigG.length})</summary>${tabelle(fertigG)}</details>` : ''}`
     : `<div class="empty">Keine Termine.<span>${e.an ? 'Sie entstehen, sobald es Posts gibt und eine Plattform verbunden ist.' : 'Sie entstehen, wenn „Automatisch posten“ an ist.'}</span></div>`;
 
   // ungespeicherte Eingaben (auch ein übernommener Vorschlag) beim Nachladen nicht überschreiben
