@@ -452,24 +452,17 @@ def tiktok_text(post: dict) -> str:
     text = redaktion.mit_kommentar_frage(post.get("text") or "", sprache, f"p{post.get('id')}", 0)
     # "Link in Bio" ist auf TikTok (unter 1000 Followern) nicht antippbar -> stattdessen die kurze Adresse zum Lesen
     absaetze = [a.strip() for a in _luftig(text).split("\n\n") if a.strip() and not _BIO.search(a)]
-    kurz = []
-    for a in absaetze:
-        if kurz and len("\n\n".join(kurz + [a])) > TIKTOK_TEXT_MAX:
-            break
-        kurz.append(a)
-    if absaetze and absaetze[-1] not in kurz and redaktion.hat_kommentar_frage(absaetze[-1]):
-        kurz.append(absaetze[-1])                       # die Kommentar-Frage bleibt immer dabei
-    teile = [] if not titel or (kurz and kurz[0].lower().startswith(titel.lower()[:30])) else [titel]
-    teile += kurz
-    teile.append(TIKTOK_FOLGEN.get(sprache, TIKTOK_FOLGEN["en"]))
-    teile.append(f"🔮 {paket.medien.LINK_IN_BIO.get(sprache, paket.medien.LINK_IN_BIO['en'])}: sorayaluxuryastroguide.com")
-    # TikTok ist auch eine Suche: eine kurze Zeile mit den Suchwoertern (Sternzeichen, Horoskop) vor den Hashtags
+    # TikTok ist auch eine Suche: eine kurze Zeile mit den Suchwoertern (Sternzeichen, Horoskop)
     idx = _zeichen_im(post)
     such = TIKTOK_SUCHE.get(sprache[:2], TIKTOK_SUCHE["en"])
     if idx is not None:
         name = paket.medien.ZEICHEN_NAMEN[idx][_SPRACH_SPALTE.get(sprache[:2], 1)]
         such = PIN_SEO_ZEICHEN.get(sprache[:2], PIN_SEO_ZEICHEN["en"]).format(z=name[:1].upper() + name[1:]).rstrip(".") + " · " + such
-    teile.insert(len(teile) - 1, such)
+    rumpf = "\n\n".join(absaetze)
+    # Reel-Titel vorn, damit Soraya selbst hochgeladene Videos zuordnet (wenn der Hook nicht schon damit beginnt)
+    if titel and not (absaetze and absaetze[0].lower().startswith(titel.lower()[:30])):
+        rumpf = titel + "\n" + rumpf                # gleicher Absatz wie der Hook -> beide bleiben in der Kurzfassung
+    teile = [kurz(rumpf, [such, TIKTOK_FOLGEN.get(sprache, TIKTOK_FOLGEN["en"])])]
     tags = seo_tags(post, "tiktok")
     if tags:
         teile.append(" ".join(tags))
@@ -523,7 +516,7 @@ PIN_TAGS_MAX = 10
 _SPRACH_SPALTE = {"de": 0, "en": 1, "hu": 2, "it": 3}
 
 
-HASHTAGS_JE_PLATTFORM = {"instagram": 5, "facebook": 6, "tiktok": 6, "pinterest": PIN_TAGS_MAX, "linkedin": 3}
+HASHTAGS_JE_PLATTFORM = {"instagram": 5, "facebook": 8, "tiktok": 8, "pinterest": PIN_TAGS_MAX, "linkedin": 3}
 
 
 def _tag_schluessel(t: str) -> str:
@@ -589,19 +582,9 @@ def pinterest_text(post: dict) -> str:
         seo = PIN_SEO_ZEICHEN.get(sprache, PIN_SEO_ZEICHEN["en"]).format(z=name[:1].upper() + name[1:]) + " " + seo
     aufruf = PIN_AUFRUF.get(sprache, PIN_AUFRUF["en"])
     tags = seo_tags(post, "pinterest")
-    kurz = []
-    for a in absaetze:
-        if kurz and len("\n\n".join(kurz + [a])) > 260:
-            break
-        kurz.append(a)
-
-    def zusammen():
-        return "\n\n".join(kurz + [seo, aufruf] + ([" ".join(tags)] if tags else []))
-    while len(zusammen()) > 500 and len(tags) > 5:
-        tags.pop()
-    while len(zusammen()) > 500 and len(kurz) > 1:
-        kurz.pop()
-    return zusammen()[:500]
+    # hoechstens 200 Zeichen ohne Hashtags: erster Satz, dann (wenn es passt) Suchwoerter und die Aufforderung
+    rumpf = kurz(absaetze[0] if absaetze else "", [seo, aufruf])
+    return "\n\n".join([rumpf] + ([" ".join(tags)] if tags else []))[:500]
 
 
 def pin_fassung(post: dict) -> dict:
@@ -624,14 +607,27 @@ FB_FOLGEN = {"de": "➕ Folge der Seite – jeden Tag dein Himmel", "en": "➕ F
 FB_MAX = 200
 
 
-def fb_kurz(text: str) -> str:
-    """Facebook: erster Absatz (Hook) und die Frage zum Kommentieren -- zusammen hoechstens ~200 Zeichen."""
+def kurz(text: str, extras: list[str] | None = None, max_zeichen: int = FB_MAX) -> str:
+    """Beschreibung hoechstens max_zeichen (ohne Hashtags, Emojis zaehlen mit): erster Satz (Hook) und die Frage
+    zum Kommentieren; Zusatzzeilen (z. B. „Folge der Seite“) nur, solange es passt. Wunsch Attila 09.11. nach dem
+    Facebook-Tipp (100-200 Zeichen = mehr Aufrufe), fuer alle Plattformen."""
     absaetze = [a.strip() for a in (text or "").split("\n\n") if a.strip()]
-    if len(absaetze) <= 2 or len("\n\n".join(absaetze)) <= FB_MAX:
-        return "\n\n".join(absaetze)
+    if not absaetze:
+        return ""
     hook = absaetze[0]
     frage = next((a for a in reversed(absaetze[1:]) if redaktion.hat_kommentar_frage("x.\n\n" + a)), None)
-    return "\n\n".join([hook] + ([frage] if frage else []))
+    teile = [hook] + ([frage] if frage else [])
+    if len("\n\n".join(teile)) > max_zeichen:
+        teile = [hook]
+    if len(hook) > max_zeichen:
+        teile = [hook[:max_zeichen - 1].rsplit(" ", 1)[0].rstrip(",;:–- ") + "…"]
+    for z in extras or []:
+        if z and len("\n\n".join(teile + [z])) <= max_zeichen:
+            teile.append(z)
+    return "\n\n".join(teile)
+
+
+fb_kurz = kurz        # alter Name (Tests, Dashboard-Vorschau)
 
 
 def text_fuer(post: dict, plattform: str) -> str:
@@ -655,14 +651,12 @@ def text_fuer(post: dict, plattform: str) -> str:
     if plattform == "facebook" and post.get("art") != "story":
         # kein Link-Hinweis im Text (Wunsch von Attila); steht er mitten in einem langen Satz, bleibt er sinngemaess
         teile[0] = _ohne_bio(_ohne_link_hinweis(teile[0]), post.get("sprache") or "de")
-        # Facebook-Tipp (08.11.): Beitraege mit 100-200 Zeichen bekommen deutlich mehr Aufrufe -> nur Hook + Frage
-        teile[0] = fb_kurz(teile[0])
-    if plattform == "facebook" and post.get("art") != "story":
-        # kein Link im Text (Facebook zeigt Beitraege mit Links weniger Leuten), dafuer die Bitte zu folgen
+        # Facebook-Tipp (08.11.): 100-200 Zeichen -> Hook + Frage, die Bitte zu folgen nur, wenn sie noch passt
         sprache = post.get("sprache") or "en"
-        teile.append(FB_FOLGEN.get(sprache, FB_FOLGEN["en"]))
+        teile[0] = kurz(teile[0], [FB_FOLGEN.get(sprache, FB_FOLGEN["en"])])
     if plattform == "instagram" and post.get("art") != "story":
-        teile[0] = _mit_bio_hinweis(teile[0], post.get("sprache") or "en", speichern=True)
+        sprache = post.get("sprache") or "en"
+        teile[0] = kurz(_ohne_link_hinweis(teile[0]), [IG_SPEICHERN.get(sprache, IG_SPEICHERN["en"])])
     if post.get("hashtags"):
         # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur drei; Instagram nimmt hoechstens 5 je Beitrag.
         # seo_tags: Thema zuerst, dazu das Sternzeichen und ein grosser Such-Hashtag (#astrology ...)

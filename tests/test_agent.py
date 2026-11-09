@@ -1047,7 +1047,7 @@ def test_facebook_text_ohne_bio():
     assert "Bio" not in de and "Link" not in de and de.startswith("Neumond im Skorpion.")
     assert "Link oben auf unserer Seite" in posten._ohne_bio("Dein Horoskop: Link in Bio", "de")   # mitten im Satz: ersetzt
     viele = {**p, "hashtags": "#a1 #b2 #c3 #d4 #e5"}
-    assert posten.text_fuer(viele, "facebook").endswith("#a1 #b2 #c3 #d4 #e5 #horoscope")   # 6 (Facebook-Tipp 08.11.)
+    assert posten.text_fuer(viele, "facebook").split("\n\n")[-1].count("#") == 8      # 8 (Facebook-Tipp / Wunsch 09.11.)
     lang = {**p, "text": "Hook hier?\n\n" + "Ein langer Absatz. " * 12 + "\n\nNoch einer.\n\nWelches Zeichen bist du? 👇"}
     assert posten.text_fuer(lang, "facebook").startswith("Hook hier?\n\nWelches Zeichen bist du? 👇")    # nur Hook + Frage
     assert posten.text_fuer(viele, "instagram").endswith("#a1 #b2 #c3 #d4 #horoscope")  # 5: max. auf Instagram
@@ -1879,7 +1879,9 @@ def test_kommentar_frage_beim_posten(monkeypatch):
     teile = ig.split("\n\n")
     # Hook, Text, die Frage, Speichern, Hashtags -- ohne Link-Hinweis
     assert teile[0] == "La Luna è in Scorpione." and "link in bio" not in ig.lower() and "@soraya" not in ig
-    assert teile[2] == "A, B o C? Scrivi la tua lettera nei commenti 👇" and teile[3].startswith("🔖 Salvalo per dopo")
+    # nur noch Hook + Frage (+ Speichern), hoechstens 200 Zeichen ohne Hashtags
+    assert teile[1] == "A, B o C? Scrivi la tua lettera nei commenti 👇" and teile[2].startswith("🔖 Salvalo per dopo")
+    assert len("\n\n".join(teile[:-1])) <= 200
     assert teile[-1] == "#astrologia #luna #oroscopo #segnizodiacali #oroscopodioggi"     # + Such-Hashtags
     fb = posten.text_fuer(p, "facebook")
     assert fb.count("Scrivi la tua lettera") == 1 and "http" not in fb and "link in cima" not in fb
@@ -1888,7 +1890,8 @@ def test_kommentar_frage_beim_posten(monkeypatch):
     assert "commenti" not in posten.text_fuer(story, "instagram")
     reel = {"id": 8, "art": "reel", "sprache": "de", "text": "Zwei Nächte bis Vollmond.", "hashtags": "#a #b #c"}
     t = posten.text_fuer(reel, "tiktok")
-    assert t.split("\n\n")[1] in redaktion.KOMMENTAR_FRAGEN["de"] and t.endswith("#a #b #c #horoskop #astrologie #sternzeichen")
+    assert t.split("\n\n")[1] in redaktion.KOMMENTAR_FRAGEN["de"] and t.split("\n\n")[-1].startswith("#a #b #c #horoskop")
+    assert len(t.rsplit("\n\n", 1)[0]) <= 200
 
 
 def test_storys_messen_solange_sie_leben(fake_meta, frische_db):
@@ -2260,10 +2263,10 @@ def test_tiktok_text_zum_kopieren(frische_db):
                              "text": "The Hunter's Moon rises tomorrow.\n\nIt has guided people for centuries.\n\nLink in bio for your free horoscope.",
                              "hashtags": "#astrology #fullmoon #moon #horoscope #zodiac #extra"}], quelle="tagesplan", geplant_fuer=HEUTE)[0]
     t = posten.text_fuer(p, "tiktok")
-    assert t.startswith("Tomorrow's Moon has a history\n\nThe Hunter's Moon")
-    assert t.endswith("Follow for your daily moon 🌙\n\nDaily horoscope & astrology\n\n"
-                      "🔮 Your free horoscope: sorayaluxuryastroguide.com\n\n#astrology #fullmoon #moon #horoscope #zodiac #zodiacsigns")
+    assert t.startswith("Tomorrow's Moon has a history\nThe Hunter's Moon rises tomorrow.")    # Titel vorn (Zuordnung)
+    assert t.split("\n\n")[-1].startswith("#astrology #fullmoon #moon #horoscope #zodiac")
     assert "Type 🌙 if you felt this today." in t and "bio" not in t.lower()       # Kommentar-Frage bleibt dabei
+    assert len(t.rsplit("\n\n", 1)[0]) <= 200                                     # hoechstens 200 Zeichen ohne Hashtags
     zid = db.plane_veroeffentlichung(p["id"], "tiktok", datetime.now(himmel.WIEN), zurueckgeben=True)
     db.setze_veroeffentlichung(zid, "fertig", extern_id="pub1")
     d = client.get("/posten/tiktok-texte", headers=AUTH).json()["texte"]
@@ -2525,13 +2528,14 @@ def test_pinterest_titel_und_text():
     assert posten.pin_titel(p) == "Vollmond im Stier – Horoskop & Astrologie"
     assert posten.pin_titel({**p, "titel": "Dein Horoskop heute"}) == "Dein Horoskop heute"     # Stichwort schon drin
     t = posten.pinterest_text(p)
-    assert "Bio" not in t and "tippe auf den Pin" in t and t.startswith("Heute wird es ruhig.") and len(t) <= 500
+    assert "Bio" not in t and t.startswith("Heute wird es ruhig.") and len(t.rsplit("\n\n", 1)[0]) <= 200
     assert "Mondphasen" in t and "#a #b" in t and "#stier" in t and "#horoskop" in t      # Suchwoerter + Sternzeichen
+    assert "tippe auf den Pin" in posten.pinterest_text({**p, "titel": "Ruhe", "text": "Ruhig."})   # passt sie, kommt die Aufforderung
     # alle Plattformen: Thema zuerst, Sternzeichen und grosser Such-Hashtag dazu, ohne Doppelte (auch mit Akzenten)
     q = {"id": 5, "art": "reel", "sprache": "hu", "titel": "Skorpió: mélyebb", "text": "x", "meta": {},
          "hashtags": "#skorpioszezon #asztrologia #holdfazis #szerelem #tarot"}
     assert posten.seo_tags(q, "instagram") == ["#skorpioszezon", "#asztrologia", "#holdfazis", "#szerelem", "#skorpió"]
-    assert len(posten.seo_tags(q, "facebook")) == 6 and len(posten.seo_tags(q, "tiktok")) == 6
+    assert len(posten.seo_tags(q, "facebook")) == 8 and len(posten.seo_tags(q, "tiktok")) == 8
     pin = posten.seo_tags(q, "pinterest")
     assert len(pin) == 10 and "#asztrológia" not in pin                       # = #asztrologia
     tt = posten.tiktok_text(q)
