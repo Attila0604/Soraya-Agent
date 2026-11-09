@@ -193,10 +193,15 @@ def test_tagesplan_neu_behaelt_bearbeitete():
     with psycopg.connect(os.environ["DATABASE_URL"]) as conn:  # bearbeiteter Entwurf (spaeter geaendert)
         conn.execute("update soraya_posts set text = 'von Hand', aktualisiert = now() + interval '1 minute' where id = %s",
                      (posts[0]["id"],))
-    db.aendere_post(posts[1]["id"], {"status": "freigegeben"})
+    # schon gepostet -> bleibt, und fuer diesen Platz kommt kein zweiter Entwurf
+    zid = db.plane_veroeffentlichung(posts[1]["id"], "facebook", datetime.now(himmel.WIEN), zurueckgeben=True)
+    db.setze_veroeffentlichung(zid, "fertig", extern_id="x")
     assert tagesplan.erstelle("de", erzwingen=True)["status"] == "fertig"
-    texte = [p["text"] for p in db.lade_posts(von=HEUTE, bis=HEUTE)]
-    assert "von Hand" in texte and len(texte) == 5  # 2 behalten + 3 neue
+    neu = db.lade_posts(von=HEUTE, bis=HEUTE)
+    texte = [p["text"] for p in neu]
+    # „Alle neu erstellen“ ersetzt auch bearbeitete Entwuerfe (Wunsch 09.11.: sonst zwei 2. Reels, das alte ging raus)
+    assert "von Hand" not in texte and len(neu) == len(posts)
+    assert posts[1]["id"] in [p["id"] for p in neu]
 
 
 def test_tagesplan_fehler_und_wiederholung(monkeypatch):
@@ -2593,12 +2598,8 @@ def test_neu_erstellen_postet_nicht_doppelt(fake_meta, frische_db):
         c.execute("update soraya_veroeffentlichungen set status = 'fertig' where post_id = %s", (story["id"],))
     db.aendere_post(story["id"], {"status": "gepostet"})        # wie nach dem echten Posten
     tagesplan.erstelle("en", erzwingen=True)                 # "Neu erstellen" nach dem Posten der Story
-    neue_story = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "story" and p["id"] != story["id"])
-    posten.planen(jetzt=frueh)
-    assert db.platz_belegt(neue_story["id"], "instagram")
-    with psycopg.connect(os.environ["DATABASE_URL"]) as c:
-        n = c.execute("select count(*) from soraya_veroeffentlichungen where post_id = %s", (neue_story["id"],)).fetchone()[0]
-    assert n == 0                                            # die neue Story geht dort nicht ein zweites Mal raus
+    # fuer den schon geposteten Platz entsteht gar keine neue Story mehr (keine Dopplung im Plan)
+    assert [p["id"] for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "story"] == [story["id"]]
 
 
 def test_tiktok_nachpruefen_nach_dem_hochladen(fake_meta, monkeypatch, frische_db):
@@ -2682,8 +2683,7 @@ def test_neu_erstellen_behaelt_schon_gepostete_entwuerfe(fake_meta, frische_db):
     assert db.lade_post(feed["id"])["status"] == "entwurf"
     tagesplan.erstelle("en", erzwingen=True)
     assert db.lade_post(feed["id"]) is not None                # bleibt erhalten
-    neu = next(p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post" and p["id"] != feed["id"])
-    assert db.platz_belegt(neu["id"], "instagram")             # der neue geht dort nicht nochmal raus
+    assert [p["id"] for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["art"] == "post"] == [feed["id"]]   # kein zweiter
 
 
 def test_pinterest_alte_test_pinnwand_wird_ersetzt(monkeypatch, frische_db):

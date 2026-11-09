@@ -546,6 +546,7 @@ def tageszeit_befunde(post: dict, zeiten: dict) -> list[str]:
 
 STIL = "Stil"
 _PROZENT = re.compile(r"\d+(?:[.,]\d+)?\s?(?:%|százalék\w*|prozent|percent|per ?cento)", re.IGNORECASE)
+_FALSCHES_WORT = {"hu": re.compile(r"\bmelyik jel\b|\bcsillagjel\b|\bjeled\b", re.IGNORECASE)}   # richtig: jegy
 _WOERTLICH = {"hu": re.compile(r"\bszó szerint\b", re.IGNORECASE), "de": re.compile(r"\bbuchstäblich\b", re.IGNORECASE),
               "en": re.compile(r"\bliterally\b", re.IGNORECASE), "it": re.compile(r"\bletteralmente\b", re.IGNORECASE)}
 
@@ -558,6 +559,9 @@ def stil_befunde(post: dict, sprache: str) -> list[str]:
     m = _PROZENT.search(alles)
     if m:
         out.append(f"{STIL}: Prozentzahl im Text („{m.group(0)}“) – sag es als Bild")
+    f = _FALSCHES_WORT.get(sprache)
+    if f and f.search(alles):
+        out.append(f"{STIL}: „{f.search(alles).group(0)}“ – das Sternzeichen heißt auf Ungarisch „jegy“ / „csillagjegy“")
     w = _WOERTLICH.get(sprache)
     if w and w.search(alles):
         out.append(f"{STIL}: „{w.search(alles).group(0)}“ (englisch „literally“) – weglassen")
@@ -802,6 +806,10 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
                                anfaenge, zuletzt_motive, plattformen)
         if erzwingen:
             db.loesche_tagesplan_entwuerfe(tag, sprache)
+            # was schon gepostet ist (oder gerade rausgeht), bleibt -- fuer diesen Platz keinen zweiten Entwurf anlegen
+            belegt = {(q.get("art"), (q.get("meta") or {}).get("reel_nr") == 2)
+                      for q in db.lade_posts(von=tag, bis=tag) if q.get("sprache") == sprache and q.get("quelle") == "himmel"}
+            posts = [p for p in posts if (p.get("art"), p.get("_reel_nr") == 2) not in belegt]
         try:   # Serien-Nummer: der wievielte Post dieses Formats in dieser Sprache (z. B. "Ritual · Folge 12")
             folge = None if thema["name"].startswith("Großes Ereignis") else db.zaehle_format(sprache, thema["name"], tag) + 1
         except Exception:
