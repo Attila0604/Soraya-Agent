@@ -1054,7 +1054,7 @@ def test_facebook_text_ohne_bio():
     viele = {**p, "hashtags": "#a1 #b2 #c3 #d4 #e5"}
     assert posten.text_fuer(viele, "facebook").split("\n\n")[-1].count("#") == 8      # 8 (Facebook-Tipp / Wunsch 09.11.)
     lang = {**p, "text": "Hook hier?\n\n" + "Ein langer Absatz. " * 12 + "\n\nNoch einer.\n\nWelches Zeichen bist du? 👇"}
-    assert posten.text_fuer(lang, "facebook").startswith("Hook hier?\n\nWelches Zeichen bist du? 👇")    # nur Hook + Frage
+    assert posten.text_fuer(lang, "facebook").startswith("Hook hier? 🌙\n\nWelches Zeichen bist du? 👇")    # nur Hook + Frage (+ Emoji)
     assert posten.text_fuer(viele, "instagram").endswith("#a1 #b2 #c3 #d4 #horoscope")  # 5: max. auf Instagram
 
 
@@ -1341,7 +1341,7 @@ def test_bildunterschrift_wie_von_der_redaktion(monkeypatch):
     assert absaetze[-2] == "Welches Zeichen bist du? Schreib es in die Kommentare 👇"  # Frage allein
     assert posten._luftig("Ein Satz z. B. so. Zwei.") == "Ein Satz z. B. so.\n\nZwei."   # Abkuerzung bleibt
     ig = posten.text_fuer({"id": 3, "art": "post", "sprache": "de", "text": wand, "hashtags": "#a1 #b2 #c3 #d4 #e5 #f6 #g7"}, "instagram")
-    assert "Link in Bio" not in ig and ig.endswith("#a1 #b2 #c3 #d4 #horoskop")    # ohne Link-Hinweis, max. 5 Hashtags
+    assert "Link in Bio" not in ig and ig.split("\n\n")[-1].count("#") == 5 and "#a1" in ig   # ohne Link-Hinweis, max. 5 Hashtags
     b = redaktion.pruefe_post({"art": "post", "titel": "T", "text": "x " * 50, "hashtags": ["#a"] * 6}, "en")
     assert "6 Hashtags (3 bis 5 sinnvoll)" in b and not redaktion.schwer(b)
     lange_folie = {"art": "post", "titel": "T", "text": "x " * 50, "hashtags": ["#a", "#b", "#c"],
@@ -1883,11 +1883,11 @@ def test_kommentar_frage_beim_posten(monkeypatch):
     ig = posten.text_fuer(p, "instagram")
     teile = ig.split("\n\n")
     # Hook, Text, die Frage, Speichern, Hashtags -- ohne Link-Hinweis
-    assert teile[0] == "La Luna è in Scorpione." and "link in bio" not in ig.lower() and "@soraya" not in ig
+    assert teile[0].startswith("La Luna è in Scorpione.") and "link in bio" not in ig.lower() and "@soraya" not in ig
     # nur noch Hook + Frage (+ Speichern), hoechstens 200 Zeichen ohne Hashtags
     assert teile[1] == "A, B o C? Scrivi la tua lettera nei commenti 👇" and teile[2].startswith("🔖 Salvalo per dopo")
     assert len("\n\n".join(teile[:-1])) <= 200
-    assert teile[-1] == "#astrologia #luna #oroscopo #segnizodiacali #oroscopodioggi"     # + Such-Hashtags
+    assert teile[-1] == "#scorpione #astrologia #luna #oroscopo #segnizodiacali"     # Sternzeichen zuerst + Such-Hashtags
     fb = posten.text_fuer(p, "facebook")
     assert fb.count("Scrivi la tua lettera") == 1 and "http" not in fb and "link in cima" not in fb
     assert "link in bio" not in fb.lower() and "qui sotto" not in fb and fb.split("\n\n")[0] == "La Luna è in Scorpione."
@@ -2539,7 +2539,8 @@ def test_pinterest_titel_und_text():
     # alle Plattformen: Thema zuerst, Sternzeichen und grosser Such-Hashtag dazu, ohne Doppelte (auch mit Akzenten)
     q = {"id": 5, "art": "reel", "sprache": "hu", "titel": "Skorpió: mélyebb", "text": "x", "meta": {},
          "hashtags": "#skorpioszezon #asztrologia #holdfazis #szerelem #tarot"}
-    assert posten.seo_tags(q, "instagram") == ["#skorpioszezon", "#asztrologia", "#holdfazis", "#szerelem", "#skorpió"]
+    ig = posten.seo_tags(q, "instagram")
+    assert ig[0] == "#skorpió" and "#skorpioszezon" in ig and len(ig) == 5        # Sternzeichen zuerst
     assert len(posten.seo_tags(q, "facebook")) == 8 and len(posten.seo_tags(q, "tiktok")) == 8
     pin = posten.seo_tags(q, "pinterest")
     assert len(pin) == 10 and "#asztrológia" not in pin                       # = #asztrologia
@@ -2564,7 +2565,7 @@ def test_sprache_je_plattform(frische_db):
     # Facebook-Text: kein Link im Text, Hinweis auf den Link der Seite und Folgen-Zeile am Ende
     t = posten.text_fuer({"id": 3, "art": "post", "sprache": "hu", "text": "Hook.\n\nMehr Text.", "hashtags": "#a #b", "meta": {}}, "facebook")
     teile = t.split("\n\n")
-    assert teile[0] == "Hook." and "http" not in t and not any("oldalunk tetején" in x for x in teile) \
+    assert teile[0].startswith("Hook.") and "http" not in t and not any("oldalunk tetején" in x for x in teile) \
         and any("Kövesd az oldalt" in x for x in teile)
 
 
@@ -3000,3 +3001,16 @@ def test_nachbessern_nur_der_fehlerhafte_eintrag(monkeypatch):
     assert len(aufrufe) == 3                                    # Entwurf, Korrektur (gleich schlecht), Nachbessern
     assert posts[-1]["skript"]["hook"].startswith("Scorpio, Taurus, Leo:") and posts[-1]["_reel_nr"] == 2
     assert not tagesplan.hart(posts[-1]["_pruefung"])
+
+
+def test_kurztext_mit_emoji_und_allen_zeichen_hashtags(frische_db):
+    p = db.speichere_posts([{"art": "reel", "titel": "Skorpió, Vízöntő, Mérleg", "sprache": "hu",
+                             "text": "Skorpió, Vízöntő, Mérleg: ma furcsát álmodtok.\n\nValami.\n\nMelyik jegy vagy? Írd meg kommentben.",
+                             "hashtags": "#újhold #horoszkóp"}], quelle="tagesplan", geplant_fuer=HEUTE)[0]
+    t = posten.text_fuer(p, "facebook")
+    assert t.startswith("Skorpió, Vízöntő, Mérleg: ma furcsát álmodtok. ♏️♒️♎️") and "kommentben. 👇" in t
+    tags = t.split("\n\n")[-1].split()
+    assert {"#skorpió", "#vízöntő", "#mérleg"} <= set(tags) and len(tags) == 8
+    r = client.get(f"/posten/text/{p['id']}?plattform=facebook", headers=AUTH).json()
+    assert r["text"] == t and r["zeichen"] <= 200 and r["hashtags"] == 8
+    assert client.get(f"/posten/text/{p['id']}?plattform=xyz", headers=AUTH).status_code == 400

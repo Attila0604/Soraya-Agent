@@ -540,12 +540,19 @@ def seo_tags(post: dict, plattform: str) -> list[str]:
     """Hashtags je Plattform: zuerst die vom Tagesplan (Thema), dann das Sternzeichen des Posts und die grossen
     Such-Hashtags der Sprache (#astrology, #horoscope ...) -- ohne Doppelte, so viele, wie die Plattform mag."""
     sprache = (post.get("sprache") or "en")[:2]
+    # alle Sternzeichen, die der Hook / die Ueberschrift nennt (Drei-Zeichen-Check: alle drei), sonst das eine
+    import tagesplan
+    sk = post.get("skript") or {}
+    vorn = " ".join([post.get("titel") or "", sk.get("hook") or "", (post.get("text") or "").split("\n", 1)[0]])
+    alle = sorted(tagesplan.zeichen_im_text(vorn))[:3]
     idx = _zeichen_im(post)
-    zeichen = ["#" + paket.medien.ZEICHEN_NAMEN[idx][_SPRACH_SPALTE.get(sprache, 1)]] if idx is not None else []
+    if idx is not None and idx not in alle:
+        alle = [idx] + alle[:2]
+    zeichen = ["#" + paket.medien.ZEICHEN_NAMEN[i][_SPRACH_SPALTE.get(sprache, 1)].replace(" ", "") for i in alle]
     eigene = [t for t in (post.get("hashtags") or "").split()[:5] if _zeichen_tag_passt(t, post)]
     gross = PIN_TAGS.get(sprache, PIN_TAGS["en"]).split()
     n = HASHTAGS_JE_PLATTFORM.get(plattform, HASHTAGS_MAX)
-    reihe = eigene[:n - 1] + zeichen + gross[:1] + eigene[n - 1:] + gross[1:]
+    reihe = zeichen + eigene[:max(1, n - len(zeichen) - 1)] + gross[:1] + eigene + gross[1:]
     tags, gesehen = [], set()
     for t in reihe:
         k = _tag_schluessel(t)
@@ -632,10 +639,28 @@ def kurz(text: str, extras: list[str] | None = None, max_zeichen: int = FB_MAX) 
         teile = [hook]
     if len(hook) > max_zeichen:
         teile = [hook[:max_zeichen - 1].rsplit(" ", 1)[0].rstrip(",;:–- ") + "…"]
+    teile = _mit_emoji(teile, max_zeichen)
     for z in extras or []:
         if z and len("\n\n".join(teile + [z])) <= max_zeichen:
             teile.append(z)
     return "\n\n".join(teile)
+
+
+def _mit_emoji(teile: list[str], max_zeichen: int) -> list[str]:
+    """Kurztext ohne Emoji wirkt im Feed nackt: hinter den Hook die Symbole der genannten Sternzeichen (sonst 🌙),
+    hinter die Frage ein 👇 -- nur, solange es in max_zeichen passt."""
+    import tagesplan
+    teile = list(teile)
+    if teile and not _EMOJI.search(teile[0]):
+        klein = teile[0].lower()
+        idx = sorted(tagesplan.zeichen_im_text(teile[0]), key=lambda i: min(
+            [klein.find(n.lower()) for n in paket.medien.ZEICHEN_NAMEN[i] if n.lower() in klein] or [999]))[:3]
+        zusatz = " " + ("".join(paket.medien.ZEICHEN_GLYPHE[i] + "\ufe0f" for i in idx) if idx else "🌙")
+        if len("\n\n".join(teile)) + len(zusatz) <= max_zeichen:
+            teile[0] += zusatz
+    if len(teile) > 1 and not _EMOJI.search(teile[-1]) and len("\n\n".join(teile)) + 2 <= max_zeichen:
+        teile[-1] += " 👇"
+    return teile
 
 
 fb_kurz = kurz        # alter Name (Tests, Dashboard-Vorschau)
