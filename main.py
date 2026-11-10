@@ -423,6 +423,19 @@ def wochenpaket_datei(job_id: str):
 
 
 # ---------------------------------------------------------------- Automatisch posten
+@app.get("/posten/text/{post_id}")
+def posten_text(post_id: int, plattform: str = "facebook"):
+    """So geht der Text auf einer Plattform raus (gekuerzt, mit Hashtags) -- Vorschau im Content Studio."""
+    post = db.lade_post(post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post nicht gefunden")
+    if plattform not in posten.PLATTFORMEN:
+        raise HTTPException(status_code=400, detail="Unbekannte Plattform")
+    text = posten.text_fuer(post, plattform)
+    rumpf = text.rsplit("\n\n", 1)[0] if text.rsplit("\n\n", 1)[-1].startswith("#") else text
+    return {"plattform": plattform, "text": text, "zeichen": len(rumpf), "hashtags": text.count("#")}
+
+
 @app.get("/posten/tiktok-texte")
 def posten_tiktok_texte(tage: int = 3):
     """Texte fuer die TikTok-Entwuerfe (TikTok uebernimmt bei Entwuerfen keinen Text)."""

@@ -1144,6 +1144,10 @@
   details.panel[open]>summary{margin-bottom:var(--s3)}
   details.erkennt-mehr{margin-top:var(--s2)}
 
+  details.pl-text{margin:6px 0}
+  details.pl-text>summary{font-size:13px;color:var(--mist-dim)}
+  details.pl-text[open]>summary{color:var(--champagne)}
+  .pl-text-text{white-space:normal;background:rgba(255,255,255,.03);border:1px solid var(--line-soft);border-radius:12px;padding:10px 12px;margin:8px 0 4px;color:var(--mist)}
 </style>
 </head>
 <body>
@@ -1671,6 +1675,7 @@ function karte(p, {datum = true} = {}){
     </div>
     <p class="wirk" data-wirk="p${esc(p.id)}">${wirkText('p' + p.id)}</p>
     ${termin}
+    ${plTexte(p, termine)}
     <div class="aktionen">
       <div class="gruppe">${schnell}<span class="nebenbei"><button data-aktion="bearbeiten">Bearbeiten</button></span></div>
       <details class="weitere-aktionen"><summary>Weitere Aktionen</summary>
@@ -1689,6 +1694,24 @@ function karte(p, {datum = true} = {}){
     </div>
   </article>`;
 }
+// So geht der Text auf den Plattformen raus (gekuerzt, mit Emojis und Hashtags) -- erst beim Aufklappen geladen
+function plTexte(p, termine){
+  const pls = [...new Set(termine.map(t => t.plattform))].filter(x => x !== 'linkedin');
+  if(!pls.length || p.art === 'story') return '';
+  return pls.map(pl => `<details class="pl-text" data-pl-text="${esc(p.id)}" data-pl="${esc(pl)}"><summary>So erscheint der Text auf ${esc(PL_NAME[pl] || pl)}</summary>
+    <div class="pl-text-inhalt meta">Wird geladen …</div></details>`).join('');
+}
+document.addEventListener('toggle', async (ev) => {
+  const d = ev.target; if(!(d instanceof HTMLElement) || !d.matches('details.pl-text') || !d.open || d.dataset.geladen) return;
+  const box = d.querySelector('.pl-text-inhalt');
+  try{ const r = await api(`/posten/text/${d.dataset.plText}?plattform=${d.dataset.pl}`);
+    d.dataset.geladen = '1';
+    box.innerHTML = `<p class="pl-text-text">${esc(r.text).replace(/\n/g, '<br>')}</p>
+      <p class="meta">${r.zeichen} Zeichen ohne Hashtags · ${r.hashtags} Hashtags</p>
+      <button class="ghost klein" data-pl-kopie>Text kopieren</button>`;
+    box.querySelector('[data-pl-kopie]').addEventListener('click', (e) => kopiere(e.currentTarget, r.text));
+  }catch(e){ box.textContent = 'Vorschau gerade nicht verfügbar.'; }
+}, true);
 function liste(box, posts, leer, opts){
   box.innerHTML = posts.length ? posts.map(p => karte(p, opts)).join('')
     : `<div class="empty">${leer}</div>`;
