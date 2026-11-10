@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-20"
+VERSION = "reel-21"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -691,7 +691,8 @@ def als_bytes(post: dict, tiktok: bool = False) -> bytes:
 # ---------------------------------------------------------------------------
 # Diashow: aus den Karussell-Folien eines Feed-Posts ein Reel (fuer Instagram, wo Reels Fremde erreichen)
 # ---------------------------------------------------------------------------
-DIA_FOLIE, DIA_UEBERGANG, DIA_LETZTE = 2.6, 0.5, 3.2
+DIA_FOLIE, DIA_UEBERGANG, DIA_LETZTE = 2.6, 0.5, 4.0
+DIA_ZIEL, DIA_MAX_SCHRITT = 20.0, 5.0
 
 
 def diashow(post: dict, bilder: list[bytes], ziel: str) -> dict:
@@ -703,7 +704,9 @@ def diashow(post: dict, bilder: list[bytes], ziel: str) -> dict:
     breite = 1000
     folien = [f.resize((breite, int(f.height * breite / f.width)), Image.LANCZOS) for f in folien]
     mitte_y = 880                                        # etwas ueber der Mitte (unten liegen die Knoepfe der Apps)
-    starts = [i * (DIA_FOLIE - DIA_UEBERGANG) for i in range(len(folien))]
+    # Facebook: 15-30 s laufen am besten -> jede Folie bleibt so lange stehen, dass das Ganze ~20 s dauert (Wunsch 10.11.)
+    schritt = max(DIA_FOLIE - DIA_UEBERGANG, min(DIA_MAX_SCHRITT, (DIA_ZIEL - DIA_LETZTE) / max(1, len(folien) - 1)))
+    starts = [i * schritt for i in range(len(folien))]
     dauer = starts[-1] + DIA_LETZTE
     n = int(round(dauer * FPS))
     grund = medien._verlauf_hintergrund(W, H, st["palette"]).convert("RGB")
@@ -728,7 +731,7 @@ def diashow(post: dict, bilder: list[bytes], ziel: str) -> dict:
             dd = ImageDraw.Draw(bild, "RGBA")
             _staub_malen(dd, staub, t, 0.8, (233, 207, 156))
             for k, (folie, s0) in enumerate(zip(folien, starts)):
-                ende = s0 + (DIA_LETZTE if k == len(folien) - 1 else DIA_FOLIE)
+                ende = s0 + (DIA_LETZTE if k == len(folien) - 1 else schritt + DIA_UEBERGANG)
                 if not (s0 - 0.01 <= t <= ende):
                     continue
                 rein = 1.0 if k == 0 else _weich((t - s0) / DIA_UEBERGANG)
