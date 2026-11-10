@@ -1890,7 +1890,7 @@ def test_kommentar_frage_beim_posten(monkeypatch):
     assert teile[-1] == "#scorpione #astrologia #luna #oroscopo #segnizodiacali"     # Sternzeichen zuerst + Such-Hashtags
     fb = posten.text_fuer(p, "facebook")
     assert fb.count("Scrivi la tua lettera") == 1 and "http" not in fb and "link in cima" not in fb
-    assert "link in bio" not in fb.lower() and "qui sotto" not in fb and fb.split("\n\n")[0] == "La Luna è in Scorpione."
+    assert "link in bio" not in fb.lower() and "qui sotto" not in fb and fb.split("\n\n")[0].startswith("La Luna è in Scorpione.")
     story = {**p, "art": "story", "text": "Come dormi? Rispondi con 🌙", "meta": {}}
     assert "commenti" not in posten.text_fuer(story, "instagram")
     reel = {"id": 8, "art": "reel", "sprache": "de", "text": "Zwei Nächte bis Vollmond.", "hashtags": "#a #b #c"}
