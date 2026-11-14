@@ -2545,7 +2545,7 @@ def test_pinterest_titel_und_text():
     pin = posten.seo_tags(q, "pinterest")
     assert len(pin) == 10 and "#asztrológia" not in pin                       # = #asztrologia
     tt = posten.tiktok_text(q)
-    assert "Skorpió napi horoszkóp · Napi horoszkóp és asztrológia" in tt
+    assert len(tt) <= 200 and tt.split("\n\n")[-1].startswith("#skorpió")      # gesamt hoechstens 200 Zeichen
     # Story als Pin: ohne Antwort-Knoepfe
     st = posten.pin_fassung({"art": "story", "text": "Spürst du es? Antworte mit 🌙 oder ☀️", "meta": {"bild_punkte": ["🌙 Ja", "☀️ Nein"]}})
     assert st["meta"]["bild_punkte"] == [] and "Antworte" not in st["text"]
@@ -3014,3 +3014,12 @@ def test_kurztext_mit_emoji_und_allen_zeichen_hashtags(frische_db):
     r = client.get(f"/posten/text/{p['id']}?plattform=facebook", headers=AUTH).json()
     assert r["text"] == t and r["zeichen"] <= 200 and r["hashtags"] == 8
     assert client.get(f"/posten/text/{p['id']}?plattform=xyz", headers=AUTH).status_code == 400
+
+
+def test_gesamt_hoechstens_200_mit_hashtags():
+    p = {"id": 9, "art": "reel", "sprache": "hu", "titel": "Bak, Bika, Rák",
+         "text": "Bak, Bika, Rák: ma visszatér egy régi barátság.\n\nValami.\n\nKinek a neve jutott eszedbe elsőként? Írd meg kommentben!",
+         "hashtags": "#bakjegy #rákjegy #barátnőihoroszkóp #holdfázis", "meta": {}}
+    for pl in ("facebook", "instagram", "tiktok"):
+        t = posten.text_fuer(p, pl)
+        assert len(t) <= 200 and t.split("\n\n")[-1].count("#") >= 3, pl

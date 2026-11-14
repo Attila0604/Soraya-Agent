@@ -462,11 +462,7 @@ def tiktok_text(post: dict) -> str:
     # Reel-Titel vorn, damit Soraya selbst hochgeladene Videos zuordnet (wenn der Hook nicht schon damit beginnt)
     if titel and not (absaetze and absaetze[0].lower().startswith(titel.lower()[:30])):
         rumpf = titel + "\n" + rumpf                # gleicher Absatz wie der Hook -> beide bleiben in der Kurzfassung
-    teile = [kurz(rumpf, [such, TIKTOK_FOLGEN.get(sprache, TIKTOK_FOLGEN["en"])])]
-    tags = seo_tags(post, "tiktok")
-    if tags:
-        teile.append(" ".join(tags))
-    return "\n\n".join(teile)
+    return mit_tags(rumpf, [such, TIKTOK_FOLGEN.get(sprache, TIKTOK_FOLGEN["en"])], seo_tags(post, "tiktok"))
 
 
 def tiktok_texte(tage: int = 3) -> list[dict]:
@@ -646,6 +642,27 @@ def kurz(text: str, extras: list[str] | None = None, max_zeichen: int = FB_MAX) 
     return "\n\n".join(teile)
 
 
+GESAMT_MAX = 200     # Facebook zaehlt die Hashtags mit (Tipp im Business-Dashboard 14.11.)
+TAGS_MIN = 3
+
+
+def mit_tags(text: str, extras: list[str], tags: list[str], gesamt: int = GESAMT_MAX) -> str:
+    """Ganze Beschreibung inklusive Hashtags hoechstens `gesamt` Zeichen: Hook + Frage, dann so viele Hashtags wie passen
+    (mindestens die ersten 3 = Sternzeichen bzw. Thema), Zusatzzeilen (Folgen, Speichern) nur, wenn noch Platz ist."""
+    rumpf = kurz(text, [], gesamt)
+    def laenge(teile):
+        return len("\n\n".join(t for t in teile if t))
+    k = len(tags)
+    while k > min(TAGS_MIN, len(tags)) and laenge([rumpf, " ".join(tags[:k])]) > gesamt:
+        k -= 1
+    zeile = " ".join(tags[:k])
+    teile = [rumpf]
+    for z in extras or []:
+        if z and laenge(teile + [z, zeile]) <= gesamt:
+            teile.append(z)
+    return "\n\n".join(t for t in teile + [zeile] if t)
+
+
 def _mit_emoji(teile: list[str], max_zeichen: int) -> list[str]:
     """Kurztext ohne Emoji wirkt im Feed nackt: hinter den Hook die Symbole der genannten Sternzeichen (sonst 🌙),
     hinter die Frage ein 👇 -- nur, solange es in max_zeichen passt."""
@@ -687,12 +704,12 @@ def text_fuer(post: dict, plattform: str) -> str:
     if plattform == "facebook" and post.get("art") != "story":
         # kein Link-Hinweis im Text (Wunsch von Attila); steht er mitten in einem langen Satz, bleibt er sinngemaess
         teile[0] = _ohne_bio(_ohne_link_hinweis(teile[0]), post.get("sprache") or "de")
-        # Facebook-Tipp (08.11.): 100-200 Zeichen -> Hook + Frage, die Bitte zu folgen nur, wenn sie noch passt
+        # Facebook-Tipp: 100-200 Zeichen INKLUSIVE Hashtags -> Hook + Frage + Hashtags, Folgen-Bitte nur wenn Platz
         sprache = post.get("sprache") or "en"
-        teile[0] = kurz(teile[0], [FB_FOLGEN.get(sprache, FB_FOLGEN["en"])])
+        return mit_tags(teile[0], [FB_FOLGEN.get(sprache, FB_FOLGEN["en"])], seo_tags(post, "facebook"))
     if plattform == "instagram" and post.get("art") != "story":
         sprache = post.get("sprache") or "en"
-        teile[0] = kurz(_ohne_link_hinweis(teile[0]), [IG_SPEICHERN.get(sprache, IG_SPEICHERN["en"])])
+        return mit_tags(_ohne_link_hinweis(teile[0]), [IG_SPEICHERN.get(sprache, IG_SPEICHERN["en"])], seo_tags(post, "instagram"))
     if post.get("hashtags"):
         # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur drei; Instagram nimmt hoechstens 5 je Beitrag.
         # seo_tags: Thema zuerst, dazu das Sternzeichen und ein grosser Such-Hashtag (#astrology ...)
