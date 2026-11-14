@@ -1829,9 +1829,10 @@ function bearbeitenDialog(p){
         const norm = (t) => String(t || '').replace(/\s+/g, ' ').trim().toLowerCase();
         const zeilenText = neu.text.split('\n'), erste = zeilenText[0] || '', alteErste = String(p.text || '').split('\n')[0] || '';
         const textGeaendert = norm(erste) !== norm(alteErste), hookGeaendert = hook !== (alt.hook || '');
-        if(hookGeaendert && !textGeaendert && hook && norm(alteErste).startsWith(norm(alt.hook).replace(/[.!?…]+$/, ''))){
+        // bei Reels ist die erste Textzeile immer der Hook (die Sprachpruefung aendert manchmal nur eines von beiden)
+        if(hookGeaendert && !textGeaendert && hook){
           zeilenText[0] = hook; neu.text = zeilenText.join('\n');
-        } else if(textGeaendert && !hookGeaendert && erste.trim() && norm(alteErste).startsWith(norm(alt.hook).replace(/[.!?…]+$/, ''))){
+        } else if(textGeaendert && !hookGeaendert && erste.trim()){
           neu.skript = {...alt, ...(neu.skript || {}), hook: erste.replace(/\s*\p{Extended_Pictographic}.*$/u, '').trim(), einblendungen: zeilen};
         }
       }
