@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-21"
+VERSION = "reel-22"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -150,6 +150,9 @@ FOLGEN = {"de": "Folge Soraya – jeden Tag neu", "en": "Follow Soraya – new e
 # TikTok: der Link in der Bio ist (unter 1000 Followern) nicht antippbar -> die Hauptaufforderung ist Folgen
 FOLGEN_KNOPF = {"de": "Folge – morgen geht's weiter", "en": "Follow for tomorrow", "hu": "Kövess, holnap folytatjuk",
                 "it": "Seguimi, domani si continua"}
+# Reels haben keinen antippbaren Link -> unter "Folgen" der Name, unter dem man die App findet
+PLAY = {"de": "Im Google Play Store: „Soraya Astro“", "en": "On Google Play: search “Soraya Astro”",
+        "hu": "Keresd a Google Playen: „Soraya Astro”", "it": "Su Google Play: cerca “Soraya Astro”"}
 SUCHEN = {"de": "Oder such: Soraya Astro Guide", "en": "Or search: Soraya Astro Guide",
           "hu": "Vagy keress rá: Soraya Astro Guide", "it": "Oppure cerca: Soraya Astro Guide"}
 
@@ -181,6 +184,10 @@ def _endkarte(post: dict, tiktok: bool = False) -> Image.Image:
     f = medien.messe_text(unten.get(sp, unten["en"]), breite=W - 240, groesse=32,
                           name="inter500", zeilenhoehe=1.3, max_zeilen=2, min_groesse=24)
     medien.zeichne_text(d, f, W / 2, y + 78 + 34, "#CDB98C", m)
+    if not tiktok:
+        g = medien.messe_text(PLAY.get(sp, PLAY["en"]), breite=W - 240, groesse=28,
+                              name="inter400", zeilenhoehe=1.3, max_zeilen=2, min_groesse=22)
+        medien.zeichne_text(d, g, W / 2, y + 78 + 34 + f["hoehe"] + 22, "#8F83AD", m)
     return ebene.resize((W, H), Image.LANCZOS)
 
 
