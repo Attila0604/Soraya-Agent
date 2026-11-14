@@ -67,7 +67,10 @@ def _system(sprache: str) -> str:
         "a melody, a scent and a photo), rewrite the hook so it fits all of it (e.g. \"a small memory takes you back in time\"). "
         "Also fix sentences that are grammatical but unclear or illogical. Keep the zodiac sign names at the start of a hook. "
         "If a text names a difficulty (tension, conflict, doubt, tiredness) but leaves the reader without a way forward, add "
-        "one short, gentle, concrete hint (a small ritual or a sentence to say) in the same tone – minimal change, no new paragraph."
+        "one short, gentle, concrete hint (a small ritual or a sentence to say) in the same tone – minimal change, no new paragraph. "
+        "The comment question at the end must be positive and easy to answer in public (zodiac sign, an emoji, yes/no, A/B, "
+        "accepting a wish). If it asks for something private or negative (names of people, past events, conflicts, 'when did "
+        "you last …'), replace it with such a light, positive question in the same language."
         + _HINWEISE.get(sprache, "") +
         "\n\nEvery correction: \"alt\" = the exact passage copied character for character from the texts (2-15 words, "
         "a single word only if it is unique; a whole sentence when it must be rewritten), \"neu\" = the corrected passage. At most "
