@@ -284,7 +284,9 @@ def content_ansehen(limit: int = 50, von: Optional[date] = None, bis: Optional[d
 @app.patch("/content/{post_id}")
 def content_aendern(post_id: int, aenderung: PostAenderung):
     try:
-        zeile = aendere_post(post_id, aenderung.model_dump(exclude_unset=True))
+        felder = aenderung.model_dump(exclude_unset=True)
+        print(f"[Bearbeiten] Post {post_id}: {', '.join(sorted(felder))}", flush=True)
+        zeile = aendere_post(post_id, felder)
         # nach dem Bearbeiten neu pruefen (Befunde sperren das automatische Posten bis zur Freigabe)
         if zeile and zeile.get("quelle") == "himmel" and (zeile.get("meta") or {}).get("pruefung") is not None:
             befunde = redaktion.pruefe_post(zeile, zeile.get("sprache") or "de")
@@ -293,6 +295,7 @@ def content_aendern(post_id: int, aenderung: PostAenderung):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        print(f"[Bearbeiten] Post {post_id}: FEHLER {e}", flush=True)
         raise HTTPException(status_code=500, detail=str(e))
     if not zeile:
         raise HTTPException(status_code=404, detail="Post nicht gefunden.")

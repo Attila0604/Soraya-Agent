@@ -1804,6 +1804,7 @@ function bearbeitenDialog(p){
     <div class="feld"><label for="eTags">Hashtags</label><input id="eTags" value="${esc(p.hashtags || '')}"></div>
     ${p.art === 'reel' ? `<div class="feld"><label for="eHook">Reel: erste Zeile (Hook)</label><input id="eHook" value="${esc((p.skript || {}).hook || '')}"></div>
     <div class="feld"><label for="eZeilen">Reel: Texte im Video (eine Zeile je Einblendung)</label><textarea id="eZeilen" rows="5">${esc(((p.skript || {}).einblendungen || []).join('\n'))}</textarea></div>` : ''}
+    <div class="fehlerbox hide" id="eFehler" role="alert"></div>
     <div class="row" style="margin-top:16px"><button id="eSpeichern">Speichern</button>
       <button class="ghost" id="eAbbrechen">Abbrechen</button>
       <button class="ghost gefahr" id="eLoeschen" style="margin-left:auto">Post löschen</button></div>`;
@@ -1834,9 +1835,20 @@ function bearbeitenDialog(p){
           neu.skript = {...alt, ...(neu.skript || {}), hook: erste.replace(/\s*\p{Extended_Pictographic}.*$/u, '').trim(), einblendungen: zeilen};
         }
       }
-      await aendere(p.id, neu);
+      $('eSpeichern').disabled = true; $('eSpeichern').textContent = 'Speichert …';
+      const r = await api('/content/' + p.id, {method: 'PATCH', body: JSON.stringify(neu)});
+      // gegenpruefen: steht jetzt wirklich der neue Text in der Datenbank?
+      const gesp = (r && r.post) || {}, gleich = (a, b) => String(a || '').trim() === String(b || '').trim();
+      if(!gleich(gesp.text, neu.text) || (neu.skript && !gleich((gesp.skript || {}).hook, neu.skript.hook)))
+        throw new Error('Der Server hat die Änderung nicht übernommen (Post ' + p.id + ').');
+      POSTS.set(String(p.id), {...p, ...gesp});
       d.close(); melde('Gespeichert ✓'); neuLaden();
-    }catch(e){ melde('Fehler: ' + e.message); }
+    }catch(e){
+      const box = $('eFehler');
+      box.innerHTML = '<b>Nicht gespeichert.</b> ' + esc(e.message) + '<br>Bitte mach ein Bildschirmfoto davon.';
+      box.classList.remove('hide'); box.scrollIntoView({block: 'nearest'});
+      $('eSpeichern').disabled = false; $('eSpeichern').textContent = 'Speichern';
+    }
   };
 }
 
