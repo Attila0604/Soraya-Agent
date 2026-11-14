@@ -548,6 +548,29 @@ def cockpit(tage: int = 7, heute: date | None = None) -> dict:
     return daten
 
 
+def gestern(heute: date | None = None) -> dict:
+    """Eine Zeile fuer „Heute“: was hat gestern gebracht? Aufrufe der Posts von gestern (bis jetzt gemessen),
+    neue Follower (Tagesstand gestern minus vorgestern, nur verbundene Plattformen), neue Konten (Engine)."""
+    heute = heute or himmel.heute()
+    g, vg = heute - timedelta(days=1), heute - timedelta(days=2)
+    d = cockpit(7, heute)
+    tag = next((v for v in d.get("verlauf") or [] if v.get("datum") == g.isoformat()), {})
+    neu, gemessen = 0, False
+    for pl in PLATTFORMEN:
+        if not (d.get("verbunden") or {}).get(pl):
+            continue
+        try:
+            verlauf = posten.follower_verlauf(FOLLOWER_SCHLUESSEL[pl])
+        except Exception:  # noqa: BLE001
+            continue
+        a, b = verlauf.get(vg.isoformat()), verlauf.get(g.isoformat())
+        if a is not None and b is not None:
+            neu += max(0, int(b) - int(a))
+            gemessen = True
+    return {"datum": g.isoformat(), "aufrufe": tag.get("erreicht") if tag.get("posts") else None,
+            "follower": neu if gemessen else None, "konten": tag.get("konten"), "besuche": tag.get("besuche")}
+
+
 def leeren() -> None:
     with _SPERRE:
         _CACHE.clear()
