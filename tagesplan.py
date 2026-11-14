@@ -100,6 +100,12 @@ Was gute Posts ausmacht:
   (z. B. „Welches Zeichen bist du? Schreib dein Emoji in die Kommentare 👇“, „A oder B? Sag's mir unten“,
   „Tipp ein 🌙, wenn du das gespürt hast“). In der Sprache des Posts, natürlich formuliert, jeden Tag und
   in jedem Eintrag anders. Keine zweite Frage daneben, keine offenen Fragen, die einen Absatz verlangen.
+  Die Frage ist IMMER positiv und öffentlich leicht zu beantworten – niemand soll vor allen etwas Privates
+  verraten müssen: NIE nach Namen, Personen, Erlebnissen, Fehlern, Streit, Verletzungen oder „wann hast du
+  zuletzt …“ fragen (falsch: „Wessen Name fiel dir zuerst ein?“, „Wann hast du zuletzt Nein gesagt zu jemandem,
+  den du liebst?“). Richtig sind Fragen nach dem eigenen Zeichen, ein Emoji, Ja/Nein, A/B, oder ein schöner Wunsch
+  zum Annehmen (z. B. „Schreib ✨, wenn du dieses Glück heute annimmst“, „Welches Zeichen bist du? Ich schicke dir
+  einen Wunsch zurück“). Sie fühlt sich an wie ein Geschenk, nicht wie ein Verhör.
 - Ein Post – eine Botschaft. Halte dich an das heutige Format und den heutigen Hook-Stil.
 - Keine Links und keine @-Erwähnungen im Text (der Agent fügt den Link selbst an).
 - Wiederhole keine Überschriften der letzten Tage (Liste unten).
@@ -154,8 +160,8 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    heute besonders betroffen sind, je Zeichen eine Einblendung. Der Hook beginnt GENAU so: die drei Namen mit Komma,
    dann ein Doppelpunkt, dann die konkrete Aussage, was die drei heute im Lebensthema des Tages verbindet
    (z. B. „Stier, Waage, Krebs: heute dreht sich alles ums Geld“) – die Namen erscheinen im Bild klein über dem Satz;
-   nie bloß „das ist für euch“. Der "titel" sind die drei Namen. Als Frage „Welches Zeichen bist du?“ (nur das Zeichen
-   schreiben). Etwa 15-18 Sekunden: genau 3 Einblendungen (je Zeichen eine), damit jede Leserin ihr Zeichen in Ruhe findet. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
+   nie bloß „das ist für euch“. Der "titel" sind die drei Namen. Als Frage IMMER „Welches Zeichen bist du?“ (nur das Zeichen
+   schreiben), höchstens freundlich umformuliert – nie eine andere, persönlichere Frage. Etwa 15-18 Sekunden: genau 3 Einblendungen (je Zeichen eine), damit jede Leserin ihr Zeichen in Ruhe findet. "skript": "hook" (höchstens 8 Wörter), "einblendungen" (2 bis 3 Texte, je
    höchstens 8 Wörter, der letzte ist die Pointe), "szenen" (2 bis 3 kurze Bild-Ideen), "schluss" (kurz, ohne
    „{link_in_bio}“). "text": Bildunterschrift (35-70 Wörter): Hook, dann beim Drei-Zeichen-Check je Zeichen ein eigener
    kurzer Absatz mit dem Namen des Zeichens und einem treffenden, warmen Satz (sonst 2 kurze Absätze mit Einsicht und
