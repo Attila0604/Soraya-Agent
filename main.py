@@ -777,6 +777,15 @@ def wirkung_cockpit(tage: int = 7):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/wirkung/gestern")
+def wirkung_gestern():
+    """Eine Zeile fuer „Heute“: Aufrufe, neue Follower, neue Konten von gestern."""
+    try:
+        return cockpit.gestern()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/wirkung/wochenbericht")
 def wirkung_wochenbericht():
     """Kurzer Bericht ueber die letzte Woche fuer „Heute“ (ohne Claude)."""

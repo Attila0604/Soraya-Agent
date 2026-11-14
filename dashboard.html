@@ -124,6 +124,8 @@
   .termin .vs{font-size:11px}
   button.freigeben{padding:7px 14px;font-size:13px}
   details.pz summary .zeit{font-size:12px;color:var(--champagne);flex:none;font-variant-numeric:tabular-nums}
+  .gestern{margin:-6px 0 14px;font-size:14px;color:var(--mist-dim);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+  .gestern b{color:var(--champagne);font-weight:600}
   .cockpit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 16px}
   .cockpit .kachel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;
                    text-align:left;font-weight:400;color:var(--mist);font-size:13px;line-height:1.45}
@@ -1169,6 +1171,7 @@
   <!-- ============ HEUTE ============ -->
   <section id="view-heute">
     <div class="cockpit" id="cockpit" aria-label="Überblick"></div>
+    <div class="gestern hide" id="gestern" aria-live="polite"></div>
     <div id="wochenbericht"></div>
 
     <div class="panel raus-panel" id="rausPanel">
@@ -2179,8 +2182,26 @@ function zeigeKarte(p){
 document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-raus-plan]'); if(b){ starteTagesplan(false); $('btnPlanJetzt').scrollIntoView({behavior: 'smooth', block: 'center'}); } });
 // wie redaktion.schwer(): nur diese Befunde halten das automatische Posten an
 const befundSchwer = (liste) => (liste || []).some(b => /^(Heikle|Deutsche Wörter|Enthält einen Link|Reel ohne Hook|Überschrift fehlt)/.test(b));
+// „Gestern: X Aufrufe · Y neue Follower · Z neue Konten“ (alle 5 Minuten neu)
+let gesternStand = 0;
+async function ladeGestern(){
+  if(Date.now() - gesternStand < 5 * 60 * 1000) return;
+  gesternStand = Date.now();
+  const box = $('gestern');
+  try{
+    const g = await api('/wirkung/gestern');
+    const teile = [];
+    if(g.aufrufe != null) teile.push(`<span title="Aufrufe der Posts von gestern, bis jetzt gemessen"><b>${zahl(g.aufrufe)}</b> Aufrufe</span>`);
+    if(g.follower != null) teile.push(`<span><b>${zahl(g.follower)}</b> neue Follower</span>`);
+    if(g.konten != null) teile.push(`<span><b>${zahl(g.konten)}</b> ${g.konten === 1 ? 'neues Konto' : 'neue Konten'}</span>`);
+    if(!teile.length){ box.classList.add('hide'); return; }
+    box.innerHTML = '<span>Gestern:</span>' + teile.join('<span aria-hidden="true">·</span>');
+    box.classList.remove('hide');
+  }catch(e){ gesternStand = 0; box.classList.add('hide'); }
+}
 function zeigeCockpit(d, ps){
   ladeWochenbericht();
+  ladeGestern();
   pruefeStatistik().then(() => { if(statistikVerbunden === false && !$('cockpit').textContent.includes('Statistik')) zeigeCockpit(d, ps); });
   const fertig = d.sprachen.filter(s => (d.laeufe || []).some(l => l.sprache === s && l.status === 'fertig')).length;
   const e = ps && ps.einstellungen, v = ps && ps.verbindungen;

@@ -2404,6 +2404,20 @@ def test_cockpit_follower_nur_verbundene(monkeypatch, frische_db):
     assert cockpit.cockpit(7)["follower"][0]["follower"] is None          # verbunden, noch nie gemessen
 
 
+def test_gestern_zeile(monkeypatch, frische_db):
+    cockpit.leeren()
+    monkeypatch.delenv("AGENT_STATS_TOKEN", raising=False)
+    db.setze_einstellung("meta_instagram", {"token": "t", "konto_id": "1"})
+    posten.merke_follower(100, HEUTE - timedelta(days=2))
+    posten.merke_follower(108, HEUTE - timedelta(days=1))
+    g = client.get("/wirkung/gestern", headers=AUTH).json()
+    assert g["datum"] == (HEUTE - timedelta(days=1)).isoformat()
+    assert g["follower"] == 8 and g["aufrufe"] is None and g["konten"] is None     # keine Posts, keine Statistik
+    cockpit.leeren()
+    db.setze_einstellung("meta_instagram", {})                                     # nicht verbunden -> keine Zahl
+    assert cockpit.gestern()["follower"] is None
+
+
 def test_lern_saetze_mehr_weniger_test():
     def e(i, thema, punkte, stil="frage"):
         return {"post": {"id": i, "art": "post", "meta": {"thema": thema, "hook_stil": stil}}, "punkte": punkte, "gemessen": True}
