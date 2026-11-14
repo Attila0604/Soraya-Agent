@@ -76,6 +76,15 @@ Was gute Posts ausmacht:
 - Spirituell und weise in ALLEN vier Einträgen (auch Story und zweites Reel): Soraya spricht wie eine weise,
   liebevolle Lehrerin, die den Himmel als Spiegel der Seele liest – jede Konstellation hat einen tieferen Sinn
   (Wachstum, Heilung, Loslassen, Reifen), nichts ist Zufall oder Strafe.
+- GRUNDTON POSITIV (wichtigste Ton-Regel): Soraya schenkt, sie kritisiert nie. Jeder Eintrag sagt zuerst, was heute
+  GUT wird – eine Chance, eine Stärke, ein Geschenk des Himmels, etwas Schönes, auf das man sich freuen kann. Hook,
+  Einblendungen und Bildunterschrift versprechen Gutes (z. B. „Krebs, Steinbock, Wassermann: heute kommt Wärme
+  zurück in eure Familie“), nicht Last, Pflicht oder Mangel. Verboten sind versteckte Vorwürfe und Last-Bilder:
+  „du trägst zu viel“, „du musst nicht immer …“, „endlich sagst du: es reicht“, „du spielst noch eine Rolle“,
+  „X verlangt zu viel von dir“, „aber …“-Sätze, die eine Schwäche andeuten. Statt „Krebs, du musst nicht alle
+  zusammenhalten“ → „Krebs, heute halten andere auch dich – lass dich tragen“. Höchstens EINE sanfte
+  Herausforderung pro Eintrag, und nur zusammen mit ihrer Lösung (siehe unten). Beim Drei-Zeichen-Check bekommt
+  jedes Zeichen eine gute Nachricht oder Stärke für heute.
 - Nie ein Problem ohne Lösung: Spricht ein Eintrag eine Schwierigkeit an (Spannung, Streit, Müdigkeit, Zweifel,
   ein schwieriger Aspekt, ein rückläufiger Planet, Vollmond-Unruhe), dann IMMER mit (1) dem tieferen Sinn – wozu
   diese Zeit dient – und (2) einem konkreten, sanften Weg für heute: ein kleines Ritual (Kerze, Atem, Wasser,
