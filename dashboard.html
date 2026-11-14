@@ -1823,6 +1823,16 @@ function bearbeitenDialog(p){
               zeilen = $('eZeilen').value.split('\n').map(z => z.trim()).filter(Boolean);
         if(hook !== (alt.hook || '') || JSON.stringify(zeilen) !== JSON.stringify(alt.einblendungen || []))
           neu.skript = {...alt, hook, einblendungen: zeilen};
+        // Hook und erste Textzeile gehoeren zusammen (Facebook zeigt die erste Textzeile):
+        // wer nur eines der beiden aendert, aendert das andere mit
+        const norm = (t) => String(t || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        const zeilenText = neu.text.split('\n'), erste = zeilenText[0] || '', alteErste = String(p.text || '').split('\n')[0] || '';
+        const textGeaendert = norm(erste) !== norm(alteErste), hookGeaendert = hook !== (alt.hook || '');
+        if(hookGeaendert && !textGeaendert && hook && norm(alteErste).startsWith(norm(alt.hook).replace(/[.!?…]+$/, ''))){
+          zeilenText[0] = hook; neu.text = zeilenText.join('\n');
+        } else if(textGeaendert && !hookGeaendert && erste.trim() && norm(alteErste).startsWith(norm(alt.hook).replace(/[.!?…]+$/, ''))){
+          neu.skript = {...alt, ...(neu.skript || {}), hook: erste.replace(/\s*\p{Extended_Pictographic}.*$/u, '').trim(), einblendungen: zeilen};
+        }
       }
       await aendere(p.id, neu);
       d.close(); melde('Gespeichert ✓'); neuLaden();
