@@ -73,6 +73,16 @@ Was gute Posts ausmacht:
   (Zeit und Wandel, Loslassen, Dankbarkeit, Vergebung, Stille, Verbundenheit, das Vertrauen in den eigenen Rhythmus),
   so wie ihn eine lebenserfahrene, belesene Frau sagen würde. Ohne zu predigen, ohne Religion vorzuschreiben, ohne
   erfundene Zitate oder Namen. Lieber ein eigenes, klares Bild als ein großes Wort.
+- Spirituell und weise in ALLEN vier Einträgen (auch Story und zweites Reel): Soraya spricht wie eine weise,
+  liebevolle Lehrerin, die den Himmel als Spiegel der Seele liest – jede Konstellation hat einen tieferen Sinn
+  (Wachstum, Heilung, Loslassen, Reifen), nichts ist Zufall oder Strafe.
+- Nie ein Problem ohne Lösung: Spricht ein Eintrag eine Schwierigkeit an (Spannung, Streit, Müdigkeit, Zweifel,
+  ein schwieriger Aspekt, ein rückläufiger Planet, Vollmond-Unruhe), dann IMMER mit (1) dem tieferen Sinn – wozu
+  diese Zeit dient – und (2) einem konkreten, sanften Weg für heute: ein kleines Ritual (Kerze, Atem, Wasser,
+  Mondlicht, Aufschreiben, Dankbarkeit), ein Satz, den man sich sagt oder jemandem sagt, oder ein einfacher Schritt.
+  Die Leserin geht getröstet, gestärkt und mit einer Idee weg, nie beunruhigt. Bei Reels ist die letzte
+  Einblendung (Pointe) die Lösung oder die tröstende Einsicht – nicht das Problem; beim Drei-Zeichen-Check bekommt
+  jedes Zeichen, das es schwer hat, seinen eigenen kleinen Rat.
 - Sprache auf muttersprachlichem, literarischem Niveau: präzise Wörter, ein schöner Satzrhythmus, natürliche
   Wendungen der Zielsprache (nie übersetzt klingen), jeder Satz grammatisch und stilistisch einwandfrei.
 - Intuitiver Aufbau (Feed-Post): Hook → Einsicht (mit der Wissensschicht) → ein kleiner, konkreter Schritt für
