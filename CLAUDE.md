@@ -32,5 +32,8 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   „Name, Name, Name: Aussage“). Facebook-Text = Hook + Kommentar-Frage (`posten.fb_kurz`), 6 Hashtags. Tagesplan und
   Lektorat mit `effort="high"`; Lektorat prüft auch, ob der Hook zum Rest passt.
 - Reels ab `reel-18` ohne Umlaufbahn und Sternbild; Neumond mit goldenem Lichtkranz (`reel._neumond_kranz`).
+- Sonntags ist das 2. Reel das **App-Reel** (`tagesplan.app_funktion`/`app_reel_text`, `meta.app_reel`): weiter Drei-Zeichen-Check,
+  führt aber zu einer App-Funktion (wöchentlich wechselnd). Reel-Schlussbild ab `reel-22` mit Zeile „Google Play: Soraya Astro“.
+  „Heute“ zeigt die Zeile „Gestern: Aufrufe · neue Follower · neue Konten“ (`/wirkung/gestern`, `cockpit.gestern`).
 - **Tagesplan-Automatik und automatisches Posten stehen AUS** – nur Attila schaltet sie ein.
 - Tests: siehe `tests/README.md` (nie gegen die echte Datenbank laufen lassen).

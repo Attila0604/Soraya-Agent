@@ -2418,6 +2418,14 @@ def test_gestern_zeile(monkeypatch, frische_db):
     assert cockpit.gestern()["follower"] is None
 
 
+def test_app_reel_nur_sonntags_und_jede_woche_andere_funktion():
+    sonntage = [date(2026, 11, 15) + timedelta(weeks=i) for i in range(4)]
+    assert len({tagesplan.app_funktion(t)[0] for t in sonntage}) == 4
+    assert all(tagesplan.app_funktion(date(2026, 11, 9) + timedelta(days=i)) is None for i in range(6))
+    t = tagesplan.app_reel_text(sonntage[0])
+    assert "Drei-Zeichen-Check" in t and "App-Reel" in t and tagesplan.app_reel_text(date(2026, 11, 14)) == ""
+
+
 def test_lern_saetze_mehr_weniger_test():
     def e(i, thema, punkte, stil="frage"):
         return {"post": {"id": i, "art": "post", "meta": {"thema": thema, "hook_stil": stil}}, "punkte": punkte, "gemessen": True}

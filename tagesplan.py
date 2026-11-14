@@ -598,6 +598,37 @@ def nur_facebook(plattformen: list[str] | None) -> bool:
     return bool(plattformen) and set(plattformen) == {"facebook"}
 
 
+# Einmal pro Woche (Sonntag) zeigt das zweite Reel eine Funktion der App -- weiter als Drei-Zeichen-Check,
+# denn das Format bringt die meisten Aufrufe. Die Funktion wechselt jede Woche.
+APP_REEL_TAG = 6                       # Sonntag
+APP_FUNKTIONEN = [
+    ("mondzeichen", "dein Mondzeichen in 10 Sekunden (Schnellstart: nur Geburtsdatum, ohne Konto) – zeigt, wie man "
+                    "fühlt, was man braucht, warum man anders tickt als das Sonnenzeichen sagt"),
+    ("partner", "der Partner-Vergleich in Prozent – wie gut zwei Menschen wirklich zusammenpassen (Liebe, Alltag, Streit)"),
+    ("horoskop", "das persönliche Tageshoroskop – jeden Tag aus dem eigenen Geburtshoroskop berechnet, nicht nur fürs Sternzeichen (auch Woche und Monat)"),
+    ("radix", "das Geburtshoroskop mit Deutung – Aszendent, Mond und alle Planeten, Kapitel für Kapitel erklärt"),
+]
+
+
+def app_funktion(tag: date) -> tuple[str, str] | None:
+    """Am App-Reel-Tag die Funktion dieser Woche, sonst None."""
+    if tag.weekday() != APP_REEL_TAG:
+        return None
+    return APP_FUNKTIONEN[tag.isocalendar()[1] % len(APP_FUNKTIONEN)]
+
+
+def app_reel_text(tag: date) -> str:
+    f = app_funktion(tag)
+    if not f:
+        return ""
+    return ("HEUTE ist das zweite Reel das wöchentliche App-Reel: weiter ein Drei-Zeichen-Check (Hook „Name, Name, Name: "
+            f"Aussage“), aber die drei Zeichen führen zu einer Funktion der Soraya-App: {f[1]}. Die Einblendungen "
+            "zeigen je Zeichen, was diese Funktion gerade ihm verrät (konkret, neugierig machend, nichts versprechen, was die "
+            "App nicht kann); die letzte Einblendung nennt die Funktion beim Namen. \"schluss\": eine Einladung, es selbst "
+            "auszuprobieren (gratis, ohne Link-Hinweis – das Schlussbild zeigt, wo man die App findet). Bildunterschrift: "
+            "wie beim Drei-Zeichen-Check, dazu ein Satz, wie einfach es geht. Kein Werbeton – neugierig und warm.")
+
+
 def publikum_text(plattformen: list[str]) -> str:
     zeilen = [PUBLIKUM[p] for p in plattformen if p in PUBLIKUM]
     if not zeilen:
@@ -685,7 +716,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
                    publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache, info),
-                   lebensthemen(tag, sprache), botschaften_text(sprache))
+                   lebensthemen(tag, sprache), "\n\n".join(t for t in (botschaften_text(sprache), app_reel_text(tag)) if t))
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"])
     zeiten = _posten_zeiten()
@@ -834,6 +865,8 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
                 meta["folge"] = folge
             if p.pop("_reel_nr", None) == 2:
                 meta["reel_nr"] = 2               # zweites Reel des Tages (eigene Uhrzeit beim Posten)
+                if app_funktion(tag):
+                    meta["app_reel"] = app_funktion(tag)[0]   # woechentliches App-Reel (Funktion der Woche)
             if thema.get("variante"):
                 meta["variante"] = thema["variante"]
             if zielgruppe:
