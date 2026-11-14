@@ -65,7 +65,9 @@ def _system(sprache: str) -> str:
         "Also check the logic of every post: the first sentence (hook) must fit what follows. If the hook promises something "
         "the rest does not deliver (e.g. the hook says a scent takes three signs back in time, but the paragraphs talk about "
         "a melody, a scent and a photo), rewrite the hook so it fits all of it (e.g. \"a small memory takes you back in time\"). "
-        "Also fix sentences that are grammatical but unclear or illogical. Keep the zodiac sign names at the start of a hook."
+        "Also fix sentences that are grammatical but unclear or illogical. Keep the zodiac sign names at the start of a hook. "
+        "If a text names a difficulty (tension, conflict, doubt, tiredness) but leaves the reader without a way forward, add "
+        "one short, gentle, concrete hint (a small ritual or a sentence to say) in the same tone – minimal change, no new paragraph."
         + _HINWEISE.get(sprache, "") +
         "\n\nEvery correction: \"alt\" = the exact passage copied character for character from the texts (2-15 words, "
         "a single word only if it is unique; a whole sentence when it must be rewritten), \"neu\" = the corrected passage. At most "
