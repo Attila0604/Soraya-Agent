@@ -2426,6 +2426,18 @@ def test_app_reel_nur_sonntags_und_jede_woche_andere_funktion():
     assert "Drei-Zeichen-Check" in t and "App-Reel" in t and tagesplan.app_reel_text(date(2026, 11, 14)) == ""
 
 
+def test_freier_tag_ohne_arbeitsthema():
+    assert tagesplan._ostersonntag(2026) == date(2026, 4, 5) and tagesplan._ostersonntag(2027) == date(2027, 3, 28)
+    assert tagesplan.frei(date(2026, 11, 15)) and tagesplan.frei(date(2026, 12, 25)) and tagesplan.frei(date(2026, 4, 6))
+    assert not tagesplan.frei(date(2026, 11, 16))
+    for i in range(28):
+        t = date(2026, 11, 14) + timedelta(days=i)
+        for sp in ("de", "en", "hu", "it"):
+            th = tagesplan.lebensthemen(t, sp)
+            assert not (tagesplan.frei(t) and any(x.startswith("Arbeit") for x in th))
+    assert "freier Tag" in tagesplan.tag_text(date(2026, 11, 15)) and tagesplan.tag_text(date(2026, 11, 17)) == "Heute ist Dienstag."
+
+
 def test_lern_saetze_mehr_weniger_test():
     def e(i, thema, punkte, stil="frage"):
         return {"post": {"id": i, "art": "post", "meta": {"thema": thema, "hook_stil": stil}}, "punkte": punkte, "gemessen": True}

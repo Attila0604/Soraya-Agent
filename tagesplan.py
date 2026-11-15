@@ -84,7 +84,9 @@ Was gute Posts ausmacht:
   „X verlangt zu viel von dir“, „aber …“-Sätze, die eine Schwäche andeuten. Statt „Krebs, du musst nicht alle
   zusammenhalten“ → „Krebs, heute halten andere auch dich – lass dich tragen“. Höchstens EINE sanfte
   Herausforderung pro Eintrag, und nur zusammen mit ihrer Lösung (siehe unten). Beim Drei-Zeichen-Check bekommt
-  jedes Zeichen eine gute Nachricht oder Stärke für heute.
+  jedes Zeichen eine gute Nachricht oder Stärke für heute. Keine bedrückenden Themen – das will niemand sehen:
+  kein Verlust, keine Einsamkeit, kein Streit, keine Erschöpfung, keine Angst, keine Enttäuschung, kein „es reicht“.
+  Soraya bringt Licht, Hoffnung, Vorfreude und Wärme.
 - Nie ein Problem ohne Lösung: Spricht ein Eintrag eine Schwierigkeit an (Spannung, Streit, Müdigkeit, Zweifel,
   ein schwieriger Aspekt, ein rückläufiger Planet, Vollmond-Unruhe), dann IMMER mit (1) dem tieferen Sinn – wozu
   diese Zeit dient – und (2) einem konkreten, sanften Weg für heute: ein kleines Ritual (Kerze, Atem, Wasser,
@@ -360,26 +362,68 @@ def erzaehlform(tag: date, sprache: str) -> tuple[str, str]:
 LEBENSTHEMEN = [
     "Geld und Wert: was du dir gönnst, was du verlangst, was dir etwas wert ist",
     "Freundinnen: eine alte Freundschaft, eine Nachricht, die fällt, wer dich wirklich kennt",
-    "Familie: Mutter, Schwester, Kinder, alte Rollen am Familientisch",
-    "Arbeit und Berufung: ein Gespräch mit der Chefin, ein Projekt, Anerkennung, Pausen",
-    "Körper und Rhythmus: Schlaf, Bewegung, Hunger, Müdigkeit – freundlich, ohne Heilversprechen",
-    "Zuhause: ein Raum, aufräumen, ein Lieblingsplatz, Ordnung und Chaos",
+    "Familie: Mutter, Schwester, Kinder, gemeinsames Lachen, Wärme am Familientisch",
+    "Arbeit und Berufung: ein gelungenes Projekt, Anerkennung, ein guter Einfall, Freude an dem, was du kannst",
+    "Körper und Rhythmus: guter Schlaf, Bewegung, Genuss, neue Energie – freundlich, ohne Heilversprechen",
+    "Zuhause: ein Lieblingsplatz, Kerzenlicht, schön machen, sich geborgen fühlen",
     "Flirten und Verliebtsein: Blicke, Nachrichten, Herzklopfen, ein erstes Treffen",
-    "Lange Partnerschaft: Alltag zu zweit, kleine Gesten, ein Streit und die Versöhnung",
+    "Lange Partnerschaft: Alltag zu zweit, kleine Gesten, Zärtlichkeit, gemeinsam lachen",
     "Mut und Neuanfang: etwas zum ersten Mal tun, eine Entscheidung, ein Ja",
     "Kreativität und Freude: spielen, gestalten, tanzen, etwas nur für dich",
-    "Erinnerungen: ein Lied, ein Geruch, ein Foto, wer du früher warst",
-    "Grenzen: Nein sagen, Erwartungen anderer, Zeit für dich verteidigen",
+    "Schöne Erinnerungen: ein Lied, ein Duft, ein Foto, das ein Lächeln bringt",
+    "Selbstliebe: Zeit nur für dich, dich selbst feiern, deinen Wert spüren",
     "Intuition und Träume: Bauchgefühl, Zeichen im Alltag, ein Traum, der nachklingt",
     "Reisen und Weite: Fernweh, ein Spaziergang, ein neuer Weg, raus aus der Routine",
 ]
+
+
+WOCHENENDE_THEMA = ("Freier Tag und Muße: ausschlafen, langsames Frühstück, Zeit mit Liebsten, ein Spaziergang, "
+                    "Kraft sammeln für die neue Woche")
+# in DE/AT/HU/IT (fast) ueberall frei
+FEIERTAGE_FEST = {(1, 1), (1, 6), (5, 1), (8, 15), (11, 1), (12, 25), (12, 26)}
+
+
+def _ostersonntag(jahr: int) -> date:
+    a, b, c = jahr % 19, jahr // 100, jahr % 100
+    d, e = b // 4, b % 4
+    g = (8 * b + 13) // 25
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 19 * l) // 433
+    monat = (h + l - 7 * m + 90) // 25
+    return date(jahr, monat, (h + l - 7 * m + 33 * monat + 19) % 32)
+
+
+WOCHENTAGE_NAME = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
+
+
+def frei(tag: date) -> bool:
+    """Samstag, Sonntag oder ein Feiertag: die meisten Leserinnen arbeiten heute nicht."""
+    if tag.weekday() >= 5 or (tag.month, tag.day) in FEIERTAGE_FEST:
+        return True
+    ostern = _ostersonntag(tag.year)
+    return (tag - ostern).days in (1, 39, 50)          # Ostermontag, Christi Himmelfahrt, Pfingstmontag
 
 
 def lebensthemen(tag: date, sprache: str) -> tuple[str, str]:
     import zlib
     n = len(LEBENSTHEMEN)
     i = (tag.toordinal() + zlib.crc32(sprache.encode())) % n
-    return LEBENSTHEMEN[i], LEBENSTHEMEN[(i + 5) % n]
+    themen = [LEBENSTHEMEN[i], LEBENSTHEMEN[(i + 5) % n]]
+    if frei(tag):        # am freien Tag keine Arbeits-Szenen
+        themen = [WOCHENENDE_THEMA if t.startswith("Arbeit") else t for t in themen]
+    return themen[0], themen[1]
+
+
+def tag_text(tag: date) -> str:
+    name = WOCHENTAGE_NAME[tag.weekday()]
+    if frei(tag):
+        return (f"Heute ist {name} – ein freier Tag für die meisten: keine Szenen aus Büro, Arbeit, Chefin oder Kollegen; "
+                "lieber Zeit für sich, Familie, Freundinnen, Natur, Genuss und Ruhe.")
+    if tag.weekday() == 4:
+        return f"Heute ist {name}: das Wochenende beginnt – Vorfreude, loslassen, was die Woche schwer gemacht hat."
+    return f"Heute ist {name}."
 
 
 def botschaften_text(sprache: str) -> str:
@@ -744,7 +788,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
                    publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache, info),
-                   lebensthemen(tag, sprache), "\n\n".join(t for t in (botschaften_text(sprache), app_reel_text(tag)) if t))
+                   lebensthemen(tag, sprache), "\n\n".join(t for t in (tag_text(tag), botschaften_text(sprache), app_reel_text(tag)) if t))
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"])
     zeiten = _posten_zeiten()
