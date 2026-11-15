@@ -646,12 +646,15 @@ def app_reel_text(tag: date) -> str:
     f = app_funktion(tag)
     if not f:
         return ""
-    return ("HEUTE ist das zweite Reel das wöchentliche App-Reel: weiter ein Drei-Zeichen-Check (Hook „Name, Name, Name: "
-            f"Aussage“), aber die drei Zeichen führen zu einer Funktion der Soraya-App: {f[1]}. Die Einblendungen "
-            "zeigen je Zeichen, was diese Funktion gerade ihm verrät (konkret, neugierig machend, nichts versprechen, was die "
-            "App nicht kann); die letzte Einblendung nennt die Funktion beim Namen. \"schluss\": eine Einladung, es selbst "
-            "auszuprobieren (gratis, ohne Link-Hinweis – das Schlussbild zeigt, wo man die App findet). Bildunterschrift: "
-            "wie beim Drei-Zeichen-Check, dazu ein Satz, wie einfach es geht. Kein Werbeton – neugierig und warm.")
+    return ("HEUTE ist das zweite Reel das wöchentliche App-Reel – ein ganz normaler, warmer Drei-Zeichen-Check (Hook "
+            "„Name, Name, Name: Aussage“ zum Lebensthema des Tages), der erst AM ENDE leise auf die App zeigt. Die drei "
+            "Einblendungen und die drei Absätze der Bildunterschrift sind echte, positive Himmelsbotschaften für jedes Zeichen "
+            "– sie nennen die App NICHT und behaupten nichts darüber, was die App zeigt. Die App kommt nur an zwei Stellen "
+            f"vor: im \"schluss\" und in EINEM ruhigen Satz vor der Kommentar-Frage, der neugierig macht auf: {f[1]} "
+            "(z. B. „Wie dein eigener Tag aussieht, verrät dir dein persönliches Horoskop in der Soraya-App – gratis.“). "
+            "Nichts versprechen, was sie nicht kann (sie liest keine Vergangenheit und sagt nichts über den Beruf voraus). "
+            "\"untertitel\" und \"titel\" ohne App-Namen. Kein Werbeton: keine Wörter wie „nur ein paar Klicks“, "
+            "„jetzt“, „sofort“, „Download“ – wie eine Freundin, die nebenbei einen Tipp gibt.")
 
 
 def publikum_text(plattformen: list[str]) -> str:
