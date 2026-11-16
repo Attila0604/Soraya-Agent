@@ -72,7 +72,7 @@ def _system(sprache: str) -> str:
         "accepting a wish). Tone must be positive and uplifting: if a hook, video line or caption frames the reader through a "
         "burden, flaw or reproach (\"you carry too much\", \"you don't always have to …\", \"finally you say: enough\", "
         "\"someone asks too much of you\", \"but …\" sentences hinting at a weakness), rewrite it into the gift, strength or "
-        "good news of the day with the same meaning and length. If it asks for something private or negative (names of people, past events, conflicts, 'when did "
+        "good news of the day with the same meaning and length. It must never ask about the reader's own life (plans, dates, people, feelings, events – e.g. 'when do you set off this week?'). If it asks for something private, personal or negative (names of people, past events, conflicts, 'when did "
         "you last …'), replace it with such a light, positive question in the same language."
         + _HINWEISE.get(sprache, "") +
         "\n\nEvery correction: \"alt\" = the exact passage copied character for character from the texts (2-15 words, "
