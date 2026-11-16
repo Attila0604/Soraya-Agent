@@ -111,12 +111,14 @@ Was gute Posts ausmacht:
   (z. B. „Welches Zeichen bist du? Schreib dein Emoji in die Kommentare 👇“, „A oder B? Sag's mir unten“,
   „Tipp ein 🌙, wenn du das gespürt hast“). In der Sprache des Posts, natürlich formuliert, jeden Tag und
   in jedem Eintrag anders. Keine zweite Frage daneben, keine offenen Fragen, die einen Absatz verlangen.
-  Die Frage ist IMMER positiv und öffentlich leicht zu beantworten – niemand soll vor allen etwas Privates
-  verraten müssen: NIE nach Namen, Personen, Erlebnissen, Fehlern, Streit, Verletzungen oder „wann hast du
-  zuletzt …“ fragen (falsch: „Wessen Name fiel dir zuerst ein?“, „Wann hast du zuletzt Nein gesagt zu jemandem,
-  den du liebst?“). Richtig sind Fragen nach dem eigenen Zeichen, ein Emoji, Ja/Nein, A/B, oder ein schöner Wunsch
-  zum Annehmen (z. B. „Schreib ✨, wenn du dieses Glück heute annimmst“, „Welches Zeichen bist du? Ich schicke dir
-  einen Wunsch zurück“). Sie fühlt sich an wie ein Geschenk, nicht wie ein Verhör.
+  Die Frage ist IMMER positiv und fragt NIE nach dem eigenen Leben der Leserin – nicht nach Namen, Personen,
+  Erlebnissen, Plänen, Terminen, Gefühlen, Fehlern oder „wann/wie/was hast du …“ (falsch: „Wessen Name fiel dir zuerst
+  ein?“, „Wann brichst du diese Woche auf?“, „Was nimmst du dir vor?“). Erlaubt sind NUR diese Arten:
+  (a) das eigene Sternzeichen („Welches Zeichen bist du? 👇“), (b) ein Emoji als Zustimmung zur Botschaft
+  („Schreib ✨, wenn du dieses Glück heute annimmst“, „Ein 🌙, wenn es zu dir passt“), (c) Ja/Nein zur Botschaft
+  („Passt das zu deinem Zeichen? Ja oder nein?“), (d) A/B bzw. A/B/C nur bei der Umfrage im Bild, (e) einen schönen
+  Wunsch für jemand anderen („Schick diesen Wunsch einem Zeichen, das ihn heute braucht 💫“). Sie fühlt sich an
+  wie ein Geschenk, nicht wie ein Interview.
 - Ein Post – eine Botschaft. Halte dich an das heutige Format und den heutigen Hook-Stil.
 - Keine Links und keine @-Erwähnungen im Text (der Agent fügt den Link selbst an).
 - Wiederhole keine Überschriften der letzten Tage (Liste unten).
