@@ -1201,6 +1201,31 @@ def test_punkte_mit_reichweite_und_facebook_reichweite(monkeypatch):
     assert meta.facebook_reichweite("1_2", "T") is None
 
 
+def test_facebook_reel_reichweite_ueber_video(monkeypatch):
+    aufrufe = []
+
+    def get(url, **params):
+        aufrufe.append((url.rsplit("/", 1)[-1], params.get("metric")))
+        if url.endswith("/video_insights") and params.get("metric") == "fb_reels_total_plays":
+            return {"data": [{"values": [{"value": 56329}]}]}
+        if url.endswith("/insights") and params.get("metric") == "post_impressions_unique":
+            return {"data": [{"values": [{"value": 12}]}]}
+        raise meta.MetaFehler("(#100) unbekannte Kennzahl")
+    monkeypatch.setattr(meta, "_get", get)
+    assert meta.facebook_reichweite("S_P", "T", "V") == 56329           # Reel: Video zuerst
+    assert meta.facebook_reichweite("S_P", "T") == 12                   # Feed-Post wie bisher
+    assert ("video_insights", "post_impressions_unique") in aufrufe
+
+
+def test_facebook_reichweite_nicht_nach_einem_fehlschlag_aufhoeren(monkeypatch):
+    monkeypatch.setattr(meta, "zugang", lambda pl: {"token": "T", "seite_id": "S"})
+    monkeypatch.setattr(meta, "_fb_zahlen_eines", lambda oid, art, seite, tok: ({"reaktionen": 1, "kommentare": 0, "geteilt": 0}, oid))
+    werte = iter([None, 500, 700])
+    monkeypatch.setattr(meta, "facebook_reichweite", lambda oid, tok, video=None: next(werte))
+    out = meta.facebook_reaktionen([{"post_id": i, "extern_id": f"x{i}", "art": "reel"} for i in range(3)])
+    assert [o.get("reichweite") for o in out] == [None, 500, 700]
+
+
 def test_emojis_im_bild():
     import numpy as np
     medien = _medien
