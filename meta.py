@@ -313,17 +313,32 @@ def _fb_reel_insights(oid: str, token: str) -> dict | None:
     return None
 
 
-def facebook_reichweite(extern_id: str, token: str) -> int | None:
-    for metrik in REICHWEITE_METRIKEN:
+# Reels sind Video-Objekte: ihre Reichweite bzw. Wiedergaben stehen in /video_insights (je Kennzahl eine Abfrage,
+# eine unbekannte Kennzahl laesst sonst die ganze Abfrage scheitern)
+REEL_REICHWEITE_METRIKEN = ("post_impressions_unique", "fb_reels_total_plays", "blue_reels_play_count")
+
+
+def _erste_zahl(url: str, metriken: tuple, token: str) -> int | None:
+    for metrik in metriken:
         try:
-            d = _get(f"{graph_fb()}/{extern_id}/insights", metric=metrik, access_token=token)
+            d = _get(url, metric=metrik, access_token=token)
         except Exception:  # noqa: BLE001
             continue
         for eintrag in d.get("data") or []:
             werte = eintrag.get("values") or []
-            if werte and isinstance(werte[-1].get("value"), (int, float)):
+            if werte and isinstance(werte[-1].get("value"), (int, float)) and werte[-1]["value"] > 0:
                 return int(werte[-1]["value"])
     return None
+
+
+def facebook_reichweite(extern_id: str, token: str, video_id: str | None = None) -> int | None:
+    """Erreicht je Beitrag. Bei Reels zuerst ueber das Video (dort stehen die echten Zahlen; der zugehoerige
+    Seitenbeitrag liefert oft nichts oder viel zu wenig), sonst ueber den Beitrag."""
+    if video_id:
+        n = _erste_zahl(f"{graph_fb()}/{video_id}/video_insights", REEL_REICHWEITE_METRIKEN, token)
+        if n is not None:
+            return n
+    return _erste_zahl(f"{graph_fb()}/{extern_id}/insights", REICHWEITE_METRIKEN, token)
 
 
 def facebook_konto() -> dict:
@@ -406,7 +421,7 @@ def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
     if not z or not z.get("token"):
         raise MetaFehler("Facebook-Seite ist nicht verbunden.")
     out = []
-    reichweite_geht = True
+    ohne_reichweite = 0           # erst nach mehreren Beitraegen ohne Antwort aufhoeren (fehlendes Recht)
     for e in eintraege:
         zeile = {"post_id": e["post_id"], "titel": e.get("titel"), "art": e.get("art"), "url": e.get("url"),
                  "gepostet": e.get("aktualisiert")}
@@ -414,12 +429,13 @@ def facebook_reaktionen(eintraege: list[dict]) -> list[dict]:
             zeile["nicht_messbar"] = True          # Facebook-Storys: keine Gefaellt-mir/Kommentare ueber die API
             out.append(zeile)
             continue
+        video = str(e["extern_id"]) if e.get("art") == "reel" else None
         try:
             zahlen, oid = _fb_zahlen_eines(str(e["extern_id"]), e.get("art"), z.get("seite_id"), z["token"])
             zeile.update(zahlen)
-            if reichweite_geht:
-                zeile["reichweite"] = facebook_reichweite(oid, z["token"])
-                reichweite_geht = zeile["reichweite"] is not None   # ohne Recht nicht bei jedem Beitrag fragen
+            if ohne_reichweite < 5:
+                zeile["reichweite"] = facebook_reichweite(oid, z["token"], video)
+                ohne_reichweite = 0 if zeile["reichweite"] is not None else ohne_reichweite + 1
         except Exception as ex:  # noqa: BLE001 - ein Beitrag ohne Zahlen soll die Liste nicht stoppen
             zeile["fehler"] = f"{ARTNAME.get(e.get('art'), 'Beitrag')}: {str(ex)[:160]}"
         out.append(zeile)
