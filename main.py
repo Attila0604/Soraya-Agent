@@ -645,6 +645,7 @@ def tagesplan_ansehen(datum: Optional[date] = None):
         "automatik_gesperrt": tagesplan.gesperrt(),
         "ab_stunde": tagesplan.startstunde(),
         "sprachen": tagesplan.sprachen(),
+        "ohne_reels": sorted(s for s in tagesplan.sprachen() if not tagesplan.reels_heute(s, tag)),
         "laeufe": laeufe,
         "posts": posts,
     }

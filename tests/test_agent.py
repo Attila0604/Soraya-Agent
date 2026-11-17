@@ -10,6 +10,7 @@ from types import SimpleNamespace
 os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "postgresql://agent@127.0.0.1:55432/agenttest")
 os.environ["AGENT_PASSWORT"] = "geheim-test"
 os.environ["TAGESPLAN_AUTO"] = "0"
+os.environ["REELS_WOECHENTLICH"] = ""          # die meisten Tests erwarten Reels in jeder Sprache
 os.environ["ANTHROPIC_API_KEY"] = "sk-test"
 sys.path.insert(0, os.environ.get("AGENT_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -2469,6 +2470,19 @@ def test_amtston_wird_erkannt():
     ok = {"art": "post", "titel": "Mérleg, 3 dolog, amit most megengedhetsz magadnak", "text": "Szép nap."}
     assert not any("Behörde" in b for b in tagesplan.stil_befunde(ok, "hu"))
     assert any("Behörde" in b for b in tagesplan.stil_befunde({"text": "Today I permit you three things."}, "en"))
+
+
+def test_reels_nur_freitags_in_de_und_en(monkeypatch):
+    monkeypatch.delenv("REELS_WOECHENTLICH", raising=False)
+    mo, fr = date(2026, 11, 16), date(2026, 11, 20)
+    assert tagesplan.reels_heute("hu", mo) and not tagesplan.reels_heute("de", mo) and not tagesplan.reels_heute("en", mo)
+    assert tagesplan.reels_heute("de", fr) and tagesplan.reels_heute("en", fr)
+    monkeypatch.setenv("REELS_WOECHENTLICH", "")
+    assert tagesplan.reels_heute("de", mo)
+    roh = {"posts": [{"art": a, "text": "x", "skript": {"hook": "Kos: szia"} if a == "reel" else {}}
+                     for a in ("post", "reel", "story", "reel")]}
+    assert [p["art"] for p in tagesplan._aufbereiten(roh, "de", "", reels=False)] == ["post", "story"]
+    assert [p["art"] for p in tagesplan._aufbereiten(roh, "de", "")] == ["post", "reel", "story", "reel"]
 
 
 def test_lern_saetze_mehr_weniger_test():

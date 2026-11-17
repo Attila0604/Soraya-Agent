@@ -693,6 +693,25 @@ APP_FUNKTIONEN = [
 ]
 
 
+# Reels kosten im Tagesplan am meisten Text -- in diesen Sprachen nur einmal pro Woche (Freitag), sonst Feed-Post + Story.
+# Railway: REELS_WOECHENTLICH=de,en (Standard), leer = jeden Tag Reels in allen Sprachen
+REEL_WOCHENTAG = 4                     # Freitag
+
+
+def reels_woechentlich() -> set[str]:
+    roh = os.environ.get("REELS_WOECHENTLICH")
+    roh = "de,en" if roh is None else roh
+    return {norm(x) for x in roh.split(",") if x.strip()}
+
+
+def reels_heute(sprache: str, tag: date) -> bool:
+    return norm(sprache) not in reels_woechentlich() or tag.weekday() == REEL_WOCHENTAG
+
+
+OHNE_REELS_TEXT = ("HEUTE OHNE REELS in dieser Sprache: liefere nur ZWEI Einträge – den Feed-Post (1.) und die Story (3.). "
+                   "Die beiden Reels (2. und 4.) entfallen heute; alle anderen Regeln gelten unverändert.")
+
+
 def app_funktion(tag: date) -> tuple[str, str] | None:
     """Am App-Reel-Tag die Funktion dieser Woche, sonst None."""
     if tag.weekday() != APP_REEL_TAG:
@@ -760,9 +779,11 @@ def _frage(info: dict, sprache: str, bisherige: list[str], zielgruppe: dict | No
     )
 
 
-def _aufbereiten(daten: dict, sprache: str, thema_name: str = "") -> list[dict]:
-    posts, reels = [], 0
+def _aufbereiten(daten: dict, sprache: str, thema_name: str = "", reels: bool = True) -> list[dict]:
+    posts, ohne_reels, reels = [], not reels, 0
     for i, p in enumerate(daten.get("posts", [])[:4]):
+        if ohne_reels and p.get("art") == "reel":
+            continue
         skript = p.get("skript") or {}
         punkte = [x.strip() for x in (p.get("bild_punkte") or []) if x and x.strip()][:3]
         folien = [{"titel": str(f.get("titel") or "").strip()[:80], "text": str(f.get("text") or "").strip()[:260]}
@@ -803,8 +824,11 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
                    publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache, info),
                    lebensthemen(tag, sprache), "\n\n".join(t for t in (tag_text(tag), botschaften_text(sprache), app_reel_text(tag)) if t))
+    mit_reels = reels_heute(sprache, tag)
+    if not mit_reels:
+        frage += "\n\n" + OHNE_REELS_TEXT
     # vier ausfuehrliche Eintraege + Denken: grosszuegiges Limit, damit nichts abgeschnitten wird
-    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"])
+    posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"], mit_reels)
     zeiten = _posten_zeiten()
     pruefe = lambda p: redaktion.pruefe_post(p, sprache) + tageszeit_befunde(p, zeiten) + stil_befunde(p, sprache) \
         + zeichen_befunde(p)  # noqa: E731
@@ -814,7 +838,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
         hinweis = "\n".join(f"- {posts[i].get('art')}: {'; '.join(b)}" for i, b in befunde.items() if b)
         korrigiert = _aufbereiten(frage_json(
             system, frage + "\n\nDein erster Entwurf hatte diese Probleme, vermeide sie:\n" + hinweis,
-            SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"])
+            SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"], mit_reels)
         if korrigiert:
             neu = {i: pruefe(p) for i, p in enumerate(korrigiert)}
             if anzahl(neu) <= anzahl(befunde):          # nur nehmen, wenn es nicht schlechter geworden ist

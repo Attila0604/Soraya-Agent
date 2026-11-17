@@ -35,5 +35,7 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
 - Sonntags ist das 2. Reel das **App-Reel** (`tagesplan.app_funktion`/`app_reel_text`, `meta.app_reel`): weiter Drei-Zeichen-Check,
   führt aber zu einer App-Funktion (wöchentlich wechselnd). Reel-Schlussbild ab `reel-22` mit Zeile „Google Play: Soraya Astro“.
   „Heute“ zeigt die Zeile „Gestern: Aufrufe · neue Follower · neue Konten“ (`/wirkung/gestern`, `cockpit.gestern`).
+- Reels auf DE/EN nur freitags (`tagesplan.reels_heute`, Railway `REELS_WOECHENTLICH`, Standard `de,en`, leer = täglich);
+  an den anderen Tagen nur Feed-Post + Story (spart Kosten). Ungarisch (Facebook) immer mit 2 Reels.
 - **Tagesplan-Automatik und automatisches Posten stehen AUS** – nur Attila schaltet sie ein.
 - Tests: siehe `tests/README.md` (nie gegen die echte Datenbank laufen lassen).
