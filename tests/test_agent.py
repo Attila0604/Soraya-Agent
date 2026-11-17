@@ -2720,6 +2720,7 @@ def test_tiktok_nachpruefen_nach_dem_hochladen(fake_meta, monkeypatch, frische_d
 
 # ---------------------------------------------------------------- Sprach-Lektorat
 def test_lektorat_korrigiert_ungarisch_und_merkt_es(monkeypatch):
+    monkeypatch.setenv("UMSCHREIBEN_SPRACHEN", "")      # hier nur das Korrektur-Lektorat
     posts = [{"art": "post", "titel": "Esti szívritule mára", "text": "Ma este szívritule. Te melyik jegy vagy? 👇",
               "_folien": [{"titel": "Esti szívritule", "text": "x"}], "hashtags": ["#horoszkop"]},
              {"art": "story", "titel": "Telihold", "text": "Szép estét"}]
@@ -3104,3 +3105,53 @@ def test_gesamt_hoechstens_200_mit_hashtags():
     for pl in ("facebook", "instagram", "tiktok"):
         t = posten.text_fuer(p, pl)
         assert len(t) <= 200 and t.split("\n\n")[-1].count("#") >= 3, pl
+
+
+def test_neufassung_ungarisch_schreibt_natuerlich_um(monkeypatch):
+    posts = [{"art": "reel", "titel": "Vízöntő, Bika, Halak", "untertitel": "Ma este otthonotok mesébe illővé válik",
+              "text": "Vízöntő, Bika, Halak: ma este otthonotok melegebb lesz.\n\nVízöntő, a Hold ma nálad jár.",
+              "hashtags": ["#vízöntő", "#esthangulat"],
+              "skript": {"hook": "Vízöntő, Bika, Halak: ma este otthonotok melegebb lesz.", "szenen": [],
+                         "einblendungen": ["Vízöntő: a Hold ma nálad jár.", "Bika: puha takaró."], "schluss": ""}},
+             {"art": "story", "titel": "Telihold", "text": "Szép estét", "hashtags": [], "_bild_punkte": ["A", "B"]}]
+    gesehen = {}
+
+    def fake(system, frage, schema, **kw):
+        gesehen["system"], gesehen["frage"], gesehen["schema"] = system, frage, schema
+        return {"posts": [
+            {"titel": "Vízöntő, Bika, Halak", "untertitel": "Meghitt este vár rátok", "text": "MÁS ELSŐ SOR\n\nVízöntő, a Hold ma a jegyedben jár.",
+             "hook": "Vízöntő, Bika, Halak: meghitt este vár rátok.", "schluss": "", "szenen": [],
+             "einblendungen": ["Vízöntő: a Hold ma a jegyedben jár.", "Bika: jólesik egy puha takaró."], "bild_punkte": [],
+             "folien": [], "hashtags": ["#vízöntő", "#estihangulat"]},
+            {"titel": "Telihold", "untertitel": "", "text": "Szép estét", "hook": "", "schluss": "", "szenen": [],
+             "einblendungen": [], "bild_punkte": ["A"], "folien": [], "hashtags": []}]}
+    monkeypatch.setattr(lektorat, "frage_json", fake)
+    erledigt = lektorat.pruefen(posts, "hu")
+    p = posts[0]
+    assert "REWRITE MODE" in gesehen["system"] and "posts" in gesehen["schema"]["properties"]
+    assert "mesébe illővé" in gesehen["frage"]
+    assert p["untertitel"] == "Meghitt este vár rátok" and p["hashtags"] == ["#vízöntő", "#estihangulat"]
+    assert p["skript"]["einblendungen"][0] == "Vízöntő: a Hold ma a jegyedben jár."
+    # Hook und erste Textzeile bleiben gleich (Facebook zeigt die erste Zeile)
+    assert p["text"].split("\n", 1)[0] == p["skript"]["hook"] == "Vízöntő, Bika, Halak: meghitt este vár rátok."
+    assert "Vízöntő, a Hold ma a jegyedben jár." in p["text"]
+    assert any("#esthangulat" in x for x in p["_lektorat"]) and erledigt
+    # Liste mit falscher Länge wird nicht übernommen, unveränderter Post bleibt ohne Vermerk
+    assert posts[1]["_bild_punkte"] == ["A", "B"] and "_lektorat" not in posts[1]
+
+
+def test_neufassung_fehler_faellt_auf_korrekturen_zurueck(monkeypatch):
+    aufrufe = []
+
+    def fake(system, frage, schema, **kw):
+        aufrufe.append("posts" in schema["properties"])
+        if "posts" in schema["properties"]:
+            return {"posts": []}                       # falsche Anzahl -> Fehler
+        return {"korrekturen": [{"alt": "szívritule", "neu": "szívrituálé"}]}
+    monkeypatch.setattr(lektorat, "frage_json", fake)
+    posts = [{"art": "post", "titel": "Esti szívritule", "text": "Ma este jó."}]
+    assert lektorat.pruefen(posts, "hu") == ["szívritule → szívrituálé"] and aufrufe == [True, False]
+    monkeypatch.setenv("UMSCHREIBEN_SPRACHEN", "")
+    aufrufe.clear()
+    lektorat.pruefen([{"art": "post", "titel": "x y z", "text": "Ma"}], "hu")
+    assert aufrufe == [False]                          # abgeschaltet: nur Korrektur-Lektorat
