@@ -37,6 +37,7 @@ from db import (
     lade_post, lade_veroeffentlichungen, setze_meta, speichere_zielgruppe, lade_zielgruppen, setze_zielgruppe_im_tagesplan, lade_tagesplaene, lade_tagesplaene_zeitraum,
 )
 import cockpit
+import kommentare
 import db
 import himmel
 import linkedin
@@ -786,6 +787,39 @@ def wirkung_gestern():
     """Eine Zeile fuer „Heute“: Aufrufe, neue Follower, neue Konten von gestern."""
     try:
         return cockpit.gestern()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class KommentarIds(BaseModel):
+    ids: list[str]
+
+
+@app.get("/kommentare")
+def kommentare_liste(neu: bool = False):
+    """Kommentare unter den Facebook-Beitraegen der letzten Tage (offen zuerst)."""
+    try:
+        if not meta.verbindungen()["facebook"]["verbunden"]:
+            return {"verbunden": False, "kommentare": [], "offen": 0, "fehler": []}
+        return {"verbunden": True, **kommentare.lade(neu_laden=neu)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/kommentare/vorschlaege")
+def kommentare_vorschlaege(anfrage: KommentarIds):
+    """Antwort-Vorschlaege im Soraya-Ton (ein Claude-Aufruf fuer bis zu 10 Kommentare)."""
+    try:
+        return kommentare.vorschlaege(anfrage.ids)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/kommentare/{kid}/erledigt")
+def kommentar_erledigt(kid: str, ja: bool = True):
+    try:
+        kommentare.erledigt(kid, ja)
+        return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -37,5 +37,8 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   „Heute“ zeigt die Zeile „Gestern: Aufrufe · neue Follower · neue Konten“ (`/wirkung/gestern`, `cockpit.gestern`).
 - Reels auf DE/EN nur freitags (`tagesplan.reels_heute`, Railway `REELS_WOECHENTLICH`, Standard `de,en`, leer = täglich);
   an den anderen Tagen nur Feed-Post + Story (spart Kosten). Ungarisch (Facebook) immer mit 2 Reels.
+- Kommentare (`kommentare.py`, Tabelle `soraya_kommentare`, `/kommentare`, „Heute“ → „Kommentare auf Facebook“): liest die
+  Kommentare der Facebook-Beiträge der letzten 4 Tage (Recht pages_read_user_content), Antwort-Vorschläge auf Knopfdruck
+  (ein Claude-Aufruf für bis zu 10, effort low, gemerkt). Soraya antwortet NICHT selbst (bräuchte pages_manage_engagement).
 - **Tagesplan-Automatik und automatisches Posten stehen AUS** – nur Attila schaltet sie ein.
 - Tests: siehe `tests/README.md` (nie gegen die echte Datenbank laufen lassen).
