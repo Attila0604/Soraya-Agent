@@ -618,6 +618,11 @@ def tageszeit_befunde(post: dict, zeiten: dict) -> list[str]:
 STIL = "Stil"
 _PROZENT = re.compile(r"\d+(?:[.,]\d+)?\s?(?:%|százalék\w*|prozent|percent|per ?cento)", re.IGNORECASE)
 _FALSCHES_WORT = {"hu": re.compile(r"\bmelyik jel\b|\bcsillagjel\b|\bjeled\b", re.IGNORECASE)}   # richtig: jegy
+# Soraya erteilt keine Erlaubnis wie ein Amt ("3 dolgot engedélyezek most neked") -- sie laedt ein
+_AMTSTON = {"hu": re.compile(r"\bengedélyez\w*", re.IGNORECASE),
+            "de": re.compile(r"\b(genehmige|erlaube) ich dir\b|\bich (genehmige|erlaube) dir\b", re.IGNORECASE),
+            "en": re.compile(r"\bI (hereby )?(permit|grant|authori[sz]e|allow) you\b", re.IGNORECASE),
+            "it": re.compile(r"\bti (autorizzo|concedo|permetto)\b", re.IGNORECASE)}
 _WOERTLICH = {"hu": re.compile(r"\bszó szerint\b", re.IGNORECASE), "de": re.compile(r"\bbuchstäblich\b", re.IGNORECASE),
               "en": re.compile(r"\bliterally\b", re.IGNORECASE), "it": re.compile(r"\bletteralmente\b", re.IGNORECASE)}
 
@@ -636,6 +641,13 @@ def stil_befunde(post: dict, sprache: str) -> list[str]:
     w = _WOERTLICH.get(sprache)
     if w and w.search(alles):
         out.append(f"{STIL}: „{w.search(alles).group(0)}“ (englisch „literally“) – weglassen")
+    amt = _AMTSTON.get(sprache)
+    bild = " ".join([post.get("titel") or "", post.get("untertitel") or ""]
+                    + [str(f.get("titel") or "") + " " + str(f.get("text") or "") for f in (post.get("_folien") or [])])
+    m = amt.search(alles + " " + bild) if amt else None
+    if m:
+        out.append(f"{STIL}: „{m.group(0)}“ klingt wie eine Behörde – Soraya erlaubt nichts, sie lädt ein "
+                   "(z. B. „3 dolog, amit most megengedhetsz magadnak“)")
     return out
 
 
