@@ -2463,6 +2463,14 @@ def test_freier_tag_ohne_arbeitsthema():
     assert "freier Tag" in tagesplan.tag_text(date(2026, 11, 15)) and tagesplan.tag_text(date(2026, 11, 17)) == "Heute ist Dienstag."
 
 
+def test_amtston_wird_erkannt():
+    p = {"art": "post", "titel": "Mérleg, 3 dolgot engedélyezek most neked", "text": "Szép nap.", "skript": None}
+    assert any("Behörde" in b for b in tagesplan.stil_befunde(p, "hu"))
+    ok = {"art": "post", "titel": "Mérleg, 3 dolog, amit most megengedhetsz magadnak", "text": "Szép nap."}
+    assert not any("Behörde" in b for b in tagesplan.stil_befunde(ok, "hu"))
+    assert any("Behörde" in b for b in tagesplan.stil_befunde({"text": "Today I permit you three things."}, "en"))
+
+
 def test_lern_saetze_mehr_weniger_test():
     def e(i, thema, punkte, stil="frage"):
         return {"post": {"id": i, "art": "post", "meta": {"thema": thema, "hook_stil": stil}}, "punkte": punkte, "gemessen": True}
