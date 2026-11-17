@@ -2126,8 +2126,11 @@ function zeigeRaus(d, ps, morgen){
     const wo = tt.length ? tt.map(t => ({pl: t.plattform, st: t.status, url: t.url}))
       : pls.map(pl => ({pl, st: v[pl] && v[pl].verbunden ? 'geplant' : 'nicht'}));
     // Tagesplan von vor der Umstellung: es gibt ein Reel, aber noch kein zweites -> kein Grund zur Sorge
-    const alt = !p && art === 'reel2' && (d.posts || []).some(x => x.art === 'reel' && x.sprache === sprache);
-    const z = alt ? {cls: 'aus', text: 'Kommt ab dem nächsten Tagesplan', sub: 'Dieser Tagesplan wurde noch mit einem Reel geschrieben.'}
+    // Reels auf Deutsch/Englisch nur freitags (REELS_WOECHENTLICH) -> heute bewusst keins, kein Grund zur Sorge
+    const ohneReel = !p && (art === 'reel' || art === 'reel2') && (d.ohne_reels || []).includes(sprache);
+    const alt = ohneReel || (!p && art === 'reel2' && (d.posts || []).some(x => x.art === 'reel' && x.sprache === sprache));
+    const z = ohneReel ? {cls: 'aus', text: 'Heute kein Reel', sub: 'In dieser Sprache gibt es Reels nur freitags (spart Kosten).'}
+      : alt ? {cls: 'aus', text: 'Kommt ab dem nächsten Tagesplan', sub: 'Dieser Tagesplan wurde noch mit einem Reel geschrieben.'}
       : rausZustand(p, tt, wo, e, art, zeit);
     return {art, sprache, p, tt, zeit, wo, z, alt};
   });

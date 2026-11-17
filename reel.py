@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-22"
+VERSION = "reel-23"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 
 
@@ -698,8 +698,8 @@ def als_bytes(post: dict, tiktok: bool = False) -> bytes:
 # ---------------------------------------------------------------------------
 # Diashow: aus den Karussell-Folien eines Feed-Posts ein Reel (fuer Instagram, wo Reels Fremde erreichen)
 # ---------------------------------------------------------------------------
-DIA_FOLIE, DIA_UEBERGANG, DIA_LETZTE = 2.6, 0.5, 4.0
-DIA_ZIEL, DIA_MAX_SCHRITT = 20.0, 5.0
+DIA_FOLIE, DIA_UEBERGANG, DIA_LETZTE = 2.6, 0.5, 6.0     # Schlussfolie (App-Einladung) in Ruhe lesbar
+DIA_ZIEL, DIA_MAX_SCHRITT = 22.0, 5.0
 
 
 def diashow(post: dict, bilder: list[bytes], ziel: str) -> dict:
