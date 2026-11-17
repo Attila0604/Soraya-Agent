@@ -809,6 +809,10 @@ EINLADUNG = {
 }
 GRATIS = {"de": "Kostenlos · ohne Konto testen", "en": "Free · try it without an account",
           "hu": "Ingyenes · regisztráció nélkül kipróbálható", "it": "Gratis · provalo senza account"}
+# Ohne Konto geht nur der Schnellstart (Sonne/Mond) -- Partner-Vergleich, eigenes Horoskop und Chat brauchen ein
+# (kostenloses) Konto, darum dort ehrlich "mit kostenlosem Konto"
+GRATIS_KONTO = {"de": "Kostenlos · mit kostenlosem Konto", "en": "Free · with a free account",
+                "hu": "Ingyenes · ingyenes regisztrációval", "it": "Gratis · con un account gratuito"}
 ZEICHEN_GLYPHE = "♈♉♊♋♌♍♎♏♐♑♒♓"
 ZEICHEN_NAMEN = [  # gleiche Reihenfolge wie die Glyphen
     ("widder", "aries", "kos", "ariete"), ("stier", "taurus", "bika", "toro"),
@@ -1420,7 +1424,8 @@ def folie(post: dict, nr: int, video: bool = False) -> Image.Image:
         schluessel = (post.get("meta") or {}).get("aufforderung") or "mondzeichen"
         einladung = (EINLADUNG.get(schluessel) or EINLADUNG["mondzeichen"]).get(sprache, EINLADUNG["mondzeichen"]["en"])
         t = messe_text(einladung, breite=W - 200, groesse=84, name="cormorant", max_zeilen=3, min_groesse=52)
-        u = messe_text(GRATIS.get(sprache, GRATIS["en"]), breite=W - 240, groesse=36, name="inter400",
+        gratis = GRATIS if schluessel == "mondzeichen" or schluessel not in EINLADUNG else GRATIS_KONTO
+        u = messe_text(gratis.get(sprache, gratis["en"]), breite=W - 240, groesse=36, name="inter400",
                        zeilenhoehe=1.35, max_zeilen=2, min_groesse=26)
         zh = 260
         y = oben + max(0, (unten - oben - (zh + 70 + t["hoehe"] + 30 + u["hoehe"])) / 2)

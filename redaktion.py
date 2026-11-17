@@ -62,11 +62,11 @@ AUFFORDERUNGEN = [
     {"schluessel": "mondzeichen",
      "auftrag": "Finde dein Sonnen- und Mondzeichen in Sekunden – gratis, ohne Konto."},
     {"schluessel": "partner",
-     "auftrag": "Partner-Vergleich: wie gut ihr zusammenpasst, in Prozent."},
+     "auftrag": "Partner-Vergleich: wie gut ihr zusammenpasst, in Prozent (gratis mit kostenlosem Konto – nie „ohne Konto“ schreiben)."},
     {"schluessel": "horoskop",
-     "auftrag": "Dein persönliches Tageshoroskop aus deinem eigenen Geburtshoroskop."},
+     "auftrag": "Dein persönliches Tageshoroskop aus deinem eigenen Geburtshoroskop (gratis mit kostenlosem Konto – nie „ohne Konto“ schreiben)."},
     {"schluessel": "chat",
-     "auftrag": "Stell Soraya deine Frage im Astro-Chat."},
+     "auftrag": "Stell Soraya deine Frage im Astro-Chat (gratis mit kostenlosem Konto – nie „ohne Konto“ schreiben)."},
 ]
 _THEMA_AUFFORDERUNG = {0: "horoskop", 1: "mondzeichen", 2: "partner", 3: "mondzeichen", 4: "horoskop",
                        5: "chat", 6: "horoskop"}
