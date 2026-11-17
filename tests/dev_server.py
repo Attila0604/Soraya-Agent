@@ -9,7 +9,7 @@ os.environ.setdefault("ANTHROPIC_API_KEY", "sk-test")
 sys.path.insert(0, os.environ.get("AGENT_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import psycopg
 with psycopg.connect(os.environ["DATABASE_URL"]) as c:
-    c.execute("drop table if exists soraya_veroeffentlichungen, soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
+    c.execute("drop table if exists soraya_kommentare, soraya_pins, soraya_veroeffentlichungen, soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
 import himmel, tagesplan, content_agent, research_agent, wirkung, main, uvicorn
 H = himmel.heute()
 SKY = {"moon": {"phase_index": int(os.environ.get("PHASE", "1")), "illumination": 12, "sign": "Sco"}, "sun": {"sign": "Lib"},
@@ -43,6 +43,19 @@ def fake_plan(system, frage, schema, **kw):
          "skript": {"hook": "Drei Zeichen spüren es zuerst", "szenen": ["Mond", "Kerze"],
                     "einblendungen": ["Skorpion: sagt es endlich laut", "Fische: darf heute ruhen"], "schluss": "Welches bist du?"}}]}
 tagesplan.frage_json = fake_plan
+import claude as _claude
+_echt_frage = _claude.frage_json
+def _fake_kommentare(system, frage, schema, **k):
+    if "antworten" in schema.get("properties", {}):
+        import re as _re
+        ids = _re.findall(r"^id: (\S+)", frage, _re.M)
+        return {"antworten": [{"id": i, "art": "antworten" if i.endswith("2") else "herz",
+                               "hinweis": "Sie freut sich über den Post." if i.endswith("2") else "Nur ihr Sternzeichen.",
+                               "vorschlaege": ["Köszönöm szépen, kedves Erika! Szép estét kívánok 🌙✨",
+                                               "Örülök, hogy itt vagy! 💜", "Ha kíváncsi vagy a személyes horoszkópodra, keresd a Google Playen: „Soraya Astro” ✨"]}
+                              for i in ids]}
+    return _echt_frage(system, frage, schema, **k)
+_claude.frage_json = _fake_kommentare
 content_agent.frage_json = lambda s, f, sc, **k: {"posts": [{"platform": "instagram", "titel": "Venus rückläufig", "untertitel": "Alte Gefühle klopfen an", "text": "Studio-Post zum Thema.", "hashtags": ["#venus", "#astrologie"]}] * 3}
 random.seed(4)
 def fake_get(url, params=None, headers=None, timeout=None):
@@ -101,6 +114,12 @@ def fake_instagram(url, params):
     return {"like_count": wert(n, 8, 70), "comments_count": wert(n, 0, 12)}
 # Facebook-Seite (DEMO_KANAELE=1): Follower, Reaktionen, Reichweite
 def fake_facebook(url, params):
+    if url.endswith("/comments"):
+        return {"data": [
+            {"id": url.rsplit("/", 2)[-2] + "_k1", "message": "Halak 🐟", "created_time": "2026-11-18T08:10:00+0000", "from": {"id": "u1", "name": "Kiss Erika"},
+             "permalink_url": "https://facebook.com/x"},
+            {"id": url.rsplit("/", 2)[-2] + "_k2", "message": "Nagyon szép, köszönöm! Pont erre volt ma szükségem 💜", "created_time": "2026-11-18T09:30:00+0000",
+             "from": {"id": "u2", "name": "Nagy Anna"}, "permalink_url": "https://facebook.com/y"}]} if sum(map(ord, url)) % 4 == 0 else {"data": []}
     if params.get("fields") == "followers_count,fan_count":
         return {"followers_count": 412, "fan_count": 398}
     mid = url.split("/")[-2] if url.endswith("/insights") else url.rsplit("/", 1)[-1]

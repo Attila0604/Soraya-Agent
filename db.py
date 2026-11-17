@@ -130,6 +130,18 @@ def init_db():
             );
             """
         )
+        # Kommentare auf Facebook: Stand je Kommentar (offen/erledigt) und die Antwort-Vorschlaege (seit 18.11.2026)
+        cur.execute(
+            """
+            create table if not exists soraya_kommentare (
+                id            text primary key,
+                post_id       bigint,
+                status        text not null default 'offen',
+                vorschlag     jsonb,
+                aktualisiert  timestamptz not null default now()
+            );
+            """
+        )
         # Zielgruppe im Tagesplan verwenden, Land der Recherche (seit Version 0.9)
         cur.execute("alter table soraya_zielgruppen add column if not exists im_tagesplan boolean not null default false;")
         cur.execute("alter table soraya_zielgruppen add column if not exists land text;")
@@ -812,3 +824,22 @@ def pinterest_feed_pins(tag) -> list[dict]:
             "on v.post_id = p.id and v.plattform = 'pinterest' and v.status = 'fertig' "
             "where p.geplant_fuer = %s and p.art = 'post' order by p.id;", (tag,))
         return cur.fetchall()
+
+
+def lade_kommentar_staende(ids: list[str]) -> dict:
+    if not ids:
+        return {}
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute("select id, status, vorschlag from soraya_kommentare where id = any(%s);", (list(ids),))
+        return {z["id"]: z for z in cur.fetchall()}
+
+
+def setze_kommentar(kid: str, post_id: int | None = None, status: str | None = None, vorschlag=None) -> None:
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "insert into soraya_kommentare (id, post_id, status, vorschlag) values (%s, %s, coalesce(%s, 'offen'), %s) "
+            "on conflict (id) do update set post_id = coalesce(excluded.post_id, soraya_kommentare.post_id), "
+            "status = coalesce(%s, soraya_kommentare.status), "
+            "vorschlag = coalesce(excluded.vorschlag, soraya_kommentare.vorschlag), aktualisiert = now();",
+            (kid, post_id, status, Jsonb(vorschlag) if vorschlag is not None else None, status))
+        conn.commit()

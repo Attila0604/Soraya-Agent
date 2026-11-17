@@ -70,7 +70,7 @@ def tagesplan_antwort(sprache="de"):
 @pytest.fixture(autouse=True)
 def frische_db(monkeypatch):
     with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
-        conn.execute("drop table if exists soraya_pins, soraya_veroeffentlichungen, soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
+        conn.execute("drop table if exists soraya_kommentare, soraya_pins, soraya_veroeffentlichungen, soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
     db.init_db()
     aufrufe = []
 
@@ -2483,6 +2483,44 @@ def test_reels_nur_freitags_in_de_und_en(monkeypatch):
                      for a in ("post", "reel", "story", "reel")]}
     assert [p["art"] for p in tagesplan._aufbereiten(roh, "de", "", reels=False)] == ["post", "story"]
     assert [p["art"] for p in tagesplan._aufbereiten(roh, "de", "")] == ["post", "reel", "story", "reel"]
+
+
+def test_kommentare_lesen_vorschlagen_erledigen(monkeypatch, frische_db):
+    import kommentare
+    import claude
+    kommentare.leeren()
+    monkeypatch.setattr(meta, "zugang", lambda d: {"token": "T", "seite_id": "S1"})
+    monkeypatch.setattr(meta, "verbindungen", lambda: {"facebook": {"verbunden": True}})
+    monkeypatch.setattr(db, "lade_gepostete", lambda pl, seit, limit=30: [
+        {"post_id": 7, "extern_id": "S1_99", "url": "https://fb/99", "titel": "Rák, Bak", "art": "reel", "sprache": "hu"},
+        {"post_id": 8, "extern_id": "S1_98", "url": "https://fb/98", "titel": "Story", "art": "story", "sprache": "hu"}])
+    abfragen = []
+
+    def get(url, **p):
+        abfragen.append(url)
+        return {"data": [
+            {"id": "c1", "message": "Halak", "created_time": "2026-11-18T08:00:00+0000", "from": {"id": "u1", "name": "Kiss Erika"}},
+            {"id": "c2", "message": "Köszönöm!", "created_time": "2026-11-18T09:00:00+0000", "from": {"id": "u2", "name": "Nagy Anna"},
+             "comments": {"data": [{"from": {"id": "S1"}}]}},
+            {"id": "c3", "message": "Danke an alle", "from": {"id": "S1", "name": "Soraya"}}]}
+    monkeypatch.setattr(meta, "_get", get)
+    d = client.get("/kommentare", headers=AUTH).json()
+    assert d["verbunden"] and d["offen"] == 1 and [k["id"] for k in d["kommentare"]] == ["c1", "c2"]
+    assert d["kommentare"][1]["status"] == "erledigt" and len(abfragen) == 1          # Story ohne Kommentare, Seite selbst nicht
+    gefragt = []
+
+    def frage(system, frage, schema, **kw):
+        gefragt.append(frage)
+        return {"antworten": [{"id": "c1", "art": "herz", "hinweis": "Nur ihr Sternzeichen.", "vorschlaege": ["Szép napot, Halak! 🐟", " "]}]}
+    monkeypatch.setattr(claude, "frage_json", frage)
+    v = client.post("/kommentare/vorschlaege", json={"ids": ["c1"]}, headers=AUTH).json()
+    assert v["kommentare"][0]["vorschlag"]["vorschlaege"] == ["Szép napot, Halak! 🐟"] and "Erika" in gefragt[0]
+    client.post("/kommentare/vorschlaege", json={"ids": ["c1"]}, headers=AUTH)
+    assert len(gefragt) == 1                                                     # gemerkt, kein zweiter Aufruf
+    assert client.post("/kommentare/c1/erledigt", headers=AUTH).json()["ok"]
+    d = client.get("/kommentare", headers=AUTH).json()
+    c1 = next(k for k in d["kommentare"] if k["id"] == "c1")
+    assert d["offen"] == 0 and c1["status"] == "erledigt" and c1["vorschlag"]["art"] == "herz"
 
 
 def test_lern_saetze_mehr_weniger_test():

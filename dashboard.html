@@ -124,6 +124,21 @@
   .termin .vs{font-size:11px}
   button.freigeben{padding:7px 14px;font-size:13px}
   details.pz summary .zeit{font-size:12px;color:var(--champagne);flex:none;font-variant-numeric:tabular-nums}
+  .kommentar-panel>summary{cursor:pointer;font-family:"Cormorant Garamond",Georgia,serif;font-size:22px;color:var(--champagne);list-style:none}
+  .kommentar-panel>summary .meta{margin-left:10px;font-family:Inter,sans-serif;font-size:13px}
+  .km-erklaerung{margin:8px 0 10px}
+  .km{border-top:1px solid var(--line-soft);padding:14px 0}
+  .km.erledigt{opacity:.55}
+  .km-kopf{font-size:13px;color:var(--mist-dim)}
+  .km-kopf b{color:var(--champagne);font-weight:600}
+  .km-text{margin:6px 0 8px;font-size:15px;color:var(--mist);white-space:pre-wrap;overflow-wrap:anywhere}
+  .km-hinweis{margin:0 0 8px;font-size:13px;color:var(--mist-dim)}
+  .km-warn{margin:0 0 8px;font-size:13.5px;color:#f0b4ab}
+  .km-v{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;background:var(--panel-2);border:1px solid var(--line-soft);
+    border-radius:10px;padding:10px 12px;margin:6px 0;font-size:14.5px;color:var(--mist)}
+  .km-v span{flex:1;overflow-wrap:anywhere}
+  .km-aktionen{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:6px}
+  .km-aktionen a{color:var(--gold);font-size:13.5px}
   .gestern{margin:-6px 0 14px;font-size:14px;color:var(--mist-dim);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
   .gestern b{color:var(--champagne);font-weight:600}
   .cockpit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 16px}
@@ -1182,6 +1197,14 @@
     </div>
     <div id="tiktokTexte"></div>
 
+    <details class="panel kommentar-panel" id="kommentarBox">
+      <summary>Kommentare auf Facebook<span class="meta" id="kommentarZahl"></span></summary>
+      <p class="meta km-erklaerung">Neue Kommentare der letzten 4 Tage. Soraya schlägt Antworten vor – kopieren, auf Facebook öffnen, einfügen.</p>
+      <div class="row knopfzeile"><button class="klein" id="kmAlle">Antworten für alle vorschlagen</button>
+        <button class="textlink" id="kmNeu">Neu laden</button></div>
+      <div id="kommentarListe"><div class="empty">Wird geladen …</div></div>
+    </details>
+
     <div class="panel tagesplan-panel">
       <div class="himmel">
         <canvas id="mondKlein" width="152" height="152" aria-hidden="true"></canvas>
@@ -2208,6 +2231,66 @@ function zeigeKarte(p){
 document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-raus-plan]'); if(b){ starteTagesplan(false); $('btnPlanJetzt').scrollIntoView({behavior: 'smooth', block: 'center'}); } });
 // wie redaktion.schwer(): nur diese Befunde halten das automatische Posten an
 const befundSchwer = (liste) => (liste || []).some(b => /^(Heikle|Deutsche Wörter|Enthält einen Link|Reel ohne Hook|Überschrift fehlt)/.test(b));
+/* ---------- Kommentare auf Facebook: Antwort-Vorschlaege zum Kopieren ---------- */
+let KOMMENTARE = [], kommentarStand = 0;
+async function ladeKommentare(neu = false){
+  if(!neu && Date.now() - kommentarStand < 2 * 60 * 1000) return zeigeKommentare();
+  kommentarStand = Date.now();
+  try{
+    const d = await api('/kommentare' + (neu ? '?neu=1' : ''));
+    if(!d.verbunden){ $('kommentarBox').classList.add('hide'); return; }
+    $('kommentarBox').classList.remove('hide');
+    KOMMENTARE = d.kommentare || [];
+    $('kommentarZahl').textContent = d.offen ? `${d.offen} neu` : 'alles beantwortet ✓';
+    if(d.fehler && d.fehler.length && !KOMMENTARE.length)
+      $('kommentarListe').innerHTML = `<div class="empty">Kommentare gerade nicht lesbar.<span>${esc(d.fehler[0])}</span></div>`;
+    else zeigeKommentare();
+  }catch(e){ kommentarStand = 0; $('kommentarListe').innerHTML = `<div class="empty">Kommentare nicht verfügbar.<span>${esc(e.message)}</span></div>`; }
+}
+function zeigeKommentare(){
+  const box = $('kommentarListe');
+  if(!KOMMENTARE.length){ box.innerHTML = '<div class="empty">Noch keine Kommentare in den letzten Tagen.</div>'; return; }
+  const zeit = (z) => { try{ return new Date(z).toLocaleString('de-AT', {weekday: 'short', hour: '2-digit', minute: '2-digit'}); }catch(e){ return ''; } };
+  box.innerHTML = KOMMENTARE.map(k => { const v = k.vorschlag, fertig = k.status !== 'offen';
+    return `<div class="km${fertig ? ' erledigt' : ''}" data-kid="${esc(k.id)}">
+      <div class="km-kopf"><b>${esc(k.von || 'Jemand')}</b> · ${esc(zeit(k.zeit))} · zu „${esc(k.post_titel || '')}“${k.beantwortet ? ' · beantwortet ✓' : ''}</div>
+      <p class="km-text">${esc(k.text || '(Bild oder Sticker)')}</p>
+      ${v ? `${v.hinweis ? `<p class="km-hinweis">💡 ${esc(v.hinweis)}</p>` : ''}
+        ${v.art === 'verbergen' ? '<p class="km-warn">Empfehlung: nicht antworten, auf Facebook verbergen.</p>'
+          : (v.art === 'herz' ? '<p class="km-hinweis">Ein ❤️ als Reaktion reicht – oder kurz:</p>' : '')
+            + (v.vorschlaege || []).map((t, i) => `<div class="km-v"><span>${esc(t)}</span><button class="ghost klein" data-km-kopie="${i}">Kopieren</button></div>`).join('')}`
+        : (fertig ? '' : '<button class="klein" data-km-vorschlag>Antwort vorschlagen</button>')}
+      <div class="km-aktionen">${k.link ? `<a href="${esc(k.link)}" target="_blank" rel="noopener">Auf Facebook öffnen ›</a>` : ''}
+        <button class="textlink" data-km-erledigt="${fertig ? '0' : '1'}">${fertig ? 'Wieder offen' : 'Erledigt ✓'}</button></div></div>`; }).join('');
+}
+async function kommentarVorschlaege(ids, knopf){
+  if(!ids.length) return melde('Alle offenen Kommentare haben schon Vorschläge.');
+  if(knopf){ knopf.disabled = true; knopf.textContent = 'Soraya schreibt …'; }
+  try{
+    const d = await api('/kommentare/vorschlaege', {method: 'POST', body: JSON.stringify({ids})});
+    (d.kommentare || []).forEach(n => { const k = KOMMENTARE.find(x => x.id === n.id); if(k) k.vorschlag = n.vorschlag; });
+    zeigeKommentare();
+  }catch(e){ melde('Fehler: ' + e.message); if(knopf){ knopf.disabled = false; knopf.textContent = 'Antwort vorschlagen'; } }
+}
+$('kommentarBox').addEventListener('toggle', () => { if($('kommentarBox').open) ladeKommentare(); });
+$('kmNeu').onclick = () => ladeKommentare(true);
+$('kmAlle').onclick = async () => { const b = $('kmAlle');
+  await kommentarVorschlaege(KOMMENTARE.filter(k => k.status === 'offen' && !k.vorschlag).slice(0, 10).map(k => k.id), b);
+  b.disabled = false; b.textContent = 'Antworten für alle vorschlagen'; };
+$('kommentarListe').addEventListener('click', async (ev) => {
+  const km = ev.target.closest('[data-kid]'); if(!km) return;
+  const k = KOMMENTARE.find(x => x.id === km.dataset.kid); if(!k) return;
+  const kopie = ev.target.closest('[data-km-kopie]');
+  if(kopie) return kopiere(kopie, (k.vorschlag.vorschlaege || [])[+kopie.dataset.kmKopie] || '');
+  if(ev.target.closest('[data-km-vorschlag]')) return kommentarVorschlaege([k.id], ev.target.closest('[data-km-vorschlag]'));
+  const erl = ev.target.closest('[data-km-erledigt]');
+  if(erl){ const ja = erl.dataset.kmErledigt === '1';
+    try{ await api(`/kommentare/${encodeURIComponent(k.id)}/erledigt?ja=${ja}`, {method: 'POST'}); k.status = ja ? 'erledigt' : 'offen';
+      const offen = KOMMENTARE.filter(x => x.status === 'offen').length;
+      $('kommentarZahl').textContent = offen ? `${offen} neu` : 'alles beantwortet ✓'; zeigeKommentare(); }
+    catch(e){ melde('Fehler: ' + e.message); } }
+});
+
 // „Gestern: X Aufrufe · Y neue Follower · Z neue Konten“ (alle 5 Minuten neu)
 let gesternStand = 0;
 async function ladeGestern(){
@@ -2228,6 +2311,7 @@ async function ladeGestern(){
 function zeigeCockpit(d, ps){
   ladeWochenbericht();
   ladeGestern();
+  ladeKommentare();
   pruefeStatistik().then(() => { if(statistikVerbunden === false && !$('cockpit').textContent.includes('Statistik')) zeigeCockpit(d, ps); });
   const fertig = d.sprachen.filter(s => (d.laeufe || []).some(l => l.sprache === s && l.status === 'fertig')).length;
   const e = ps && ps.einstellungen, v = ps && ps.verbindungen;
