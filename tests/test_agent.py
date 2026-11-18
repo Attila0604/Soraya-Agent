@@ -3076,6 +3076,51 @@ def test_reels_brauchen_sternzeichen():
     assert not tagesplan.zeichen_befunde({"art": "post", "text": "x"})
 
 
+def test_zweites_reel_format_je_wochentag():
+    from datetime import date as _d
+    # 16.11.2026 = Montag
+    fmts = [tagesplan.reel2_format(_d(2026, 11, 16 + i)) for i in range(7)]
+    assert fmts == ["dreier", "glueck", "ritual", "element", "stopp", "karte", "dreier"]
+    assert tagesplan.reel2_text(_d(2026, 11, 16)) == ""                       # Montag: normaler Drei-Zeichen-Check
+    assert "Ritual" in tagesplan.reel2_text(_d(2026, 11, 18))
+    assert tagesplan.reel2_text(_d(2026, 11, 22)) == ""                       # Sonntag: App-Reel
+    r2 = lambda hook, ein=(): {"art": "reel", "_reel_nr": 2, "skript": {"hook": hook, "einblendungen": list(ein)}}  # noqa: E731
+    # Elemente-Check: drei Zeichen EINES Elements
+    assert not tagesplan.zeichen_befunde(r2("Kos, Oroszlán, Nyilas: ma bennetek ég a tűz"), "element")
+    assert tagesplan.zeichen_befunde(r2("Kos, Bika, Nyilas: ma bennetek ég a tűz"), "element")
+    # Stopp bei deinem Zeichen: Hook ohne Namen, aber 12 Zeilen Widder bis Fische
+    zwoelf = [f"{n}: schön" for n in ("Widder", "Stier", "Zwillinge", "Krebs", "Löwe", "Jungfrau", "Waage", "Skorpion",
+                                       "Schütze", "Steinbock", "Wassermann", "Fische")]
+    assert not tagesplan.zeichen_befunde(r2("Stopp bei deinem Zeichen", zwoelf), "stopp")
+    assert tagesplan.zeichen_befunde(r2("Stopp bei deinem Zeichen", zwoelf[:5]), "stopp")
+    # Wähl eine Karte: keine Zeichen nötig, aber 3 Karten
+    karten = ["Karte 1: a", "Karte 2: b", "Karte 3: c"]
+    assert not tagesplan.zeichen_befunde(r2("Wähl eine Karte: 1, 2 oder 3", karten), "karte")
+    assert tagesplan.zeichen_befunde(r2("Wähl eine Karte: 1, 2 oder 3", karten[:2]), "karte")
+    # Glückspilze wie Drei-Zeichen
+    assert tagesplan.zeichen_befunde(r2("Heute habt ihr Glück"), "glueck")
+
+
+def test_reel_formate_rendern(tmp_path):
+    import reel
+    basis = {"art": "reel", "sprache": "de", "titel": "x", "text": "x"}
+    zwoelf = [f"{n}: ein schöner Tag" for n in ("Widder", "Stier", "Zwillinge", "Krebs", "Löwe", "Jungfrau", "Waage",
+                                                 "Skorpion", "Schütze", "Steinbock", "Wassermann", "Fische")]
+    post = basis | {"id": 1, "meta": {"reel_nr": 2, "reel_format": "stopp"},
+                    "skript": {"hook": "Stopp bei deinem Zeichen", "einblendungen": zwoelf, "szenen": [], "schluss": ""}}
+    assert len(reel.texte(post)[0]) == 13
+    plan, _, dauer = reel.zeitplan(reel.texte(post)[0], kurz=True)
+    assert dauer < 30
+    post = basis | {"id": 2, "meta": {"reel_nr": 2, "reel_format": "karte"},
+                    "skript": {"hook": "Wähl eine Karte: 1, 2 oder 3", "einblendungen": ["Karte 1: a b", "Karte 2: c d", "Karte 3: e f"],
+                               "szenen": [], "schluss": ""}}
+    assert reel.drei_zeichen(post) == []
+    assert reel.erstelle(post, str(tmp_path / "k.mp4"))["sekunden"] > 10
+    import paket
+    stumm = paket.ohne_musik((tmp_path / "k.mp4").read_bytes())       # "Ohne Musik herunterladen"
+    assert stumm[4:8] == b"ftyp" and len(stumm) > 10000
+
+
 def test_facebook_reel_zahlen_ueber_video_insights(monkeypatch):
     import meta
 

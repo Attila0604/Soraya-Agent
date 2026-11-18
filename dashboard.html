@@ -1830,9 +1830,11 @@ function bearbeitenDialog(p){
     <div class="fehlerbox hide" id="eFehler" role="alert"></div>
     <div class="row" style="margin-top:16px"><button id="eSpeichern">Speichern</button>
       <button class="ghost" id="eAbbrechen">Abbrechen</button>
+      ${p.art === 'reel' ? '<button class="ghost" id="eVideo">Video herunterladen (mit / ohne Musik)</button>' : ''}
       <button class="ghost gefahr" id="eLoeschen" style="margin-left:auto">Post löschen</button></div>`;
   d.showModal();
   $('eAbbrechen').onclick = () => d.close();
+  if($('eVideo')) $('eVideo').onclick = () => { d.close(); videoDialog(p); };
   $('eLoeschen').onclick = async () => {
     if(!confirm('Diesen Post wirklich löschen?')) return;
     try{ await api('/content/' + p.id, {method: 'DELETE'}); d.close(); melde('Gelöscht'); neuLaden(); }
@@ -1962,16 +1964,18 @@ function videoDialog(p){
   d.innerHTML = `<h3>Reel als Video</h3>
     <div class="bildvorschau" id="vBox"><div class="vorplan" id="vStand" role="status"><span class="spin"></span>Wird geprüft …</div></div>
     <div class="row"><a class="knopf hide" id="vLaden" download>Herunterladen</a>
+      <a class="knopf ghost hide" id="vStumm" download>Ohne Musik herunterladen</a>
       <button class="ghost hide" id="vTeilen">Teilen …</button>
       <button class="ghost" id="vZu">Schließen</button></div>
-    <p class="note">15–20 Sekunden mit lizenzfreier Klangfläche.<span class="rest" hidden> 1080×1920. In Instagram/TikTok kannst du sie beim Posten durch einen Trend-Sound ersetzen.</span></p>`;
+    <p class="note">15–30 Sekunden mit lizenzfreier Musik. „Ohne Musik“: gleiches Video mit stiller Tonspur – zum selbst Hochladen mit eigenem Sound.<span class="rest" hidden> 1080×1920. In Instagram/TikTok kannst du sie beim Posten durch einen Trend-Sound ersetzen.</span></p>`;
   d.showModal();
   d.addEventListener('close', () => clearTimeout(videoTimer), {once: true});
   $('vZu').onclick = () => d.close();
   const fertig = () => {
     $('vBox').innerHTML = `<video id="vVideo" controls playsinline src="/medien/${p.id}/video?t=${Date.now()}"></video>`;
     $('vLaden').href = `/medien/${p.id}/video?download=1`;
-    $('vLaden').classList.remove('hide'); $('vTeilen').classList.remove('hide');
+    $('vStumm').href = `/medien/${p.id}/video?download=1&stumm=1`;
+    $('vLaden').classList.remove('hide'); $('vStumm').classList.remove('hide'); $('vTeilen').classList.remove('hide');
     $('vTeilen').onclick = () => teilen(`/medien/${p.id}/video`, dateiName(p, 'mp4'), 'video/mp4', p);
   };
   const zeige = (st) => {
