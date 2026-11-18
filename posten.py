@@ -55,7 +55,10 @@ def post_link(post: dict) -> str:
 
 STANDARD = {"an": False, "sprache": "en", "sprache_pl": {}, "modus": "auto", "tiktok_modus": "entwurf",
             "zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"},
-            "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False, "pinterest": False}}
+            "plattformen": {"facebook": True, "instagram": True, "tiktok": False, "linkedin": False, "pinterest": False},
+            # Plaetze, die Attila je Plattform selbst hochlaedt (z. B. {"facebook": ["reel", "reel2"]}) -- gehen nicht automatisch raus
+            "selbst": {}}
+SELBST_TEXT = "Lädst du selbst hoch – geht nicht automatisch raus."
 PLATTFORMEN = ("facebook", "instagram", "tiktok", "linkedin", "pinterest")
 # Pinterest: Feed-Post (Titelbild), Story (Hochformat) und die Reels (Video-Pins) -- seit 07.11. auch Videos
 NUR_BILDER = {"pinterest"}
@@ -127,7 +130,31 @@ def einstellungen() -> dict:
     e["zeiten"] = {**STANDARD["zeiten"], **(gespeichert.get("zeiten") or {})}
     e["plattformen"] = {**STANDARD["plattformen"], **(gespeichert.get("plattformen") or {})}
     e["sprache_pl"] = {p: s for p, s in (gespeichert.get("sprache_pl") or {}).items() if p in PLATTFORMEN and s in SPRACHEN_POSTEN}
+    e["selbst"] = _selbst_sauber(gespeichert.get("selbst"))
     return e
+
+
+def _selbst_sauber(roh) -> dict:
+    if not isinstance(roh, dict):
+        return {}
+    return {p: [a for a in ARTEN if a in (liste or [])] for p, liste in roh.items()
+            if p in PLATTFORMEN and isinstance(liste, list) and any(a in ARTEN for a in liste)}
+
+
+def selbst(e: dict, plattform: str, platz_: str) -> bool:
+    """Laedt Attila diesen Platz auf dieser Plattform selbst hoch?"""
+    return platz_ in (e.get("selbst") or {}).get(plattform, [])
+
+
+def selbst_anwenden(e: dict, jetzt: datetime | None = None) -> int:
+    """Schon geplante Termine fuer Plaetze, die Attila jetzt selbst hochlaedt, fallen weg (die anderen bleiben)."""
+    jetzt = jetzt or datetime.now(himmel.WIEN)
+    weg = 0
+    for z in db.lade_geplante_termine(jetzt - timedelta(days=2)):
+        if selbst(e, z["plattform"], platz({"art": z["art"], "meta": z.get("meta") or {}})):
+            db.setze_veroeffentlichung(z["id"], "abgebrochen", fehler=SELBST_TEXT)
+            weg += 1
+    return weg
 
 
 def speichere_einstellungen(neu: dict) -> dict:
@@ -155,7 +182,14 @@ def speichere_einstellungen(neu: dict) -> dict:
     for p, an in (neu.get("plattformen") or {}).items():
         if p in PLATTFORMEN:
             e["plattformen"][p] = bool(an)
+    if "selbst" in neu:
+        e["selbst"] = _selbst_sauber(neu["selbst"])
     db.setze_einstellung("posten", e)
+    if "selbst" in neu:
+        try:
+            selbst_anwenden(e)
+        except Exception as ex:  # noqa: BLE001
+            print(f"[Posten] Selbst hochladen anwenden: {ex}", flush=True)
     if isinstance(neu.get("sprache_pl"), dict) or neu.get("sprache"):
         try:
             sprache_anwenden(e)
@@ -188,6 +222,24 @@ def sprache_anwenden(e: dict, jetzt: datetime | None = None) -> int:
             weg += 1
     planen(e, jetzt)
     return weg
+
+
+def termin_stoppen(zid: int, stopp: bool = True) -> dict:
+    """Einen einzelnen Termin (ein Post auf EINER Plattform) stoppen oder wieder einplanen."""
+    with db._verbindung() as conn, conn.cursor() as cur:
+        cur.execute("select status from soraya_veroeffentlichungen where id = %s;", (zid,))
+        z = cur.fetchone()
+    if not z:
+        raise KeyError(zid)
+    if stopp:
+        if z["status"] not in ("geplant", "fehler"):
+            raise ValueError("Dieser Termin ist schon gepostet oder läuft gerade.")
+        db.setze_veroeffentlichung(zid, "abgebrochen", fehler="Von dir gestoppt (nur diese Plattform).")
+    else:
+        if z["status"] != "abgebrochen":
+            raise ValueError("Dieser Termin ist nicht gestoppt.")
+        db.setze_veroeffentlichung(zid, "geplant")
+    return {"id": zid, "status": "abgebrochen" if stopp else "geplant"}
 
 
 def zeiten_anwenden(zeiten: dict, jetzt: datetime | None = None) -> int:
@@ -252,6 +304,8 @@ def planen(e: dict | None = None, jetzt: datetime | None = None) -> int:
             if post.get("sprache") != sprache_fuer(post["geplant_fuer"], wo, e, p):
                 continue
             if not passt(p, post.get("art") or "post") or (wo == "reel2" and p in NUR_ERSTES_REEL):
+                continue
+            if selbst(e, p, wo):                          # laedt Attila selbst hoch
                 continue
             if db.platz_belegt(post["id"], p):          # dieser Platz ist dort heute schon vergeben
                 continue
