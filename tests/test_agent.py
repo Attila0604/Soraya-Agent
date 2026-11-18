@@ -2523,6 +2523,20 @@ def test_kommentare_lesen_vorschlagen_erledigen(monkeypatch, frische_db):
     assert d["offen"] == 0 and c1["status"] == "erledigt" and c1["vorschlag"]["art"] == "herz"
 
 
+def test_drei_zeichen_nicht_zwei_tage_hintereinander(frische_db):
+    tag = date(2026, 11, 18)
+    db.speichere_posts([{"art": "reel", "platform": "tiktok", "titel": "x", "text": "x", "sprache": "hu",
+                         "skript": {"hook": "Mérleg, Bika, Halak: ma este"}}], quelle="himmel",
+                       geplant_fuer=tag - timedelta(days=1), meta={"reel_nr": 2})
+    neu = {"art": "reel", "_reel_nr": 2, "skript": {"hook": "Vízöntő, Bika, Halak: ma este hazatalál a szeretet"}}
+    b = tagesplan.wiederholung_befunde(neu, "hu", tag)
+    assert b and b[0].startswith(tagesplan.ZEICHEN_WIEDERHOLT) and tagesplan.hart(b)
+    ok = {"art": "reel", "_reel_nr": 2, "skript": {"hook": "Kos, Bika, Nyilas: ma bátorság"}}
+    assert tagesplan.wiederholung_befunde(ok, "hu", tag) == []                       # nur eins gleich -> erlaubt
+    assert tagesplan.wiederholung_befunde({**neu, "_reel_nr": None}, "hu", tag) == []  # erstes Reel: keine Regel
+    assert "Bika" in tagesplan.dreier_gestern_text("hu", tag) and tagesplan.dreier_gestern_text("de", tag) == ""
+
+
 def test_lern_saetze_mehr_weniger_test():
     def e(i, thema, punkte, stil="frage"):
         return {"post": {"id": i, "art": "post", "meta": {"thema": thema, "hook_stil": stil}}, "punkte": punkte, "gemessen": True}
