@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-24"
+VERSION = "reel-25"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
@@ -63,7 +63,13 @@ def texte(post: dict) -> tuple[list[str], str]:
                 zeilen.append(t)
     if not zeilen:
         zeilen = [(post.get("text") or "Soraya").strip()[:120]]
-    return zeilen[:5], (sk.get("schluss") or "").strip()
+    return zeilen[:13 if reel_format(post) == "stopp" else 5], (sk.get("schluss") or "").strip()
+
+
+def reel_format(post: dict) -> str | None:
+    """Format des zweiten Reels (tagesplan.REEL2_FORMATE), sonst None."""
+    meta = post.get("meta") or {}
+    return meta.get("reel_format") if meta.get("reel_nr") == 2 else None
 
 
 def _textkarte(text: str, *, breite: int, groesse: int, name: str, farbe: str, zeilenhoehe=1.15, max_zeilen=4,
@@ -337,6 +343,127 @@ def _dreier_malen(bild: Image.Image, reihe: dict, drei: list[int], aktiv, t: flo
         medien.aufkleben(bild, _mit_alpha(ebene, alpha * sichtbar), (x - ebene.width / 2, y - ebene.width / 2))
 
 
+ELEMENT_NAMEN = {0: ("FEUER", "FIRE", "TŰZ", "FUOCO"), 1: ("ERDE", "EARTH", "FÖLD", "TERRA"),
+                 2: ("LUFT", "AIR", "LEVEGŐ", "ARIA"), 3: ("WASSER", "WATER", "VÍZ", "ACQUA")}
+KARTE_WORT = {"de": "KARTE", "en": "CARD", "hu": "KÁRTYA", "it": "CARTA"}
+
+
+def _spalte(sprache: str) -> int:
+    return {"de": 0, "en": 1, "hu": 2, "it": 3}.get(sprache, 1)
+
+
+def _dreier_zusatz(fmt: str | None, drei: list[int], sprache: str) -> Image.Image | None:
+    """Kleine feste Zugabe zur Dreier-Reihe: Platz 3/2/1 (Glückspilze) oder der Name des Elements."""
+    if fmt not in ("glueck", "element"):
+        return None
+    m = 2
+    ebene = Image.new("RGBA", (W * m, 260 * m), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ebene)
+    if fmt == "element":
+        farbe = ELEMENT_FARBE[drei[0] % 4]
+        medien.gesperrt(d, ELEMENT_NAMEN[drei[0] % 4][_spalte(sprache)], W * m / 2, 150 * m,
+                        medien.schrift("cinzel", 50 * m), 16 * m, farbe + (255,))
+        d.line([(W * m / 2 - 150 * m, 178 * m), (W * m / 2 + 150 * m, 178 * m)], fill=farbe + (120,), width=2 * m)
+    else:
+        for k, platz in enumerate(("3", "2", "1")):
+            x, y, r = (W / 2 + (k - 1) * 330) * m, 200 * m, 34 * m
+            d.ellipse([x - r, y - r, x + r, y + r], fill=(30, 22, 52, 230), outline=(233, 207, 156, 255), width=3 * m)
+            d.text((x, y + 2 * m), platz, font=medien.schrift("cinzel", 40 * m), fill=(246, 227, 180, 255), anchor="mm")
+    return ebene.resize((W, 260), Image.LANCZOS)
+
+
+def _zwoelf_ebenen() -> dict:
+    """Alle zwoelf Zeichen als kleine Medaillons (normal / leuchtend) fuer „Stopp bei deinem Zeichen“."""
+    from PIL import ImageFilter
+    out = {}
+    m, gr = 2, 180
+    for i in range(12):
+        farbe = ELEMENT_FARBE[i % 4]
+        ebene = Image.new("RGBA", (gr * m, gr * m), (0, 0, 0, 0))
+        d = ImageDraw.Draw(ebene)
+        c, r = gr / 2, 70
+        d.ellipse([(c - r) * m, (c - r) * m, (c + r) * m, (c + r) * m], fill=farbe + (22,), outline=farbe + (200,), width=3 * m)
+        d.text((c * m, c * m + 3 * m), medien.ZEICHEN_GLYPHE[i], font=medien.schrift("zeichen", 80 * m), fill=farbe + (255,), anchor="mm")
+        ebene = ebene.resize((gr, gr), Image.LANCZOS)
+        glow = Image.new("RGBA", ebene.size, (0, 0, 0, 0))
+        ImageDraw.Draw(glow).ellipse([c - r - 14, c - r - 14, c + r + 14, c + r + 14], fill=farbe + (170,))
+        hell = glow.filter(ImageFilter.GaussianBlur(18))
+        hell.alpha_composite(ebene)
+        out[i] = (ebene, hell)
+    return out
+
+
+def _zwoelf_malen(bild: Image.Image, ebenen: dict, aktiv, t: float, sichtbar: float) -> None:
+    """4 x 3 Raster; das laufende Zeichen leuchtet gross, die anderen treten zurueck. Ohne aktives Zeichen
+    laeuft ein Licht durch alle zwoelf (Hook: „gleich kommt deins“)."""
+    lauf = int(t / 0.12) % 12 if aktiv is None else None
+    for i in range(12):
+        x = W / 2 + (i % 4 - 1.5) * 225
+        y = 530 + (i // 4) * 185
+        normal, hell = ebenen[i]
+        if aktiv is None:
+            ebene, skala, alpha = (hell, 1.08, 1.0) if i == lauf else (normal, 1.0, 0.75)
+        elif aktiv == i:
+            ebene, skala, alpha = hell, 1.35, 1.0
+        else:
+            ebene, skala, alpha = normal, 0.88, 0.3
+        if abs(skala - 1) > 0.01:
+            ebene = ebene.resize((int(ebene.width * skala), int(ebene.height * skala)), Image.BILINEAR)
+        medien.aufkleben(bild, _mit_alpha(ebene, alpha * sichtbar), (x - ebene.width / 2, y - ebene.height / 2))
+
+
+def _karten_ebenen(sprache: str) -> dict:
+    """Drei Karten fuer „Wähl eine Karte“: Rueckseite (verdeckt, Sternenmuster) und Vorderseite (aufgedeckt, hell)."""
+    m, bw, bh = 2, 250, 370
+    wort = KARTE_WORT.get(sprache, "CARD")
+    out = {}
+    for k in range(3):
+        rueck = Image.new("RGBA", (bw * m, bh * m), (0, 0, 0, 0))
+        d = ImageDraw.Draw(rueck)
+        d.rounded_rectangle([0, 0, bw * m - 1, bh * m - 1], radius=22 * m, fill=(34, 24, 62, 255), outline=(233, 207, 156, 255), width=4 * m)
+        d.rounded_rectangle([14 * m, 14 * m, (bw - 14) * m, (bh - 14) * m], radius=14 * m, outline=(233, 207, 156, 110), width=2 * m)
+        rnd = np.random.default_rng(11 + k)
+        for _ in range(26):
+            x, y = rnd.uniform(30, bw - 30) * m, rnd.uniform(30, bh - 30) * m
+            r = rnd.uniform(1.5, 3.5) * m
+            d.ellipse([x - r, y - r, x + r, y + r], fill=(233, 207, 156, int(rnd.uniform(90, 220))))
+        d.text((bw * m / 2, bh * m / 2), str(k + 1), font=medien.schrift("cinzel", 150 * m), fill=(246, 227, 180, 255), anchor="mm")
+        vorn = Image.new("RGBA", (bw * m, bh * m), (0, 0, 0, 0))
+        d = ImageDraw.Draw(vorn)
+        d.rounded_rectangle([0, 0, bw * m - 1, bh * m - 1], radius=22 * m, fill=(246, 227, 180, 255), outline=(255, 244, 214, 255), width=4 * m)
+        d.rounded_rectangle([14 * m, 14 * m, (bw - 14) * m, (bh - 14) * m], radius=14 * m, outline=(160, 120, 60, 160), width=2 * m)
+        medien.gesperrt(d, wort, bw * m / 2, 70 * m, medien.schrift("cinzel", 28 * m), 6 * m, (120, 86, 40, 255))
+        d.text((bw * m / 2, bh * m / 2 + 10 * m), str(k + 1), font=medien.schrift("cinzel", 150 * m), fill=(96, 64, 30, 255), anchor="mm")
+        sx, sy, sr = bw * m / 2, (bh - 62) * m, 16 * m
+        d.polygon([(sx, sy - sr), (sx + sr * 0.3, sy - sr * 0.3), (sx + sr, sy), (sx + sr * 0.3, sy + sr * 0.3), (sx, sy + sr),
+                   (sx - sr * 0.3, sy + sr * 0.3), (sx - sr, sy), (sx - sr * 0.3, sy - sr * 0.3)], fill=(160, 120, 60, 255))
+        out[k] = (rueck.resize((bw, bh), Image.LANCZOS), vorn.resize((bw, bh), Image.LANCZOS))
+    return out
+
+
+def _karten_malen(bild: Image.Image, karten: dict, plan: list, t: float, sichtbar: float) -> None:
+    """Erst drei verdeckte, leise schwebende Karten (Zeit zum Waehlen); mit jeder Zeile dreht sich eine Karte um."""
+    for k in range(3):
+        x = W / 2 + (k - 1) * 300
+        y = 700 + 12 * math.sin(t * 1.5 + k * 2.1)
+        rueck, vorn = karten[k]
+        start = plan[k + 1][0] if k + 1 < len(plan) else 1e9
+        p = min(1.0, max(0.0, (t - start) / 0.55))
+        breite = abs(math.cos(math.pi * p))
+        seite = vorn if p >= 0.5 else rueck
+        laufend = k + 1 < len(plan) and plan[k + 1][0] - 0.2 <= t <= plan[k + 1][1] + 0.1
+        if p <= 0:                                # noch verdeckt
+            alpha, skala = 1.0, 1.0
+        elif laufend:
+            alpha, skala = 1.0, 1.1
+        else:
+            alpha, skala = 0.5, 0.94
+        w_ = max(2, int(seite.width * skala * max(breite, 0.02)))
+        h_ = int(seite.height * skala)
+        e = seite.resize((w_, h_), Image.BILINEAR)
+        medien.aufkleben(bild, _mit_alpha(e, alpha * sichtbar), (x - w_ / 2, y - h_ / 2))
+
+
 def _neumond_kranz(r: float, beleuchtung) -> Image.Image:
     """Neumond: weicher goldener Lichtkranz um die dunkle Scheibe und ein feiner, heller Saum auf der Seite,
     an der die neue Sichel erscheint (rechts) -- wie bei einer Sonnenfinsternis, ruhig statt einer schwarzen Kugel."""
@@ -460,13 +587,18 @@ TEMPO = {"hu": 1.12}
 ZWEITES_REEL_TEMPO = 1.25
 
 
-def zeitplan(zeilen: list[str], ende_s: float = 3.2, tempo: float = 1.0) -> tuple[list[tuple[float, float]], float, float]:
-    """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden). tempo > 1: langsamer (mehr Lesezeit)."""
+def zeitplan(zeilen: list[str], ende_s: float = 3.2, tempo: float = 1.0, kurz: bool = False,
+             hook_extra: float = 0.0) -> tuple[list[tuple[float, float]], float, float]:
+    """Start/Ende je Zeile, Beginn der Endkarte, Gesamtdauer (Sekunden). tempo > 1: langsamer (mehr Lesezeit).
+    kurz: Zeilen nach dem Hook nur gut eine Sekunde (Stopp bei deinem Zeichen); hook_extra: Zeit zum Waehlen."""
     t, plan = 0.0, []                     # Hook ab dem ersten Bild (Vorschaubild, erste Sekunde)
     for i, z in enumerate(zeilen):
-        dauer = max(2.4, min(4.2, 1.1 + 0.32 * len(z.split()))) * tempo
+        if kurz and i:
+            dauer = max(1.25, min(1.55, 0.7 + 0.15 * len(z.split()))) * tempo
+        else:
+            dauer = max(2.4, min(4.2, 1.1 + 0.32 * len(z.split()))) * tempo
         if i == 0:
-            dauer += 0.4
+            dauer += 0.4 + hook_extra
         plan.append((t, t + dauer))
         t += dauer + 0.15
     ende = t + 0.1
@@ -490,19 +622,23 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     meta = post.get("meta") or {}
     seed = post.get("id") or 1
     zeilen, _ = texte(post)
+    fmt = reel_format(post)
     drei = drei_zeichen(post) if not tiktok else []
+    zwoelf = fmt == "stopp" and len(zeilen) >= 13
+    karten_spiel = fmt == "karte" and len(zeilen) >= 4
     zeichen_je_zeile = [medien.zeichen_aus_text(z_) for z_ in zeilen]
     if drei:            # die Namen stehen gross in der Dreier-Reihe -> die Saetze kommen ohne sie aus
         for nr, z_ in enumerate(zeilen):
             rest = re.split(r"\s*[:–—]\s*", z_, maxsplit=1)
             if len(rest) > 1 and rest[1].strip() and (nr == 0 or zeichen_je_zeile[nr] in drei):
                 zeilen[nr] = rest[1].strip()[:1].upper() + rest[1].strip()[1:]
-    if tiktok:
+    if tiktok and not (zwoelf or karten_spiel):        # Spiele brauchen alle Zeilen
         zeilen = zeilen[:TIKTOK_ZEILEN]
     tempo = 1.0 if tiktok else TEMPO.get((post.get("sprache") or "")[:2], 1.0)
-    if not tiktok and meta.get("reel_nr") == 2:
+    if not tiktok and meta.get("reel_nr") == 2 and not zwoelf:
         tempo *= ZWEITES_REEL_TEMPO       # Drei-Zeichen-Check: jedes Zeichen bleibt laenger stehen (Facebook: 15-30 s am besten)
-    plan, end_start, dauer = zeitplan(zeilen, TIKTOK_ENDE if tiktok else 3.2, tempo)
+    plan, end_start, dauer = zeitplan(zeilen, TIKTOK_ENDE if tiktok else 3.2, tempo, kurz=zwoelf,
+                                      hook_extra=1.6 if karten_spiel else 0.0)
     SCHLEIFE = 0.7          # die letzten Sekundenbruchteile blenden zurueck zum Anfang (Video laeuft nahtlos weiter)
     n = int(round(dauer * FPS))
 
@@ -536,7 +672,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     oben.alpha_composite(gross, (0, 230))
     oben, oben_pos = _zuschneiden(oben)
     motiv = motive.waehle(post, st)                    # Hauptmotiv je Format (reel-11)
-    mit_mond = meta.get("phase_index") is not None and motiv == "mond" and not drei
+    eigene_optik = bool(drei) or zwoelf or karten_spiel
+    mit_mond = meta.get("phase_index") is not None and motiv == "mond" and not eigene_optik
     r = 200
     mond = medien.mond(r * 2, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
     if mond is not None:
@@ -551,8 +688,12 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     # Bildideen (reel-10)
     zeichen = welches_zeichen(post, st)
     sb_kasten = (70, mond_y - 430, W - 140, 860)                    # Sternbild rund um den Mond
-    held = None if drei else motive.baue(motiv, W / 2, mond_y, zeichen=zeichen, akzent=akzent, seed=int(seed), post=post)
-    reihe = _dreier_ebenen(drei, (post.get("sprache") or "de")[:2]) if drei else None
+    held = None if eigene_optik else motive.baue(motiv, W / 2, mond_y, zeichen=zeichen, akzent=akzent, seed=int(seed), post=post)
+    sprache = (post.get("sprache") or "de")[:2]
+    reihe = _dreier_ebenen(drei, sprache) if drei else None
+    zusatz = _dreier_zusatz(fmt, drei, sprache) if drei else None
+    zwoelf_ebenen = _zwoelf_ebenen() if zwoelf else None
+    karten_ebenen = _karten_ebenen(sprache) if karten_spiel else None
     # reel-18 (Wunsch Attila 08.11.): kein Sternbild aus Linien und keine kreisende Umlaufbahn mehr -- das wirkte wie
     # ein Planet mit Ring und "stehende Sterne"; das Zeichen steht ohnehin im kleinen Kreis unter dem Mond
     zeichen = None
@@ -564,7 +705,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     glut = _glut(1000, 560, tuple(akzent))
     # kleine Szene je Format: Liebe = zwei Lichter kreisen gegenlaeufig um den Mond, Ritual = Kerzenschein von unten
     szene = st["layout"]
-    kerze = _glut(1300, 900, (255, 176, 92)) if szene == "ritual" and motiv != "kerze" else None
+    kerze = _glut(1300, 900, (255, 176, 92)) if (szene == "ritual" and motiv != "kerze") or fmt == "ritual" else None
 
     def lichter(u: float) -> list:
         if szene == "liebe":
@@ -641,6 +782,14 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 if t < 0.9:                       # erste Sekunde: die drei Zeichen leuchten nacheinander auf
                     aktiv = drei[min(2, int(t / 0.3))]
                 _dreier_malen(bild, reihe, drei, aktiv, t, sichtbar_ende)
+                if zusatz is not None:
+                    medien.aufkleben(bild, _mit_alpha(zusatz, sichtbar_ende), (0, 380))
+            if zwoelf_ebenen is not None and sichtbar_ende > 0:
+                aktiv = next((zeichen_je_zeile[nr] for nr, (a_, b_) in enumerate(plan)
+                              if nr and a_ - 0.1 <= t <= b_ + 0.05), None)
+                _zwoelf_malen(bild, zwoelf_ebenen, aktiv, t, sichtbar_ende)
+            if karten_ebenen is not None and sichtbar_ende > 0:
+                _karten_malen(bild, karten_ebenen, plan, t, sichtbar_ende)
             if bahn and sichtbar_ende > 0:
                 d2 = ImageDraw.Draw(bild, "RGBA")
                 for u, fb in lichter(umlauf):
@@ -657,7 +806,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                                      (W / 2 - glut.width / 2, text_mitte - glut.height / 2))
                 if start - 0.01 <= t <= stopp + AUSBLENDEN:
                     # Hook steht ab dem ersten Bild ganz da, alle weiteren Texte erscheinen Wort fuer Wort
-                    fortschritt = 1.0 if start <= 0 else min(1.0, (t - start) / min(1.1, 0.16 * len(kaesten) + 0.3))
+                    lesen = 0.35 if zwoelf else min(1.1, 0.16 * len(kaesten) + 0.3)     # Stopp: kaum Zeit -> fast sofort
+                    fortschritt = 1.0 if start <= 0 else min(1.0, (t - start) / lesen)
                     raus = 1 - _weich((t - stopp) / AUSBLENDEN)
                     if raus > 0.003:
                         k = _wort_fuer_wort(karte, kaesten, fortschritt)

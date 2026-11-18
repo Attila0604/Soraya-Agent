@@ -168,7 +168,8 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
    einem passenden Emoji (z. B. „🔥 Ja, total“, „🌙 Eher nicht“) – sie stehen als Knöpfe im Bild.
 4. art "reel", platform "tiktok": ZWEITES Reel des Tages – ein anderer Blickwinkel als
-   das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook. IMMER ein Drei-Zeichen-Check (bringt mit Abstand
+   das erste Reel, nicht dieselbe Botschaft und nicht derselbe Hook. Steht im Auftrag ein „FORMAT DES ZWEITEN REELS
+   HEUTE“, gilt dieses Format (es ersetzt die folgenden Regeln, wo es etwas anderes sagt). Sonst ein Drei-Zeichen-Check (bringt mit Abstand
    die meisten Aufrufe und Kommentare – Leserinnen bleiben stehen, wenn sie ihr Zeichen sehen): drei Sternzeichen, die
    heute besonders betroffen sind, je Zeichen eine Einblendung. Der Hook beginnt GENAU so: die drei Namen mit Komma,
    dann ein Doppelpunkt, dann die konkrete Aussage, was die drei heute im Lebensthema des Tages verbindet
@@ -532,6 +533,8 @@ def zeichen_rotation(sprache: str) -> tuple[list[int], list[int]]:
 
 
 def dreier_gestern_text(sprache: str, tag: date) -> str:
+    if reel2_format(tag) not in ("dreier", "glueck", "ritual"):   # Elemente/Stopp/Karte: Zeichen stehen fest bzw. keine
+        return ""
     try:
         vorher = set().union(*[zeichen_im_text(h) for h in db.letzte_dreier_hooks(sprache, tag)] or [set()])
     except Exception:  # noqa: BLE001
@@ -664,20 +667,94 @@ def stil_befunde(post: dict, sprache: str) -> list[str]:
     return out
 
 
+# Das zweite Reel wechselt je Wochentag das Format (Wunsch Attila 18.11.: "wird langweilig", "spielerisch, zum
+# Antworten bringen"). Alle Formate laden zu einer leichten, spielerischen Antwort ein.
+REEL2_FORMATE = {0: "dreier", 1: "glueck", 2: "ritual", 3: "element", 4: "stopp", 5: "karte", 6: "dreier"}
+DREI_IM_HOOK = {"dreier", "glueck", "ritual", "element"}        # Hook "Name, Name, Name: Aussage"
+REEL2_NAMEN = {"dreier": "Drei-Zeichen-Check", "glueck": "3 Glückspilze", "ritual": "Ritual für 3 Zeichen",
+               "element": "Elemente-Check", "stopp": "Stopp bei deinem Zeichen", "karte": "Wähl eine Karte"}
+REEL2_TEXTE = {
+    "glueck": ("„Die 3 Glückspilze von heute“ – ein kleines Spiel mit Rangliste: die drei Sternzeichen, die heute am "
+               "meisten Rückenwind haben (aus den Himmelsdaten begründet). Hook GENAU: die drei Namen mit Komma, Doppelpunkt, "
+               "dann die Aussage (höchstens 8 Wörter, z. B. „Waage, Stier, Fische: ihr habt heute Glück“). Reihenfolge im Hook "
+               "und in den Einblendungen = Platz 3, Platz 2, Platz 1 (das Video zeigt dazu „3“, „2“, „1“ – die Spannung steigt). "
+               "Genau 3 Einblendungen, jede „Name: ein konkreter Glücksmoment heute“ (höchstens 8 Wörter), die letzte "
+               "(Platz 1) ist die schönste. \"titel\": „3 Glückspilze“ in der Zielsprache. Bildunterschrift: Hook, je Zeichen "
+               "ein kurzer Absatz „Platz 3 – Name: …“, „Platz 2 – …“, „Platz 1 – …“, dann die Kommentar-Frage, spielerisch: "
+               "„Bist du dabei? Schreib 🍀 und dein Zeichen“ (freundlich umformuliert erlaubt, nie privat)."),
+    "ritual": ("„Kleines Ritual für 3 Zeichen“: drei Sternzeichen (passend zum Himmel), für jedes ein Mini-Ritual für heute, "
+               "das in einer Minute geht (eine Kerze, drei Atemzüge, ein Satz ans Fenster, ein Glas Wasser mit einem Wunsch …) – "
+               "warm, ruhig, nicht übertrieben esoterisch. Hook GENAU: die drei Namen mit Komma, Doppelpunkt, dann z. B. „euer "
+               "Ritual für heute“ (höchstens 8 Wörter, passend zur Uhrzeit des Reels). Genau 3 Einblendungen „Name: das Ritual“ "
+               "(höchstens 8 Wörter). \"titel\": die drei Namen. Bildunterschrift: Hook, je Zeichen ein kurzer Absatz mit dem "
+               "Ritual und warum es heute passt, dann die Kommentar-Frage, spielerisch: „Machst du mit? Schreib 🕯️, wenn du es "
+               "heute ausprobierst“."),
+    "element": ("„Elemente-Check“: heute steht EIN Element im Mittelpunkt – Feuer, Erde, Luft oder Wasser –, passend zum "
+                "Himmel (z. B. Element des Mondzeichens) und möglichst eines, dessen Zeichen zuletzt nicht dran waren. Die drei "
+                "Zeichen sind genau die drei dieses Elements (Feuer: Widder, Löwe, Schütze · Erde: Stier, Jungfrau, Steinbock · "
+                "Luft: Zwillinge, Waage, Wassermann · Wasser: Krebs, Skorpion, Fische). Hook GENAU: die drei Namen mit Komma, "
+                "Doppelpunkt, dann die Aussage über das Element heute (höchstens 8 Wörter). Genau 3 Einblendungen „Name: …“, je "
+                "Zeichen anders. \"titel\": der Name des Elements (z. B. „Feuer“). Bildunterschrift: Hook, je Zeichen ein "
+                "kurzer Absatz, dann die Kommentar-Frage, spielerisch: „Welches Element bist du? Antworte mit 🔥, 🌍, 💨 oder 💧“."),
+    "stopp": ("„Stopp bei deinem Zeichen“ – ein Spiel zum Anhalten: der Hook ist GENAU der Satz „Stopp bei deinem Zeichen“ in der "
+              "Zielsprache (en „Stop at your sign“, hu „Állj meg a csillagjegyednél“, it „Fermati al tuo segno“), ohne weitere "
+              "Wörter. Dann GENAU 12 Einblendungen in der Reihenfolge Widder, Stier, Zwillinge, Krebs, Löwe, Jungfrau, Waage, "
+              "Skorpion, Schütze, Steinbock, Wassermann, Fische – jede „Name: Botschaft“ mit höchstens 5 Wörtern nach dem "
+              "Doppelpunkt (das Video zeigt jede nur gut eine Sekunde): eine kleine, positive, konkrete Botschaft für heute, "
+              "alle verschieden. \"titel\": der Hook. Bildunterschrift: Hook, dann die 12 Zeilen als kurze Liste (je Zeile "
+              "„Name: Botschaft“), dann die Kommentar-Frage, spielerisch: „Hat es gestimmt? Schreib dein Zeichen und ✅ oder ❌“."),
+    "karte": ("„Wähl eine Karte“ – ein kleines Spiel: der Hook ist GENAU „Wähl eine Karte: 1, 2 oder 3“ in der Zielsprache (en "
+              "„Pick a card: 1, 2 or 3“, hu „Válassz egy kártyát: 1, 2 vagy 3“, it „Scegli una carta: 1, 2 o 3“). Das Video "
+              "zeigt erst drei verdeckte Karten (Zeit zum Wählen) und deckt sie dann nacheinander auf. Genau 3 Einblendungen "
+              "„Karte 1: Botschaft“, „Karte 2: …“, „Karte 3: …“ (das Wort „Karte“ in der Zielsprache, höchstens 8 Wörter nach "
+              "dem Doppelpunkt): drei verschiedene, warme Botschaften für heute zum Lebensthema – keine Sternzeichen nötig, "
+              "jede passt für jeden. \"titel\": „Wähl eine Karte“ in der Zielsprache. Bildunterschrift: Hook, ein Satz „Nimm "
+              "dir einen Moment und wähl eine Zahl …“, dann je Karte ein kurzer Absatz, dann die Kommentar-Frage, spielerisch: "
+              "„Welche Karte hast du gewählt? Schreib 1, 2 oder 3“."),
+}
+
+
+def reel2_format(tag: date) -> str:
+    return REEL2_FORMATE[tag.weekday()]
+
+
+def reel2_text(tag: date) -> str:
+    f = reel2_format(tag)
+    if f not in REEL2_TEXTE or app_funktion(tag):
+        return ""
+    return "FORMAT DES ZWEITEN REELS HEUTE: " + REEL2_TEXTE[f]
+
+
 ZEICHEN_FEHLT = "Sternzeichen fehlt"
 
 
-def zeichen_befunde(post: dict) -> list[str]:
+def zeichen_befunde(post: dict, fmt: str = "dreier") -> list[str]:
     """Reels mit Sternzeichen-Namen laufen viel besser (Facebook-Zahlen 08.11.: 8.600 statt 250 Aufrufe):
-    erstes Reel nennt im Hook mindestens ein Zeichen, das zweite ist ein Drei-Zeichen-Check."""
+    erstes Reel nennt im Hook mindestens ein Zeichen; das zweite folgt dem Format des Tages (REEL2_FORMATE)."""
     if post.get("art") != "reel":
         return []
-    hook = (post.get("skript") or {}).get("hook") or ""
+    sk = post.get("skript") or {}
+    hook = sk.get("hook") or ""
+    ein = [e for e in sk.get("einblendungen") or [] if (e or "").strip()]
     n = len(zeichen_im_text(hook))
-    if post.get("_reel_nr") == 2 and n < 3:
-        return [f"{ZEICHEN_FEHLT}: das zweite Reel ist ein Drei-Zeichen-Check – der Hook beginnt mit drei Sternzeichen "
-                "(„Name, Name, Name: Aussage“)"]
-    if post.get("_reel_nr") != 2 and n < 1:
+    if post.get("_reel_nr") == 2:
+        if fmt == "stopp":
+            if len(ein) != 12 or sum(1 for e in ein if zeichen_im_text(e.split(":")[0])) < 12:
+                return [f"{ZEICHEN_FEHLT}: „Stopp bei deinem Zeichen“ braucht genau 12 Einblendungen „Name: Botschaft“, "
+                        "Widder bis Fische"]
+            return []
+        if fmt == "karte":
+            if len(ein) != 3 or any(":" not in e for e in ein):
+                return [f"{ZEICHEN_FEHLT}: „Wähl eine Karte“ braucht genau 3 Einblendungen „Karte 1: …“, „Karte 2: …“, „Karte 3: …“"]
+            return []
+        if n < 3:
+            return [f"{ZEICHEN_FEHLT}: das zweite Reel ({REEL2_NAMEN.get(fmt, fmt)}) – der Hook beginnt mit drei Sternzeichen "
+                    "(„Name, Name, Name: Aussage“)"]
+        if fmt == "element" and len({i % 4 for i in zeichen_im_text(hook)}) != 1:
+            return [f"{ZEICHEN_FEHLT}: beim Elemente-Check sind es die drei Zeichen EINES Elements "
+                    "(z. B. Widder, Löwe, Schütze)"]
+        return []
+    if n < 1:
         return [f"{ZEICHEN_FEHLT}: der Hook des ersten Reels nennt kein Sternzeichen beim Namen"]
     return []
 
@@ -688,7 +765,7 @@ ZEICHEN_WIEDERHOLT = "Zeichen wiederholt"
 def wiederholung_befunde(post: dict, sprache: str, tag: date) -> list[str]:
     """Das zweite Reel (Drei-Zeichen-Check) darf hoechstens EIN Zeichen aus den Drei-Zeichen-Reels der letzten zwei Tage
     wiederholen -- Facebook-Zahlen 17.11.: Bika + Halak zwei Abende hintereinander -> 529 statt ~11.000 Aufrufe."""
-    if post.get("art") != "reel" or post.get("_reel_nr") != 2:
+    if post.get("art") != "reel" or post.get("_reel_nr") != 2 or reel2_format(tag) == "element":
         return []
     jetzt = zeichen_im_text((post.get("skript") or {}).get("hook") or "")
     if len(jetzt) < 2:
@@ -862,7 +939,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
                    publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache, info),
-                   lebensthemen(tag, sprache), "\n\n".join(t for t in (tag_text(tag), dreier_gestern_text(sprache, tag), botschaften_text(sprache), app_reel_text(tag)) if t))
+                   lebensthemen(tag, sprache), "\n\n".join(t for t in (tag_text(tag), dreier_gestern_text(sprache, tag), botschaften_text(sprache), app_reel_text(tag), reel2_text(tag)) if t))
     mit_reels = reels_heute(sprache, tag)
     if not mit_reels:
         frage += "\n\n" + OHNE_REELS_TEXT
@@ -870,7 +947,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"], mit_reels)
     zeiten = _posten_zeiten()
     pruefe = lambda p: redaktion.pruefe_post(p, sprache) + tageszeit_befunde(p, zeiten) + stil_befunde(p, sprache) \
-        + zeichen_befunde(p) + wiederholung_befunde(p, sprache, tag)  # noqa: E731
+        + zeichen_befunde(p, reel2_format(tag)) + wiederholung_befunde(p, sprache, tag)  # noqa: E731
     befunde = {i: pruefe(p) for i, p in enumerate(posts)}
     anzahl = lambda bf: sum(1 for b in bf.values() if hart(b))      # noqa: E731
     if anzahl(befunde):
@@ -1014,6 +1091,7 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
                 meta["folge"] = folge
             if p.pop("_reel_nr", None) == 2:
                 meta["reel_nr"] = 2               # zweites Reel des Tages (eigene Uhrzeit beim Posten)
+                meta["reel_format"] = reel2_format(tag)      # Format je Wochentag (Optik im Video)
                 if app_funktion(tag):
                     meta["app_reel"] = app_funktion(tag)[0]   # woechentliches App-Reel (Funktion der Woche)
             if thema.get("variante"):
