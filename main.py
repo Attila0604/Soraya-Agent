@@ -379,14 +379,17 @@ def medien_video_starten(post_id: int):
 
 
 @app.get("/medien/{post_id}/video")
-def medien_video(post_id: int, download: bool = False):
+def medien_video(post_id: int, download: bool = False, stumm: bool = False):
     post = _post_oder_404(post_id)
     daten = paket.hole_video(post)
     if not daten:
         raise HTTPException(status_code=404, detail="Video ist noch nicht erstellt.")
+    if stumm:                 # zum selbst Hochladen mit eigenem Sound (Instagram/TikTok)
+        daten = paket.ohne_musik(daten)
     kopf = {"Cache-Control": "no-store", "Accept-Ranges": "none"}
     if download:
-        kopf["Content-Disposition"] = f'attachment; filename="{_dateiname(post, "mp4")}"'
+        name = _dateiname(post, "mp4").replace(".mp4", "-ohne-musik.mp4") if stumm else _dateiname(post, "mp4")
+        kopf["Content-Disposition"] = f'attachment; filename="{name}"'
     return Response(daten, media_type="video/mp4", headers=kopf)
 
 

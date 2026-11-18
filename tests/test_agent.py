@@ -3116,6 +3116,9 @@ def test_reel_formate_rendern(tmp_path):
                                "szenen": [], "schluss": ""}}
     assert reel.drei_zeichen(post) == []
     assert reel.erstelle(post, str(tmp_path / "k.mp4"))["sekunden"] > 10
+    import paket
+    stumm = paket.ohne_musik((tmp_path / "k.mp4").read_bytes())       # "Ohne Musik herunterladen"
+    assert stumm[4:8] == b"ftyp" and len(stumm) > 10000
 
 
 def test_facebook_reel_zahlen_ueber_video_insights(monkeypatch):

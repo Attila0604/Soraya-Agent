@@ -103,6 +103,22 @@ def hole_video(post: dict) -> bytes | None:
     return db.lade_medium(post["id"], "reel", _fingerabdruck(post, "reel"))
 
 
+def ohne_musik(daten: bytes) -> bytes:
+    """Dasselbe Video mit stiller Tonspur (zum selbst Hochladen mit eigenem Sound) -- Bild unveraendert, kein neues Rendern."""
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as ordner:
+        rein, raus = os.path.join(ordner, "rein.mp4"), os.path.join(ordner, "raus.mp4")
+        with open(rein, "wb") as f:
+            f.write(daten)
+        subprocess.run([reel.ffmpeg_pfad(), "-y", "-loglevel", "error", "-i", rein,
+                        "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo", "-map", "0:v", "-map", "1:a",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "64k", "-shortest", "-movflags", "+faststart", raus],
+                       check=True, timeout=120)
+        with open(raus, "rb") as f:
+            return f.read()
+
+
 def _rendere_video(post: dict) -> bytes:
     fp = _fingerabdruck(post, "reel")
     vorhanden = db.lade_medium(post["id"], "reel", fp)
