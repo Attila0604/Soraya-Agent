@@ -132,11 +132,167 @@ def anwenden(posts: list[dict], korrekturen: list) -> list[str]:
     return erledigt
 
 
+# ---------------------------------------------------------------------------
+# Muttersprachliche Neufassung (Standard: Ungarisch)
+# Einzelne "alt -> neu"-Korrekturen lassen verkrampfte, uebersetzt klingende Saetze und falsche Hashtags
+# stehen. Darum schreibt hier eine muttersprachliche Texterin jeden Text so neu, als waere er in der
+# Sprache erdacht -- gleicher Inhalt, gleiche Laenge, gleiche Struktur. Ein Aufruf pro Tag wie bisher.
+# Railway: UMSCHREIBEN_SPRACHEN=hu (leer = aus, dann gilt fuer alle Sprachen das Korrektur-Lektorat).
+# ---------------------------------------------------------------------------
+_NEU_HINWEISE = {
+    "hu": (
+        "\n\nREWRITE MODE. Rewrite every field the way a Hungarian woman in her thirties who writes popular astrology posts "
+        "for Facebook would have written it in Hungarian from the start – not translated, not 'AI Hungarian'. Keep the meaning, "
+        "the zodiac signs and their order, the emojis, the paragraph breaks and the closing comment question; keep every list the "
+        "same length. Limits: titel max. 6 words, untertitel max. 8, hook max. 8, every einblendung max. 10 words, other fields not "
+        "longer than before. If the hook equals the first line of text, keep them identical. A field that already sounds natural "
+        "stays exactly as it is.\n"
+        "Typical problems to remove:\n"
+        "- Kitsch and over-poetic filler Hungarians find 'giccses': \"mesébe illő\", \"mesébe illővé varázsolja\", "
+        "\"varázslatos\", \"álomszép fény\", \"kozmikus ölelés\", \"csodás energiák\". Use concrete, everyday pictures instead "
+        "(\"ma este jólesik egy meleg takaró és egy bögre tea\").\n"
+        "- Astrology phrasing: the Moon is IN a sign: \"a Hold ma a jegyedben jár\" / \"a Hold ma a Vízöntőben jár\" – never "
+        "\"a Hold ma nálad jár\".\n"
+        "- Number: one sign addressed = 'te' (otthonod, érzed); only a sentence addressing several signs together uses 'ti' "
+        "(otthonotok, érzitek). Never mix inside one post part (e.g. \"Vízöntő, Bika, Halak: ma este otthonotok melegebb lesz\" is ok "
+        "only if the following lines also use ti, otherwise \"ma este meghitt lesz az otthonod\").\n"
+        "- Hashtags: only real Hungarian words people actually search, correctly spelled compounds with accents "
+        "(\"#estihangulat\" not \"#esthangulat\", \"#horoszkóp\", \"#csillagjegyek\", \"#asztrológia\"); keep the count.\n"
+        "Return every post with all fields, in the same order."
+    ),
+}
+
+_NEU_SCHEMA = {
+    "type": "object",
+    "properties": {"posts": {"type": "array", "items": {
+        "type": "object",
+        "properties": {
+            "titel": {"type": "string"}, "untertitel": {"type": "string"}, "text": {"type": "string"},
+            "hook": {"type": "string"}, "schluss": {"type": "string"},
+            "einblendungen": {"type": "array", "items": {"type": "string"}},
+            "szenen": {"type": "array", "items": {"type": "string"}},
+            "bild_punkte": {"type": "array", "items": {"type": "string"}},
+            "folien": {"type": "array", "items": {
+                "type": "object", "properties": {"titel": {"type": "string"}, "text": {"type": "string"}},
+                "required": ["titel", "text"], "additionalProperties": False}},
+            "hashtags": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["titel", "untertitel", "text", "hook", "schluss", "einblendungen", "szenen", "bild_punkte", "folien",
+                     "hashtags"],
+        "additionalProperties": False}}},
+    "required": ["posts"],
+    "additionalProperties": False,
+}
+
+
+def umschreiben_sprachen() -> set[str]:
+    roh = os.environ.get("UMSCHREIBEN_SPRACHEN", "hu")
+    return {s.strip().lower() for s in roh.split(",") if s.strip().lower() in _NEU_HINWEISE}
+
+
+def _hashtags(p: dict) -> list[str]:
+    h = p.get("hashtags")
+    if isinstance(h, str):
+        return [t for t in h.split() if t]
+    return [str(t) for t in (h or [])]
+
+
+def _eingabe(p: dict) -> dict:
+    sk = p.get("skript") or {}
+    return {"art": p.get("art") or "post", "titel": p.get("titel") or "", "untertitel": p.get("untertitel") or "",
+            "text": p.get("text") or "", "hook": sk.get("hook") or "", "schluss": sk.get("schluss") or "",
+            "einblendungen": list(sk.get("einblendungen") or []), "szenen": list(sk.get("szenen") or []),
+            "bild_punkte": list(p.get("_bild_punkte") or []),
+            "folien": [{"titel": f.get("titel") or "", "text": f.get("text") or ""} for f in (p.get("_folien") or [])],
+            "hashtags": _hashtags(p)}
+
+
+def _kurz(t) -> str:
+    t = t if isinstance(t, str) else " · ".join(str(x) for x in t)
+    return t if len(t) <= 70 else t[:67] + "…"
+
+
+def _setze(p: dict, n: dict) -> list[str]:
+    """Uebernimmt die Neufassung n in den Post p (nur passende, nicht leere Felder). Gibt 'alt → neu' zurueck."""
+    alt = _eingabe(p)
+    geaendert = []
+
+    def neu_wert(feld):
+        w = n.get(feld)
+        a = alt[feld]
+        if isinstance(a, list):
+            if not isinstance(w, list) or len(w) != len(a) or (a and not all(
+                    (isinstance(x, dict) and (x.get("titel") or x.get("text"))) or (isinstance(x, str) and x.strip())
+                    for x in w)):
+                return None
+            return w if w != a else None
+        if not isinstance(w, str) or not w.strip() or not a.strip() or w == a:
+            return None
+        return w
+
+    for feld in ("titel", "untertitel", "text"):
+        w = neu_wert(feld)
+        if w is not None:
+            geaendert.append(f"{_kurz(p[feld])} → {_kurz(w)}")
+            p[feld] = w
+    sk = p.get("skript")
+    if isinstance(sk, dict):
+        sk = p["skript"] = dict(sk)
+        for feld in ("hook", "schluss", "einblendungen", "szenen"):
+            w = neu_wert(feld)
+            if w is not None:
+                geaendert.append(f"{_kurz(sk.get(feld) or '')} → {_kurz(w)}")
+                sk[feld] = w
+        # Reel: Hook und erste Textzeile gleich halten (Facebook zeigt die erste Zeile)
+        erste = (alt["text"].split("\n", 1)[0]).strip()
+        if alt["hook"] and erste == alt["hook"].strip() and sk.get("hook") and p.get("text"):
+            rest = p["text"].split("\n", 1)
+            p["text"] = sk["hook"] + ("\n" + rest[1] if len(rest) > 1 else "")
+    w = neu_wert("bild_punkte")
+    if w is not None:
+        geaendert.append(f"{_kurz(alt['bild_punkte'])} → {_kurz(w)}")
+        p["_bild_punkte"] = w
+    w = neu_wert("folien")
+    if w is not None:
+        p["_folien"] = [{**f, "titel": x.get("titel") or f.get("titel"), "text": x.get("text") or f.get("text")}
+                        for f, x in zip(p.get("_folien") or [], w)]
+        geaendert.append("Folien neu formuliert")
+    w = neu_wert("hashtags")
+    if w is not None:
+        w = [t if t.startswith("#") else "#" + t for t in (x.strip().replace(" ", "") for x in w) if len(t) > 1]
+        if len(w) == len(alt["hashtags"]) and w != alt["hashtags"]:
+            geaendert.append(f"{_kurz(alt['hashtags'])} → {_kurz(w)}")
+            p["hashtags"] = " ".join(w) if isinstance(p.get("hashtags"), str) else w
+    if geaendert:
+        p.setdefault("_lektorat", []).extend(geaendert)
+    return geaendert
+
+
+def umschreiben(posts: list[dict], sprache: str) -> list[str]:
+    """Muttersprachliche Neufassung aller Texte eines Tages (an Ort und Stelle). Gibt die Aenderungen zurueck."""
+    import json
+    eingabe = json.dumps({"posts": [_eingabe(p) for p in posts]}, ensure_ascii=False, indent=1)
+    antwort = frage_json(_system(sprache) + _NEU_HINWEISE[sprache], eingabe, _NEU_SCHEMA, effort="high",
+                         max_tokens=24000)
+    neu = antwort.get("posts") or []
+    if len(neu) != len(posts):
+        raise ValueError(f"Neufassung mit {len(neu)} statt {len(posts)} Einträgen")
+    erledigt = []
+    for p, n in zip(posts, neu):
+        erledigt += _setze(p, n if isinstance(n, dict) else {})
+    return erledigt
+
+
 def pruefen(posts: list[dict], sprache: str) -> list[str]:
     """Korrigiert die Posts eines Tages an Ort und Stelle (nur Sprachen aus LEKTORAT_SPRACHEN).
     Gibt die Liste der Korrekturen zurueck (fuers Dashboard)."""
     if sprache not in sprachen() or not posts:
         return []
+    if sprache in umschreiben_sprachen():
+        try:
+            return umschreiben(posts, sprache)
+        except Exception as e:   # dann wenigstens das normale Korrektur-Lektorat
+            log.warning("Neufassung %s fehlgeschlagen, nur Korrekturen: %s", sprache, e)
     bloecke = []
     for i, p in enumerate(posts, 1):
         bloecke.append(f"--- Post {i} ({p.get('art') or 'post'}) ---\n" + "\n".join(_texte(p)))
