@@ -531,6 +531,19 @@ def zeichen_rotation(sprache: str) -> tuple[list[int], list[int]]:
     return oft, frei
 
 
+def dreier_gestern_text(sprache: str, tag: date) -> str:
+    try:
+        vorher = set().union(*[zeichen_im_text(h) for h in db.letzte_dreier_hooks(sprache, tag)] or [set()])
+    except Exception:  # noqa: BLE001
+        return ""
+    if not vorher:
+        return ""
+    from sprachen import zeichen as _name, _SIGN_KEYS
+    return ("Im Drei-Zeichen-Reel der letzten zwei Tage waren schon: "
+            + ", ".join(_name(_SIGN_KEYS[i], sprache) for i in sorted(vorher))
+            + " – heute höchstens EINES davon im Drei-Zeichen-Check (wer sein Zeichen gestern schon gesehen hat, wischt weiter).")
+
+
 def zeichen_text(sprache: str, info: dict | None = None) -> str:
     oft, frei = zeichen_rotation(sprache)
     heute = [z for z in (info or {}).get("zeichen_heute") or [] if z.get("punkte", 0) > 0]
@@ -666,6 +679,32 @@ def zeichen_befunde(post: dict) -> list[str]:
                 "(„Name, Name, Name: Aussage“)"]
     if post.get("_reel_nr") != 2 and n < 1:
         return [f"{ZEICHEN_FEHLT}: der Hook des ersten Reels nennt kein Sternzeichen beim Namen"]
+    return []
+
+
+ZEICHEN_WIEDERHOLT = "Zeichen wiederholt"
+
+
+def wiederholung_befunde(post: dict, sprache: str, tag: date) -> list[str]:
+    """Das zweite Reel (Drei-Zeichen-Check) darf hoechstens EIN Zeichen aus den Drei-Zeichen-Reels der letzten zwei Tage
+    wiederholen -- Facebook-Zahlen 17.11.: Bika + Halak zwei Abende hintereinander -> 529 statt ~11.000 Aufrufe."""
+    if post.get("art") != "reel" or post.get("_reel_nr") != 2:
+        return []
+    jetzt = zeichen_im_text((post.get("skript") or {}).get("hook") or "")
+    if len(jetzt) < 2:
+        return []
+    try:
+        vorher = [zeichen_im_text(h) for h in db.letzte_dreier_hooks(sprache, tag)]
+    except Exception:  # noqa: BLE001
+        return []
+    from sprachen import zeichen as _name, _SIGN_KEYS
+    for v in vorher:
+        gleich = jetzt & v
+        if len(gleich) >= 2:
+            namen = ", ".join(_name(_SIGN_KEYS[i], sprache) for i in sorted(gleich))
+            alle = ", ".join(_name(_SIGN_KEYS[i], sprache) for i in sorted(set().union(*vorher)))
+            return [f"{ZEICHEN_WIEDERHOLT}: {namen} waren schon im Drei-Zeichen-Reel der letzten Tage ({alle}) – nimm "
+                    "höchstens EIN Zeichen davon, die anderen aus den Zeichen, die länger nicht dran waren"]
     return []
 
 
@@ -823,7 +862,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     frage = _frage(info, sprache, bisherige, zielgruppe, thema, vorbilder or [], erkenntnis, anfaenge,
                    lebensphasen(tag, reif=nur_facebook(plattformen)), erzaehlform(tag, sprache), zuletzt_motive,
                    publikum_text(plattformen or []), zeiten_text(), zeichen_text(sprache, info),
-                   lebensthemen(tag, sprache), "\n\n".join(t for t in (tag_text(tag), botschaften_text(sprache), app_reel_text(tag)) if t))
+                   lebensthemen(tag, sprache), "\n\n".join(t for t in (tag_text(tag), dreier_gestern_text(sprache, tag), botschaften_text(sprache), app_reel_text(tag)) if t))
     mit_reels = reels_heute(sprache, tag)
     if not mit_reels:
         frage += "\n\n" + OHNE_REELS_TEXT
@@ -831,7 +870,7 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
     posts = _aufbereiten(frage_json(system, frage, SCHEMA, effort="high", max_tokens=48000), sprache, thema["name"], mit_reels)
     zeiten = _posten_zeiten()
     pruefe = lambda p: redaktion.pruefe_post(p, sprache) + tageszeit_befunde(p, zeiten) + stil_befunde(p, sprache) \
-        + zeichen_befunde(p)  # noqa: E731
+        + zeichen_befunde(p) + wiederholung_befunde(p, sprache, tag)  # noqa: E731
     befunde = {i: pruefe(p) for i, p in enumerate(posts)}
     anzahl = lambda bf: sum(1 for b in bf.values() if hart(b))      # noqa: E731
     if anzahl(befunde):
@@ -880,7 +919,7 @@ NACHBESSERN_MAX = 2
 def hart(befunde: list[str]) -> bool:
     """Befunde, die einen neuen Versuch rechtfertigen (ohne das Posten zu blockieren, ausser redaktion.schwer)."""
     return redaktion.schwer(befunde) or redaktion.leer(befunde) or any(
-        x.startswith((TAGESZEIT, STIL, ZEICHEN_FEHLT)) for x in befunde)
+        x.startswith((TAGESZEIT, STIL, ZEICHEN_FEHLT, ZEICHEN_WIEDERHOLT)) for x in befunde)
 
 
 def nachbessern(system: str, frage: str, post: dict, befunde: list[str], sprache: str, thema_name: str) -> dict | None:

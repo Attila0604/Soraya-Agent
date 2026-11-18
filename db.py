@@ -843,3 +843,13 @@ def setze_kommentar(kid: str, post_id: int | None = None, status: str | None = N
             "vorschlag = coalesce(excluded.vorschlag, soraya_kommentare.vorschlag), aktualisiert = now();",
             (kid, post_id, status, Jsonb(vorschlag) if vorschlag is not None else None, status))
         conn.commit()
+
+
+def letzte_dreier_hooks(sprache: str, vor: date, tage: int = 2) -> list[str]:
+    """Hooks der zweiten Reels (Drei-Zeichen-Check) der letzten Tage vor `vor` -- gegen dieselben Zeichen hintereinander."""
+    with _verbindung() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select skript from soraya_posts where quelle = 'himmel' and sprache = %s and art = 'reel' "
+            "and (meta->>'reel_nr') = '2' and geplant_fuer < %s and geplant_fuer >= %s::date - %s;",
+            (sprache, vor, vor, tage))
+        return [((z.get("skript") or {}).get("hook") or "") for z in cur.fetchall()]
