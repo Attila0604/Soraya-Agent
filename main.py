@@ -471,6 +471,22 @@ class PostenEinstellungen(BaseModel):
     zeiten: Optional[dict] = None
     plattformen: Optional[dict] = None
     sprache_pl: Optional[dict] = None
+    selbst: Optional[dict] = None
+
+
+class TerminStopp(BaseModel):
+    stopp: bool = True
+
+
+@app.post("/posten/termin/{zid}")
+def posten_termin(zid: int, anfrage: TerminStopp):
+    """Einen einzelnen Termin (eine Plattform) stoppen oder wieder einplanen."""
+    try:
+        return posten.termin_stoppen(zid, anfrage.stopp)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden.")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.put("/posten/einstellungen")

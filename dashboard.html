@@ -66,6 +66,11 @@
   button:hover{filter:brightness(1.07)}
   button:disabled{opacity:.55;cursor:default;filter:none}
   button.ghost{background:transparent;color:var(--gold);border-color:var(--line);font-weight:500}
+  .selbst-liste{display:grid;gap:6px;margin-top:6px}
+  .selbst-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .selbst-zeile>b{min-width:90px;font-weight:500}
+  .selbst-zeile label{display:inline-flex;align-items:center;gap:6px;font-size:14px;text-transform:none;letter-spacing:0;margin:0;white-space:nowrap;width:auto}
+  .selbst-zeile input{width:auto;margin:0}
   button.ghost:hover{border-color:var(--gold)}
   button.klein{padding:7px 12px;font-size:13px}
   button.gefahr{color:#e88a7a;border-color:rgba(208,59,59,.35)}
@@ -1429,6 +1434,8 @@
         <div class="pl-zeile"><label class="imtp"><input type="checkbox" id="plPinterest"> <span>Pinterest<small>Bilder & Reels als Pins</small></span></label>
           <label class="sr" for="spl-pinterest">Sprache für Pinterest</label><select id="spl-pinterest" data-spl="pinterest"><option value="">wie oben</option><option value="en">English</option><option value="de">Deutsch</option><option value="hu">Magyar</option><option value="it">Italiano</option></select></div>
       </div>
+      <label style="margin-top:16px">Lade ich selbst hoch<span class="meta" style="text-transform:none;letter-spacing:0;margin-left:8px">· angehakt = geht dort NICHT automatisch raus (z. B. Reels auf Facebook mit eigenem Sound)</span></label>
+      <div class="selbst-liste" id="selbstListe"></div>
       <div class="row" id="tiktokZeile" style="margin-top:10px">
         <div><label for="tiktokModus">So kommt das Reel zu TikTok</label>
           <select id="tiktokModus"><option value="entwurf">Entwurf – ich poste mit Sound</option>
@@ -1957,6 +1964,22 @@ function bildDialog(p, start = 1){
   $('bZu').onclick = () => d.close();
   neu();
 }
+// Playlist je Format des zweiten Reels (Attila legt die Playlists auf Facebook selbst an und waehlt sie beim Hochladen)
+const PLAYLIST = {
+  dreier:  {hu: 'Három jegy üzenete', de: 'Drei Zeichen, eine Botschaft', en: 'Three Signs, One Message', it: 'Tre segni, un messaggio'},
+  glueck:  {hu: 'A nap 3 szerencsése', de: 'Die 3 Glückspilze des Tages', en: 'Lucky 3 of the Day', it: 'I 3 fortunati del giorno'},
+  ritual:  {hu: 'Esti rituálé', de: 'Kleines Abend-Ritual', en: 'Little Evening Ritual', it: 'Piccolo rituale serale'},
+  element: {hu: 'Az elemek ereje', de: 'Die Kraft der Elemente', en: 'Power of the Elements', it: 'La forza degli elementi'},
+  stopp:   {hu: 'Állj meg a jegyednél', de: 'Stopp bei deinem Zeichen', en: 'Stop at Your Sign', it: 'Fermati al tuo segno'},
+  karte:   {hu: 'Válassz egy kártyát', de: 'Wähl eine Karte', en: 'Pick a Card', it: 'Scegli una carta'},
+};
+function playlistVon(p){
+  const m = p.meta || {};
+  if(p.art !== 'reel') return '';
+  const f = m.reel_nr === 2 ? (m.app_reel ? 'dreier' : (m.reel_format || 'dreier')) : null;
+  const sp = (p.sprache || 'en').slice(0, 2);
+  return f && PLAYLIST[f] ? (PLAYLIST[f][sp] || PLAYLIST[f].en) : ({hu: 'Napi üzenet', de: 'Botschaft des Tages', en: 'Message of the Day', it: 'Messaggio del giorno'})[sp] || 'Message of the Day';
+}
 let videoTimer = null;
 function videoDialog(p){
   const d = $('dlg');
@@ -1967,6 +1990,7 @@ function videoDialog(p){
       <a class="knopf ghost hide" id="vStumm" download>Ohne Musik herunterladen</a>
       <button class="ghost hide" id="vTeilen">Teilen …</button>
       <button class="ghost" id="vZu">Schließen</button></div>
+    ${playlistVon(p) ? `<p class="note">Playlist beim Hochladen: <b>${esc(playlistVon(p))}</b></p>` : ''}
     <p class="note">15–30 Sekunden mit lizenzfreier Musik. „Ohne Musik“: gleiches Video mit stiller Tonspur – zum selbst Hochladen mit eigenem Sound.<span class="rest" hidden> 1080×1920. In Instagram/TikTok kannst du sie beim Posten durch einen Trend-Sound ersetzen.</span></p>`;
   d.showModal();
   d.addEventListener('close', () => clearTimeout(videoTimer), {once: true});
@@ -3779,10 +3803,14 @@ async function ladePosten(){
         : offenListe.length ? `<button class="ghost klein" data-stopp="${t.post_id}">Stoppen</button> ${offenListe.map(x => `<button class="ghost klein" data-jetzt="${t.post_id}" data-pl="${x.plattform}">Jetzt: ${esc(PL_NAME[x.plattform] || x.plattform)}</button>`).join(' ')}`
         // laeuft gerade: Stoppen verhindert einen neuen Versuch, falls dieser haengen bleibt (kein "Jetzt", sonst doppelt)
         : liste.some(x => x.status === 'laeuft') ? `<button class="ghost klein" data-stopp="${t.post_id}" title="Kein neuer Versuch, falls dieser hängen bleibt">Stoppen</button>` : '';
+      // je Plattform einzeln: nur dort stoppen (z. B. Reel auf Facebook selbst hochladen) bzw. wieder einplanen
+      const einzeln = gestoppt || liste.length < 2 && !liste.some(x => x.status === 'abgebrochen') ? '' : liste.map(x =>
+        ['geplant', 'fehler'].includes(x.status) ? `<button class="ghost klein" data-zstopp="${x.id}" title="Nur auf ${esc(PL_NAME[x.plattform] || x.plattform)} nicht posten">✕ ${esc(PL_NAME[x.plattform] || x.plattform)}</button>`
+        : x.status === 'abgebrochen' ? `<button class="ghost klein" data-zweiter="${x.id}" title="Auf ${esc(PL_NAME[x.plattform] || x.plattform)} doch posten">↺ ${esc(PL_NAME[x.plattform] || x.plattform)}</button>` : '').join(' ');
       return `<tr><td class="t">${tagName(zuerst.geplant_um)} ${uhr(zuerst.geplant_um)}</td>
         <td>${esc(ART[platzVon(t)] || t.art)} · ${esc((t.sprache || '').toUpperCase())}<br><span class="klein">${esc(t.titel || '')}</span>${fehler}</td>
         <td class="pl"><span class="plk-reihe">${marken}</span></td>
-        <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}</td></tr>`;
+        <td><span class="vs ${esc(st)}">${esc(VS_NAME[st] || st)}</span></td><td>${aktion}${einzeln ? `<div class="einzeln" style="margin-top:6px">${einzeln}</div>` : ''}</td></tr>`;
     }).join('')}</tbody></table>`;
   $('termine').innerHTML = gruppen.length
     ? `${offenG.length ? `<h4 class="termin-kopf">Kommt noch <span>${offenG.length}</span></h4>${tabelle(offenG)}` : '<p class="meta">Gerade ist nichts geplant.</p>'}
@@ -3799,6 +3827,8 @@ async function ladePosten(){
   $('plLinkedin').checked = !!e.plattformen.linkedin;
   $('plPinterest').checked = !!e.plattformen.pinterest;
   document.querySelectorAll('[data-spl]').forEach(x => { x.value = (e.sprache_pl || {})[x.dataset.spl] || ''; });
+  $('selbstListe').innerHTML = ['facebook', 'instagram', 'tiktok', 'pinterest', 'linkedin'].map(pl => `<div class="selbst-zeile"><b>${PL_NAME[pl]}</b>
+    ${['story', 'post', 'reel', 'reel2'].map(a => `<label><input type="checkbox" data-selbst="${pl}:${a}"${((e.selbst || {})[pl] || []).includes(a) ? ' checked' : ''}> ${ART[a]}</label>`).join('')}</div>`).join('');
   $('tiktokZeile').hidden = !$('plTiktok').checked;
   document.querySelectorAll('.zeiten input.vorschlag').forEach(f => f.classList.remove('vorschlag'));
   }
@@ -3959,7 +3989,9 @@ $('postSpeichern').onclick = async () => {
       tiktok_modus: $('tiktokModus').value,
       sprache_pl: Object.fromEntries([...document.querySelectorAll('[data-spl]')].map(x => [x.dataset.spl, x.value])),
       plattformen: {facebook: $('plFacebook').checked, instagram: $('plInstagram').checked, tiktok: $('plTiktok').checked,
-                    linkedin: $('plLinkedin').checked, pinterest: $('plPinterest').checked}})});
+                    linkedin: $('plLinkedin').checked, pinterest: $('plPinterest').checked},
+      selbst: [...document.querySelectorAll('[data-selbst]:checked')].reduce((m, x) => { const [pl, a] = x.dataset.selbst.split(':');
+        (m[pl] = m[pl] || []).push(a); return m; }, {})})});
     melde('Gespeichert ✓ – auch schon geplante Termine bekommen die neuen Uhrzeiten'); $('postUngespeichert').hidden = true; ladePosten();
   }catch(e){ melde('Fehler: ' + e.message); }
 };
@@ -3982,6 +4014,12 @@ $('view-posten').addEventListener('click', async (ev) => {
       await api(['tiktok', 'linkedin', 'pinterest'].includes(b.dataset.trennen) ? `/${b.dataset.trennen}/trennen` : '/meta/trennen/' + b.dataset.trennen, {method: 'POST'}); melde('Getrennt.');
     } else if(b.dataset.stopp){
       await aendere(b.dataset.stopp, {status: 'gestoppt'}); melde('Gestoppt – dieser Post geht nicht raus.');
+    } else if(b.dataset.zstopp){
+      await api('/posten/termin/' + b.dataset.zstopp, {method: 'POST', body: JSON.stringify({stopp: true})});
+      melde('Gestoppt – geht nur dort nicht raus.');
+    } else if(b.dataset.zweiter){
+      await api('/posten/termin/' + b.dataset.zweiter, {method: 'POST', body: JSON.stringify({stopp: false})});
+      melde('Wieder eingeplant ✓');
     } else if(b.dataset.weiter){
       await aendere(b.dataset.weiter, {status: 'entwurf'}); melde('Wird wieder gepostet (zum geplanten Termin).');
     } else if(b.dataset.jetzt){

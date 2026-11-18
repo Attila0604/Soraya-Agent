@@ -1871,6 +1871,24 @@ def test_zweites_reel_tagesplan_und_posten(monkeypatch, frische_db):
     # Wochenpaket: zwei Reels, zwei verschiedene Dateinamen
     assert main._dateiname(reels[1], "mp4").startswith(f"soraya-{HEUTE}-reel2-en")
     posten.speichere_einstellungen({"zeiten": {"story": "09:00", "post": "12:30", "reel": "19:00", "reel2": "19:30"}})
+    # "Lade ich selbst hoch": Reels auf Facebook gehen nicht mehr automatisch raus, TikTok bleibt
+    e = posten.speichere_einstellungen({"selbst": {"facebook": ["reel", "reel2", "quatsch"], "mars": ["post"]}})
+    assert e["selbst"] == {"facebook": ["reel", "reel2"]} and posten.einstellungen()["selbst"] == e["selbst"]
+    t = {(x["post_id"], x["plattform"]): x for x in db.lade_veroeffentlichungen(_um(0), _um(23, 59))}
+    assert t[(reels[0]["id"], "facebook")]["status"] == "abgebrochen" and t[(reels[0]["id"], "tiktok")]["status"] == "geplant"
+    assert "selbst" in t[(reels[1]["id"], "facebook")]["fehler"]
+    # einzelner Termin: nur TikTok stoppen, dann wieder einplanen
+    zid = t[(reels[0]["id"], "tiktok")]["id"]
+    assert posten.termin_stoppen(zid)["status"] == "abgebrochen"
+    posten.planen(e, _um(5))                                        # bleibt gestoppt (kein neuer Termin)
+    assert {x["status"] for x in db.lade_veroeffentlichungen(_um(0), _um(23, 59)) if x["id"] == zid} == {"abgebrochen"}
+    assert posten.termin_stoppen(zid, False)["status"] == "geplant"
+    import pytest as _pt
+    with _pt.raises(KeyError):
+        posten.termin_stoppen(999999)
+    r = main.posten_termin(zid, main.TerminStopp(stopp=True))
+    assert r["status"] == "abgebrochen"
+    posten.speichere_einstellungen({"selbst": {}})
 
 
 def test_kommentar_frage_vier_sprachen():
