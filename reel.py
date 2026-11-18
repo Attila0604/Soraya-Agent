@@ -27,8 +27,9 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-23"
+VERSION = "reel-24"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
+ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
 
 def ffmpeg_pfad() -> str:
@@ -522,7 +523,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     for x, y, r, farbe, a in ruhig:
         for yy in (y, y + H) if y < DRIFT else (y,):        # oben wiederholen, damit unten nichts fehlt
             d.ellipse([x - r, yy - r, x + r, yy + r], fill=farbe + (int(a * 255),))
-    schnuppen = [(1.4, (W * 0.18, 260), math.radians(28)), (max(4.0, end_start - 3.0), (W * 0.62, 180), math.radians(152))]
+    schnuppen = [(0.25, (W * 0.18, 260), math.radians(28)), (max(4.0, end_start - 3.0), (W * 0.62, 180), math.radians(152))]
     oben = Image.new("RGBA", (W, H), (0, 0, 0, 0))                 # kleines Zeichen + Datumszeile
     z = medien.portal(2 * 110)
     s = 2 * 110 / 312
@@ -637,6 +638,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
             if reihe is not None and sichtbar_ende > 0:
                 aktiv = next((zeichen_je_zeile[nr] for nr, (a_, b_) in enumerate(plan)
                               if nr and a_ - 0.2 <= t <= b_ + 0.1 and zeichen_je_zeile[nr] in drei), None)
+                if t < 0.9:                       # erste Sekunde: die drei Zeichen leuchten nacheinander auf
+                    aktiv = drei[min(2, int(t / 0.3))]
                 _dreier_malen(bild, reihe, drei, aktiv, t, sichtbar_ende)
             if bahn and sichtbar_ende > 0:
                 d2 = ImageDraw.Draw(bild, "RGBA")
@@ -649,6 +652,9 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 if nr and 0 <= t - start <= 0.9:                       # neue Zeile: weiches Aufleuchten dahinter
                     medien.aufkleben(bild, _mit_alpha(glut, math.sin(math.pi * (t - start) / 0.9) * 0.9),
                                      (W / 2 - glut.width / 2, text_mitte - glut.height / 2))
+                if not nr and t < ERSTE_SEKUNDE:                       # erstes Bild: Hook leuchtet golden, klingt ab
+                    medien.aufkleben(bild, _mit_alpha(glut, 0.85 * (1 - _weich(t / ERSTE_SEKUNDE))),
+                                     (W / 2 - glut.width / 2, text_mitte - glut.height / 2))
                 if start - 0.01 <= t <= stopp + AUSBLENDEN:
                     # Hook steht ab dem ersten Bild ganz da, alle weiteren Texte erscheinen Wort fuer Wort
                     fortschritt = 1.0 if start <= 0 else min(1.0, (t - start) / min(1.1, 0.16 * len(kaesten) + 0.3))
@@ -656,12 +662,15 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                     if raus > 0.003:
                         k = _wort_fuer_wort(karte, kaesten, fortschritt)
                         if nr == 0:
-                            k = _schimmer(k, (t - 0.5) / 1.3)               # Lichtstreif ueber den Hook
+                            k = _schimmer(k, (t - 0.12) / 1.0)              # Lichtstreif ueber den Hook, sofort
+                            if t < 0.5:                                     # Hook kommt sanft heran (Bewegung ab Bild 1)
+                                gr = 1.10 - 0.10 * _weich(t / 0.5)
+                                k = k.resize((int(k.width * gr), int(k.height * gr)), Image.BILINEAR)
                         # sanft von unten herein, beim Ausblenden ein wenig nach oben
                         hub = 0 if start <= 0 else 26 * (1 - _weich((t - start) / 0.6))
                         hub -= 18 * (1 - raus)
                         medien.aufkleben(bild, _mit_alpha(k, raus),
-                                         (W / 2 - karte.width / 2, text_mitte - karte.height / 2 + hub))
+                                         (W / 2 - k.width / 2, text_mitte - k.height / 2 + hub))
             if t >= end_start:
                 medien.aufkleben(bild, _mit_alpha(endkarte, _weich((t - end_start - 0.3) / 0.9) * (1 - weg)), end_pos)
             if rueck > 0.003:                                          # der Hook kommt zurueck wie im ersten Bild
