@@ -238,7 +238,7 @@
   .pz-oben .art{color:var(--gold);font-weight:600}
   .pz-oben .spr{color:var(--mist-dim);border:1px solid var(--line-soft);border-radius:6px;padding:1px 6px;letter-spacing:.08em}
   .pz-oben .wo{display:inline-flex;gap:4px;color:var(--mist-dim)}
-  .pz-oben .wo .ikon{width:13px;height:13px} .pz-oben .wo .ikon.fertig{color:var(--gruen)}
+  .pz-oben .wo .ikon{width:13px;height:13px} .pz-oben .wo .ikon.fertig{color:var(--gruen)} .pz-oben .wo .ikon.aus{opacity:.3}
   details.pz .pt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#F4EEDD;line-height:1.2}
   details.pz>summary .st{margin-left:0;flex:none;display:inline-flex;align-items:center;gap:6px;background:none;padding:0;font-weight:500;font-size:12px}
   details.pz>summary .st::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
@@ -2505,8 +2505,11 @@ const nachZeit = (a, b) => String(planZeit(a).zeit || '99').localeCompare(String
   || (REIHE_SPRACHE.indexOf(a.sprache) - REIHE_SPRACHE.indexOf(b.sprache)) || (a.id - b.id);
 function zeile(p){
   const st = p.status || 'entwurf', tt = TERMINE.get(String(p.id)) || [];
+  // gestoppte Termine (z. B. „Lade ich selbst hoch“) blass zeigen -- sie gehen NICHT automatisch raus
+  const woText = (t) => t.status === 'abgebrochen' && String(t.fehler || '').startsWith('Lädst du selbst') ? 'lädst du selbst hoch (geht nicht automatisch raus)'
+    : (VS_NAME[t.status] || t.status);
   const wo = tt.length ? `<span class="wo" aria-label="Plattformen">${tt.map(t =>
-    (IKON[t.plattform] || '').replace('class="ikon" aria-hidden="true"', `class="ikon${t.status === 'fertig' ? ' fertig' : ''}" title="${esc(PL_NAME[t.plattform] + ': ' + (VS_NAME[t.status] || t.status))}"`)).join('')}</span>` : '';
+    (IKON[t.plattform] || '').replace('class="ikon" aria-hidden="true"', `class="ikon${t.status === 'fertig' ? ' fertig' : t.status === 'abgebrochen' ? ' aus' : ''}" title="${esc(PL_NAME[t.plattform] + ': ' + woText(t))}"`)).join('')}</span>` : '';
   return `<details class="pz" data-pz="${esc(p.id)}"${OFFEN.has(String(p.id)) || planAlleOffen ? ' open' : ''}>
     <summary><img class="mini${p.art === 'post' ? '' : ' hoch'}" loading="lazy" alt="" src="/medien/${esc(p.id)}/bild?format=${p.art === 'post' ? 'feed' : 'story'}&klein=1&v=${esc(p.aktualisiert || p.created_at || '')}">
       <span class="pz-mitte"><span class="pz-oben"><span class="art">${esc(ART[platzVon(p)] || 'Post')}</span><span class="spr">${esc((p.sprache || 'de').toUpperCase())}</span>${wo}</span>
