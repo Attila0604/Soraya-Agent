@@ -169,12 +169,15 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    weise Gedanke; nennt das Video Sternzeichen, nenn sie auch im Text beim Namen. Zum Schluss als eigener Absatz die
    eine leichte Frage zum Kommentieren (anders als beim Feed-Post). "bild_punkte": [].
    VERSTÄNDLICH OHNE VORWISSEN (gilt für BEIDE Reels, Wunsch Attila 21.11.): Wer nichts über Astrologie weiß, versteht
-   jede Einblendung sofort. Die erste Einblendung sagt in einfachen Worten, worum es heute geht (was der Himmel für
-   das Leben bedeutet, nicht wie er heißt). Danach ist jede Einblendung ein KONKRETER TIPP für heute, den man gleich
-   umsetzen kann („Schreib heute die Nachricht, die du aufschiebst“, „Sag heute einmal Nein ohne Begründung“) – kein
-   vages Gefühl. Planeten und Mond nur mit ihrer Bedeutung im Alltag („Venus – die Liebe – …“, „der Mond, deine
-   Gefühle, …“); keine Fachwörter wie Quadrat, Trigon, Sextil, Opposition, Konjunktion, Aspekt, Transit (auf
-   Ungarisch z. B. négyszög, trigon, oppozíció, együttállás, fényszög, tranzit) – sag stattdessen, was es bewirkt.
+   jede Einblendung sofort. Die BEGRÜNDUNG aus dem Himmel bleibt wichtig (sie macht Soraya glaubwürdig) – aber in
+   Alltagsworten: welcher Himmelskörper, was er im Leben bedeutet, und was er heute tut, z. B. „Heute stehen Venus –
+   die Liebe – und Mars – der Mut – ganz nah beieinander: der erste Schritt fällt dir leichter“ oder „Der Mond, deine
+   Gefühle, zieht heute in dein Zeichen: du spürst klarer, was du willst“. Die erste Einblendung sagt so, worum es
+   heute geht und warum. Danach ist jede Einblendung ein KONKRETER TIPP für heute, den man gleich umsetzen kann
+   („Schreib heute die Nachricht, die du aufschiebst“, „Sag heute einmal Nein ohne Begründung“) – kein vages Gefühl.
+   Keine Fachwörter wie Quadrat, Trigon, Sextil, Opposition, Konjunktion, Aspekt, Transit (auf Ungarisch z. B.
+   négyszög, trigon, oppozíció, együttállás, fényszög, tranzit) – beschreibe stattdessen das Bild: „stehen nah
+   beieinander“, „ziehen in verschiedene Richtungen“, „reichen sich die Hand“, „stehen sich gegenüber“.
 3. art "story", platform "instagram": ein kurzer Satz zur Tagesenergie plus eine Frage, auf die
    man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 20 Wörter.
    "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
@@ -682,8 +685,9 @@ def stil_befunde(post: dict, sprache: str) -> list[str]:
     reel = " ".join([sk.get("hook") or ""] + list(sk.get("einblendungen") or [])) if post.get("art") == "reel" else ""
     m = fach.search(reel) if fach and reel else None
     if m:
-        out.append(f"{STIL}: Fachwort „{m.group(0)}“ im Reel – ohne Vorwissen unverständlich, sag stattdessen, was es "
-                   "im Alltag bewirkt, und gib einen konkreten Tipp")
+        out.append(f"{STIL}: Fachwort „{m.group(0)}“ im Reel – ohne Vorwissen unverständlich; die Begründung bleibt, "
+                   "aber als Bild in Alltagsworten („stehen nah beieinander“, „ziehen in verschiedene Richtungen“) "
+                   "mit der Bedeutung des Planeten, dazu ein konkreter Tipp")
     amt = _AMTSTON.get(sprache)
     bild = " ".join([post.get("titel") or "", post.get("untertitel") or ""]
                     + [str(f.get("titel") or "") + " " + str(f.get("text") or "") for f in (post.get("_folien") or [])])
