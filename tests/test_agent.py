@@ -3096,6 +3096,16 @@ def test_reels_brauchen_sternzeichen():
     assert not tagesplan.zeichen_befunde({"art": "post", "text": "x"})
 
 
+def test_reel_ohne_fachwoerter():
+    r = lambda ein: {"art": "reel", "skript": {"hook": "Kos, a Hold ma egy titkot súg neked", "einblendungen": ein}}  # noqa: E731
+    assert tagesplan.stil_befunde(r(["A Vénusz négyszöget alkot a Marssal"]), "hu")
+    assert tagesplan.stil_befunde(r(["A Mars együttállása ma erőt ad"]), "hu")
+    assert not tagesplan.stil_befunde(r(["Írd meg ma azt az üzenetet, amit halogatsz"]), "hu")
+    assert tagesplan.stil_befunde({"art": "reel", "skript": {"hook": "Widder, heute ein Quadrat", "einblendungen": []}}, "de")
+    assert not tagesplan.stil_befunde({"art": "post", "text": "Venus im Quadrat"}, "de")     # nur Reels
+    assert "VERSTÄNDLICH OHNE VORWISSEN" in tagesplan.SYSTEM_PROMPT
+
+
 def test_erstes_reel_immer_neugier():
     assert "Neugier-Lücke" in tagesplan.SYSTEM_PROMPT and "korábban ébredsz" in tagesplan.SYSTEM_PROMPT
     t = redaktion.thema_text({"name": "X", "auftrag": "a", "aufforderung": {"auftrag": "b"},
