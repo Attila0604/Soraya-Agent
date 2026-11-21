@@ -69,6 +69,8 @@ def tagesplan_antwort(sprache="de"):
 
 @pytest.fixture(autouse=True)
 def frische_db(monkeypatch):
+    # das 2. Reel wechselt je Wochentag das Format -- die Test-Antworten sind Drei-Zeichen-Checks (sonst haengt es am Datum)
+    monkeypatch.setattr(tagesplan, "reel2_format", lambda tag: "dreier")
     with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
         conn.execute("drop table if exists soraya_kommentare, soraya_pins, soraya_veroeffentlichungen, soraya_medien, soraya_posts, soraya_zielgruppen, soraya_tagesplaene, soraya_einstellungen cascade;")
     db.init_db()
@@ -3094,11 +3096,20 @@ def test_reels_brauchen_sternzeichen():
     assert not tagesplan.zeichen_befunde({"art": "post", "text": "x"})
 
 
+def test_erstes_reel_immer_neugier():
+    assert "Neugier-Lücke" in tagesplan.SYSTEM_PROMPT and "korábban ébredsz" in tagesplan.SYSTEM_PROMPT
+    t = redaktion.thema_text({"name": "X", "auftrag": "a", "aufforderung": {"auftrag": "b"},
+                              "hook_stil": {"auftrag": "Alltags-Szene"}}, "Link in Bio")
+    assert "erste Reel folgt immer der Neugier-Regel" in t
+
+
 def test_zweites_reel_format_je_wochentag():
     from datetime import date as _d
     # 16.11.2026 = Montag
-    fmts = [tagesplan.reel2_format(_d(2026, 11, 16 + i)) for i in range(7)]
+    fmts = [tagesplan.REEL2_FORMATE[_d(2026, 11, 16 + i).weekday()] for i in range(7)]
+    monkeypatch_reel2 = tagesplan.REEL2_FORMATE.get
     assert fmts == ["dreier", "glueck", "ritual", "element", "stopp", "karte", "dreier"]
+    tagesplan.reel2_format = lambda tag: monkeypatch_reel2(tag.weekday())      # echte Zuordnung (Fixture stellt es zurueck)
     assert tagesplan.reel2_text(_d(2026, 11, 16)) == ""                       # Montag: normaler Drei-Zeichen-Check
     assert "Ritual" in tagesplan.reel2_text(_d(2026, 11, 18))
     assert tagesplan.reel2_text(_d(2026, 11, 22)) == ""                       # Sonntag: App-Reel
