@@ -168,6 +168,13 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
    sehr kurze Absätze, die mehr erzählen als das Video – ein konkretes Bild, die Einsicht des Tages und der stille,
    weise Gedanke; nennt das Video Sternzeichen, nenn sie auch im Text beim Namen. Zum Schluss als eigener Absatz die
    eine leichte Frage zum Kommentieren (anders als beim Feed-Post). "bild_punkte": [].
+   VERSTÄNDLICH OHNE VORWISSEN (gilt für BEIDE Reels, Wunsch Attila 21.11.): Wer nichts über Astrologie weiß, versteht
+   jede Einblendung sofort. Die erste Einblendung sagt in einfachen Worten, worum es heute geht (was der Himmel für
+   das Leben bedeutet, nicht wie er heißt). Danach ist jede Einblendung ein KONKRETER TIPP für heute, den man gleich
+   umsetzen kann („Schreib heute die Nachricht, die du aufschiebst“, „Sag heute einmal Nein ohne Begründung“) – kein
+   vages Gefühl. Planeten und Mond nur mit ihrer Bedeutung im Alltag („Venus – die Liebe – …“, „der Mond, deine
+   Gefühle, …“); keine Fachwörter wie Quadrat, Trigon, Sextil, Opposition, Konjunktion, Aspekt, Transit (auf
+   Ungarisch z. B. négyszög, trigon, oppozíció, együttállás, fényszög, tranzit) – sag stattdessen, was es bewirkt.
 3. art "story", platform "instagram": ein kurzer Satz zur Tagesenergie plus eine Frage, auf die
    man per Nachricht antworten kann (z. B. „Antworte mit 🌙 oder ☀️“), höchstens 20 Wörter.
    "bild_punkte": genau 2 Antwortmöglichkeiten für die Frage, je höchstens 3 Wörter, beginnend mit
@@ -648,6 +655,15 @@ _WOERTLICH = {"hu": re.compile(r"\bszó szerint\b", re.IGNORECASE), "de": re.com
               "en": re.compile(r"\bliterally\b", re.IGNORECASE), "it": re.compile(r"\bletteralmente\b", re.IGNORECASE)}
 
 
+# Fachwoerter, die ohne Vorwissen niemand versteht -- im Reel (Hook + Einblendungen) nicht erlaubt
+_FACHWORT = {
+    "de": re.compile(r"\b(quadrat\w*|trigon\w*|sextil\w*|opposition|konjunktion|aspekt\w*|transit\w*)\b", re.IGNORECASE),
+    "en": re.compile(r"\b(square[sd]?|trines?|sextiles?|opposition|conjunctions?|aspects?|transits?)\b", re.IGNORECASE),
+    "hu": re.compile(r"\b(kvadrát\w*|négyszög\w*|trigon\w*|szextil\w*|oppozíció\w*|együttáll\w*|fényszög\w*|tranzit\w*)", re.IGNORECASE),
+    "it": re.compile(r"\b(quadratur\w*|trigon\w*|sestil\w*|opposizion\w*|congiunzion\w*|aspett\w*|transit\w*)\b", re.IGNORECASE),
+}
+
+
 def stil_befunde(post: dict, sprache: str) -> list[str]:
     """Fest gepruefte Stilfehler, die Claude trotz Regel immer wieder macht -> ein Korrekturdurchgang."""
     sk = post.get("skript") or {}
@@ -662,6 +678,12 @@ def stil_befunde(post: dict, sprache: str) -> list[str]:
     w = _WOERTLICH.get(sprache)
     if w and w.search(alles):
         out.append(f"{STIL}: „{w.search(alles).group(0)}“ (englisch „literally“) – weglassen")
+    fach = _FACHWORT.get(sprache)
+    reel = " ".join([sk.get("hook") or ""] + list(sk.get("einblendungen") or [])) if post.get("art") == "reel" else ""
+    m = fach.search(reel) if fach and reel else None
+    if m:
+        out.append(f"{STIL}: Fachwort „{m.group(0)}“ im Reel – ohne Vorwissen unverständlich, sag stattdessen, was es "
+                   "im Alltag bewirkt, und gib einen konkreten Tipp")
     amt = _AMTSTON.get(sprache)
     bild = " ".join([post.get("titel") or "", post.get("untertitel") or ""]
                     + [str(f.get("titel") or "") + " " + str(f.get("text") or "") for f in (post.get("_folien") or [])])
