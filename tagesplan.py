@@ -153,7 +153,12 @@ Liefere genau vier Einträge, in dieser Reihenfolge:
 2. art "reel", platform "tiktok": Kurzvideo (12-18 Sekunden, Text-Video ohne Sprecher).
    "skript": "hook" (erste Einblendung, höchstens 8 Wörter, stoppt das Scrollen; nennt IMMER mindestens ein
    Sternzeichen beim Namen, am besten am Anfang, z. B. „Skorpion, morgen beginnt in dir etwas Neues“ – Reels ohne
-   Sternzeichen bekommen nur einen Bruchteil der Aufrufe),
+   Sternzeichen bekommen nur einen Bruchteil der Aufrufe), UND er öffnet IMMER eine Neugier-Lücke: er verspricht
+   etwas, das erst im Video aufgeht – mit einer Zahl („Oroszlán, ma 3 jel kedvez neked“, „Skorpió, 3 dolog, amit …“),
+   einer Frage („…, tudod, miért?“) oder einem Geheimnis/Zeichen („Kos, a Hold ma egy titkot súg neked“). Nie eine
+   fertige Alltags-Aussage, die schon alles verrät oder auf viele nicht zutrifft (Facebook-Zahlen 21.11.: „Oroszlán, ma
+   3 jel kedvez neked“ 55.000 Aufrufe, „Kos, ma korábban ébredsz, mint tervezted“ 450). Die Einblendungen lösen das
+   Versprechen dann wirklich ein (bei „3 jel“ genau die drei Zeichen bzw. Dinge),
    "einblendungen" (3 Texte, je höchstens 8 Wörter, erzählen die Botschaft in Schritten mit
    Spannung bis zum Schluss, der letzte ist die Pointe; bei Sternzeichen beginnt jede Einblendung
    mit dem Namen des Zeichens und einem Doppelpunkt), "szenen" (3 kurze Bild-Ideen, falls jemand selbst filmt),

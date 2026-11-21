@@ -112,7 +112,8 @@ def thema_text(thema: dict, link_in_bio: str) -> str:
             f"Handlungsaufforderung heute (sinngemäß, in der Sprache des Posts, mit „{link_in_bio}“): "
             f"{thema['aufforderung']['auftrag']}")
     if thema.get("hook_stil"):
-        text += f"\nHook-Stil heute (für Feed-Post und Reel): {thema['hook_stil']['auftrag']}"
+        text += (f"\nHook-Stil heute (für den Feed-Post; das erste Reel folgt immer der Neugier-Regel): "
+                 f"{thema['hook_stil']['auftrag']}")
     if thema.get("hinweise"):
         text += "\nAußerdem steht an (darf als kurzer Ausblick erwähnt werden): " + "; ".join(thema["hinweise"])
     return text
