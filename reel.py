@@ -421,7 +421,7 @@ def _spalte(sprache: str) -> int:
 
 def _dreier_zusatz(fmt: str | None, drei: list[int], sprache: str) -> Image.Image | None:
     """Kleine feste Zugabe zur Dreier-Reihe: Platz 3/2/1 (Glückspilze) oder der Name des Elements."""
-    if fmt not in ("glueck", "element"):
+    if fmt != "element":
         return None
     m = 2
     ebene = Image.new("RGBA", (W * m, 260 * m), (0, 0, 0, 0))
@@ -437,6 +437,27 @@ def _dreier_zusatz(fmt: str | None, drei: list[int], sprache: str) -> Image.Imag
             d.ellipse([x - r, y - r, x + r, y + r], fill=(30, 22, 52, 230), outline=(233, 207, 156, 255), width=3 * m)
             d.text((x, y + 2 * m), platz, font=medien.schrift("cinzel", 40 * m), fill=(246, 227, 180, 255), anchor="mm")
     return ebene.resize((W, 260), Image.LANCZOS)
+
+
+PLATZ_TEXT = {"de": "PLATZ {n}", "en": "NO. {n}", "hu": "{n}. HELY", "it": "{n}° POSTO"}
+
+
+def _platz_ebenen(sprache: str) -> dict:
+    """Glückspilze: Platz-Schild, das erst ueber dem gerade leuchtenden Zeichen erscheint (Platz 3 -> 2 -> 1)."""
+    out = {}
+    m = 2
+    for k, n in enumerate((3, 2, 1)):
+        text = PLATZ_TEXT.get(sprache, PLATZ_TEXT["en"]).format(n=n)
+        ebene = Image.new("RGBA", (320 * m, 90 * m), (0, 0, 0, 0))
+        d = ImageDraw.Draw(ebene)
+        erster = n == 1
+        d.rounded_rectangle([10 * m, 12 * m, 310 * m, 78 * m], radius=33 * m,
+                            fill=(233, 207, 156, 255) if erster else (30, 22, 52, 235),
+                            outline=(246, 227, 180, 255), width=3 * m)
+        medien.gesperrt(d, text, 160 * m, 58 * m, medien.schrift("cinzel", 34 * m), 5 * m,
+                        (60, 40, 20, 255) if erster else (246, 227, 180, 255))
+        out[k] = ebene.resize((320, 90), Image.LANCZOS)
+    return out
 
 
 def _zwoelf_ebenen(gr: int = 180, r: float = 66, glyph: float = 74) -> dict:
@@ -809,6 +830,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     sprache = (post.get("sprache") or "de")[:2]
     reihe = _dreier_ebenen(drei, sprache) if drei else None
     zusatz = _dreier_zusatz(fmt, drei, sprache) if drei else None
+    plaetze = _platz_ebenen(sprache) if drei and fmt == "glueck" else None
     zwoelf_ebenen = _zwoelf_ebenen(*((130, 46, 52) if rad else ())) if zwoelf else None
     rad_gross = _zwoelf_ebenen(260, 100, 128) if rad else None
     rad_namen = None
@@ -910,6 +932,19 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 _dreier_malen(bild, reihe, drei, aktiv, t, sichtbar_ende)
                 if zusatz is not None:
                     medien.aufkleben(bild, _mit_alpha(zusatz, sichtbar_ende), (0, 380))
+                zeile = next(((nr, a_) for nr, (a_, b_) in enumerate(plan)
+                              if nr and a_ - 0.2 <= t <= b_ + 0.1 and zeichen_je_zeile[nr] in drei), None)
+                if plaetze is not None and zeile is not None:          # Platz-Schild ueber dem aktiven Zeichen
+                    k = drei.index(zeichen_je_zeile[zeile[0]])
+                    auf = _weich((t - zeile[1]) / 0.4)
+                    schild = plaetze[k]
+                    sx, sy = W / 2 + (k - 1) * 330, 700 - 178 - 14 * (1 - auf)
+                    medien.aufkleben(bild, _mit_alpha(schild, auf * sichtbar_ende), (sx - schild.width / 2, sy - schild.height / 2))
+                    if k == 2:                                         # Platz 1: goldene Funken
+                        dd2 = ImageDraw.Draw(bild, "RGBA")
+                        for j in range(4):
+                            _funke(dd2, sx - 150 + j * 100, sy - 40 - 12 * math.sin(t * 3 + j), 8, (246, 227, 180),
+                                   auf * (0.5 + 0.5 * math.sin(t * 5 + j)) * sichtbar_ende)
             if rad_gross is not None and sichtbar_ende > 0:
                 _rad_malen(bild, zwoelf_ebenen, rad_gross, plan, zeichen_je_zeile, t, sichtbar_ende, rad_namen)
             elif zwoelf_ebenen is not None and sichtbar_ende > 0:
