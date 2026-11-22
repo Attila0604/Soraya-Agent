@@ -35,10 +35,10 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
 - Sonntags ist das 2. Reel das **App-Reel** (`tagesplan.app_funktion`/`app_reel_text`, `meta.app_reel`): weiter Drei-Zeichen-Check,
   führt aber zu einer App-Funktion (wöchentlich wechselnd). Reel-Schlussbild ab `reel-22` mit Zeile „Google Play: Soraya Astro“.
   „Heute“ zeigt die Zeile „Gestern: Aufrufe · neue Follower · neue Konten“ (`/wirkung/gestern`, `cockpit.gestern`).
-- 2. Reel wechselt das Format je Wochentag (`tagesplan.REEL2_FORMATE`, `meta.reel_format`, ab `reel-25`): Mo Drei-Zeichen ·
+- 2. Reel wechselt das Format je Wochentag (`tagesplan.REEL2_FORMATE`, `meta.reel_format`, ab `reel-25`): Mo Deine Woche in einem Wort (Sternzeichen-Rad, ab `reel-26`) ·
   Di 3 Glückspilze (Platz 3/2/1) · Mi Ritual für 3 Zeichen (Kerzenschein) · Do Elemente-Check (3 Zeichen eines Elements) ·
   Fr Stopp bei deinem Zeichen (12 Zeichen im Raster) · Sa Wähl eine Karte (1/2/3, Karten drehen sich um) · So App-Reel.
-  Jedes Format endet mit einer spielerischen Antwort-Frage (🍀, 🕯️, 🔥🌍💨💧, ✅/❌, 1/2/3).
+  Medaillons ab `reel-26` mit Goldring, Lichtpunkten, drehendem Ring + Funken am aktiven Zeichen (`reel._medaillon`). Jedes Format endet mit einer spielerischen Antwort-Frage (🍀, 🕯️, 🔥🌍💨💧, ✅/❌, 1/2/3).
 - Reels auf DE/EN nur freitags (`tagesplan.reels_heute`, Railway `REELS_WOECHENTLICH`, Standard `de,en`, leer = täglich);
   an den anderen Tagen nur Feed-Post + Story (spart Kosten). Ungarisch (Facebook) immer mit 2 Reels.
 - Kommentare (`kommentare.py`, Tabelle `soraya_kommentare`, `/kommentare`, „Heute“ → „Kommentare auf Facebook“): liest die

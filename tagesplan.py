@@ -700,11 +700,19 @@ def stil_befunde(post: dict, sprache: str) -> list[str]:
 
 # Das zweite Reel wechselt je Wochentag das Format (Wunsch Attila 18.11.: "wird langweilig", "spielerisch, zum
 # Antworten bringen"). Alle Formate laden zu einer leichten, spielerischen Antwort ein.
-REEL2_FORMATE = {0: "dreier", 1: "glueck", 2: "ritual", 3: "element", 4: "stopp", 5: "karte", 6: "dreier"}
+REEL2_FORMATE = {0: "woche", 1: "glueck", 2: "ritual", 3: "element", 4: "stopp", 5: "karte", 6: "dreier"}
 DREI_IM_HOOK = {"dreier", "glueck", "ritual", "element"}        # Hook "Name, Name, Name: Aussage"
-REEL2_NAMEN = {"dreier": "Drei-Zeichen-Check", "glueck": "3 Glückspilze", "ritual": "Ritual für 3 Zeichen",
+REEL2_NAMEN = {"woche": "Deine Woche in einem Wort", "dreier": "Drei-Zeichen-Check", "glueck": "3 Glückspilze", "ritual": "Ritual für 3 Zeichen",
                "element": "Elemente-Check", "stopp": "Stopp bei deinem Zeichen", "karte": "Wähl eine Karte"}
 REEL2_TEXTE = {
+    "woche": ("„Deine Woche in einem Wort“ (Montag, Wochenstart): der Hook ist GENAU „Deine Woche in einem Wort“ in der "
+              "Zielsprache (en „Your week in one word“, hu „A heted egy szóban“, it „La tua settimana in una parola“), ohne "
+              "weitere Wörter. Dann GENAU 12 Einblendungen in der Reihenfolge Widder, Stier, Zwillinge, Krebs, Löwe, Jungfrau, "
+              "Waage, Skorpion, Schütze, Steinbock, Wassermann, Fische – jede „Name: Wort“ mit EINEM Wort (höchstens zwei) nach "
+              "dem Doppelpunkt, positiv und konkret für diese Woche (z. B. „Kos: Bátorság“, „Bika: Nyugalom“), alle verschieden, "
+              "passend zum Himmel der Woche. Das Video dreht ein Sternzeichen-Rad, jedes Zeichen gut eine Sekunde. \"titel\": der "
+              "Hook. Bildunterschrift: Hook, dann die 12 Zeilen als kurze Liste, je Zeile „Name: Wort – ein kurzer Satz, warum“ "
+              "(in Alltagsworten), dann die Kommentar-Frage, spielerisch: „Passt dein Wort? Schreib dein Zeichen und ✨ oder 🤔“."),
     "glueck": ("„Die 3 Glückspilze von heute“ – ein kleines Spiel mit Rangliste: die drei Sternzeichen, die heute am "
                "meisten Rückenwind haben (aus den Himmelsdaten begründet). Hook GENAU: die drei Namen mit Komma, Doppelpunkt, "
                "dann die Aussage (höchstens 8 Wörter, z. B. „Waage, Stier, Fische: ihr habt heute Glück“). Reihenfolge im Hook "
@@ -769,10 +777,12 @@ def zeichen_befunde(post: dict, fmt: str = "dreier") -> list[str]:
     ein = [e for e in sk.get("einblendungen") or [] if (e or "").strip()]
     n = len(zeichen_im_text(hook))
     if post.get("_reel_nr") == 2:
-        if fmt == "stopp":
+        if fmt in ("stopp", "woche"):
             if len(ein) != 12 or sum(1 for e in ein if zeichen_im_text(e.split(":")[0])) < 12:
-                return [f"{ZEICHEN_FEHLT}: „Stopp bei deinem Zeichen“ braucht genau 12 Einblendungen „Name: Botschaft“, "
+                return [f"{ZEICHEN_FEHLT}: „{REEL2_NAMEN[fmt]}“ braucht genau 12 Einblendungen „Name: …“, "
                         "Widder bis Fische"]
+            if fmt == "woche" and any(len((e.split(":", 1) + [""])[1].split()) > 2 for e in ein):
+                return [f"{ZEICHEN_FEHLT}: „{REEL2_NAMEN[fmt]}“ – nach dem Doppelpunkt nur EIN Wort (höchstens zwei)"]
             return []
         if fmt == "karte":
             if len(ein) != 3 or any(":" not in e for e in ein):
