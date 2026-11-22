@@ -3118,9 +3118,9 @@ def test_zweites_reel_format_je_wochentag():
     # 16.11.2026 = Montag
     fmts = [tagesplan.REEL2_FORMATE[_d(2026, 11, 16 + i).weekday()] for i in range(7)]
     monkeypatch_reel2 = tagesplan.REEL2_FORMATE.get
-    assert fmts == ["dreier", "glueck", "ritual", "element", "stopp", "karte", "dreier"]
+    assert fmts == ["woche", "glueck", "ritual", "element", "stopp", "karte", "dreier"]
     tagesplan.reel2_format = lambda tag: monkeypatch_reel2(tag.weekday())      # echte Zuordnung (Fixture stellt es zurueck)
-    assert tagesplan.reel2_text(_d(2026, 11, 16)) == ""                       # Montag: normaler Drei-Zeichen-Check
+    assert "einem Wort" in tagesplan.reel2_text(_d(2026, 11, 16))             # Montag: Deine Woche in einem Wort
     assert "Ritual" in tagesplan.reel2_text(_d(2026, 11, 18))
     assert tagesplan.reel2_text(_d(2026, 11, 22)) == ""                       # Sonntag: App-Reel
     r2 = lambda hook, ein=(): {"art": "reel", "_reel_nr": 2, "skript": {"hook": hook, "einblendungen": list(ein)}}  # noqa: E731
@@ -3132,6 +3132,10 @@ def test_zweites_reel_format_je_wochentag():
                                        "Schütze", "Steinbock", "Wassermann", "Fische")]
     assert not tagesplan.zeichen_befunde(r2("Stopp bei deinem Zeichen", zwoelf), "stopp")
     assert tagesplan.zeichen_befunde(r2("Stopp bei deinem Zeichen", zwoelf[:5]), "stopp")
+    woerter = [z.split(":")[0] + ": Mut" for z in zwoelf]
+    assert not tagesplan.zeichen_befunde(r2("Deine Woche in einem Wort", woerter), "woche")
+    lang = [z.split(":")[0] + ": ein ganz schöner Tag" for z in zwoelf]
+    assert tagesplan.zeichen_befunde(r2("Deine Woche in einem Wort", lang), "woche")        # mehr als zwei Woerter
     # Wähl eine Karte: keine Zeichen nötig, aber 3 Karten
     karten = ["Karte 1: a", "Karte 2: b", "Karte 3: c"]
     assert not tagesplan.zeichen_befunde(r2("Wähl eine Karte: 1, 2 oder 3", karten), "karte")

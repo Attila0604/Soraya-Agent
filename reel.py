@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-25"
+VERSION = "reel-26"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
@@ -63,7 +63,7 @@ def texte(post: dict) -> tuple[list[str], str]:
                 zeilen.append(t)
     if not zeilen:
         zeilen = [(post.get("text") or "Soraya").strip()[:120]]
-    return zeilen[:13 if reel_format(post) == "stopp" else 5], (sk.get("schluss") or "").strip()
+    return zeilen[:13 if reel_format(post) in ("stopp", "woche") else 5], (sk.get("schluss") or "").strip()
 
 
 def reel_format(post: dict) -> str | None:
@@ -299,29 +299,94 @@ def drei_zeichen(post: dict) -> list[int]:
     return idx if len(idx) == 3 and None not in idx and len(set(idx)) == 3 else []
 
 
-def _dreier_ebenen(drei: list[int], sprache: str) -> dict:
-    """Je Zeichen ein Medaillon (Symbol in der Element-Farbe, Name darunter) -- normal und leuchtend."""
+def _hell(farbe, f=0.45):
+    return tuple(int(c + (255 - c) * f) for c in farbe)
+
+
+def _medaillon(i: int, gr: int, r: float, glyph: float, name: str | None = None) -> tuple:
+    """Sternzeichen-Medaillon (reel-26, "optisches Update"): Verlauf in der Element-Farbe, goldener Aussenring mit
+    zwoelf Lichtpunkten wie ein Astrolabium, feiner Innenring, leuchtendes Symbol. Rueckgabe (normal, leuchtend)."""
     from PIL import ImageFilter
+    farbe = ELEMENT_FARBE[i % 4]
+    gold = (233, 207, 156)
+    m = 2
+    gr = max(gr, int(r * 4.4))                                   # Platz fuer den weichen Schein (sonst eckige Kante)
+    hoehe = gr + (int(r * 0.9) if name else 0)
+    ebene = Image.new("RGBA", (gr * m, hoehe * m), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ebene)
+    c = gr / 2
+    for k in range(14, 0, -1):                                   # weicher Verlauf von innen nach aussen
+        rr = r * k / 14
+        a = int(10 + 40 * (k / 14) ** 2)
+        d.ellipse([(c - rr) * m, (c - rr) * m, (c + rr) * m, (c + rr) * m], fill=tuple(int(x * 0.45) for x in farbe) + (a,))
+    d.ellipse([(c - r) * m, (c - r) * m, (c + r) * m, (c + r) * m], outline=gold + (235,), width=int(3 * m))
+    ri = r - max(7, r * 0.09)
+    d.ellipse([(c - ri) * m, (c - ri) * m, (c + ri) * m, (c + ri) * m], outline=farbe + (150,), width=int(1.5 * m))
+    for k in range(12):                                          # Lichtpunkte auf dem Ring
+        w = math.radians(k * 30 - 90)
+        x, y = c + r * math.cos(w), c + r * math.sin(w)
+        pr = (3.2 if k % 3 == 0 else 2.0) * (r / 100)
+        d.ellipse([(x - pr) * m, (y - pr) * m, (x + pr) * m, (y + pr) * m], fill=_hell(gold, 0.5) + (255,))
+    # Symbol mit eigenem Schein
+    schein = Image.new("RGBA", ebene.size, (0, 0, 0, 0))
+    ImageDraw.Draw(schein).text((c * m, c * m + glyph * 0.03 * m), medien.ZEICHEN_GLYPHE[i],
+                                font=medien.schrift("zeichen", glyph * m), fill=farbe + (210,), anchor="mm")
+    ebene.alpha_composite(schein.filter(ImageFilter.GaussianBlur(glyph * 0.09 * m)))
+    d = ImageDraw.Draw(ebene)
+    d.text((c * m, c * m + glyph * 0.03 * m), medien.ZEICHEN_GLYPHE[i], font=medien.schrift("zeichen", glyph * m),
+           fill=_hell(farbe, 0.35) + (255,), anchor="mm")
+    if name:
+        medien.gesperrt(d, name.upper(), c * m, (c + r + 58) * m, medien.schrift("cinzel", 36 * m), 5 * m, _hell(farbe, 0.2) + (255,))
+    ebene = ebene.resize((gr, hoehe), Image.LANCZOS)
+    glow = Image.new("RGBA", ebene.size, (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse([c - r - r * 0.3, c - r - r * 0.3, c + r + r * 0.3, c + r + r * 0.3], fill=farbe + (150,))
+    hell = glow.filter(ImageFilter.GaussianBlur(r * 0.33))
+    hell.alpha_composite(ebene)
+    return ebene, hell
+
+
+def _umlauf(gr: int, r: float, farbe) -> Image.Image:
+    """Punkt-Ring um das aktive Zeichen (dreht sich im Video langsam)."""
+    m = 2
+    ebene = Image.new("RGBA", (gr * m, gr * m), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ebene)
+    c = gr / 2
+    for k in range(36):
+        w = math.radians(k * 10)
+        x, y = c + r * math.cos(w), c + r * math.sin(w)
+        pr = 2.6 if k % 6 == 0 else 1.3
+        a = 255 if k % 6 == 0 else 150
+        d.ellipse([(x - pr) * m, (y - pr) * m, (x + pr) * m, (y + pr) * m], fill=_hell(farbe, 0.55) + (a,))
+    return ebene.resize((gr, gr), Image.LANCZOS)
+
+
+def _funke(d: ImageDraw.ImageDraw, x: float, y: float, gr: float, farbe, alpha: float) -> None:
+    """Kleiner vierzackiger Stern."""
+    if alpha <= 0.02:
+        return
+    f = farbe + (int(255 * alpha),)
+    d.polygon([(x, y - gr), (x + gr * 0.25, y - gr * 0.25), (x + gr, y), (x + gr * 0.25, y + gr * 0.25), (x, y + gr),
+               (x - gr * 0.25, y + gr * 0.25), (x - gr, y), (x - gr * 0.25, y - gr * 0.25)], fill=f)
+
+
+def _aktiv_schmuck(bild: Image.Image, ring: Image.Image, x: float, y: float, t: float, r: float, farbe, sichtbar: float) -> None:
+    """Drehender Punkt-Ring und drei kreisende Funken um das gerade aktive Zeichen."""
+    gedreht = ring.rotate(-t * 22, resample=Image.BILINEAR)
+    medien.aufkleben(bild, _mit_alpha(gedreht, 0.9 * sichtbar), (x - gedreht.width / 2, y - gedreht.height / 2))
+    d = ImageDraw.Draw(bild, "RGBA")
+    for k in range(3):
+        w = t * 1.3 + k * 2.094
+        fx, fy = x + (r + 26) * math.cos(w), y + (r + 26) * math.sin(w)
+        _funke(d, fx, fy, 9 + 3 * math.sin(t * 4 + k), _hell(farbe, 0.6), (0.6 + 0.4 * math.sin(t * 5 + k * 1.7)) * sichtbar)
+
+
+def _dreier_ebenen(drei: list[int], sprache: str) -> dict:
+    """Je Zeichen ein Medaillon (Symbol in der Element-Farbe, Name darunter) -- normal, leuchtend, Ring."""
     spalte = {"de": 0, "en": 1, "hu": 2, "it": 3}.get(sprache, 1)
     out = {}
-    m = 2
     for i in drei:
-        farbe = ELEMENT_FARBE[i % 4]
-        gr = 300
-        ebene = Image.new("RGBA", (gr * m, int(gr * 1.25) * m), (0, 0, 0, 0))
-        d = ImageDraw.Draw(ebene)
-        c, r = gr / 2, 104
-        d.ellipse([(c - r) * m, (c - r) * m, (c + r) * m, (c + r) * m], fill=farbe + (26,), outline=farbe + (210,), width=3 * m)
-        d.text((c * m, c * m + 4 * m), medien.ZEICHEN_GLYPHE[i], font=medien.schrift("zeichen", 118 * m), fill=farbe + (255,), anchor="mm")
-        name = medien.ZEICHEN_NAMEN[i][spalte]
-        medien.gesperrt(d, name.upper(), c * m, (c + r + 58) * m, medien.schrift("cinzel", 36 * m), 5 * m, farbe + (255,))
-        ebene = ebene.resize((gr, int(gr * 1.25)), Image.LANCZOS)
-        glow = Image.new("RGBA", ebene.size, (0, 0, 0, 0))
-        ImageDraw.Draw(glow).ellipse([c - r - 30, c - r - 30, c + r + 30, c + r + 30], fill=farbe + (150,))
-        glow = glow.filter(ImageFilter.GaussianBlur(34))
-        hell = glow.copy()
-        hell.alpha_composite(ebene)
-        out[i] = (ebene, hell)
+        normal, hell = _medaillon(i, 300, 104, 112, medien.ZEICHEN_NAMEN[i][spalte])
+        out[i] = (normal, hell, _umlauf(320, 132, ELEMENT_FARBE[i % 4]))
     return out
 
 
@@ -330,7 +395,7 @@ def _dreier_malen(bild: Image.Image, reihe: dict, drei: list[int], aktiv, t: flo
     y = 700
     for k, i in enumerate(drei):
         x = W / 2 + (k - 1) * 330
-        normal, hell = reihe[i]
+        normal, hell, ring = reihe[i]
         if aktiv is None:
             puls = 0.9 + 0.1 * math.sin(t * 1.6 + k * 1.2)
             ebene, skala, alpha = normal, 1.0, puls
@@ -340,6 +405,8 @@ def _dreier_malen(bild: Image.Image, reihe: dict, drei: list[int], aktiv, t: flo
             ebene, skala, alpha = normal, 0.9, 0.38
         if abs(skala - 1) > 0.01:
             ebene = ebene.resize((int(ebene.width * skala), int(ebene.height * skala)), Image.BILINEAR)
+        if aktiv == i:
+            _aktiv_schmuck(bild, ring, x, y, t, 104 * skala, ELEMENT_FARBE[i % 4], sichtbar)
         medien.aufkleben(bild, _mit_alpha(ebene, alpha * sichtbar), (x - ebene.width / 2, y - ebene.width / 2))
 
 
@@ -372,25 +439,9 @@ def _dreier_zusatz(fmt: str | None, drei: list[int], sprache: str) -> Image.Imag
     return ebene.resize((W, 260), Image.LANCZOS)
 
 
-def _zwoelf_ebenen() -> dict:
-    """Alle zwoelf Zeichen als kleine Medaillons (normal / leuchtend) fuer „Stopp bei deinem Zeichen“."""
-    from PIL import ImageFilter
-    out = {}
-    m, gr = 2, 180
-    for i in range(12):
-        farbe = ELEMENT_FARBE[i % 4]
-        ebene = Image.new("RGBA", (gr * m, gr * m), (0, 0, 0, 0))
-        d = ImageDraw.Draw(ebene)
-        c, r = gr / 2, 70
-        d.ellipse([(c - r) * m, (c - r) * m, (c + r) * m, (c + r) * m], fill=farbe + (22,), outline=farbe + (200,), width=3 * m)
-        d.text((c * m, c * m + 3 * m), medien.ZEICHEN_GLYPHE[i], font=medien.schrift("zeichen", 80 * m), fill=farbe + (255,), anchor="mm")
-        ebene = ebene.resize((gr, gr), Image.LANCZOS)
-        glow = Image.new("RGBA", ebene.size, (0, 0, 0, 0))
-        ImageDraw.Draw(glow).ellipse([c - r - 14, c - r - 14, c + r + 14, c + r + 14], fill=farbe + (170,))
-        hell = glow.filter(ImageFilter.GaussianBlur(18))
-        hell.alpha_composite(ebene)
-        out[i] = (ebene, hell)
-    return out
+def _zwoelf_ebenen(gr: int = 180, r: float = 66, glyph: float = 74) -> dict:
+    """Alle zwoelf Zeichen als kleine Medaillons (normal, leuchtend, Ring) fuer Stopp und Wochen-Rad."""
+    return {i: _medaillon(i, gr, r, glyph) + (_umlauf(int(r * 2 + 70), r + 22, ELEMENT_FARBE[i % 4]),) for i in range(12)}
 
 
 def _zwoelf_malen(bild: Image.Image, ebenen: dict, aktiv, t: float, sichtbar: float) -> None:
@@ -400,7 +451,7 @@ def _zwoelf_malen(bild: Image.Image, ebenen: dict, aktiv, t: float, sichtbar: fl
     for i in range(12):
         x = W / 2 + (i % 4 - 1.5) * 225
         y = 530 + (i // 4) * 185
-        normal, hell = ebenen[i]
+        normal, hell, ring = ebenen[i]
         if aktiv is None:
             ebene, skala, alpha = (hell, 1.08, 1.0) if i == lauf else (normal, 1.0, 0.75)
         elif aktiv == i:
@@ -409,7 +460,67 @@ def _zwoelf_malen(bild: Image.Image, ebenen: dict, aktiv, t: float, sichtbar: fl
             ebene, skala, alpha = normal, 0.88, 0.3
         if abs(skala - 1) > 0.01:
             ebene = ebene.resize((int(ebene.width * skala), int(ebene.height * skala)), Image.BILINEAR)
+        if aktiv == i:
+            _aktiv_schmuck(bild, ring, x, y, t, 66 * skala, ELEMENT_FARBE[i % 4], sichtbar)
         medien.aufkleben(bild, _mit_alpha(ebene, alpha * sichtbar), (x - ebene.width / 2, y - ebene.height / 2))
+
+
+RAD_MITTE, RAD_R = (W / 2, 720), 260
+
+
+def _rad_winkel(plan: list, zeichen_je_zeile: list, t: float) -> float:
+    """Drehung des Rads (Grad): im Hook langsames Kreisen, dann dreht sich das Zeichen der laufenden Zeile nach oben."""
+    ziele = [(a, -zeichen_je_zeile[nr] * 30.0) for nr, (a, _b) in enumerate(plan) if nr and zeichen_je_zeile[nr] is not None]
+    if not ziele or t < ziele[0][0]:
+        return t * 18.0
+    vorher = ziele[0][0] * 18.0
+    for k, (a, ziel) in enumerate(ziele):
+        if t < a:
+            break
+        start = vorher if k == 0 else ziele[k - 1][1]
+        diff = (ziel - start + 180) % 360 - 180                    # kuerzester Weg
+        wert = start + diff * _weich((t - a) / 0.45)
+        vorher = wert
+    return vorher
+
+
+def _rad_malen(bild: Image.Image, ebenen: dict, gross: dict, plan: list, zeichen_je_zeile: list, t: float, sichtbar: float,
+               namen: dict | None = None) -> None:
+    """„Deine Woche in einem Wort“: zwoelf Zeichen im Kreis; das Rad dreht das aktuelle Zeichen nach oben unter den
+    goldenen Stern, in der Mitte leuchtet es gross."""
+    cx, cy = RAD_MITTE
+    winkel = _rad_winkel(plan, zeichen_je_zeile, t)
+    aktiv = next((zeichen_je_zeile[nr] for nr, (a_, b_) in enumerate(plan) if nr and a_ - 0.05 <= t <= b_ + 0.05), None)
+    d = ImageDraw.Draw(bild, "RGBA")
+    gold = (233, 207, 156)
+    d.ellipse([cx - RAD_R, cy - RAD_R, cx + RAD_R, cy + RAD_R], outline=gold + (int(70 * sichtbar),), width=2)
+    d.ellipse([cx - RAD_R + 95, cy - RAD_R + 95, cx + RAD_R - 95, cy + RAD_R - 95], outline=gold + (int(40 * sichtbar),), width=1)
+    for i in range(12):
+        w = math.radians(winkel + i * 30 - 90)
+        x, y = cx + RAD_R * math.cos(w), cy + RAD_R * math.sin(w)
+        normal, hell, ring = ebenen[i]
+        oben = abs(((winkel + i * 30) + 180) % 360 - 180) < 8
+        if aktiv is not None and i == aktiv and oben:
+            ebene, alpha = hell, 1.0
+        else:
+            ebene, alpha = normal, 0.55 if aktiv is not None else 0.85
+        medien.aufkleben(bild, _mit_alpha(ebene, alpha * sichtbar), (x - ebene.width / 2, y - ebene.height / 2))
+    # goldener Zeiger oben
+    y0 = cy - RAD_R + 62                                           # goldener Zeiger innen, zeigt auf das obere Zeichen
+    d.polygon([(cx - 11, y0 + 14), (cx + 11, y0 + 14), (cx, y0 - 4)], fill=gold + (int(230 * sichtbar),))
+    _funke(d, cx, y0 + 30, 7 + 2 * math.sin(t * 3), gold, 0.8 * sichtbar)
+    if aktiv is not None:                                          # Mitte: das aktuelle Zeichen gross
+        start = next(a_ for nr, (a_, b_) in enumerate(plan) if nr and a_ - 0.05 <= t <= b_ + 0.05)
+        auf = _weich((t - start) / 0.35)
+        normal, hell, ring = gross[aktiv]
+        _aktiv_schmuck(bild, ring, cx, cy, t, 100, ELEMENT_FARBE[aktiv % 4], sichtbar * auf)
+        medien.aufkleben(bild, _mit_alpha(hell, sichtbar * auf), (cx - hell.width / 2, cy - hell.height / 2))
+        if namen and aktiv in namen:
+            n = namen[aktiv]
+            medien.aufkleben(bild, _mit_alpha(n, sichtbar * auf), (cx - n.width / 2, cy + 118))
+    else:                                                          # Hook: Portal-Licht in der Mitte
+        glimm = 0.5 + 0.5 * math.sin(t * 2.2)
+        _funke(d, cx, cy, 34 + 6 * glimm, gold, (0.55 + 0.35 * glimm) * sichtbar)
 
 
 def _karten_ebenen(sprache: str) -> dict:
@@ -624,13 +735,19 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     zeilen, _ = texte(post)
     fmt = reel_format(post)
     drei = drei_zeichen(post) if not tiktok else []
-    zwoelf = fmt == "stopp" and len(zeilen) >= 13
+    zwoelf = fmt in ("stopp", "woche") and len(zeilen) >= 13
+    rad = zwoelf and fmt == "woche"
     karten_spiel = fmt == "karte" and len(zeilen) >= 4
     zeichen_je_zeile = [medien.zeichen_aus_text(z_) for z_ in zeilen]
     if drei:            # die Namen stehen gross in der Dreier-Reihe -> die Saetze kommen ohne sie aus
         for nr, z_ in enumerate(zeilen):
             rest = re.split(r"\s*[:–—]\s*", z_, maxsplit=1)
             if len(rest) > 1 and rest[1].strip() and (nr == 0 or zeichen_je_zeile[nr] in drei):
+                zeilen[nr] = rest[1].strip()[:1].upper() + rest[1].strip()[1:]
+    if rad:             # Wochen-Rad: der Name steht in der Radmitte -> im Text nur das Wort (gross)
+        for nr in range(1, len(zeilen)):
+            rest = re.split(r"\s*[:–—]\s*", zeilen[nr], maxsplit=1)
+            if len(rest) > 1 and rest[1].strip() and zeichen_je_zeile[nr] is not None:
                 zeilen[nr] = rest[1].strip()[:1].upper() + rest[1].strip()[1:]
     if tiktok and not (zwoelf or karten_spiel):        # Spiele brauchen alle Zeilen
         zeilen = zeilen[:TIKTOK_ZEILEN]
@@ -681,7 +798,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     schein = medien.mond_schein(r, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
     mond_y = 720
     # groessere Schrift (gut lesbar auch fuer aeltere Augen und in der kleinen Vorschau)
-    karten = [_textkarte(z_, breite=W - 140, groesse=106 if i == 0 else 90, name="cormorant", farbe="#F6E3B4",
+    karten = [_textkarte(z_, breite=W - 140, groesse=106 if i == 0 else (150 if rad else 90), name="cormorant", farbe="#F6E3B4",
                          max_zeilen=3, akzent=akzent) for i, z_ in enumerate(zeilen)]
     text_mitte = 1200          # etwas hoeher: Facebook zeigt Reels im Feed beschnitten (unten fehlt sonst Text)
     endkarte, end_pos = _zuschneiden(_endkarte(post, tiktok))
@@ -692,7 +809,16 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     sprache = (post.get("sprache") or "de")[:2]
     reihe = _dreier_ebenen(drei, sprache) if drei else None
     zusatz = _dreier_zusatz(fmt, drei, sprache) if drei else None
-    zwoelf_ebenen = _zwoelf_ebenen() if zwoelf else None
+    zwoelf_ebenen = _zwoelf_ebenen(*((130, 46, 52) if rad else ())) if zwoelf else None
+    rad_gross = _zwoelf_ebenen(260, 100, 128) if rad else None
+    rad_namen = None
+    if rad:                                                        # Namen klein in der Radmitte (Text zeigt nur das Wort)
+        rad_namen = {}
+        for i in range(12):
+            nb = Image.new("RGBA", (800, 90), (0, 0, 0, 0))
+            medien.gesperrt(ImageDraw.Draw(nb), medien.ZEICHEN_NAMEN[i][_spalte(sprache)].upper(), 400, 60,
+                            medien.schrift("cinzel", 56), 9, _hell(ELEMENT_FARBE[i % 4], 0.25) + (255,))
+            rad_namen[i] = nb.resize((400, 45), Image.LANCZOS)
     karten_ebenen = _karten_ebenen(sprache) if karten_spiel else None
     # reel-18 (Wunsch Attila 08.11.): kein Sternbild aus Linien und keine kreisende Umlaufbahn mehr -- das wirkte wie
     # ein Planet mit Ring und "stehende Sterne"; das Zeichen steht ohnehin im kleinen Kreis unter dem Mond
@@ -784,7 +910,9 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 _dreier_malen(bild, reihe, drei, aktiv, t, sichtbar_ende)
                 if zusatz is not None:
                     medien.aufkleben(bild, _mit_alpha(zusatz, sichtbar_ende), (0, 380))
-            if zwoelf_ebenen is not None and sichtbar_ende > 0:
+            if rad_gross is not None and sichtbar_ende > 0:
+                _rad_malen(bild, zwoelf_ebenen, rad_gross, plan, zeichen_je_zeile, t, sichtbar_ende, rad_namen)
+            elif zwoelf_ebenen is not None and sichtbar_ende > 0:
                 aktiv = next((zeichen_je_zeile[nr] for nr, (a_, b_) in enumerate(plan)
                               if nr and a_ - 0.1 <= t <= b_ + 0.05), None)
                 _zwoelf_malen(bild, zwoelf_ebenen, aktiv, t, sichtbar_ende)
