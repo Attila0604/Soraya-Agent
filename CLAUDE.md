@@ -42,6 +42,10 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
 - Ausblick ab `reel-27` (`reel.ausblick`, `posten.reel_ausblick`): Endkarte und Facebook/Instagram-Text der Reels nennen das
   nächste Format („Ma este: …“ beim 1. Reel, „Holnap: …“ beim 2.) + „kövess, hogy ne maradj le“ (vor den Hashtags 4–6).
   Neu-/Vollmond mit Zeichen (`himmel.mondereignis_zeichen`, Sonnenlänge) – Prompt warnt, Mond heute ≠ Vollmond-Zeichen.
+- Farbwelten ab `reel-28`/`reel-30` (`reel.welt`, `reel.Szene`, `reel.akzent_fuer`): Welt nach Element des Hook-Zeichens
+  (feuer/erde/luft/wasser), Voll-/Neumond mitternacht, Formate fest (`FORMAT_WELT`); Szene nebel/polarlicht/galaxie/staub;
+  je Reel GENAU EIN Effekt (strahlen, schleier, wellen, funken, kometen) – Wunsch Attila „Abwechslung, nicht zu viel“.
+  Immer: atmender Hintergrund, Impuls+Zoom bei neuem Satz, Schlüsselwort in Gold.
 - Reels auf DE/EN nur freitags (`tagesplan.reels_heute`, Railway `REELS_WOECHENTLICH`, Standard `de,en`, leer = täglich);
   an den anderen Tagen nur Feed-Post + Story (spart Kosten). Ungarisch (Facebook) immer mit 2 Reels.
 - Kommentare (`kommentare.py`, Tabelle `soraya_kommentare`, `/kommentare`, „Heute“ → „Kommentare auf Facebook“): liest die
