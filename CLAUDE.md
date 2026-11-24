@@ -48,7 +48,8 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   Immer: atmender Hintergrund, Impuls+Zoom bei neuem Satz, Schlüsselwort in Gold.
 - Echte Videos ab `reel-31` (`stock.py`, Pixabay oder Pexels, nur Motive ohne Menschen): nur wenn Railway `PIXABAY_API_KEY`
   (Pexels gibt seit 24.11. keine neuen Schlüssel aus) bzw. `PEXELS_API_KEY` gesetzt;
-  `STOCK_ANTEIL` (Standard 0.5) = Anteil der Reels, fest je Post-ID; Video abgedunkelt + in der Farbwelt getönt, langsamer Zoom,
+  `STOCK_ANTEIL` (Standard 0.5) = Anteil der Reels, gleichmäßig verteilt (`stock.soll_echt`: bei 0.5 jeden Tag genau eines
+  der beiden Reels, abwechselnd); Plan-Version `reel.PLAN_V` (ältere Pläne werden neu bestimmt), fehlgeschlagene Suche wird nicht gespeichert; Video abgedunkelt + in der Farbwelt getönt, langsamer Zoom,
   Text tiefer (1400), kein gezeichnetes Motiv, nur ruhige Effekte. Cache `STOCK_DIR` (/tmp/soraya-stock). Fehler → gezeichnete Szene.
 - Hintergrund je Reel FEST (`reel.hintergrund_plan`/`hintergrund_merken`, `meta.hintergrund` = art video|gezeichnet, welt, szene,
   effekt, video{id,quelle,link,thema}): beim Speichern im Tagesplan bzw. spätestens beim ersten Video festgelegt; Content Studio
