@@ -2000,6 +2000,11 @@ function videoDialog(p){
     $('vBox').innerHTML = `<video id="vVideo" controls playsinline src="/medien/${p.id}/video?t=${Date.now()}"></video>`;
     $('vLaden').href = `/medien/${p.id}/video?download=1`;
     $('vStumm').href = `/medien/${p.id}/video?download=1&stumm=1`;
+    api(`/medien/${p.id}/hintergrund`).then(r => {        // echtes Hintergrund-Video (Pixabay) verlinken
+      const h = r && r.hintergrund;
+      if(h && h.quelle && /^https:\/\//.test(h.quelle) && d.open)
+        $('vBox').insertAdjacentHTML('afterend', `<p class="note">Hintergrund: echtes Video – <a href="${esc(h.quelle)}" target="_blank" rel="noopener">auf ${/pexels/.test(h.quelle) ? 'Pexels' : 'Pixabay'} ansehen ↗</a></p>`);
+    }).catch(() => {});
     $('vLaden').classList.remove('hide'); $('vStumm').classList.remove('hide'); $('vTeilen').classList.remove('hide');
     $('vTeilen').onclick = () => teilen(`/medien/${p.id}/video`, dateiName(p, 'mp4'), 'video/mp4', p);
   };

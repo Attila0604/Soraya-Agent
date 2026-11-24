@@ -3358,3 +3358,15 @@ def test_stock_echtes_video(monkeypatch, tmp_path):
     monkeypatch.setattr(stock.requests, "get", lambda url, **kw: Antwort(treffer) if "pixabay.com/api" in url else Antwort(inhalt=b"pb"))
     r = stock.fuer_reel({"id": 3}, "wasser")
     assert r and r["id"] == "pb9" and open(r["pfad"], "rb").read() == b"pb"
+
+
+def test_hintergrund_link(monkeypatch, frische_db):
+    import stock
+    p = db.speichere_posts([{"art": "reel", "titel": "x", "sprache": "hu", "text": "Kos, ma valami új vár rád.",
+                             "skript": {"hook": "Kos, ma valami új vár rád", "einblendungen": [], "szenen": [], "schluss": ""}}],
+                           quelle="tagesplan", geplant_fuer=HEUTE)[0]
+    monkeypatch.setattr(stock, "fuer_reel", lambda post, fw: {"pfad": "/x.mp4", "id": "pb9", "quelle": "https://pixabay.com/videos/x-9/"})
+    r = client.get(f"/medien/{p['id']}/hintergrund", headers=AUTH).json()
+    assert r["hintergrund"]["quelle"].startswith("https://pixabay.com")
+    monkeypatch.setattr(stock, "fuer_reel", lambda post, fw: None)
+    assert client.get(f"/medien/{p['id']}/hintergrund", headers=AUTH).json()["hintergrund"] is None

@@ -756,6 +756,17 @@ def _wellen_malen(bild: Image.Image, t: float, cx: float, cy: float, farbe) -> N
             d.ellipse([cx - r - dr, cy - r - dr, cx + r + dr, cy + r + dr], outline=farbe + (int(a * f),), width=3)
 
 
+def hintergrund_quelle(post: dict) -> dict | None:
+    """Welches echte Video (Pixabay/Pexels) dieses Reel als Hintergrund hat -- fuer den Link im Content Studio."""
+    if post.get("art") != "reel":
+        return None
+    import stock
+    st = medien.stil(post)
+    farbwelt, _ = welt(post, st, drei_zeichen(post))
+    echt = stock.fuer_reel(post, farbwelt)
+    return {"quelle": echt.get("quelle"), "id": echt.get("id")} if echt else None
+
+
 class Szene:
     """Bewegter Hintergrund: driftender Nebel, wehendes Polarlicht, kreisende Galaxie oder aufsteigender Sternenstaub.
     Alles wird einmal vorbereitet; pro Bild nur verschoben/gedreht (schnell)."""
