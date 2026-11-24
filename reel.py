@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-27"
+VERSION = "reel-28"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
@@ -645,6 +645,119 @@ def _karten_malen(bild: Image.Image, karten: dict, plan: list, t: float, sichtba
         medien.aufkleben(bild, _mit_alpha(e, alpha * sichtbar), (x - w_ / 2, y - h_ / 2))
 
 
+# ---------------------------------------------------------------------------
+# Farbwelten und bewegte Szenen (reel-28): jedes Reel bekommt je nach Zeichen/Format eine eigene Welt
+# ---------------------------------------------------------------------------
+WELT_ELEMENT = {0: "feuer", 1: "erde", 2: "luft", 3: "wasser"}
+SZENE_FARBEN = {   # Farben der bewegten Szene je Welt (zwei Toene)
+    "feuer": ((255, 140, 60), (255, 70, 90)), "erde": ((150, 210, 120), (230, 200, 120)),
+    "luft": ((170, 190, 255), (240, 200, 255)), "wasser": ((60, 220, 210), (90, 150, 255)),
+    "mitternacht": ((150, 140, 255), (220, 220, 255)), "gold": ((255, 200, 110), (255, 150, 90)),
+    "rose": ((255, 130, 180), (200, 120, 255)), "amethyst": ((170, 110, 255), (255, 140, 210)),
+    "nacht": ((130, 100, 220), (210, 120, 190)),
+}
+FORMAT_WELT = {"woche": ("amethyst", "galaxie"), "stopp": ("mitternacht", "polarlicht"), "karte": ("rose", "nebel"),
+               "glueck": ("gold", "staub"), "ritual": ("gold", "nebel")}
+SZENEN = ("nebel", "polarlicht", "galaxie", "staub")
+
+
+def welt(post: dict, st: dict, drei: list[int]) -> tuple[str, str]:
+    """(Farbwelt, Szene) des Reels: Format des 2. Reels, Vollmond/Neumond, Element des Zeichens, Liebe -- sonst wie das Bild."""
+    meta = post.get("meta") or {}
+    thema = meta.get("thema") or ""
+    seed = int(post.get("id") or 0)
+    fmt = reel_format(post)
+    if fmt in FORMAT_WELT:
+        return FORMAT_WELT[fmt]
+    if "Vollmond" in thema or "Neumond" in thema:
+        return "mitternacht", "polarlicht" if "Vollmond" in thema else "nebel"
+    if thema == "Liebe & Beziehung":
+        return "rose", "nebel"
+    zeichen = drei[0] if drei else medien.zeichen_aus_text((post.get("skript") or {}).get("hook") or "")
+    if fmt == "element" and drei:
+        zeichen = drei[0]
+    if zeichen is not None:
+        return WELT_ELEMENT[zeichen % 4], SZENEN[(seed + zeichen) % len(SZENEN)]
+    return st["palette"], SZENEN[seed % len(SZENEN)]
+
+
+class Szene:
+    """Bewegter Hintergrund: driftender Nebel, wehendes Polarlicht, kreisende Galaxie oder aufsteigender Sternenstaub.
+    Alles wird einmal vorbereitet; pro Bild nur verschoben/gedreht (schnell)."""
+
+    def __init__(self, art: str, palette: str, seed: int):
+        from PIL import ImageFilter
+        self.art = art
+        f1, f2 = SZENE_FARBEN.get(palette, SZENE_FARBEN["nacht"])
+        rng = np.random.default_rng(seed or 3)
+        if art == "nebel":
+            gw, gh = W // 4 + 80, H // 4 + 80
+            ys, xs = np.mgrid[0:gh, 0:gw].astype(np.float32)
+            wolken = sum((np.asarray(Image.fromarray((rng.random((g, g)) * 255).astype(np.uint8), "L")
+                                     .resize((gw, gh), Image.BICUBIC), np.float32) / 255) * f
+                         for g, f in ((4, 0.5), (9, 0.3), (19, 0.2)))
+            mix = np.clip((wolken - 0.3) * 1.8, 0, 1)
+            farbe = np.array(f1, np.float32) * (1 - mix[..., None]) + np.array(f2, np.float32) * mix[..., None]
+            alpha = np.clip((wolken - 0.42) * 2.2, 0, 1) * 120
+            arr = np.dstack([farbe, alpha]).astype(np.uint8)
+            self.bild = Image.fromarray(arr, "RGBA").resize((gw * 4, gh * 4), Image.BICUBIC).filter(ImageFilter.GaussianBlur(18))
+        elif art == "polarlicht":
+            self.baender = []
+            for k in range(3):
+                b = Image.new("RGBA", (W * 2, 700), (0, 0, 0, 0))
+                d = ImageDraw.Draw(b)
+                farbe = f1 if k % 2 == 0 else f2
+                phase, amp, dicke = rng.uniform(0, 6.28), rng.uniform(60, 120), rng.uniform(70, 130)
+                for x in range(0, W * 2, 6):
+                    y = 350 + amp * math.sin(x / 260 + phase) + 40 * math.sin(x / 90 + phase * 2)
+                    for j in range(6):
+                        d.line([(x, y - dicke * (j / 6)), (x, y - dicke * (j / 6) - 18)],
+                               fill=farbe + (int(70 * (1 - j / 6)),), width=6)
+                self.baender.append((b.filter(ImageFilter.GaussianBlur(22)), 200 + k * 170, rng.uniform(25, 45), rng.uniform(0, 6.28)))
+        elif art == "galaxie":
+            g = 1500
+            b = Image.new("RGBA", (g, g), (0, 0, 0, 0))
+            d = ImageDraw.Draw(b)
+            for arm in range(3):
+                for k in range(900):
+                    r = 20 + k * 0.75
+                    w = arm * 2.094 + r / 140 + rng.normal(0, 0.18)
+                    x, y = g / 2 + r * math.cos(w), g / 2 + r * math.sin(w) * 0.55
+                    farbe = f1 if rng.random() < 0.6 else f2
+                    pr = rng.uniform(1.0, 3.2)
+                    d.ellipse([x - pr, y - pr, x + pr, y + pr], fill=farbe + (int(rng.uniform(60, 200)),))
+            kern = Image.new("RGBA", (g, g), (0, 0, 0, 0))
+            ImageDraw.Draw(kern).ellipse([g / 2 - 120, g / 2 - 70, g / 2 + 120, g / 2 + 70], fill=f2 + (130,))
+            b.alpha_composite(kern.filter(ImageFilter.GaussianBlur(60)))
+            self.bild = b.filter(ImageFilter.GaussianBlur(1.2))
+        else:   # staub
+            self.teilchen = [(rng.uniform(0, W), rng.uniform(0, H), rng.uniform(2.0, 5.5), rng.uniform(25, 80),
+                              rng.uniform(0, 6.28), f1 if rng.random() < 0.5 else f2) for _ in range(190)]
+
+    def malen(self, bild: Image.Image, t: float, sichtbar: float = 1.0) -> None:
+        if self.art == "nebel":
+            dx, dy = 40 * math.sin(t / 7), 30 * math.cos(t / 9) + t * 4
+            x0, y0 = 160 + dx, 160 + (dy % 140)
+            ausschnitt = self.bild.crop((int(x0), int(y0), int(x0) + W, int(y0) + H))
+            medien.aufkleben(bild, _mit_alpha(ausschnitt, 0.85 * sichtbar), (0, 0))
+        elif self.art == "polarlicht":
+            for b, y, tempo, ph in self.baender:
+                x = -((t * tempo) % W)
+                a = (0.55 + 0.45 * math.sin(t * 0.7 + ph)) * sichtbar
+                medien.aufkleben(bild, _mit_alpha(b, a), (int(x), y))
+        elif self.art == "galaxie":
+            g = self.bild.rotate(t * 3.5, resample=Image.BILINEAR)
+            medien.aufkleben(bild, _mit_alpha(g, 0.95 * sichtbar), (W / 2 - g.width / 2, 980 - g.height / 2))
+        else:
+            d = ImageDraw.Draw(bild, "RGBA")
+            for x, y, r, tempo, ph, farbe in self.teilchen:
+                yy = (y - t * tempo) % H
+                xx = x + 14 * math.sin(t * 0.8 + ph)
+                a = int(255 * (0.5 + 0.4 * math.sin(t * 2 + ph)) * sichtbar)
+                d.ellipse([xx - r * 2.2, yy - r * 2.2, xx + r * 2.2, yy + r * 2.2], fill=farbe + (a // 6,))   # weicher Schein
+                d.ellipse([xx - r, yy - r, xx + r, yy + r], fill=farbe + (a,))
+
+
 def _neumond_kranz(r: float, beleuchtung) -> Image.Image:
     """Neumond: weicher goldener Lichtkranz um die dunkle Scheibe und ein feiner, heller Saum auf der Seite,
     an der die neue Sichel erscheint (rechts) -- wie bei einer Sonnenfinsternis, ruhig statt einer schwarzen Kugel."""
@@ -832,8 +945,10 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     # --- feste Ebenen einmal vorbereiten
     # leichtes, festes Rauschen gegen Farbstufen im Verlauf (H.264 macht sonst sichtbare Ringe)
     st = medien.stil(post)
+    farbwelt, szene_art = welt(post, st, drei) if not tiktok else (st["palette"], "")
     akzent = medien.PALETTEN[st["palette"]]["akzent"]
-    roh = np.asarray(medien._verlauf_hintergrund(W, H, st["palette"]), dtype=np.float32)
+    roh = np.asarray(medien._verlauf_hintergrund(W, H, farbwelt), dtype=np.float32)
+    szene_bewegt = Szene(szene_art, farbwelt, int(seed)) if szene_art else None
     rauschen = np.random.default_rng(7).uniform(-1.6, 1.6, roh.shape[:2])[..., None]
     grund = Image.fromarray(np.clip(roh + rauschen, 0, 255).astype(np.uint8), "RGB")
     sterne = medien.stern_liste(W, H, seed, True)
@@ -927,6 +1042,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
         for i in range(n):
             t = i / FPS
             bild = grund.copy()
+            if szene_bewegt is not None:
+                szene_bewegt.malen(bild, t)
             versatz = int(DRIFT * t / dauer)
             bild.paste(sternebene.crop((0, versatz, W, versatz + H)), (0, 0), sternebene.crop((0, versatz, W, versatz + H)))
             dd = ImageDraw.Draw(bild, "RGBA")

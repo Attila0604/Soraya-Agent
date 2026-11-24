@@ -778,6 +778,13 @@ PALETTEN = {   # Verlauf oben -> Mitte -> unten, Akzent fuer Ringe/Karten
     "ozean": {"verlauf": ("#0f3d5e", "#081c33", "#03070f"), "akzent": (206, 228, 240)},
     "jade": {"verlauf": ("#0f4a3e", "#082420", "#030b09"), "akzent": (214, 236, 214)},
     "koralle": {"verlauf": ("#5c2230", "#27101a", "#0b0408"), "akzent": (246, 200, 186)},
+    # Farbwelten der Reels (reel-28, Wunsch Attila 24.11.: "immer dunkelblau ist langweilig")
+    "feuer": {"verlauf": ("#7a2a12", "#2e0d0c", "#0c0405"), "akzent": (250, 196, 120)},
+    "erde": {"verlauf": ("#2f4a1c", "#14200d", "#050904"), "akzent": (226, 214, 150)},
+    "luft": {"verlauf": ("#4a5a9a", "#1c2550", "#080b1c"), "akzent": (220, 226, 250)},
+    "wasser": {"verlauf": ("#0d5a6a", "#06283a", "#020a12"), "akzent": (176, 232, 236)},
+    "mitternacht": {"verlauf": ("#2b2250", "#0f0c24", "#04030c"), "akzent": (224, 226, 240)},
+    "gold": {"verlauf": ("#5a4012", "#241808", "#090602"), "akzent": (250, 216, 140)},
 }
 THEMEN = {   # Wochenformat (redaktion.py) -> (Layout-Schluessel, Farbwelt)
     "Deine Woche": ("woche", "nacht"), "Sternzeichen im Fokus": ("zeichen", "zeichen"),
