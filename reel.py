@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-26"
+VERSION = "reel-27"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
@@ -164,6 +164,46 @@ SUCHEN = {"de": "Oder such: Soraya Astro Guide", "en": "Or search: Soraya Astro 
           "hu": "Vagy keress rá: Soraya Astro Guide", "it": "Oppure cerca: Soraya Astro Guide"}
 
 
+# Namen der Formate des zweiten Reels (tagesplan.REEL2_FORMATE) fuer den Ausblick "Heute Abend / Morgen: …"
+REEL2_TITEL = {
+    "woche":   {"de": "Deine Woche in einem Wort", "en": "Your week in one word", "hu": "A heted egy szóban", "it": "La tua settimana in una parola"},
+    "glueck":  {"de": "Die 3 Glückspilze des Tages", "en": "The 3 lucky signs of the day", "hu": "A nap 3 szerencsése", "it": "I 3 fortunati del giorno"},
+    "ritual":  {"de": "Ein kleines Ritual für 3 Zeichen", "en": "A little ritual for 3 signs", "hu": "Esti rituálé három jegynek", "it": "Un piccolo rituale per 3 segni"},
+    "element": {"de": "Der Elemente-Check", "en": "The element check", "hu": "Az elemek ereje", "it": "La forza degli elementi"},
+    "stopp":   {"de": "Alle 12 Zeichen: Stopp bei deinem!", "en": "All 12 signs: stop at yours!", "hu": "Mind a 12 jegy: állj meg a tiédnél!", "it": "Tutti i 12 segni: fermati al tuo!"},
+    "karte":   {"de": "Wähl eine Karte", "en": "Pick a card", "hu": "Válassz egy kártyát", "it": "Scegli una carta"},
+    "dreier":  {"de": "3 Zeichen, eine Botschaft", "en": "3 signs, one message", "hu": "Három jegy üzenete", "it": "Tre segni, un messaggio"},
+}
+AUSBLICK = {"heute": {"de": "Heute Abend", "en": "Tonight", "hu": "Ma este", "it": "Stasera"},
+            "morgen": {"de": "Morgen", "en": "Tomorrow", "hu": "Holnap", "it": "Domani"}}
+AUSBLICK_FOLGEN = {"de": "folge, damit du es nicht verpasst", "en": "follow so you don't miss it",
+                   "hu": "kövess, hogy le ne maradj", "it": "seguimi per non perderlo"}
+
+
+def ausblick(post: dict) -> str:
+    """Was als naechstes kommt: beim 1. Reel das Format des 2. Reels heute Abend, beim 2. Reel das von morgen.
+    Gibt "" zurueck, wenn kein Datum bekannt ist."""
+    from datetime import date as _date, timedelta as _td
+    import tagesplan
+    sp = (post.get("sprache") or "en")[:2]
+    tag = post.get("geplant_fuer")
+    if isinstance(tag, str):
+        try:
+            tag = _date.fromisoformat(tag[:10])
+        except ValueError:
+            return ""
+    if not isinstance(tag, _date):
+        return ""
+    zweites = (post.get("meta") or {}).get("reel_nr") == 2
+    ziel = tag + _td(days=1) if zweites else tag
+    fmt = tagesplan.REEL2_FORMATE.get(ziel.weekday(), "dreier")
+    if tagesplan.app_funktion(ziel):
+        fmt = "dreier"
+    wann = AUSBLICK["morgen" if zweites else "heute"].get(sp, AUSBLICK["morgen" if zweites else "heute"]["en"])
+    titel = REEL2_TITEL[fmt].get(sp, REEL2_TITEL[fmt]["en"])
+    return f"{wann}: {titel}"
+
+
 def _endkarte(post: dict, tiktok: bool = False) -> Image.Image:
     """Schlussbild: grosses Soraya-Zeichen, Marke, Schlusssatz, Link-Knopf (als Ebene).
     tiktok=True: goldener Folgen-Knopf statt „Link in Bio“, darunter der Name zum Suchen."""
@@ -186,11 +226,20 @@ def _endkarte(post: dict, tiktok: bool = False) -> Image.Image:
     sp = (post.get("sprache") or "en")[:2]
     # "Link in Bio"-Knopf, gleiche Form wie auf den Bildern (TikTok: "Folge fuer morgen")
     medien._cta(d, ebene, W, y - 100, True, sp, m, "voll", FOLGEN_KNOPF.get(sp, FOLGEN_KNOPF["en"]) if tiktok else None)
-    # darunter leise: folgen (aus Zuschauern werden Follower) bzw. bei TikTok der Name zum Suchen
-    unten = (SUCHEN if tiktok else FOLGEN)
-    f = medien.messe_text(unten.get(sp, unten["en"]), breite=W - 240, groesse=32,
-                          name="inter500", zeilenhoehe=1.3, max_zeilen=2, min_groesse=24)
-    medien.zeichne_text(d, f, W / 2, y + 78 + 34, "#CDB98C", m)
+    # darunter: folgen mit Grund (Ausblick auf das naechste Format) -- aus Zuschauern werden Follower (reel-27, 24.11.:
+    # 717.000 Aufrufe, aber nur ~1.000 Follower); bei TikTok der Name zum Suchen
+    try:
+        vorschau = "" if tiktok else ausblick(post)
+    except Exception:  # noqa: BLE001
+        vorschau = ""
+    if vorschau:
+        unten_text = f"{vorschau} – {AUSBLICK_FOLGEN.get(sp, AUSBLICK_FOLGEN['en'])}"
+    else:
+        unten = (SUCHEN if tiktok else FOLGEN)
+        unten_text = unten.get(sp, unten["en"])
+    f = medien.messe_text(unten_text, breite=W - 200, groesse=40 if vorschau else 32,
+                          name="inter600" if vorschau else "inter500", zeilenhoehe=1.3, max_zeilen=2, min_groesse=26)
+    medien.zeichne_text(d, f, W / 2, y + 78 + 34, "#E9CF9C" if vorschau else "#CDB98C", m)
     if not tiktok:
         g = medien.messe_text(PLAY.get(sp, PLAY["en"]), breite=W - 240, groesse=28,
                               name="inter400", zeilenhoehe=1.3, max_zeilen=2, min_groesse=22)

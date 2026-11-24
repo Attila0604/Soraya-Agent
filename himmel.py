@@ -52,16 +52,35 @@ def _tag(iso: str | None) -> date | None:
             return None
 
 
+_SIGNS = ["Ari", "Tau", "Gem", "Can", "Leo", "Vir", "Lib", "Sco", "Sag", "Cap", "Aqu", "Pis"]
+
+
+def sonnen_laenge(d: date) -> float:
+    """Ekliptikale Laenge der Sonne (Grad, ca. 0,01 Grad genau) am Mittag UTC -- fuer das Zeichen von Neu-/Vollmond."""
+    import math
+    n = (date(d.year, d.month, d.day) - date(2000, 1, 1)).days - 0.5 + 0.5      # JD - 2451545.0 (Mittag)
+    L = 280.460 + 0.9856474 * n
+    g = math.radians(357.528 + 0.9856003 * n)
+    return (L + 1.915 * math.sin(g) + 0.020 * math.sin(2 * g)) % 360
+
+
+def mondereignis_zeichen(d: date, voll: bool) -> str:
+    """Sign-Key des Neumonds (Zeichen der Sonne) bzw. Vollmonds (gegenueberliegendes Zeichen)."""
+    laenge = (sonnen_laenge(d) + (180 if voll else 0)) % 360
+    return _SIGNS[int(laenge // 30)]
+
+
 def aufbereiten(sky: dict, tag: date, sprache: str) -> dict:
     """Himmel in der gewuenschten Sprache, mit Tagen bis Neu-/Vollmond."""
     mond = sky.get("moon") or {}
     sonne = sky.get("sun") or {}
 
-    def mondereignis(iso):
+    def mondereignis(iso, voll=False):
         d = _tag(iso)
         if not d:
             return None
-        return {"datum": d.isoformat(), "datum_text": datum_kurz(d, sprache), "in_tagen": (d - tag).days}
+        return {"datum": d.isoformat(), "datum_text": datum_kurz(d, sprache), "in_tagen": (d - tag).days,
+                "zeichen": zeichen(mondereignis_zeichen(d, voll), sprache)}
 
     rueck = []
     for r in sky.get("retrograde") or []:
@@ -84,7 +103,7 @@ def aufbereiten(sky: dict, tag: date, sprache: str) -> dict:
         "mond_zeichen": zeichen(mond.get("sign"), sprache),
         "sonne_zeichen": zeichen(sonne.get("sign"), sprache),
         "neumond": mondereignis(sky.get("next_new_moon")),
-        "vollmond": mondereignis(sky.get("next_full_moon")),
+        "vollmond": mondereignis(sky.get("next_full_moon"), voll=True),
         "ruecklaeufig": rueck,
         "bald_ruecklaeufig": bald,
         # seit 08.11. (Engine): wo die Planeten stehen, Winkel des Tages, welche Zeichen heute angesprochen sind
@@ -129,7 +148,12 @@ def als_text(info: dict) -> str:
         e = info.get(schluessel)
         if e:
             wann = "heute" if e["in_tagen"] <= 0 else ("morgen" if e["in_tagen"] == 1 else f"in {e['in_tagen']} Tagen")
-            zeilen.append(f"{name}: {e['datum_text']} ({wann})")
+            im = f" im Zeichen {e['zeichen']}" if e.get("zeichen") else ""
+            zeilen.append(f"{name}: {e['datum_text']} ({wann}){im}")
+            if e.get("zeichen") and e["in_tagen"] <= 2 and e["zeichen"] != info.get("mond_zeichen"):
+                zeilen.append(f"ACHTUNG: Der {name.split()[-1]} steht im Zeichen {e['zeichen']} – heute steht der Mond noch "
+                              f"in {info['mond_zeichen']}. Sprichst du vom {name.split()[-1]}, nenne {e['zeichen']}; "
+                              f"sprichst du vom Mond heute, nenne {info['mond_zeichen']} – nie vermischen.")
     if info["ruecklaeufig"]:
         zeilen.append("Rückläufig: " + ", ".join(
             f"{r['planet']} (bis {r['bis']})" if r["bis"] else r["planet"] for r in info["ruecklaeufig"]))

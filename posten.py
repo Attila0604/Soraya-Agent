@@ -700,12 +700,20 @@ GESAMT_MAX = 200     # Facebook zaehlt die Hashtags mit (Tipp im Business-Dashbo
 TAGS_MIN = 3
 
 
-def mit_tags(text: str, extras: list[str], tags: list[str], gesamt: int = GESAMT_MAX) -> str:
+def mit_tags(text: str, extras: list[str], tags: list[str], gesamt: int = GESAMT_MAX, extras_zuerst: bool = False) -> str:
     """Ganze Beschreibung inklusive Hashtags hoechstens `gesamt` Zeichen: Hook + Frage, dann so viele Hashtags wie passen
     (mindestens die ersten 3 = Sternzeichen bzw. Thema), Zusatzzeilen (Folgen, Speichern) nur, wenn noch Platz ist."""
     rumpf = kurz(text, [], gesamt)
     def laenge(teile):
         return len("\n\n".join(t for t in teile if t))
+    if extras_zuerst:            # z. B. Reel-Ausblick ("Holnap: …") wichtiger als die Hashtags 4-6
+        teile = [rumpf] + [z for z in extras or [] if z]
+        while len(teile) > 1 and laenge(teile + [" ".join(tags[:min(TAGS_MIN, len(tags))])]) > gesamt:
+            teile.pop()
+        k = len(tags)
+        while k > min(TAGS_MIN, len(tags)) and laenge(teile + [" ".join(tags[:k])]) > gesamt:
+            k -= 1
+        return "\n\n".join(t for t in teile + [" ".join(tags[:k])] if t)
     k = len(tags)
     while k > min(TAGS_MIN, len(tags)) and laenge([rumpf, " ".join(tags[:k])]) > gesamt:
         k -= 1
@@ -737,6 +745,21 @@ def _mit_emoji(teile: list[str], max_zeichen: int) -> list[str]:
 fb_kurz = kurz        # alter Name (Tests, Dashboard-Vorschau)
 
 
+def reel_ausblick(post: dict) -> str:
+    """Bei Reels: „Holnap: A nap 3 szerencsése 🍀 – kövess, hogy ne maradj le!“ (Grund zum Folgen)."""
+    if post.get("art") != "reel":
+        return ""
+    try:
+        import reel
+        a = reel.ausblick(post)
+    except Exception:  # noqa: BLE001
+        return ""
+    if not a:
+        return ""
+    sp = (post.get("sprache") or "en")[:2]
+    return f"🔮 {a} – {reel.AUSBLICK_FOLGEN.get(sp, reel.AUSBLICK_FOLGEN['en'])}!"
+
+
 def text_fuer(post: dict, plattform: str) -> str:
     if plattform == "pinterest":
         return pinterest_text(post)
@@ -760,10 +783,13 @@ def text_fuer(post: dict, plattform: str) -> str:
         teile[0] = _ohne_bio(_ohne_link_hinweis(teile[0]), post.get("sprache") or "de")
         # Facebook-Tipp: 100-200 Zeichen INKLUSIVE Hashtags -> Hook + Frage + Hashtags, Folgen-Bitte nur wenn Platz
         sprache = post.get("sprache") or "en"
-        return mit_tags(teile[0], [FB_FOLGEN.get(sprache, FB_FOLGEN["en"])], seo_tags(post, "facebook"))
+        aus = reel_ausblick(post)
+        return mit_tags(teile[0], [aus or FB_FOLGEN.get(sprache, FB_FOLGEN["en"])], seo_tags(post, "facebook"), extras_zuerst=bool(aus))
     if plattform == "instagram" and post.get("art") != "story":
         sprache = post.get("sprache") or "en"
-        return mit_tags(_ohne_link_hinweis(teile[0]), [IG_SPEICHERN.get(sprache, IG_SPEICHERN["en"])], seo_tags(post, "instagram"))
+        aus = reel_ausblick(post)
+        return mit_tags(_ohne_link_hinweis(teile[0]), [aus or IG_SPEICHERN.get(sprache, IG_SPEICHERN["en"])],
+                        seo_tags(post, "instagram"), extras_zuerst=bool(aus))
     if post.get("hashtags"):
         # Auf Facebook wirken viele Hashtags wie Werbung -- dort nur drei; Instagram nimmt hoechstens 5 je Beitrag.
         # seo_tags: Thema zuerst, dazu das Sternzeichen und ein grosser Such-Hashtag (#astrology ...)

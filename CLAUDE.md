@@ -39,6 +39,9 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   Di 3 Glückspilze (Platz 3/2/1) · Mi Ritual für 3 Zeichen (Kerzenschein) · Do Elemente-Check (3 Zeichen eines Elements) ·
   Fr Stopp bei deinem Zeichen (12 Zeichen im Raster) · Sa Wähl eine Karte (1/2/3, Karten drehen sich um) · So App-Reel.
   Medaillons ab `reel-26` mit Goldring, Lichtpunkten, drehendem Ring + Funken am aktiven Zeichen (`reel._medaillon`). Jedes Format endet mit einer spielerischen Antwort-Frage (🍀, 🕯️, 🔥🌍💨💧, ✅/❌, 1/2/3).
+- Ausblick ab `reel-27` (`reel.ausblick`, `posten.reel_ausblick`): Endkarte und Facebook/Instagram-Text der Reels nennen das
+  nächste Format („Ma este: …“ beim 1. Reel, „Holnap: …“ beim 2.) + „kövess, hogy ne maradj le“ (vor den Hashtags 4–6).
+  Neu-/Vollmond mit Zeichen (`himmel.mondereignis_zeichen`, Sonnenlänge) – Prompt warnt, Mond heute ≠ Vollmond-Zeichen.
 - Reels auf DE/EN nur freitags (`tagesplan.reels_heute`, Railway `REELS_WOECHENTLICH`, Standard `de,en`, leer = täglich);
   an den anderen Tagen nur Feed-Post + Story (spart Kosten). Ungarisch (Facebook) immer mit 2 Reels.
 - Kommentare (`kommentare.py`, Tabelle `soraya_kommentare`, `/kommentare`, „Heute“ → „Kommentare auf Facebook“): liest die

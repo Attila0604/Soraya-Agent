@@ -3106,6 +3106,22 @@ def test_reel_ohne_fachwoerter():
     assert "VERSTÄNDLICH OHNE VORWISSEN" in tagesplan.SYSTEM_PROMPT
 
 
+def test_reel_ausblick_und_vollmond_zeichen():
+    import posten
+    import reel
+    from datetime import date as _d
+    zweites = {"id": 1, "art": "reel", "sprache": "hu", "geplant_fuer": _d(2026, 11, 24), "meta": {"reel_nr": 2},
+               "text": "Oroszlán, ma 3 jel kedvez neked.\n\nTe melyik jegy vagy?", "hashtags": "#oroszlán #horoszkóp #telihold"}
+    assert reel.ausblick(zweites) == "Holnap: Esti rituálé három jegynek"                     # Mittwoch = Ritual
+    assert reel.ausblick(dict(zweites, meta={})) == "Ma este: A nap 3 szerencsése"         # 1. Reel: heute Abend
+    t = posten.text_fuer(zweites, "facebook")
+    assert "Holnap: Esti rituálé" in t and len(t) <= posten.GESAMT_MAX and t.count("#") >= 3
+    assert reel.ausblick({"art": "reel", "sprache": "hu"}) == ""                         # ohne Datum kein Ausblick
+    # Vollmond 24.11.2026 steht in den Zwillingen (Sonne im Schuetzen), Neumond im Zeichen der Sonne
+    assert himmel.mondereignis_zeichen(_d(2026, 11, 24), True) == "Gem"
+    assert himmel.mondereignis_zeichen(_d(2026, 11, 9), False) == "Sco"
+
+
 def test_erstes_reel_immer_neugier():
     assert "Neugier-Lücke" in tagesplan.SYSTEM_PROMPT and "korábban ébredsz" in tagesplan.SYSTEM_PROMPT
     t = redaktion.thema_text({"name": "X", "auftrag": "a", "aufforderung": {"auftrag": "b"},
@@ -3232,9 +3248,10 @@ def test_kurztext_mit_emoji_und_allen_zeichen_hashtags(frische_db):
     t = posten.text_fuer(p, "facebook")
     assert t.startswith("Skorpió, Vízöntő, Mérleg: ma furcsát álmodtok. ♏️♒️♎️") and "kommentben. 👇" in t
     tags = t.split("\n\n")[-1].split()
-    assert {"#skorpió", "#vízöntő", "#mérleg"} <= set(tags) and len(tags) == 8
+    # Reel mit Datum: der Ausblick auf morgen hat Vorrang vor den Hashtags 4-8 (mindestens 3 bleiben)
+    assert {"#skorpió", "#vízöntő", "#mérleg"} <= set(tags) and len(tags) >= 3 and "🔮" in t
     r = client.get(f"/posten/text/{p['id']}?plattform=facebook", headers=AUTH).json()
-    assert r["text"] == t and r["zeichen"] <= 200 and r["hashtags"] == 8
+    assert r["text"] == t and r["zeichen"] <= 200 and r["hashtags"] == len(tags)
     assert client.get(f"/posten/text/{p['id']}?plattform=xyz", headers=AUTH).status_code == 400
 
 
