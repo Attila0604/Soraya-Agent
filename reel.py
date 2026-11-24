@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-29"
+VERSION = "reel-30"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
@@ -716,6 +716,46 @@ def _schleier(farbe, gr: int = 900) -> Image.Image:
     return b.filter(ImageFilter.GaussianBlur(gr * 0.13))
 
 
+AKZENTE = ("strahlen", "schleier", "wellen", "funken", "kometen")
+
+
+def akzent_fuer(post: dict, szene_art: str) -> str:
+    """Genau EIN Bewegungs-Effekt je Reel (Wunsch Attila: Abwechslung, aber nicht zu viel auf einmal)."""
+    seed = int(post.get("id") or 0)
+    wahl = AKZENTE[(seed * 7 + 3) % len(AKZENTE)]
+    if wahl == "funken" and szene_art == "staub":          # zwei Teilchen-Effekte zusammen waeren zu unruhig
+        wahl = "wellen"
+    return wahl
+
+
+class Funkenregen:
+    """Goldene vierzackige Funken, die langsam herabsinken und funkeln."""
+
+    def __init__(self, seed: int, farbe):
+        rng = np.random.default_rng(seed + 11)
+        self.farbe = farbe
+        self.f = [(rng.uniform(0, W), rng.uniform(0, H), rng.uniform(5, 11), rng.uniform(18, 45), rng.uniform(0, 6.28))
+                  for _ in range(55)]
+
+    def malen(self, bild: Image.Image, t: float) -> None:
+        d = ImageDraw.Draw(bild, "RGBA")
+        for x, y, gr, tempo, ph in self.f:
+            yy = (y + t * tempo) % H
+            xx = x + 20 * math.sin(t * 0.6 + ph)
+            _funke(d, xx, yy, gr * (0.8 + 0.2 * math.sin(t * 3 + ph)), self.farbe, 0.35 + 0.45 * max(0.0, math.sin(t * 2.2 + ph)))
+
+
+def _wellen_malen(bild: Image.Image, t: float, cx: float, cy: float, farbe) -> None:
+    """Sanfte Lichtwellen, die vom Motiv ausgehen (wie Ringe auf dem Wasser)."""
+    d = ImageDraw.Draw(bild, "RGBA")
+    for k in range(3):
+        u = ((t / 3.2) + k / 3) % 1.0
+        r = 150 + u * 520
+        a = int(110 * (1 - u) ** 1.5)
+        for dr, f in ((0, 1.0), (6, 0.45), (12, 0.2)):
+            d.ellipse([cx - r - dr, cy - r - dr, cx + r + dr, cy + r + dr], outline=farbe + (int(a * f),), width=3)
+
+
 class Szene:
     """Bewegter Hintergrund: driftender Nebel, wehendes Polarlicht, kreisende Galaxie oder aufsteigender Sternenstaub.
     Alles wird einmal vorbereitet; pro Bild nur verschoben/gedreht (schnell)."""
@@ -985,8 +1025,11 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     roh = np.asarray(medien._verlauf_hintergrund(W, H, farbwelt), dtype=np.float32)
     szene_bewegt = Szene(szene_art, farbwelt, int(seed)) if szene_art else None
     f1, f2 = SZENE_FARBEN.get(farbwelt, SZENE_FARBEN["nacht"])
-    strahlen = _strahlen(tuple(min(255, int(c * 0.9 + 25)) for c in f1)) if not tiktok else None
-    schleier = [(_schleier(f1), 0.0), (_schleier(f2), 2.6)] if not tiktok else []
+    effekt = akzent_fuer(post, szene_art) if not tiktok else ""
+    strahlen = _strahlen(tuple(min(255, int(c * 0.9 + 25)) for c in f1)) if effekt == "strahlen" else None
+    schleier = [(_schleier(f1), 0.0), (_schleier(f2), 2.6)] if effekt == "schleier" else []
+    funkenregen = Funkenregen(int(seed), tuple(min(255, int(c * 0.8 + 50)) for c in f1)) if effekt == "funken" else None
+    wellen_farbe = tuple(min(255, int(c * 0.85 + 40)) for c in f1) if effekt == "wellen" else None
     rauschen = np.random.default_rng(7).uniform(-1.6, 1.6, roh.shape[:2])[..., None]
     grund = Image.fromarray(np.clip(roh + rauschen, 0, 255).astype(np.uint8), "RGB")
     # "atmender" Hintergrund: zweite, hellere Fassung, sanft ueberblendet
@@ -1002,7 +1045,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
         for yy in (y, y + H) if y < DRIFT else (y,):        # oben wiederholen, damit unten nichts fehlt
             d.ellipse([x - r, yy - r, x + r, yy + r], fill=farbe + (int(a * 255),))
     schnuppen = [(0.25, (W * 0.18, 260), math.radians(28)), (max(4.0, end_start - 3.0), (W * 0.62, 180), math.radians(152))]
-    if not tiktok:                     # alle ~3,5 s eine weitere Sternschnuppe (abwechselnd links/rechts)
+    if not tiktok and akzent_fuer(post, welt(post, medien.stil(post), drei)[1]) == "kometen":   # alle ~3,5 s eine Sternschnuppe
         schnuppen += [(t0, (W * (0.12 if k % 2 else 0.7), 150 + 90 * (k % 3)), math.radians(30 if k % 2 else 150))
                       for k, t0 in enumerate(np.arange(2.0, end_start - 1.0, 3.5))]
     oben = Image.new("RGBA", (W, H), (0, 0, 0, 0))                 # kleines Zeichen + Datumszeile
@@ -1093,6 +1136,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 medien.aufkleben(bild, _mit_alpha(sl, 0.75 * math.sin(math.pi * u)), (sx, sy))
             if szene_bewegt is not None:
                 szene_bewegt.malen(bild, t)
+            if funkenregen is not None:
+                funkenregen.malen(bild, t)
             versatz = int(DRIFT * t / dauer)
             bild.paste(sternebene.crop((0, versatz, W, versatz + H)), (0, 0), sternebene.crop((0, versatz, W, versatz + H)))
             dd = ImageDraw.Draw(bild, "RGBA")
@@ -1141,6 +1186,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 sk = strahlen.rotate(t * 9, resample=Image.BILINEAR)   # Strahlenkranz hinter dem Motiv
                 medien.aufkleben(bild, _mit_alpha(sk, (0.42 + 0.2 * math.sin(t * 1.7)) * sichtbar_ende),
                                  (W / 2 - sk.width / 2, (700 if drei else mond_y) - sk.height / 2))
+            if wellen_farbe is not None and sichtbar_ende > 0 and not zwoelf and not karten_spiel:
+                _wellen_malen(bild, t, W / 2, 700 if drei else mond_y, wellen_farbe)
             if held is not None:          # Vorlauf: das Symbol steht schon im ersten Bild (Titelbild der Plattformen)
                 held.zeichne(bild, t + 1.2, sichtbar_ende)
             if reihe is not None and sichtbar_ende > 0:
