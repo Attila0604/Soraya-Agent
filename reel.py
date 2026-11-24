@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-27"
+VERSION = "reel-30"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
@@ -73,7 +73,7 @@ def reel_format(post: dict) -> str | None:
 
 
 def _textkarte(text: str, *, breite: int, groesse: int, name: str, farbe: str, zeilenhoehe=1.15, max_zeilen=4,
-               akzent=(233, 207, 156)):
+               akzent=(233, 207, 156), gold: bool = False):
     """Text als RGBA-Ebene (doppelt gross gezeichnet, dann verkleinert) und die Wort-Kaestchen fuers
     Wort-fuer-Wort-Einblenden. Beginnt der Text mit einem Sternzeichen ("Scorpio: ..."), steht darueber
     ein Medaillon mit dem Symbol und dem Namen."""
@@ -98,13 +98,21 @@ def _textkarte(text: str, *, breite: int, groesse: int, name: str, farbe: str, z
             medien.gesperrt(d, name_txt.upper(), bw / 2 * m, 170 * m, medien.schrift("cinzel", 34 * m), 6 * m, akzent + (255,))
         kaesten.append((0, 0, bw, kopf_h))        # Kopf erscheint als erstes "Wort"
     font = medien.schrift(b["name"], b["g"] * m)
+    # das wichtigste Wort (das laengste mit mind. 5 Buchstaben) leuchtet golden (reel-29: "lebendiger")
+    woerter = [re.sub(r"[^\w]", "", w) for z in b["zeilen"] for w in z.split(" ")]
+    kandidaten = [w for w in woerter if len(w) >= 5]
+    gold_wort = max(kandidaten, key=len) if kandidaten and gold else ""
+    gold_farbe = tuple(min(255, int(c * 1.08)) for c in akzent)
     for i, zeile in enumerate(b["zeilen"]):
         grund = kopf_h + b["g"] * 0.8 + i * b["g"] * b["zh"]
-        d.text((bw / 2 * m, grund * m), zeile, font=font, fill=medien._rgb(farbe) + (255,), anchor="ms")
         breite_z = font.getlength(zeile) / m
         x = bw / 2 - breite_z / 2
         for w in zeile.split(" "):
             wb = font.getlength(w) / m
+            treffer = gold_wort and re.sub(r"[^\w]", "", w) == gold_wort
+            d.text((x * m, grund * m), w, font=font, fill=(gold_farbe if treffer else medien._rgb(farbe)) + (255,), anchor="ls")
+            if treffer:
+                gold_wort = ""                      # nur einmal
             kaesten.append((x - 4, grund - b["g"] * 0.95, x + wb + 4, grund + b["g"] * 0.35))
             x += wb + font.getlength(" ") / m
     # weicher dunkler Schein hinter der Schrift: bleibt auch ueber hellen Sternen/Nebel und nach der
@@ -645,6 +653,186 @@ def _karten_malen(bild: Image.Image, karten: dict, plan: list, t: float, sichtba
         medien.aufkleben(bild, _mit_alpha(e, alpha * sichtbar), (x - w_ / 2, y - h_ / 2))
 
 
+# ---------------------------------------------------------------------------
+# Farbwelten und bewegte Szenen (reel-28): jedes Reel bekommt je nach Zeichen/Format eine eigene Welt
+# ---------------------------------------------------------------------------
+WELT_ELEMENT = {0: "feuer", 1: "erde", 2: "luft", 3: "wasser"}
+SZENE_FARBEN = {   # Farben der bewegten Szene je Welt (zwei Toene)
+    "feuer": ((255, 140, 60), (255, 70, 90)), "erde": ((150, 210, 120), (230, 200, 120)),
+    "luft": ((170, 190, 255), (240, 200, 255)), "wasser": ((60, 220, 210), (90, 150, 255)),
+    "mitternacht": ((150, 140, 255), (220, 220, 255)), "gold": ((255, 200, 110), (255, 150, 90)),
+    "rose": ((255, 130, 180), (200, 120, 255)), "amethyst": ((170, 110, 255), (255, 140, 210)),
+    "nacht": ((130, 100, 220), (210, 120, 190)),
+}
+FORMAT_WELT = {"woche": ("amethyst", "galaxie"), "stopp": ("mitternacht", "polarlicht"), "karte": ("rose", "nebel"),
+               "glueck": ("gold", "staub"), "ritual": ("gold", "nebel")}
+SZENEN = ("nebel", "polarlicht", "galaxie", "staub")
+
+
+def welt(post: dict, st: dict, drei: list[int]) -> tuple[str, str]:
+    """(Farbwelt, Szene) des Reels: Format des 2. Reels, Vollmond/Neumond, Element des Zeichens, Liebe -- sonst wie das Bild."""
+    meta = post.get("meta") or {}
+    thema = meta.get("thema") or ""
+    seed = int(post.get("id") or 0)
+    fmt = reel_format(post)
+    if fmt in FORMAT_WELT:
+        return FORMAT_WELT[fmt]
+    if "Vollmond" in thema or "Neumond" in thema:
+        return "mitternacht", "polarlicht" if "Vollmond" in thema else "nebel"
+    if thema == "Liebe & Beziehung":
+        return "rose", "nebel"
+    zeichen = drei[0] if drei else medien.zeichen_aus_text((post.get("skript") or {}).get("hook") or "")
+    if fmt == "element" and drei:
+        zeichen = drei[0]
+    if zeichen is not None:
+        return WELT_ELEMENT[zeichen % 4], SZENEN[(seed + zeichen) % len(SZENEN)]
+    return st["palette"], SZENEN[seed % len(SZENEN)]
+
+
+def _strahlen(farbe, gr: int = 1000) -> Image.Image:
+    """Weicher Kranz aus Lichtstrahlen (dreht sich langsam hinter dem Motiv)."""
+    from PIL import ImageFilter
+    b = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
+    d = ImageDraw.Draw(b)
+    c = gr / 2
+    for k in range(18):
+        w = math.radians(k * 20)
+        breite = math.radians(3.2 if k % 2 else 5.5)
+        lang = c * (0.95 if k % 2 else 0.8)
+        d.polygon([(c, c), (c + lang * math.cos(w - breite), c + lang * math.sin(w - breite)),
+                   (c + lang * math.cos(w + breite), c + lang * math.sin(w + breite))], fill=farbe + (70 if k % 2 else 110,))
+    maske = Image.new("L", (gr, gr), 0)
+    ImageDraw.Draw(maske).ellipse([gr * 0.05, gr * 0.05, gr * 0.95, gr * 0.95], fill=255)
+    maske = maske.filter(ImageFilter.GaussianBlur(gr * 0.12))
+    b.putalpha(Image.fromarray((np.asarray(b.getchannel("A"), np.float32) * np.asarray(maske, np.float32) / 255).astype(np.uint8)))
+    return b.filter(ImageFilter.GaussianBlur(10))
+
+
+def _schleier(farbe, gr: int = 900) -> Image.Image:
+    """Grosser weicher Lichtfleck (Light Leak), zieht langsam durchs Bild."""
+    from PIL import ImageFilter
+    b = Image.new("RGBA", (gr, gr), (0, 0, 0, 0))
+    ImageDraw.Draw(b).ellipse([gr * 0.2, gr * 0.3, gr * 0.8, gr * 0.7], fill=farbe + (110,))
+    return b.filter(ImageFilter.GaussianBlur(gr * 0.13))
+
+
+AKZENTE = ("strahlen", "schleier", "wellen", "funken", "kometen")
+
+
+def akzent_fuer(post: dict, szene_art: str) -> str:
+    """Genau EIN Bewegungs-Effekt je Reel (Wunsch Attila: Abwechslung, aber nicht zu viel auf einmal)."""
+    seed = int(post.get("id") or 0)
+    wahl = AKZENTE[(seed * 7 + 3) % len(AKZENTE)]
+    if wahl == "funken" and szene_art == "staub":          # zwei Teilchen-Effekte zusammen waeren zu unruhig
+        wahl = "wellen"
+    return wahl
+
+
+class Funkenregen:
+    """Goldene vierzackige Funken, die langsam herabsinken und funkeln."""
+
+    def __init__(self, seed: int, farbe):
+        rng = np.random.default_rng(seed + 11)
+        self.farbe = farbe
+        self.f = [(rng.uniform(0, W), rng.uniform(0, H), rng.uniform(5, 11), rng.uniform(18, 45), rng.uniform(0, 6.28))
+                  for _ in range(55)]
+
+    def malen(self, bild: Image.Image, t: float) -> None:
+        d = ImageDraw.Draw(bild, "RGBA")
+        for x, y, gr, tempo, ph in self.f:
+            yy = (y + t * tempo) % H
+            xx = x + 20 * math.sin(t * 0.6 + ph)
+            _funke(d, xx, yy, gr * (0.8 + 0.2 * math.sin(t * 3 + ph)), self.farbe, 0.35 + 0.45 * max(0.0, math.sin(t * 2.2 + ph)))
+
+
+def _wellen_malen(bild: Image.Image, t: float, cx: float, cy: float, farbe) -> None:
+    """Sanfte Lichtwellen, die vom Motiv ausgehen (wie Ringe auf dem Wasser)."""
+    d = ImageDraw.Draw(bild, "RGBA")
+    for k in range(3):
+        u = ((t / 3.2) + k / 3) % 1.0
+        r = 150 + u * 520
+        a = int(110 * (1 - u) ** 1.5)
+        for dr, f in ((0, 1.0), (6, 0.45), (12, 0.2)):
+            d.ellipse([cx - r - dr, cy - r - dr, cx + r + dr, cy + r + dr], outline=farbe + (int(a * f),), width=3)
+
+
+class Szene:
+    """Bewegter Hintergrund: driftender Nebel, wehendes Polarlicht, kreisende Galaxie oder aufsteigender Sternenstaub.
+    Alles wird einmal vorbereitet; pro Bild nur verschoben/gedreht (schnell)."""
+
+    def __init__(self, art: str, palette: str, seed: int):
+        from PIL import ImageFilter
+        self.art = art
+        f1, f2 = SZENE_FARBEN.get(palette, SZENE_FARBEN["nacht"])
+        rng = np.random.default_rng(seed or 3)
+        if art == "nebel":
+            gw, gh = W // 4 + 80, H // 4 + 80
+            ys, xs = np.mgrid[0:gh, 0:gw].astype(np.float32)
+            wolken = sum((np.asarray(Image.fromarray((rng.random((g, g)) * 255).astype(np.uint8), "L")
+                                     .resize((gw, gh), Image.BICUBIC), np.float32) / 255) * f
+                         for g, f in ((4, 0.5), (9, 0.3), (19, 0.2)))
+            mix = np.clip((wolken - 0.3) * 1.8, 0, 1)
+            farbe = np.array(f1, np.float32) * (1 - mix[..., None]) + np.array(f2, np.float32) * mix[..., None]
+            alpha = np.clip((wolken - 0.42) * 2.2, 0, 1) * 120
+            arr = np.dstack([farbe, alpha]).astype(np.uint8)
+            self.bild = Image.fromarray(arr, "RGBA").resize((gw * 4, gh * 4), Image.BICUBIC).filter(ImageFilter.GaussianBlur(18))
+        elif art == "polarlicht":
+            self.baender = []
+            for k in range(3):
+                b = Image.new("RGBA", (W * 2, 700), (0, 0, 0, 0))
+                d = ImageDraw.Draw(b)
+                farbe = f1 if k % 2 == 0 else f2
+                phase, amp, dicke = rng.uniform(0, 6.28), rng.uniform(60, 120), rng.uniform(70, 130)
+                for x in range(0, W * 2, 6):
+                    y = 350 + amp * math.sin(x / 260 + phase) + 40 * math.sin(x / 90 + phase * 2)
+                    for j in range(6):
+                        d.line([(x, y - dicke * (j / 6)), (x, y - dicke * (j / 6) - 18)],
+                               fill=farbe + (int(70 * (1 - j / 6)),), width=6)
+                self.baender.append((b.filter(ImageFilter.GaussianBlur(22)), 200 + k * 170, rng.uniform(25, 45), rng.uniform(0, 6.28)))
+        elif art == "galaxie":
+            g = 1500
+            b = Image.new("RGBA", (g, g), (0, 0, 0, 0))
+            d = ImageDraw.Draw(b)
+            for arm in range(3):
+                for k in range(900):
+                    r = 20 + k * 0.75
+                    w = arm * 2.094 + r / 140 + rng.normal(0, 0.18)
+                    x, y = g / 2 + r * math.cos(w), g / 2 + r * math.sin(w) * 0.55
+                    farbe = f1 if rng.random() < 0.6 else f2
+                    pr = rng.uniform(1.0, 3.2)
+                    d.ellipse([x - pr, y - pr, x + pr, y + pr], fill=farbe + (int(rng.uniform(60, 200)),))
+            kern = Image.new("RGBA", (g, g), (0, 0, 0, 0))
+            ImageDraw.Draw(kern).ellipse([g / 2 - 120, g / 2 - 70, g / 2 + 120, g / 2 + 70], fill=f2 + (130,))
+            b.alpha_composite(kern.filter(ImageFilter.GaussianBlur(60)))
+            self.bild = b.filter(ImageFilter.GaussianBlur(1.2))
+        else:   # staub
+            self.teilchen = [(rng.uniform(0, W), rng.uniform(0, H), rng.uniform(2.0, 5.5), rng.uniform(25, 80),
+                              rng.uniform(0, 6.28), f1 if rng.random() < 0.5 else f2) for _ in range(190)]
+
+    def malen(self, bild: Image.Image, t: float, sichtbar: float = 1.0) -> None:
+        if self.art == "nebel":
+            dx, dy = 40 * math.sin(t / 7), 30 * math.cos(t / 9) + t * 4
+            x0, y0 = 160 + dx, 160 + (dy % 140)
+            ausschnitt = self.bild.crop((int(x0), int(y0), int(x0) + W, int(y0) + H))
+            medien.aufkleben(bild, _mit_alpha(ausschnitt, 0.85 * sichtbar), (0, 0))
+        elif self.art == "polarlicht":
+            for b, y, tempo, ph in self.baender:
+                x = -((t * tempo) % W)
+                a = (0.55 + 0.45 * math.sin(t * 0.7 + ph)) * sichtbar
+                medien.aufkleben(bild, _mit_alpha(b, a), (int(x), y))
+        elif self.art == "galaxie":
+            g = self.bild.rotate(t * 3.5, resample=Image.BILINEAR)
+            medien.aufkleben(bild, _mit_alpha(g, 0.95 * sichtbar), (W / 2 - g.width / 2, 980 - g.height / 2))
+        else:
+            d = ImageDraw.Draw(bild, "RGBA")
+            for x, y, r, tempo, ph, farbe in self.teilchen:
+                yy = (y - t * tempo) % H
+                xx = x + 14 * math.sin(t * 0.8 + ph)
+                a = int(255 * (0.5 + 0.4 * math.sin(t * 2 + ph)) * sichtbar)
+                d.ellipse([xx - r * 2.2, yy - r * 2.2, xx + r * 2.2, yy + r * 2.2], fill=farbe + (a // 6,))   # weicher Schein
+                d.ellipse([xx - r, yy - r, xx + r, yy + r], fill=farbe + (a,))
+
+
 def _neumond_kranz(r: float, beleuchtung) -> Image.Image:
     """Neumond: weicher goldener Lichtkranz um die dunkle Scheibe und ein feiner, heller Saum auf der Seite,
     an der die neue Sichel erscheint (rechts) -- wie bei einer Sonnenfinsternis, ruhig statt einer schwarzen Kugel."""
@@ -832,10 +1020,20 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     # --- feste Ebenen einmal vorbereiten
     # leichtes, festes Rauschen gegen Farbstufen im Verlauf (H.264 macht sonst sichtbare Ringe)
     st = medien.stil(post)
+    farbwelt, szene_art = welt(post, st, drei) if not tiktok else (st["palette"], "")
     akzent = medien.PALETTEN[st["palette"]]["akzent"]
-    roh = np.asarray(medien._verlauf_hintergrund(W, H, st["palette"]), dtype=np.float32)
+    roh = np.asarray(medien._verlauf_hintergrund(W, H, farbwelt), dtype=np.float32)
+    szene_bewegt = Szene(szene_art, farbwelt, int(seed)) if szene_art else None
+    f1, f2 = SZENE_FARBEN.get(farbwelt, SZENE_FARBEN["nacht"])
+    effekt = akzent_fuer(post, szene_art) if not tiktok else ""
+    strahlen = _strahlen(tuple(min(255, int(c * 0.9 + 25)) for c in f1)) if effekt == "strahlen" else None
+    schleier = [(_schleier(f1), 0.0), (_schleier(f2), 2.6)] if effekt == "schleier" else []
+    funkenregen = Funkenregen(int(seed), tuple(min(255, int(c * 0.8 + 50)) for c in f1)) if effekt == "funken" else None
+    wellen_farbe = tuple(min(255, int(c * 0.85 + 40)) for c in f1) if effekt == "wellen" else None
     rauschen = np.random.default_rng(7).uniform(-1.6, 1.6, roh.shape[:2])[..., None]
     grund = Image.fromarray(np.clip(roh + rauschen, 0, 255).astype(np.uint8), "RGB")
+    # "atmender" Hintergrund: zweite, hellere Fassung, sanft ueberblendet
+    grund_hell = Image.fromarray(np.clip((roh + rauschen) * 1.22 + 6, 0, 255).astype(np.uint8), "RGB")
     sterne = medien.stern_liste(W, H, seed, True)
     ruhig = [st for st in sterne if st[3] != (233, 207, 156)]
     funkelnd = [st for st in sterne if st[3] == (233, 207, 156)]
@@ -847,6 +1045,9 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
         for yy in (y, y + H) if y < DRIFT else (y,):        # oben wiederholen, damit unten nichts fehlt
             d.ellipse([x - r, yy - r, x + r, yy + r], fill=farbe + (int(a * 255),))
     schnuppen = [(0.25, (W * 0.18, 260), math.radians(28)), (max(4.0, end_start - 3.0), (W * 0.62, 180), math.radians(152))]
+    if not tiktok and akzent_fuer(post, welt(post, medien.stil(post), drei)[1]) == "kometen":   # alle ~3,5 s eine Sternschnuppe
+        schnuppen += [(t0, (W * (0.12 if k % 2 else 0.7), 150 + 90 * (k % 3)), math.radians(30 if k % 2 else 150))
+                      for k, t0 in enumerate(np.arange(2.0, end_start - 1.0, 3.5))]
     oben = Image.new("RGBA", (W, H), (0, 0, 0, 0))                 # kleines Zeichen + Datumszeile
     z = medien.portal(2 * 110)
     s = 2 * 110 / 312
@@ -869,7 +1070,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     mond_y = 720
     # groessere Schrift (gut lesbar auch fuer aeltere Augen und in der kleinen Vorschau)
     karten = [_textkarte(z_, breite=W - 140, groesse=106 if i == 0 else (150 if rad else 90), name="cormorant", farbe="#F6E3B4",
-                         max_zeilen=3, akzent=akzent) for i, z_ in enumerate(zeilen)]
+                         max_zeilen=3, akzent=(250, 208, 120), gold=not rad and len(z_.split()) > 2) for i, z_ in enumerate(zeilen)]
     text_mitte = 1200          # etwas hoeher: Facebook zeigt Reels im Feed beschnitten (unten fehlt sonst Text)
     endkarte, end_pos = _zuschneiden(_endkarte(post, tiktok))
     # Bildideen (reel-10)
@@ -926,7 +1127,17 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     try:
         for i in range(n):
             t = i / FPS
-            bild = grund.copy()
+            atem = 0.5 + 0.5 * math.sin(t * 0.9)
+            bild = Image.blend(grund, grund_hell, 0.55 * atem) if not tiktok else grund.copy()
+            for k, (sl, ph) in enumerate(schleier):                 # Lichtschleier ziehen diagonal durchs Bild
+                u = ((t + ph * 3) / 9.0) % 1.0
+                sx = -sl.width + u * (W + sl.width * 1.2) if k == 0 else W - u * (W + sl.width * 1.2)
+                sy = 150 + 900 * u if k == 0 else 1300 - 800 * u
+                medien.aufkleben(bild, _mit_alpha(sl, 0.75 * math.sin(math.pi * u)), (sx, sy))
+            if szene_bewegt is not None:
+                szene_bewegt.malen(bild, t)
+            if funkenregen is not None:
+                funkenregen.malen(bild, t)
             versatz = int(DRIFT * t / dauer)
             bild.paste(sternebene.crop((0, versatz, W, versatz + H)), (0, 0), sternebene.crop((0, versatz, W, versatz + H)))
             dd = ImageDraw.Draw(bild, "RGBA")
@@ -971,6 +1182,12 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                     medien.aufkleben(bild, _mit_alpha(mb, 0.55 * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
                 else:
                     medien.aufkleben(bild, _mit_alpha(mb, auf * sichtbar_ende), (W / 2 - mb.width / 2, mond_y - mb.height / 2))
+            if strahlen is not None and sichtbar_ende > 0 and not zwoelf and not karten_spiel:
+                sk = strahlen.rotate(t * 9, resample=Image.BILINEAR)   # Strahlenkranz hinter dem Motiv
+                medien.aufkleben(bild, _mit_alpha(sk, (0.42 + 0.2 * math.sin(t * 1.7)) * sichtbar_ende),
+                                 (W / 2 - sk.width / 2, (700 if drei else mond_y) - sk.height / 2))
+            if wellen_farbe is not None and sichtbar_ende > 0 and not zwoelf and not karten_spiel:
+                _wellen_malen(bild, t, W / 2, 700 if drei else mond_y, wellen_farbe)
             if held is not None:          # Vorlauf: das Symbol steht schon im ersten Bild (Titelbild der Plattformen)
                 held.zeichne(bild, t + 1.2, sichtbar_ende)
             if reihe is not None and sichtbar_ende > 0:
@@ -1039,6 +1256,15 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
                 medien.aufkleben(bild, _mit_alpha(karten[0][0], rueck),
                                  (W / 2 - karten[0][0].width / 2, text_mitte - karten[0][0].height / 2))
             schwarz = 1.0          # keine Schwarzblende: das erste Bild zeigt gleich den Hook
+            # Impuls bei jedem neuen Satz: kurzer Lichtblitz in der Farbwelt und ein kleiner Zoom ("Punch")
+            if not tiktok:
+                neu_seit = min([t - a_ for nr, (a_, _b) in enumerate(plan) if nr and 0 <= t - a_ < 0.4] or [9])
+                if neu_seit < 0.4:
+                    k_ = 1 - _weich(neu_seit / 0.4)
+                    z = 1 + 0.035 * k_
+                    bw_, bh_ = int(W / z), int(H / z)
+                    bild = bild.crop(((W - bw_) // 2, (H - bh_) // 2, (W - bw_) // 2 + bw_, (H - bh_) // 2 + bh_)).resize((W, H), Image.BILINEAR)
+                    bild = Image.blend(bild, Image.new("RGB", (W, H), f1), 0.10 * k_)
             daten = np.asarray(bild, dtype=np.uint8)
             if schwarz < 0.999:
                 daten = (daten.astype(np.float32) * schwarz).astype(np.uint8)
