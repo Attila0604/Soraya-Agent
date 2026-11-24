@@ -3350,3 +3350,11 @@ def test_stock_echtes_video(monkeypatch, tmp_path):
     assert aufrufe.count("b") == 1
     monkeypatch.setattr(stock.requests, "get", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("kein Netz")))
     assert stock.fuer_reel({"id": 4}, "feuer") is None                    # Fehler -> gezeichnete Szene
+    # Pixabay (Pexels gibt keine neuen Schluessel aus): Treffer werden umgebaut, Querformat wird spaeter zugeschnitten
+    monkeypatch.delenv("PEXELS_API_KEY")
+    monkeypatch.setenv("PIXABAY_API_KEY", "p")
+    treffer = {"hits": [{"id": 9, "duration": 15, "pageURL": "pg", "videos": {
+        "large": {"url": "L", "width": 1920, "height": 1080}, "small": {"url": "S", "width": 960, "height": 540}}}]}
+    monkeypatch.setattr(stock.requests, "get", lambda url, **kw: Antwort(treffer) if "pixabay.com/api" in url else Antwort(inhalt=b"pb"))
+    r = stock.fuer_reel({"id": 3}, "wasser")
+    assert r and r["id"] == "pb9" and open(r["pfad"], "rb").read() == b"pb"
