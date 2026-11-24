@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-30"
+VERSION = "reel-31"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
@@ -1023,9 +1023,19 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     farbwelt, szene_art = welt(post, st, drei) if not tiktok else (st["palette"], "")
     akzent = medien.PALETTEN[st["palette"]]["akzent"]
     roh = np.asarray(medien._verlauf_hintergrund(W, H, farbwelt), dtype=np.float32)
-    szene_bewegt = Szene(szene_art, farbwelt, int(seed)) if szene_art else None
+    # Schritt C: bei jedem zweiten Reel ein echtes Video als Hintergrund (stock.py, nur mit PEXELS_API_KEY)
+    echt = None
+    if not tiktok:
+        try:
+            import stock
+            echt = stock.fuer_reel(post, farbwelt)
+        except Exception:  # noqa: BLE001
+            echt = None
+    szene_bewegt = Szene(szene_art, farbwelt, int(seed)) if szene_art and not echt else None
     f1, f2 = SZENE_FARBEN.get(farbwelt, SZENE_FARBEN["nacht"])
     effekt = akzent_fuer(post, szene_art) if not tiktok else ""
+    if echt and effekt in ("strahlen", "wellen"):        # das echte Bild ist das Motiv -> nur ruhige Effekte
+        effekt = "funken"
     strahlen = _strahlen(tuple(min(255, int(c * 0.9 + 25)) for c in f1)) if effekt == "strahlen" else None
     schleier = [(_schleier(f1), 0.0), (_schleier(f2), 2.6)] if effekt == "schleier" else []
     funkenregen = Funkenregen(int(seed), tuple(min(255, int(c * 0.8 + 50)) for c in f1)) if effekt == "funken" else None
@@ -1061,7 +1071,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     oben, oben_pos = _zuschneiden(oben)
     motiv = motive.waehle(post, st)                    # Hauptmotiv je Format (reel-11)
     eigene_optik = bool(drei) or zwoelf or karten_spiel
-    mit_mond = meta.get("phase_index") is not None and motiv == "mond" and not eigene_optik
+    mit_mond = meta.get("phase_index") is not None and motiv == "mond" and not eigene_optik and not echt
     r = 200
     mond = medien.mond(r * 2, meta.get("phase_index"), meta.get("beleuchtung")) if mit_mond else None
     if mond is not None:
@@ -1072,11 +1082,13 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     karten = [_textkarte(z_, breite=W - 140, groesse=106 if i == 0 else (150 if rad else 90), name="cormorant", farbe="#F6E3B4",
                          max_zeilen=3, akzent=(250, 208, 120), gold=not rad and len(z_.split()) > 2) for i, z_ in enumerate(zeilen)]
     text_mitte = 1200          # etwas hoeher: Facebook zeigt Reels im Feed beschnitten (unten fehlt sonst Text)
+    if echt:
+        text_mitte = 1400      # echtes Video: die Mitte (Mond, Flamme …) bleibt frei
     endkarte, end_pos = _zuschneiden(_endkarte(post, tiktok))
     # Bildideen (reel-10)
     zeichen = welches_zeichen(post, st)
     sb_kasten = (70, mond_y - 430, W - 140, 860)                    # Sternbild rund um den Mond
-    held = None if eigene_optik else motive.baue(motiv, W / 2, mond_y, zeichen=zeichen, akzent=akzent, seed=int(seed), post=post)
+    held = None if eigene_optik or echt else motive.baue(motiv, W / 2, mond_y, zeichen=zeichen, akzent=akzent, seed=int(seed), post=post)
     sprache = (post.get("sprache") or "de")[:2]
     reihe = _dreier_ebenen(drei, sprache) if drei else None
     zusatz = _dreier_zusatz(fmt, drei, sprache) if drei else None
@@ -1124,11 +1136,32 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
               "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-profile:v", "high",
               "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", ziel]
     proz = subprocess.Popen(befehl, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    leser, letztes = None, None
+    if echt:   # echtes Video: endlos wiederholt, auf 1080x1920 zugeschnitten, langsam herangezoomt
+        leser = subprocess.Popen([ffmpeg, "-loglevel", "error", "-stream_loop", "-1", "-i", echt["pfad"], "-t", f"{dauer + 0.5:.2f}",
+                                  "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS}",
+                                  "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        grund_arr = np.asarray(grund, dtype=np.float32)
     try:
         for i in range(n):
             t = i / FPS
             atem = 0.5 + 0.5 * math.sin(t * 0.9)
-            bild = Image.blend(grund, grund_hell, 0.55 * atem) if not tiktok else grund.copy()
+            if leser is not None:
+                roh_bild = leser.stdout.read(W * H * 3)
+                if len(roh_bild) == W * H * 3:
+                    letztes = np.frombuffer(roh_bild, dtype=np.uint8).reshape(H, W, 3)
+                if letztes is not None:
+                    # abgedunkelt und leicht in der Farbwelt getoent, damit die Schrift gut lesbar bleibt
+                    mix = letztes.astype(np.float32) * 0.62 + grund_arr * 0.30
+                    z = 1 + 0.06 * t / max(dauer, 1)                   # langsamer Zoom (Bewegung)
+                    bild = Image.fromarray(np.clip(mix, 0, 255).astype(np.uint8), "RGB")
+                    if z > 1.002:
+                        bw_, bh_ = int(W / z), int(H / z)
+                        bild = bild.crop(((W - bw_) // 2, (H - bh_) // 2, (W - bw_) // 2 + bw_, (H - bh_) // 2 + bh_)).resize((W, H), Image.BILINEAR)
+                else:
+                    bild = grund.copy()
+            else:
+                bild = Image.blend(grund, grund_hell, 0.55 * atem) if not tiktok else grund.copy()
             for k, (sl, ph) in enumerate(schleier):                 # Lichtschleier ziehen diagonal durchs Bild
                 u = ((t + ph * 3) / 9.0) % 1.0
                 sx = -sl.width + u * (W + sl.width * 1.2) if k == 0 else W - u * (W + sl.width * 1.2)
@@ -1277,11 +1310,13 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
         proz.kill()
         raise
     finally:
+        if leser is not None:
+            leser.kill()
         try:
             os.remove(ton)
         except OSError:
             pass
-    return {"sekunden": round(dauer, 1), "bilder": n}
+    return {"sekunden": round(dauer, 1), "bilder": n, **({"echt": echt["id"]} if echt else {})}
 
 
 def als_bytes(post: dict, tiktok: bool = False) -> bytes:
