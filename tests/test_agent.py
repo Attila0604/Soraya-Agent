@@ -3312,3 +3312,41 @@ def test_neufassung_fehler_faellt_auf_korrekturen_zurueck(monkeypatch):
     aufrufe.clear()
     lektorat.pruefen([{"art": "post", "titel": "x y z", "text": "Ma"}], "hu")
     assert aufrufe == [False]                          # abgeschaltet: nur Korrektur-Lektorat
+
+
+def test_stock_echtes_video(monkeypatch, tmp_path):
+    import stock
+    monkeypatch.delenv("PEXELS_API_KEY", raising=False)
+    assert not stock.soll_echt(5) and stock.fuer_reel({"id": 5}, "wasser") is None       # ohne Schluessel: wie bisher
+    v = {"id": 7, "duration": 12, "url": "u", "video_files": [
+        {"link": "a", "width": 1920, "height": 1080}, {"link": "b", "width": 1080, "height": 1920},
+        {"link": "c", "width": 720, "height": 1280}, {"link": "d", "width": 2160, "height": 3840}]}
+    assert stock.beste_datei(v)["link"] == "b"
+    monkeypatch.setenv("PEXELS_API_KEY", "x")
+    monkeypatch.setenv("STOCK_ANTEIL", "1")
+    monkeypatch.setenv("STOCK_DIR", str(tmp_path))
+
+    class Antwort:
+        def __init__(self, daten=None, inhalt=b""):
+            self.daten, self.inhalt = daten, inhalt
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return self.daten
+        def iter_content(self, n):
+            yield self.inhalt
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+    aufrufe = []
+    def fake_get(url, **kw):
+        aufrufe.append(url)
+        return Antwort({"videos": [v]}) if "api.pexels.com" in url else Antwort(inhalt=b"mp4daten")
+    monkeypatch.setattr(stock.requests, "get", fake_get)
+    r = stock.fuer_reel({"id": 3}, "wasser")
+    assert r and r["id"] == 7 and open(r["pfad"], "rb").read() == b"mp4daten"
+    stock.fuer_reel({"id": 3}, "wasser")                                  # zweites Mal aus dem Zwischenspeicher
+    assert aufrufe.count("b") == 1
+    monkeypatch.setattr(stock.requests, "get", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("kein Netz")))
+    assert stock.fuer_reel({"id": 4}, "feuer") is None                    # Fehler -> gezeichnete Szene
