@@ -44,6 +44,7 @@ import linkedin
 import pinterest
 import meta
 import paket
+import reel
 import posten
 import redaktion
 import tagesplan
@@ -376,6 +377,16 @@ def medien_video_starten(post_id: int):
     if post.get("art") != "reel":
         raise HTTPException(status_code=400, detail="Videos gibt es nur für Reels.")
     return paket.video_anfordern(post)
+
+
+@app.get("/medien/{post_id}/hintergrund")
+def medien_hintergrund(post_id: int):
+    """Link zum echten Hintergrund-Video (Pixabay/Pexels) des Reels, falls es eines hat."""
+    post = _post_oder_404(post_id)
+    try:
+        return {"hintergrund": reel.hintergrund_quelle(post)}
+    except Exception:  # noqa: BLE001
+        return {"hintergrund": None}
 
 
 @app.get("/medien/{post_id}/video")
