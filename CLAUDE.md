@@ -50,6 +50,10 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   (Pexels gibt seit 24.11. keine neuen Schlüssel aus) bzw. `PEXELS_API_KEY` gesetzt;
   `STOCK_ANTEIL` (Standard 0.5) = Anteil der Reels, fest je Post-ID; Video abgedunkelt + in der Farbwelt getönt, langsamer Zoom,
   Text tiefer (1400), kein gezeichnetes Motiv, nur ruhige Effekte. Cache `STOCK_DIR` (/tmp/soraya-stock). Fehler → gezeichnete Szene.
+- Hintergrund je Reel FEST (`reel.hintergrund_plan`/`hintergrund_merken`, `meta.hintergrund` = art video|gezeichnet, welt, szene,
+  effekt, video{id,quelle,link,thema}): beim Speichern im Tagesplan bzw. spätestens beim ersten Video festgelegt; Content Studio
+  zeigt „🎬 Echtes Video (…) · Original ansehen ↗“ bzw. „✨ Gezeichnet · Welt · Szene · Effekt“. `meta.hintergrund` zählt nicht
+  zum Video-Fingerabdruck (`paket._fingerabdruck`).
 - Reels auf DE/EN nur freitags (`tagesplan.reels_heute`, Railway `REELS_WOECHENTLICH`, Standard `de,en`, leer = täglich);
   an den anderen Tagen nur Feed-Post + Story (spart Kosten). Ungarisch (Facebook) immer mit 2 Reels.
 - Kommentare (`kommentare.py`, Tabelle `soraya_kommentare`, `/kommentare`, „Heute“ → „Kommentare auf Facebook“): liest die

@@ -93,9 +93,12 @@ def ordner() -> str:
     return pfad
 
 
-def fuer_reel(post: dict, farbwelt: str) -> dict | None:
-    """{"pfad", "id", "quelle"} eines passenden echten Videos -- oder None (dann gezeichnete Szene).
-    Fehler (kein Netz, Limit, nichts gefunden) fuehren nie zum Abbruch."""
+THEMA = {"mitternacht": "Mond", "wasser": "Meer", "feuer": "Glut/Kerze", "erde": "Wald", "luft": "Himmel",
+         "gold": "Kerzenlicht", "rose": "Abendwolken", "amethyst": "Galaxie"}
+
+
+def waehle(post: dict, farbwelt: str) -> dict | None:
+    """Ein passendes echtes Video aussuchen (ohne Download): {"id", "quelle", "link", "hoehe", "thema"} oder None."""
     seed = int(post.get("id") or 0)
     if not soll_echt(seed):
         return None
@@ -108,9 +111,19 @@ def fuer_reel(post: dict, farbwelt: str) -> dict | None:
         datei = beste_datei(v)
         if not datei:
             return None
-        pfad = os.path.join(ordner(), f"stock-{v['id']}-{datei.get('height')}.mp4")
+        return {"id": v["id"], "quelle": v.get("url") or "", "link": datei["link"], "hoehe": datei.get("height"),
+                "thema": THEMA.get(farbwelt, "Nachthimmel")}
+    except Exception as e:  # noqa: BLE001
+        print(f"[Stock] kein echtes Video: {type(e).__name__}: {str(e)[:120]}", flush=True)
+        return None
+
+
+def datei(wahl: dict) -> str | None:
+    """Lokaler Pfad des gewaehlten Videos (bei Bedarf herunterladen) -- None bei Fehler."""
+    try:
+        pfad = os.path.join(ordner(), f"stock-{wahl['id']}-{wahl.get('hoehe')}.mp4")
         if not os.path.exists(pfad):
-            with requests.get(datei["link"], stream=True, timeout=60) as r:
+            with requests.get(wahl["link"], stream=True, timeout=60) as r:
                 r.raise_for_status()
                 groesse, tmp = 0, pfad + ".teil"
                 with open(tmp, "wb") as f:
@@ -120,7 +133,14 @@ def fuer_reel(post: dict, farbwelt: str) -> dict | None:
                             raise ValueError("Video zu gross")
                         f.write(stueck)
                 os.replace(tmp, pfad)
-        return {"pfad": pfad, "id": v["id"], "quelle": v.get("url") or "pexels"}
+        return pfad
     except Exception as e:  # noqa: BLE001
-        print(f"[Stock] kein echtes Video: {type(e).__name__}: {str(e)[:120]}", flush=True)
+        print(f"[Stock] Download fehlgeschlagen: {type(e).__name__}: {str(e)[:120]}", flush=True)
         return None
+
+
+def fuer_reel(post: dict, farbwelt: str) -> dict | None:
+    """{"pfad", "id", "quelle"} eines passenden echten Videos -- oder None (dann gezeichnete Szene)."""
+    wahl = waehle(post, farbwelt)
+    pfad = datei(wahl) if wahl else None
+    return {"pfad": pfad, "id": wahl["id"], "quelle": wahl["quelle"] or "pexels"} if pfad else None

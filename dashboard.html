@@ -67,6 +67,8 @@
   button:disabled{opacity:.55;cursor:default;filter:none}
   button.ghost{background:transparent;color:var(--gold);border-color:var(--line);font-weight:500}
   .selbst-liste{display:grid;gap:6px;margin-top:6px}
+  .hg-zeile{font-size:13px;color:var(--muted,#b9b1cf);margin:6px 0 2px}
+  .hg-zeile a{color:var(--gold)}
   .selbst-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:6px 0;border-bottom:1px solid var(--line)}
   .selbst-zeile>b{min-width:90px;font-weight:500}
   .selbst-zeile label{display:inline-flex;align-items:center;gap:6px;font-size:14px;text-transform:none;letter-spacing:0;margin:0;white-space:nowrap;width:auto}
@@ -1697,6 +1699,7 @@ function karte(p, {datum = true} = {}){
       : `<div class="pruefhinweis leicht" role="note"><b>${m.pruefung.length === 1 ? '1 Hinweis' : m.pruefung.length + ' Hinweise'}</b><span class="rest" hidden>${esc(m.pruefung.join(' · '))}
       – nur Kleinigkeiten, geht trotzdem automatisch raus.</span></div>`) : ''}
     ${(m.lektorat || []).length ? `<div class="pruefhinweis leicht" role="note"><b>✓ Sprache geprüft · ${m.lektorat.length === 1 ? '1 Korrektur' : m.lektorat.length + ' Korrekturen'}</b><span class="rest" hidden>${esc(m.lektorat.join(' · '))}</span></div>` : ''}
+    ${hintergrundZeile(p)}
     ${streifen}
     <div class="langtext${lang ? ' zu' : ''}">
     <p class="txt">${esc(p.text)}</p>
@@ -1980,6 +1983,22 @@ function playlistVon(p){
   const f = m.reel_nr === 2 ? (m.app_reel ? 'dreier' : (m.reel_format || 'dreier')) : null;
   const sp = (p.sprache || 'en').slice(0, 2);
   return f && PLAYLIST[f] ? (PLAYLIST[f][sp] || PLAYLIST[f].en) : ({hu: 'Napi üzenet', de: 'Botschaft des Tages', en: 'Message of the Day', it: 'Messaggio del giorno'})[sp] || 'Message of the Day';
+}
+// Hintergrund des Reels (reel.hintergrund_plan, in meta.hintergrund festgehalten)
+const WELT_NAME = {feuer: 'Feuer', erde: 'Erde', luft: 'Luft', wasser: 'Wasser', mitternacht: 'Mitternacht', gold: 'Gold',
+  rose: 'Rosé', amethyst: 'Amethyst', nacht: 'Nacht'};
+const SZENE_NAME = {nebel: 'Nebel', polarlicht: 'Polarlicht', galaxie: 'Galaxie', staub: 'Sternenstaub'};
+const EFFEKT_NAME = {strahlen: 'Strahlenkranz', schleier: 'Lichtschleier', wellen: 'Lichtwellen', funken: 'Funkenregen', kometen: 'Sternschnuppen'};
+function hintergrundZeile(p){
+  if(p.art !== 'reel') return '';
+  const h = (p.meta || {}).hintergrund;
+  if(!h) return `<div class="hg-zeile">Hintergrund: wird beim ersten Video festgelegt</div>`;
+  if(h.art === 'video'){
+    const v = h.video || {};
+    const link = /^https:\/\//.test(v.quelle || '') ? ` · <a href="${esc(v.quelle)}" target="_blank" rel="noopener">Original ansehen ↗</a>` : '';
+    return `<div class="hg-zeile">🎬 Echtes Video${v.thema ? ' (' + esc(v.thema) + ')' : ''} · ${esc(EFFEKT_NAME[h.effekt] || '')}${link}</div>`;
+  }
+  return `<div class="hg-zeile">✨ Gezeichnet · ${esc([WELT_NAME[h.welt] || h.welt, SZENE_NAME[h.szene], EFFEKT_NAME[h.effekt]].filter(Boolean).join(' · '))}</div>`;
 }
 let videoTimer = null;
 function videoDialog(p){

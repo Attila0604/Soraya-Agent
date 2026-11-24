@@ -756,15 +756,48 @@ def _wellen_malen(bild: Image.Image, t: float, cx: float, cy: float, farbe) -> N
             d.ellipse([cx - r - dr, cy - r - dr, cx + r + dr, cy + r + dr], outline=farbe + (int(a * f),), width=3)
 
 
+def hintergrund_plan(post: dict) -> dict:
+    """Der Hintergrund eines Reels, einmal festgelegt und in meta.hintergrund gemerkt (Wunsch Attila 24.11.: "fixieren",
+    im Content Studio sehen): {"art": "video"|"gezeichnet", "welt", "szene", "effekt", ["video": {id, quelle, link, ...}]}."""
+    fest = (post.get("meta") or {}).get("hintergrund")
+    if isinstance(fest, dict) and fest.get("art") in ("video", "gezeichnet"):
+        return fest
+    st = medien.stil(post)
+    farbwelt, szene = welt(post, st, drei_zeichen(post))
+    effekt = akzent_fuer(post, szene)
+    wahl = None
+    try:
+        import stock
+        wahl = stock.waehle(post, farbwelt)
+    except Exception:  # noqa: BLE001
+        wahl = None
+    if wahl:
+        return {"art": "video", "welt": farbwelt, "szene": "", "video": wahl,
+                "effekt": "funken" if effekt in ("strahlen", "wellen") else effekt}
+    return {"art": "gezeichnet", "welt": farbwelt, "szene": szene, "effekt": effekt}
+
+
+def hintergrund_merken(post: dict) -> dict:
+    """Plan festlegen und speichern (einmal je Reel), Rueckgabe wie hintergrund_plan."""
+    plan = hintergrund_plan(post)
+    meta = post.get("meta") or {}
+    if meta.get("hintergrund") != plan and post.get("id"):
+        try:
+            import db
+            db.setze_meta(int(post["id"]), "hintergrund", plan)
+            post["meta"] = {**meta, "hintergrund": plan}
+        except Exception as e:  # noqa: BLE001
+            print(f"[Reel] Hintergrund nicht gemerkt: {e}", flush=True)
+    return plan
+
+
 def hintergrund_quelle(post: dict) -> dict | None:
     """Welches echte Video (Pixabay/Pexels) dieses Reel als Hintergrund hat -- fuer den Link im Content Studio."""
     if post.get("art") != "reel":
         return None
-    import stock
-    st = medien.stil(post)
-    farbwelt, _ = welt(post, st, drei_zeichen(post))
-    echt = stock.fuer_reel(post, farbwelt)
-    return {"quelle": echt.get("quelle"), "id": echt.get("id")} if echt else None
+    plan = hintergrund_plan(post)
+    v = plan.get("video") or {}
+    return {"quelle": v.get("quelle"), "id": v.get("id")} if plan.get("art") == "video" else None
 
 
 class Szene:
@@ -1031,7 +1064,8 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     # --- feste Ebenen einmal vorbereiten
     # leichtes, festes Rauschen gegen Farbstufen im Verlauf (H.264 macht sonst sichtbare Ringe)
     st = medien.stil(post)
-    farbwelt, szene_art = welt(post, st, drei) if not tiktok else (st["palette"], "")
+    hg = hintergrund_plan(post) if not tiktok else None
+    farbwelt, szene_art = (hg["welt"], hg.get("szene") or "") if hg else (st["palette"], "")
     akzent = medien.PALETTEN[st["palette"]]["akzent"]
     roh = np.asarray(medien._verlauf_hintergrund(W, H, farbwelt), dtype=np.float32)
     # Schritt C: bei jedem zweiten Reel ein echtes Video als Hintergrund (stock.py, nur mit PEXELS_API_KEY)
@@ -1039,12 +1073,16 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
     if not tiktok:
         try:
             import stock
-            echt = stock.fuer_reel(post, farbwelt)
+            if hg and hg["art"] == "video":
+                pfad = stock.datei(hg["video"])
+                echt = {"pfad": pfad, "id": hg["video"]["id"], "quelle": hg["video"].get("quelle")} if pfad else None
         except Exception:  # noqa: BLE001
             echt = None
+    if hg and hg["art"] == "video" and not echt:       # Video nicht ladbar -> gezeichnete Szene derselben Welt
+        szene_art = SZENEN[int(seed) % len(SZENEN)]
     szene_bewegt = Szene(szene_art, farbwelt, int(seed)) if szene_art and not echt else None
     f1, f2 = SZENE_FARBEN.get(farbwelt, SZENE_FARBEN["nacht"])
-    effekt = akzent_fuer(post, szene_art) if not tiktok else ""
+    effekt = (hg.get("effekt") or akzent_fuer(post, szene_art)) if hg else ""
     if echt and effekt in ("strahlen", "wellen"):        # das echte Bild ist das Motiv -> nur ruhige Effekte
         effekt = "funken"
     strahlen = _strahlen(tuple(min(255, int(c * 0.9 + 25)) for c in f1)) if effekt == "strahlen" else None
@@ -1066,7 +1104,7 @@ def erstelle(post: dict, ziel: str, tiktok: bool = False) -> dict:
         for yy in (y, y + H) if y < DRIFT else (y,):        # oben wiederholen, damit unten nichts fehlt
             d.ellipse([x - r, yy - r, x + r, yy + r], fill=farbe + (int(a * 255),))
     schnuppen = [(0.25, (W * 0.18, 260), math.radians(28)), (max(4.0, end_start - 3.0), (W * 0.62, 180), math.radians(152))]
-    if not tiktok and akzent_fuer(post, welt(post, medien.stil(post), drei)[1]) == "kometen":   # alle ~3,5 s eine Sternschnuppe
+    if not tiktok and hintergrund_plan(post).get("effekt") == "kometen":   # alle ~3,5 s eine Sternschnuppe
         schnuppen += [(t0, (W * (0.12 if k % 2 else 0.7), 150 + 90 * (k % 3)), math.radians(30 if k % 2 else 150))
                       for k, t0 in enumerate(np.arange(2.0, end_start - 1.0, 3.5))]
     oben = Image.new("RGBA", (W, H), (0, 0, 0, 0))                 # kleines Zeichen + Datumszeile
