@@ -46,7 +46,8 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
   (feuer/erde/luft/wasser), Voll-/Neumond mitternacht, Formate fest (`FORMAT_WELT`); Szene nebel/polarlicht/galaxie/staub;
   je Reel GENAU EIN Effekt (strahlen, schleier, wellen, funken, kometen) – Wunsch Attila „Abwechslung, nicht zu viel“.
   Immer: atmender Hintergrund, Impuls+Zoom bei neuem Satz, Schlüsselwort in Gold.
-- Echte Videos ab `reel-31` (`stock.py`, Pexels, nur Motive ohne Menschen): nur wenn Railway `PEXELS_API_KEY` gesetzt;
+- Echte Videos ab `reel-31` (`stock.py`, Pixabay oder Pexels, nur Motive ohne Menschen): nur wenn Railway `PIXABAY_API_KEY`
+  (Pexels gibt seit 24.11. keine neuen Schlüssel aus) bzw. `PEXELS_API_KEY` gesetzt;
   `STOCK_ANTEIL` (Standard 0.5) = Anteil der Reels, fest je Post-ID; Video abgedunkelt + in der Farbwelt getönt, langsamer Zoom,
   Text tiefer (1400), kein gezeichnetes Motiv, nur ruhige Effekte. Cache `STOCK_DIR` (/tmp/soraya-stock). Fehler → gezeichnete Szene.
 - Reels auf DE/EN nur freitags (`tagesplan.reels_heute`, Railway `REELS_WOECHENTLICH`, Standard `de,en`, leer = täglich);
