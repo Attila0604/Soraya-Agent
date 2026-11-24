@@ -42,6 +42,8 @@ ART_NAME = {"post": "Feed-Post", "reel": "Reel", "story": "Story"}
 
 def _fingerabdruck(post: dict, art: str) -> str:
     felder = {k: post.get(k) for k in ("id", "art", "sprache", "titel", "untertitel", "text", "meta", "skript")}
+    if isinstance(felder.get("meta"), dict) and "hintergrund" in felder["meta"]:
+        felder["meta"] = {k: v for k, v in felder["meta"].items() if k != "hintergrund"}
     version = reel.VERSION if art in ("reel", "reel-tiktok") else (f"{reel.VERSION}+{BILD_VERSION}" if art == "diashow" else BILD_VERSION)
     roh = json.dumps([version, art, felder], sort_keys=True, default=str, ensure_ascii=False)
     return hashlib.sha1(roh.encode("utf-8")).hexdigest()
@@ -120,6 +122,8 @@ def ohne_musik(daten: bytes) -> bytes:
 
 
 def _rendere_video(post: dict) -> bytes:
+    if post.get("art") == "reel":
+        reel.hintergrund_merken(post)               # Hintergrund festhalten, bevor gerendert wird
     fp = _fingerabdruck(post, "reel")
     vorhanden = db.lade_medium(post["id"], "reel", fp)
     if vorhanden:

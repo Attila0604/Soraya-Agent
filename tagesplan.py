@@ -1147,6 +1147,12 @@ def erstelle(sprache: str, *, tag: date | None = None, erzwingen: bool = False, 
             if not zweite and p.get("art") in ("post", "reel"):
                 meta["erzaehlform"] = erzaehlform(tag, sprache)[0]
             gespeichert += db.speichere_posts([p], quelle="himmel", geplant_fuer=tag, meta=meta)
+            if p.get("art") == "reel" and gespeichert:   # Hintergrund gleich festlegen (im Content Studio sichtbar)
+                try:
+                    import reel
+                    reel.hintergrund_merken(gespeichert[-1])
+                except Exception as ex:  # noqa: BLE001
+                    print(f"[Tagesplan] Hintergrund: {ex}", flush=True)
         db.tagesplan_fertig(tag, sprache, info)
         print(f"[Tagesplan] {tag} {sprache}: {len(gespeichert)} Posts", flush=True)
         return {"sprache": sprache, "status": "fertig", "posts": len(gespeichert)}

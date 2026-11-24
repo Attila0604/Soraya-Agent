@@ -3365,8 +3365,16 @@ def test_hintergrund_link(monkeypatch, frische_db):
     p = db.speichere_posts([{"art": "reel", "titel": "x", "sprache": "hu", "text": "Kos, ma valami új vár rád.",
                              "skript": {"hook": "Kos, ma valami új vár rád", "einblendungen": [], "szenen": [], "schluss": ""}}],
                            quelle="tagesplan", geplant_fuer=HEUTE)[0]
-    monkeypatch.setattr(stock, "fuer_reel", lambda post, fw: {"pfad": "/x.mp4", "id": "pb9", "quelle": "https://pixabay.com/videos/x-9/"})
+    aufrufe = []
+    monkeypatch.setattr(stock, "waehle", lambda post, fw: aufrufe.append(1) or {"id": "pb9", "quelle": "https://pixabay.com/videos/x-9/",
+                                                                              "link": "L", "hoehe": 1080, "thema": "Glut/Kerze"})
     r = client.get(f"/medien/{p['id']}/hintergrund", headers=AUTH).json()
-    assert r["hintergrund"]["quelle"].startswith("https://pixabay.com")
-    monkeypatch.setattr(stock, "fuer_reel", lambda post, fw: None)
-    assert client.get(f"/medien/{p['id']}/hintergrund", headers=AUTH).json()["hintergrund"] is None
+    assert r["hintergrund"]["quelle"].startswith("https://pixabay.com") and r["plan"]["art"] == "video"
+    # festgehalten: zweiter Aufruf sucht nicht neu, und der Plan steht im Post
+    monkeypatch.setattr(stock, "waehle", lambda post, fw: None)
+    r2 = client.get(f"/medien/{p['id']}/hintergrund", headers=AUTH).json()
+    assert r2["plan"] == r["plan"] and len(aufrufe) == 1
+    assert db.lade_post(p["id"])["meta"]["hintergrund"]["video"]["id"] == "pb9"
+    # Fingerabdruck des Videos aendert sich durch das Merken nicht (sonst endloses Neu-Rendern)
+    ohne = dict(p, meta={})
+    assert paket._fingerabdruck(db.lade_post(p["id"]), "reel") == paket._fingerabdruck({**db.lade_post(p["id"]), "meta": {k: v for k, v in db.lade_post(p["id"])["meta"].items() if k != "hintergrund"}}, "reel")

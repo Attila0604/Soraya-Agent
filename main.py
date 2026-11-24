@@ -383,10 +383,14 @@ def medien_video_starten(post_id: int):
 def medien_hintergrund(post_id: int):
     """Link zum echten Hintergrund-Video (Pixabay/Pexels) des Reels, falls es eines hat."""
     post = _post_oder_404(post_id)
+    if post.get("art") != "reel":
+        return {"hintergrund": None, "plan": None}
     try:
-        return {"hintergrund": reel.hintergrund_quelle(post)}
+        plan = reel.hintergrund_merken(post)
     except Exception:  # noqa: BLE001
-        return {"hintergrund": None}
+        return {"hintergrund": None, "plan": None}
+    v = plan.get("video") or {}
+    return {"hintergrund": {"quelle": v.get("quelle"), "id": v.get("id")} if plan["art"] == "video" else None, "plan": plan}
 
 
 @app.get("/medien/{post_id}/video")
