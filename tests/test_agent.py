@@ -3317,7 +3317,7 @@ def test_neufassung_fehler_faellt_auf_korrekturen_zurueck(monkeypatch):
 def test_stock_echtes_video(monkeypatch, tmp_path):
     import stock
     monkeypatch.delenv("PEXELS_API_KEY", raising=False)
-    assert not stock.soll_echt(5) and stock.fuer_reel({"id": 5}, "wasser") is None       # ohne Schluessel: wie bisher
+    assert not stock.soll_echt({"id": 5}) and stock.fuer_reel({"id": 5}, "wasser") is None       # ohne Schluessel: wie bisher
     v = {"id": 7, "duration": 12, "url": "u", "video_files": [
         {"link": "a", "width": 1920, "height": 1080}, {"link": "b", "width": 1080, "height": 1920},
         {"link": "c", "width": 720, "height": 1280}, {"link": "d", "width": 2160, "height": 3840}]}
@@ -3378,3 +3378,21 @@ def test_hintergrund_link(monkeypatch, frische_db):
     # Fingerabdruck des Videos aendert sich durch das Merken nicht (sonst endloses Neu-Rendern)
     ohne = dict(p, meta={})
     assert paket._fingerabdruck(db.lade_post(p["id"]), "reel") == paket._fingerabdruck({**db.lade_post(p["id"]), "meta": {k: v for k, v in db.lade_post(p["id"])["meta"].items() if k != "hintergrund"}}, "reel")
+
+
+def test_stock_jeden_tag_genau_ein_echtes_reel(monkeypatch):
+    import stock
+    from datetime import date as _d, timedelta as _td
+    monkeypatch.setenv("PIXABAY_API_KEY", "p")
+    monkeypatch.delenv("PEXELS_API_KEY", raising=False)
+    monkeypatch.setenv("STOCK_ANTEIL", "0.5")
+    erste = []
+    for k in range(10):
+        tag = (_d(2026, 11, 20) + _td(days=k)).isoformat()
+        r1 = stock.soll_echt({"id": 1, "geplant_fuer": tag, "meta": {}})
+        r2 = stock.soll_echt({"id": 2, "geplant_fuer": tag, "meta": {"reel_nr": 2}})
+        assert r1 != r2                         # jeden Tag genau eines der beiden
+        erste.append(r1)
+    assert True in erste and False in erste     # abwechselnd das erste und das zweite
+    monkeypatch.setenv("STOCK_ANTEIL", "1")
+    assert stock.soll_echt({"id": 1, "geplant_fuer": "2026-11-20", "meta": {}})

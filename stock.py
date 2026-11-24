@@ -46,11 +46,37 @@ def anteil() -> float:
         return 0.5
 
 
-def soll_echt(seed: int) -> bool:
-    """Bekommt dieses Reel ein echtes Video? (fest je Post-ID, damit es beim Neu-Erstellen gleich bleibt)"""
-    if not schluessel() and not pixabay_schluessel():
+def aktiv() -> bool:
+    return bool(schluessel() or pixabay_schluessel())
+
+
+def _platz_nr(post) -> int:
+    """Laufende Nummer der Reels: je Tag zwei Plaetze (1. und 2. Reel) -- damit sich echt/gezeichnet gleichmaessig abwechseln."""
+    from datetime import date as _date
+    tag = post.get("geplant_fuer") if isinstance(post, dict) else None
+    if isinstance(tag, str):
+        try:
+            tag = _date.fromisoformat(tag[:10])
+        except ValueError:
+            tag = None
+    if isinstance(tag, _date):
+        zweites = ((post.get("meta") or {}).get("reel_nr") == 2)
+        return tag.toordinal() + (1 if zweites else 0)
+    return int((post.get("id") if isinstance(post, dict) else post) or 0)
+
+
+def soll_echt(post) -> bool:
+    """Bekommt dieses Reel ein echtes Video? Gleichmaessig verteilt (bei 0.5: jeden Tag genau eines der beiden Reels,
+    abwechselnd das erste und das zweite); fest je Tag und Platz, damit es beim Neu-Erstellen gleich bleibt."""
+    if not aktiv():
         return False
-    return (int(seed) * 37 % 100) < anteil() * 100
+    a = anteil()
+    if a >= 1:
+        return True
+    if a <= 0:
+        return False
+    n = _platz_nr(post)
+    return int((n + 1) * a) - int(n * a) == 1
 
 
 def beste_datei(video: dict) -> dict | None:
@@ -100,7 +126,7 @@ THEMA = {"mitternacht": "Mond", "wasser": "Meer", "feuer": "Glut/Kerze", "erde":
 def waehle(post: dict, farbwelt: str) -> dict | None:
     """Ein passendes echtes Video aussuchen (ohne Download): {"id", "quelle", "link", "hoehe", "thema"} oder None."""
     seed = int(post.get("id") or 0)
-    if not soll_echt(seed):
+    if not soll_echt(post):
         return None
     try:
         begriffe = SUCHEN.get(farbwelt, STANDARD)

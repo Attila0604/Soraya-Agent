@@ -27,7 +27,7 @@ import medien
 import motive
 
 W, H, FPS = 1080, 1920, 30
-VERSION = "reel-31"
+VERSION = "reel-32"
 EINBLENDEN, AUSBLENDEN = 0.45, 0.4
 ERSTE_SEKUNDE = 1.0         # Bewegung im ersten Moment: hier entscheidet sich, ob jemand weiterwischt
 
@@ -760,7 +760,7 @@ def hintergrund_plan(post: dict) -> dict:
     """Der Hintergrund eines Reels, einmal festgelegt und in meta.hintergrund gemerkt (Wunsch Attila 24.11.: "fixieren",
     im Content Studio sehen): {"art": "video"|"gezeichnet", "welt", "szene", "effekt", ["video": {id, quelle, link, ...}]}."""
     fest = (post.get("meta") or {}).get("hintergrund")
-    if isinstance(fest, dict) and fest.get("art") in ("video", "gezeichnet"):
+    if isinstance(fest, dict) and fest.get("art") in ("video", "gezeichnet") and fest.get("v") == PLAN_V:
         return fest
     st = medien.stil(post)
     farbwelt, szene = welt(post, st, drei_zeichen(post))
@@ -772,15 +772,27 @@ def hintergrund_plan(post: dict) -> dict:
     except Exception:  # noqa: BLE001
         wahl = None
     if wahl:
-        return {"art": "video", "welt": farbwelt, "szene": "", "video": wahl,
+        return {"art": "video", "welt": farbwelt, "szene": "", "video": wahl, "v": PLAN_V,
                 "effekt": "funken" if effekt in ("strahlen", "wellen") else effekt}
-    return {"art": "gezeichnet", "welt": farbwelt, "szene": szene, "effekt": effekt}
+    try:
+        import stock
+        offen = stock.soll_echt(post)          # sollte ein Video bekommen, die Suche klappte aber gerade nicht
+    except Exception:  # noqa: BLE001
+        offen = False
+    return {"art": "gezeichnet", "welt": farbwelt, "szene": szene, "effekt": effekt, "v": PLAN_V,
+            **({"nochmal": True} if offen else {})}
+
+
+PLAN_V = 2      # 2 (24.11.): gleichmaessige Verteilung; aeltere Plaene werden neu bestimmt
 
 
 def hintergrund_merken(post: dict) -> dict:
-    """Plan festlegen und speichern (einmal je Reel), Rueckgabe wie hintergrund_plan."""
+    """Plan festlegen und speichern (einmal je Reel), Rueckgabe wie hintergrund_plan. Ein Plan "gezeichnet, nochmal"
+    (Suche bei Pixabay gerade fehlgeschlagen) wird NICHT gespeichert -- beim naechsten Mal wird es erneut versucht."""
     plan = hintergrund_plan(post)
     meta = post.get("meta") or {}
+    if plan.get("nochmal"):
+        return plan
     if meta.get("hintergrund") != plan and post.get("id"):
         try:
             import db
