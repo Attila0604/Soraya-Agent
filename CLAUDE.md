@@ -60,5 +60,9 @@ Der vollständige Projektüberblick (alle Repos, Regeln, offene Punkte) steht in
 - Kommentare (`kommentare.py`, Tabelle `soraya_kommentare`, `/kommentare`, „Heute“ → „Kommentare auf Facebook“): liest die
   Kommentare der Facebook-Beiträge der letzten 4 Tage (Recht pages_read_user_content), Antwort-Vorschläge auf Knopfdruck
   (ein Claude-Aufruf für bis zu 10, effort low, gemerkt). Soraya antwortet NICHT selbst (bräuchte pages_manage_engagement).
+- Anleitung neu aufgebaut (25.11., Wunsch Attila „zu viele Sprach- und Denkfehler“): `tagesplan.SYSTEM_PROMPT` kurz (~6.000 statt 17.500
+  Zeichen) mit fester Rangfolge WAHR > LOGISCH > NATÜRLICHE SPRACHE > VERSTÄNDLICH > POSITIV; Erzählform und Lebensphasen
+  nicht mehr im Auftrag. Lektorat/Neufassung bekommen die Himmelsdaten (`lektorat.pruefen(..., fakten)`) und prüfen
+  Sprache UND Logik. Neue Regeln nur, wenn wirklich nötig – lieber eine bestehende schärfen.
 - **Tagesplan-Automatik und automatisches Posten stehen AUS** – nur Attila schaltet sie ein.
 - Tests: siehe `tests/README.md` (nie gegen die echte Datenbank laufen lassen).

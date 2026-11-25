@@ -2231,7 +2231,7 @@ def test_publikum_je_plattform(monkeypatch):
     assert {a[0], b[0]} == {"40er", "50plus"}
     t = tagesplan.publikum_text(["facebook"])
     assert "45 und 70" in t and "TikTok" not in t and tagesplan.publikum_text([]) == ""
-    assert "stiller, weiser Gedanke" in tagesplan.SYSTEM_PROMPT and "Drei-Zeichen-Check" in tagesplan.SYSTEM_PROMPT
+    assert "LOGISCH" in tagesplan.SYSTEM_PROMPT and "Drei-Zeichen-Check" in tagesplan.SYSTEM_PROMPT
 
 
 def test_neu_erstellen_behaelt_entwuerfe_bei_fehler(monkeypatch, frische_db):
@@ -2938,18 +2938,12 @@ def test_symbole_und_lebensphasen():
 
 def test_tagesplan_merkt_symbol_und_lebensphase(frische_db):
     tagesplan.erstelle("en")
-    frage = next(x["frage"] for x in frische_db if "Lebensphasen heute" in x["frage"])
-    assert "Symbole für" in frage and "herz:" in frage and "Erzählform heute" in frage
+    frage = next(x["frage"] for x in frische_db if "Symbole für" in x["frage"])
+    assert "herz:" in frage and "Erzählform heute" not in frage and "Lebensphasen heute" not in frage
     posts = [p for p in db.lade_posts(von=HEUTE, bis=HEUTE) if p["sprache"] == "en"]
     import symbole
-    a, b = tagesplan.lebensphasen(HEUTE)
     for p in posts:
-        m = p["meta"]
-        assert m["motiv"] in symbole.MOTIVE                      # Ersatz je Format, wenn Claude keins liefert
-        zweite = p["art"] == "story" or m.get("reel_nr") == 2
-        assert m["lebensphase"] == (b if zweite else a)[0]
-        if not zweite and p["art"] in ("post", "reel"):
-            assert m["erzaehlform"] == tagesplan.erzaehlform(HEUTE, "en")[0]
+        assert p["meta"]["motiv"] in symbole.MOTIVE              # Ersatz je Format, wenn Claude keins liefert
     assert len({p["meta"]["motiv"] for p in posts}) == len(posts)    # jeder Post des Tages ein anderes Symbol
 
 
@@ -3396,3 +3390,14 @@ def test_stock_jeden_tag_genau_ein_echtes_reel(monkeypatch):
     assert True in erste and False in erste     # abwechselnd das erste und das zweite
     monkeypatch.setenv("STOCK_ANTEIL", "1")
     assert stock.soll_echt({"id": 1, "geplant_fuer": "2026-11-20", "meta": {}})
+
+
+def test_schlanke_anleitung_und_lektorat_mit_fakten(monkeypatch):
+    """Neu aufgebaute, kurze Anleitung (Wahr > Logisch > Sprache > Verständlich > Positiv); das Lektorat kennt die Himmelsdaten."""
+    assert len(tagesplan.SYSTEM_PROMPT) < 8000
+    for wort in ("WAHR", "LOGISCH", "NATÜRLICHE SPRACHE", "VERSTÄNDLICH OHNE VORWISSEN", "Neugier-Lücke"):
+        assert wort in tagesplan.SYSTEM_PROMPT
+    gesehen = []
+    monkeypatch.setattr(lektorat, "frage_json", lambda system, *a, **k: gesehen.append(system) or {"korrekturen": [], "posts": []})
+    lektorat.pruefen([{"art": "post", "text": "Ma"}], "de", "Mond im Stier")
+    assert gesehen and "Mond im Stier" in gesehen[0] and "LOGIC" in gesehen[0]
