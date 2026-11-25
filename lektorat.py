@@ -57,28 +57,25 @@ def sprachen() -> set[str]:
     return {s.strip().lower() for s in roh.split(",") if s.strip().lower() in SPRACHNAMEN}
 
 
-def _system(sprache: str) -> str:
+def _system(sprache: str, fakten: str = "") -> str:
     name = SPRACHNAMEN[sprache]
     return (
-        f"You are a meticulous native {name} copy editor for the social media posts of an astrology app. "
-        f"You receive {name} texts written by an AI. The posts must read as if a native {name} speaker wrote them. "
-        "Find ONLY real problems: spelling and accent errors, grammar or suffix errors, words from another "
-        "language, and phrases a native speaker would find clumsy, unnatural or nonsensical (literal translations, "
-        "odd word choices). Do not change content, meaning, tone, emojis, hashtags' meaning or anything that is fine. "
-        "Also check the logic of every post: the first sentence (hook) must fit what follows. If the hook promises something "
-        "the rest does not deliver (e.g. the hook says a scent takes three signs back in time, but the paragraphs talk about "
-        "a melody, a scent and a photo), rewrite the hook so it fits all of it (e.g. \"a small memory takes you back in time\"). "
-        "Also fix sentences that are grammatical but unclear or illogical. Keep the zodiac sign names at the start of a hook. "
-        "If a text names a difficulty (tension, conflict, doubt, tiredness) but leaves the reader without a way forward, add "
-        "one short, gentle, concrete hint (a small ritual or a sentence to say) in the same tone – minimal change, no new paragraph. "
-        "The comment question at the end must be positive and easy to answer in public (zodiac sign, an emoji, yes/no, A/B, "
-        "accepting a wish). Tone must be positive and uplifting: if a hook, video line or caption frames the reader through a "
-        "burden, flaw or reproach (\"you carry too much\", \"you don't always have to …\", \"finally you say: enough\", "
-        "\"someone asks too much of you\", \"but …\" sentences hinting at a weakness), rewrite it into the gift, strength or "
-        "good news of the day with the same meaning and length. It must never ask about the reader's own life (plans, dates, people, feelings, events – e.g. 'when do you set off this week?'). If it asks for something private, personal or negative (names of people, past events, conflicts, 'when did "
-        "you last …'), replace it with such a light, positive question in the same language."
-        + _HINWEISE.get(sprache, "") +
-        "\n\nEvery correction: \"alt\" = the exact passage copied character for character from the texts (2-15 words, "
+        f"You are a meticulous native {name} editor for the social media posts of an astrology app. The texts were "
+        f"written by an AI; afterwards they must read as if a native {name} woman had written them for her friends. "
+        "Check two things and fix only real problems – keep everything that is fine exactly as it is:\n"
+        "1. LANGUAGE: spelling, accents, grammar and suffixes, words from another language, literal translations, "
+        "invented words, stiff, bookish or kitschy phrases, sentences that are grammatical but sound odd. Replace them "
+        "with the simple, natural wording a native speaker would use.\n"
+        "2. LOGIC: every statement must agree with the sky data below (moon sign, phase, planets – a full or new moon can be "
+        "in a different sign than today's moon). The reason from the sky must fit the statement (Moon = feelings and home, "
+        "Mercury = talks and thinking, Venus = love and pleasure, Mars = courage, Jupiter = luck, Saturn = patience). The hook "
+        "must fit what follows (if it promises '3 things', exactly 3 follow). No contradictions between sentences, with the "
+        "time of day or the weekday. One form of address per post part: one sign = singular 'you', several signs together = "
+        "plural 'you'. Keep the zodiac sign names at the start of a hook.\n"
+        "Keep meaning, tone (positive, warm), emojis, paragraph breaks and the closing comment question."
+        + _HINWEISE.get(sprache, "")
+        + (f"\n\nSky data of the day (the only facts that may be used):\n{fakten}" if fakten else "")
+        + "\n\nEvery correction: \"alt\" = the exact passage copied character for character from the texts (2-15 words, "
         "a single word only if it is unique; a whole sentence when it must be rewritten), \"neu\" = the corrected passage. At most "
         f"{MAX_KORREKTUREN} corrections; an empty list if everything is fine."
     )
@@ -141,11 +138,11 @@ def anwenden(posts: list[dict], korrekturen: list) -> list[str]:
 # ---------------------------------------------------------------------------
 _NEU_HINWEISE = {
     "hu": (
-        "\n\nREWRITE MODE. Rewrite every field the way a Hungarian woman in her thirties who writes popular astrology posts "
+        "\n\nREWRITE MODE. Rewrite every field the way a Hungarian woman who writes popular astrology posts "
         "for Facebook would have written it in Hungarian from the start – not translated, not 'AI Hungarian'. Keep the meaning, "
         "the zodiac signs and their order, the emojis, the paragraph breaks and the closing comment question; keep every list the "
-        "same length. Limits: titel max. 6 words, untertitel max. 8, hook max. 8, every einblendung max. 10 words, other fields not "
-        "longer than before. If the hook equals the first line of text, keep them identical. A field that already sounds natural "
+        "same length. Every field stays about as long as before (on-screen lines may be one or two words "
+        "longer if that makes them natural). If the hook equals the first line of text, keep them identical. A field that already sounds natural "
         "stays exactly as it is.\n"
         "Typical problems to remove:\n"
         "- Kitsch and over-poetic filler Hungarians find 'giccses': \"mesébe illő\", \"mesébe illővé varázsolja\", "
@@ -268,11 +265,11 @@ def _setze(p: dict, n: dict) -> list[str]:
     return geaendert
 
 
-def umschreiben(posts: list[dict], sprache: str) -> list[str]:
+def umschreiben(posts: list[dict], sprache: str, fakten: str = "") -> list[str]:
     """Muttersprachliche Neufassung aller Texte eines Tages (an Ort und Stelle). Gibt die Aenderungen zurueck."""
     import json
     eingabe = json.dumps({"posts": [_eingabe(p) for p in posts]}, ensure_ascii=False, indent=1)
-    antwort = frage_json(_system(sprache) + _NEU_HINWEISE[sprache], eingabe, _NEU_SCHEMA, effort="high",
+    antwort = frage_json(_system(sprache, fakten) + _NEU_HINWEISE[sprache], eingabe, _NEU_SCHEMA, effort="high",
                          max_tokens=24000)
     neu = antwort.get("posts") or []
     if len(neu) != len(posts):
@@ -283,21 +280,21 @@ def umschreiben(posts: list[dict], sprache: str) -> list[str]:
     return erledigt
 
 
-def pruefen(posts: list[dict], sprache: str) -> list[str]:
+def pruefen(posts: list[dict], sprache: str, fakten: str = "") -> list[str]:
     """Korrigiert die Posts eines Tages an Ort und Stelle (nur Sprachen aus LEKTORAT_SPRACHEN).
     Gibt die Liste der Korrekturen zurueck (fuers Dashboard)."""
     if sprache not in sprachen() or not posts:
         return []
     if sprache in umschreiben_sprachen():
         try:
-            return umschreiben(posts, sprache)
+            return umschreiben(posts, sprache, fakten)
         except Exception as e:   # dann wenigstens das normale Korrektur-Lektorat
             log.warning("Neufassung %s fehlgeschlagen, nur Korrekturen: %s", sprache, e)
     bloecke = []
     for i, p in enumerate(posts, 1):
         bloecke.append(f"--- Post {i} ({p.get('art') or 'post'}) ---\n" + "\n".join(_texte(p)))
     try:
-        antwort = frage_json(_system(sprache), "\n\n".join(bloecke), _SCHEMA, effort="high", max_tokens=24000)
+        antwort = frage_json(_system(sprache, fakten), "\n\n".join(bloecke), _SCHEMA, effort="high", max_tokens=24000)
         return anwenden(posts, antwort.get("korrekturen") or [])
     except Exception as e:   # Lektorat darf den Tagesplan nie aufhalten
         log.warning("Lektorat %s fehlgeschlagen: %s", sprache, e)
