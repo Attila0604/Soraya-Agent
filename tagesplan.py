@@ -646,6 +646,37 @@ REEL2_TEXTE = {
 }
 
 
+# Spiel-Formate mit festem Hook: der Satz wird nach dem Schreiben und dem Lektorat hart gesetzt
+# (27.11.: aus „Állj meg a csillagjegyednél“ wurde „Keresd meg a jegyed – ez szól neked ma estére“)
+FESTE_HOOKS = {
+    "woche": {"de": "Deine Woche in einem Wort", "en": "Your week in one word", "hu": "A heted egy szóban",
+              "it": "La tua settimana in una parola"},
+    "stopp": {"de": "Stopp bei deinem Zeichen", "en": "Stop at your sign", "hu": "Állj meg a csillagjegyednél",
+              "it": "Fermati al tuo segno"},
+    "karte": {"de": "Wähl eine Karte: 1, 2 oder 3", "en": "Pick a card: 1, 2 or 3", "hu": "Válassz egy kártyát: 1, 2 vagy 3",
+              "it": "Scegli una carta: 1, 2 o 3"},
+}
+
+
+def fester_hook(post: dict, sprache: str, tag: date) -> None:
+    """Zweites Reel eines Spiel-Formats: Hook (und erste Textzeile, beim Rad/Raster auch der Titel) genau wie vorgegeben."""
+    fmt = reel2_format(tag)
+    if post.get("art") != "reel" or post.get("_reel_nr") != 2 or fmt not in FESTE_HOOKS or app_funktion(tag):
+        return
+    soll = FESTE_HOOKS[fmt].get(norm(sprache))
+    sk = post.get("skript")
+    if not soll or not isinstance(sk, dict):
+        return
+    alt = (sk.get("hook") or "").strip()
+    post["skript"] = {**sk, "hook": soll}
+    if fmt in ("woche", "stopp"):
+        post["titel"] = soll
+    text = post.get("text") or ""
+    erste, _, rest = text.partition("\n")
+    if alt and erste.strip() == alt:
+        post["text"] = soll + ("\n" + rest if rest else "")
+
+
 def reel2_format(tag: date) -> str:
     return REEL2_FORMATE[tag.weekday()]
 
@@ -913,6 +944,8 @@ def schreibe_posts(info: dict, sprache: str, bisherige: list[str], zielgruppe: d
                 posts[i] = vorher[i]
             else:
                 befunde[i] = b
+    for p in posts:
+        fester_hook(p, sprache, tag)
     for i, p in enumerate(posts):
         p["_pruefung"] = befunde.get(i) or []
         p["_thema"] = thema["name"]

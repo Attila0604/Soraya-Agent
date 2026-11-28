@@ -3401,3 +3401,19 @@ def test_schlanke_anleitung_und_lektorat_mit_fakten(monkeypatch):
     monkeypatch.setattr(lektorat, "frage_json", lambda system, *a, **k: gesehen.append(system) or {"korrekturen": [], "posts": []})
     lektorat.pruefen([{"art": "post", "text": "Ma"}], "de", "Mond im Stier")
     assert gesehen and "Mond im Stier" in gesehen[0] and "LOGIC" in gesehen[0]
+
+
+def test_fester_hook_bei_spiel_formaten(monkeypatch):
+    """Stopp/Woche/Karte: der Hook wird hart gesetzt, auch wenn Claude oder das Lektorat ihn umformuliert."""
+    from datetime import date as _d
+    freitag = _d(2026, 11, 27)
+    assert tagesplan.REEL2_FORMATE[freitag.weekday()] == "stopp"
+    monkeypatch.setattr(tagesplan, "reel2_format", lambda tag: tagesplan.REEL2_FORMATE[tag.weekday()])
+    p = {"art": "reel", "_reel_nr": 2, "titel": "x", "text": "Keresd meg a jegyed – ez szól neked ma estére\n\nKos: …",
+         "skript": {"hook": "Keresd meg a jegyed – ez szól neked ma estére", "einblendungen": []}}
+    tagesplan.fester_hook(p, "hu", freitag)
+    assert p["skript"]["hook"] == p["titel"] == "Állj meg a csillagjegyednél"
+    assert p["text"].startswith("Állj meg a csillagjegyednél\n\nKos")
+    erstes = {"art": "reel", "titel": "Bak", "text": "Bak, ma …", "skript": {"hook": "Bak, ma …"}}
+    tagesplan.fester_hook(erstes, "hu", freitag)
+    assert erstes["skript"]["hook"] == "Bak, ma …"                          # erstes Reel bleibt frei
